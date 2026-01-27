@@ -47,6 +47,10 @@ jobs:
         working-directory: clients/ui/bff
         run: make build
 
+      - name: Generate OpenAPI spec
+        working-directory: clients/ui/bff
+        run: make openapi
+
       - name: Check if there are uncommitted file changes
         working-directory: clients/ui/bff
         run: |

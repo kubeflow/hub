@@ -1,3 +1,13 @@
+// @title           Model Registry BFF REST API
+// @version         1.0.0
+// @description     REST API for Model Registry BFF
+// @license.name    Apache 2.0
+// @license.url     https://www.apache.org/licenses/LICENSE-2.0
+
+// @host            localhost:4000
+// @BasePath        /api/v1
+// @schemes         http https
+
 package main
 
 import (

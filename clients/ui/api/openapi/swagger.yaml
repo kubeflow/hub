@@ -1,0 +1,59 @@
+basePath: /api/v1
+definitions:
+  github_com_kubeflow_model-registry_ui_bff_internal_integrations_httpclient.HTTPError:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+  github_com_kubeflow_model-registry_ui_bff_internal_models.HealthCheckModel:
+    properties:
+      status:
+        type: string
+      system_info:
+        $ref: '#/definitions/github_com_kubeflow_model-registry_ui_bff_internal_models.SystemInfo'
+    type: object
+  github_com_kubeflow_model-registry_ui_bff_internal_models.SystemInfo:
+    properties:
+      version:
+        type: string
+    type: object
+  internal_api.ErrorEnvelope:
+    properties:
+      error:
+        $ref: '#/definitions/github_com_kubeflow_model-registry_ui_bff_internal_integrations_httpclient.HTTPError'
+    type: object
+host: localhost:4000
+info:
+  contact: {}
+  description: REST API for Model Registry BFF
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+  title: Model Registry BFF REST API
+  version: 1.0.0
+paths:
+  /healthcheck:
+    get:
+      description: Returns the health status of the application including version
+        info
+      operationId: healthcheck
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful healthcheck response
+          schema:
+            $ref: '#/definitions/github_com_kubeflow_model-registry_ui_bff_internal_models.HealthCheckModel'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/internal_api.ErrorEnvelope'
+      summary: Health check
+      tags:
+      - healthcheck
+schemes:
+- http
+- https
+swagger: "2.0"
