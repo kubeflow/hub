@@ -229,6 +229,7 @@ clients/python/src/mr_openapi/models/serving_environment_list.py linguist-genera
 clients/python/src/mr_openapi/models/serving_environment_update.py linguist-generated=true
 clients/python/src/mr_openapi/models/sort_order.py linguist-generated=true
 clients/python/src/mr_openapi/rest.py linguist-generated=true
+clients/ui/bff/openapi/docs.go linguist-generated=true
 internal/converter/generated/embedmd_openapi_converter.gen.go linguist-generated=true
 internal/converter/generated/openapi_converter.gen.go linguist-generated=true
 internal/converter/generated/openapi_embedmd_converter.gen.go linguist-generated=true
