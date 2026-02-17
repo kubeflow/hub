@@ -52,7 +52,7 @@ test: fmt vet envtest ## Runs the full test suite.
 	go test ./...
 
 .PHONY: build
-build: fmt vet test ## Builds the project to produce a binary executable.
+build: fmt vet openapi test ## Builds the project to produce a binary executable. OpenAPI spec is generated before build.
 ifeq ($(DEBUG), true) ## If DEBUG is true, build with debugging symbols
 	go build $(GCFLAGS_DEBUG) -o bin/bff ./cmd
 else
@@ -60,7 +60,7 @@ else
 endif
 
 .PHONY: run
-run: fmt vet envtest ## Runs the project.
+run: fmt vet openapi envtest ## Runs the project. OpenAPI spec is generated before run.
 	trap 'exit 0' INT; \
 	ENVTEST_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" \
 	go run ./cmd --port=$(PORT) --auth-method=${AUTH_METHOD} --auth-token-header=$(AUTH_TOKEN_HEADER) --auth-token-prefix="$(AUTH_TOKEN_PREFIX)" --static-assets-dir=$(STATIC_ASSETS_DIR) --mock-k8s-client=$(MOCK_K8S_CLIENT) --mock-mr-client=$(MOCK_MR_CLIENT) --mock-mr-catalog-client=$(MOCK_MR_CATALOG_CLIENT)  --dev-mode=$(DEV_MODE) --dev-mode-model-registry-port=$(DEV_MODE_MODEL_REGISTRY_PORT) --dev-mode-catalog-port=$(DEV_MODE_CATALOG_PORT)  --deployment-mode=$(DEPLOYMENT_MODE) --log-level=$(LOG_LEVEL) --allowed-origins=$(ALLOWED_ORIGINS) --insecure-skip-verify=$(INSECURE_SKIP_VERIFY)
@@ -98,9 +98,14 @@ swag: $(SWAG) ## Download swag locally if necessary.
 $(SWAG): $(LOCALBIN)
 	$(call go-install-tool,$(SWAG),github.com/swaggo/swag/cmd/swag,$(SWAG_VERSION))
 
+ALL_GO_DIRS := $(shell find . -type f -name '*.go' -exec dirname {} \; | sed 's|^\./||' | sort -u)
+ALL_GO_DIRS_NO_CMD := $(shell echo "$(ALL_GO_DIRS)" | tr ' ' '\n' | grep -v '^cmd$$' | paste -sd, -)
+SWAG_DIRS := cmd,$(ALL_GO_DIRS_NO_CMD)
+
 .PHONY: openapi
 openapi: swag ## Generate OpenAPI spec from annotations
-	$(SWAG) init -g cmd/main.go -o ../api/openapi --outputTypes json,yaml --parseDependency --parseInternal
+	$(SWAG) fmt -g cmd/main.go -d $(SWAG_DIRS)
+	$(SWAG) init --parseDependency -q -g main.go -d $(SWAG_DIRS) -o openapi --outputTypes go,json,yaml --requiredByDefault
 
 
 # go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist
