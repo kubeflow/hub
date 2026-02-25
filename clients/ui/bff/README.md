@@ -82,6 +82,8 @@ make docker-build
 
 See the [OpenAPI specification](../api/openapi/mod-arch.yaml) for a complete list of endpoints.
 
+> **Note:** We are in the process of moving from a manually maintained OpenAPI spec to a generated one. For a short period we have both: the hand-maintained [mod-arch.yaml](../api/openapi/mod-arch.yaml) and the generated [swagger.yaml](openapi/swagger.yaml) / [swagger.json](openapi/swagger.json) (produced from Go code via swaggo). The goal is to generate the OpenAPI spec from the codebase rather than managing it manually; once the transition is complete, the generated spec will be the single source of truth.
+
 ### Sample local calls
 
 You will need to inject your requests with a `kubeflow-userid` header and namespace for authorization purposes.
