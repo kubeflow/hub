@@ -34,7 +34,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Successful healthcheck response",
                         "schema": {
-                            "$ref": "#/definitions/health_check.HealthCheckModel"
+                            "$ref": "#/definitions/healthcheck.HealthCheckModel"
                         }
                     },
                     "401": {
@@ -83,7 +83,7 @@ const docTemplate = `{
                 }
             }
         },
-        "health_check.HealthCheckModel": {
+        "healthcheck.HealthCheckModel": {
             "type": "object",
             "required": [
                 "status",
@@ -94,11 +94,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "system_info": {
-                    "$ref": "#/definitions/health_check.SystemInfo"
+                    "$ref": "#/definitions/healthcheck.SystemInfo"
                 }
             }
         },
-        "health_check.SystemInfo": {
+        "healthcheck.SystemInfo": {
             "type": "object",
             "required": [
                 "version"

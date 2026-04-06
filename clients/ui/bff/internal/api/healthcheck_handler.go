@@ -6,7 +6,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 
 	// imported for swag documentation
-	_ "github.com/kubeflow/hub/ui/bff/internal/models/health_check"
+	_ "github.com/kubeflow/hub/ui/bff/internal/models/healthcheck"
 )
 
 // HealthcheckHandler returns the health status of the application.
@@ -16,7 +16,7 @@ import (
 //	@Tags			healthcheck
 //	@ID				getHealthcheck
 //	@Produce		application/json
-//	@Success		200	{object}	health_check.HealthCheckModel	"Successful healthcheck response"
+//	@Success		200	{object}	healthcheck.HealthCheckModel	"Successful healthcheck response"
 //	@Failure		401	{object}	ErrorEnvelope					"Unauthorized. Authentication is required."
 //	@Failure		403	{object}	ErrorEnvelope					"Forbidden. User does not have permission to access the resource."
 //	@Failure		404	{object}	ErrorEnvelope					"Not Found. Resource does not exist."

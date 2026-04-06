@@ -1,5 +1,5 @@
 /*
-Copyright 2024.
+Copyright 2026.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import (
 )
 
 // GetSwaggerHandler serves the Swagger UI for interactive API documentation.
-func (app *App) GetSwaggerHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) { //nolint:unused // receiver required for route signature
+func (app *App) GetSwaggerHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	httpSwagger.Handler(
 		httpSwagger.URL(SwaggerDocPath),
 		httpSwagger.DeepLinking(true),

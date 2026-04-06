@@ -283,8 +283,10 @@ func (app *App) Routes() http.Handler {
 	apiRouter.POST(CheckNamespaceRegistryAccessPath, app.CheckNamespaceRegistryAccessHandler)
 	apiRouter.GET(ModelRegistryListPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.GetAllModelRegistriesHandler)))
 
-	// Swagger UI (interactive API docs)
-	apiRouter.GET(SwaggerPath+"/*filepath", app.GetSwaggerHandler)
+	// Swagger UI (interactive API docs) — only in dev mode
+	if app.config.DevMode {
+		apiRouter.GET(SwaggerPath+"/*filepath", app.GetSwaggerHandler)
+	}
 
 	// Enable these routes in all cases except Kubeflow integration mode
 	// (Kubeflow integration mode is when DeploymentMode is kubeflow)

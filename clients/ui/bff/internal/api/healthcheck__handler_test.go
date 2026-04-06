@@ -9,7 +9,7 @@ import (
 
 	"github.com/kubeflow/hub/ui/bff/internal/config"
 	"github.com/kubeflow/hub/ui/bff/internal/mocks"
-	"github.com/kubeflow/hub/ui/bff/internal/models/health_check"
+	"github.com/kubeflow/hub/ui/bff/internal/models/healthcheck"
 	"github.com/kubeflow/hub/ui/bff/internal/repositories"
 	"github.com/stretchr/testify/assert"
 )
@@ -35,15 +35,15 @@ func TestHealthCheckHandler(t *testing.T) {
 	body, err := io.ReadAll(rs.Body)
 	assert.NoError(t, err)
 
-	var healthCheckRes health_check.HealthCheckModel
+	var healthCheckRes healthcheck.HealthCheckModel
 	err = json.Unmarshal(body, &healthCheckRes)
 	assert.NoError(t, err)
 
 	assert.Equal(t, http.StatusOK, rr.Code)
 
-	expected := health_check.HealthCheckModel{
+	expected := healthcheck.HealthCheckModel{
 		Status: "available",
-		SystemInfo: health_check.SystemInfo{
+		SystemInfo: healthcheck.SystemInfo{
 			Version: Version,
 		},
 	}

@@ -7,17 +7,17 @@ definitions:
     required:
     - error
     type: object
-  health_check.HealthCheckModel:
+  healthcheck.HealthCheckModel:
     properties:
       status:
         type: string
       system_info:
-        $ref: '#/definitions/health_check.SystemInfo'
+        $ref: '#/definitions/healthcheck.SystemInfo'
     required:
     - status
     - system_info
     type: object
-  health_check.SystemInfo:
+  healthcheck.SystemInfo:
     properties:
       version:
         type: string
@@ -54,7 +54,7 @@ paths:
         "200":
           description: Successful healthcheck response
           schema:
-            $ref: '#/definitions/health_check.HealthCheckModel'
+            $ref: '#/definitions/healthcheck.HealthCheckModel'
         "401":
           description: Unauthorized. Authentication is required.
           schema:
