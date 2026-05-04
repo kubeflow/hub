@@ -24,7 +24,7 @@ aiohttp-retry = "^2.8.3"
 # allows for reentrant event loops (used for sync client) - Python 3.14 compatible
 nest-asyncio2 = "^1.7.1"
 
-huggingface-hub = { version = ">=0.20.1,<1.13.0", optional = true }
+huggingface-hub = { version = ">=0.20.1,<1.14.0", optional = true }
 olot = { version = "^0.1.17", optional = true }
 boto3 = { version = "^1.37.34", optional = true }
 rh-model-signing = { version = "1.0.1", optional = true }
