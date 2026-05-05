@@ -1407,9 +1407,7 @@ describe('getCatalogModelTypePropertyForRegistration', () => {
     });
   });
 
-  it('returns empty object when model_type is absent or not a registerable value', () => {
-    expect(getCatalogModelTypePropertyForRegistration(undefined)).toEqual({});
-    expect(getCatalogModelTypePropertyForRegistration({})).toEqual({});
+  it('returns model_type metadata when catalog has unknown', () => {
     expect(
       getCatalogModelTypePropertyForRegistration({
         [CatalogModelCustomPropertyKey.MODEL_TYPE]: {
@@ -1417,7 +1415,17 @@ describe('getCatalogModelTypePropertyForRegistration', () => {
           string_value: ModelType.UNKNOWN,
         },
       }),
-    ).toEqual({});
+    ).toEqual({
+      [CatalogModelCustomPropertyKey.MODEL_TYPE]: {
+        metadataType: ModelRegistryMetadataType.STRING,
+        string_value: ModelType.UNKNOWN,
+      },
+    });
+  });
+
+  it('returns empty object when model_type is absent or not a recognized value', () => {
+    expect(getCatalogModelTypePropertyForRegistration(undefined)).toEqual({});
+    expect(getCatalogModelTypePropertyForRegistration({})).toEqual({});
   });
 });
 

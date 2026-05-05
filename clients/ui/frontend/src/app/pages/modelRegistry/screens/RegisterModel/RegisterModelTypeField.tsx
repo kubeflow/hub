@@ -11,7 +11,7 @@ import {
   getModelTypeStoredValueFromCustomProperties,
 } from './registerModelTypeUtils';
 
-const MODEL_TYPE_SELECT_OPTIONS: SimpleSelectOption[] = [
+const SELECTABLE_OPTIONS: SimpleSelectOption[] = [
   {
     key: ModelType.GENERATIVE,
     label: formatModelTypeDisplay(ModelType.GENERATIVE),
@@ -38,6 +38,16 @@ const RegisterModelTypeField: React.FC<RegisterModelTypeFieldProps> = ({
 }) => {
   const stored = getModelTypeStoredValueFromCustomProperties(modelCustomProperties);
 
+  const selectOptions = React.useMemo<SimpleSelectOption[]>(() => {
+    if (isReadOnly && stored === ModelType.UNKNOWN) {
+      return [
+        ...SELECTABLE_OPTIONS,
+        { key: ModelType.UNKNOWN, label: formatModelTypeDisplay(ModelType.UNKNOWN) },
+      ];
+    }
+    return SELECTABLE_OPTIONS;
+  }, [isReadOnly, stored]);
+
   const handleChange = (key: string) => {
     if (key === ModelType.GENERATIVE || key === ModelType.PREDICTIVE) {
       onModelCustomPropertiesChange(buildCustomPropertiesWithModelType(modelCustomProperties, key));
@@ -50,7 +60,7 @@ const RegisterModelTypeField: React.FC<RegisterModelTypeFieldProps> = ({
         field="Model type"
         component={
           <SimpleSelect
-            options={MODEL_TYPE_SELECT_OPTIONS}
+            options={selectOptions}
             value={stored ?? undefined}
             onChange={handleChange}
             placeholder="Select model type"

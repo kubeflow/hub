@@ -3,7 +3,7 @@ import { ModelRegistryCustomProperties, ModelRegistryMetadataType } from '~/app/
 
 export const MODEL_TYPE_CUSTOM_PROPERTY_KEY = CatalogModelCustomPropertyKey.MODEL_TYPE;
 
-export type RegisterableModelType = ModelType.GENERATIVE | ModelType.PREDICTIVE;
+export type RegisterableModelType = ModelType.GENERATIVE | ModelType.PREDICTIVE | ModelType.UNKNOWN;
 
 /** Raw `model_type` string for display (any non-empty STRING metadata), or null if unset. */
 export const getModelTypeRawStringFromCustomProperties = (
@@ -25,7 +25,7 @@ export const getModelTypeStoredValueFromCustomProperties = (
     return undefined;
   }
   const v = prop.string_value.toLowerCase().trim();
-  if (v === ModelType.GENERATIVE || v === ModelType.PREDICTIVE) {
+  if (v === ModelType.GENERATIVE || v === ModelType.PREDICTIVE || v === ModelType.UNKNOWN) {
     return v;
   }
   return undefined;

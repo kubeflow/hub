@@ -79,12 +79,15 @@ describe('registerModelTypeUtils', () => {
       ).toBeUndefined();
     });
 
-    it('returns undefined for STRING values that are not generative or predictive', () => {
+    it('returns unknown when string matches ModelType.UNKNOWN', () => {
       expect(
         getModelTypeStoredValueFromCustomProperties({
           [MODEL_TYPE_CUSTOM_PROPERTY_KEY]: stringProp(ModelType.UNKNOWN),
         }),
-      ).toBeUndefined();
+      ).toBe(ModelType.UNKNOWN);
+    });
+
+    it('returns undefined for unrecognized STRING values', () => {
       expect(
         getModelTypeStoredValueFromCustomProperties({
           [MODEL_TYPE_CUSTOM_PROPERTY_KEY]: stringProp('other'),

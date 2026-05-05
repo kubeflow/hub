@@ -796,7 +796,8 @@ export const formatModelTypeDisplay = (modelTypeRaw: string | null): string => {
 
 /**
  * Returns model registry customProperties entries to prefill `model_type` when registering
- * from the catalog. Only generative/predictive are copied; unknown or missing values yield {}.
+ * from the catalog. Recognized values (generative, predictive, unknown) are copied;
+ * unrecognized or missing values yield {}.
  */
 export const getCatalogModelTypePropertyForRegistration = (
   customProperties?: ModelRegistryCustomProperties,
