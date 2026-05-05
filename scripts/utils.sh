@@ -26,7 +26,7 @@ repeat_cmd_until() {
 
     output=$(eval $cmd)
 
-    if [ $output $condition ]; then
+    if eval '[ "$output"' "$condition" ']'; then
       break
     else
       sleep $interval_secs
