@@ -1166,7 +1166,28 @@ func registryOriginOnly(serverAddress string) string {
 	if scheme == "" {
 		scheme = "http"
 	}
-	return scheme + "://" + host
+
+	// Ensure port is explicit so the Python ModelRegistry client (which uses
+	// urlparse) does not append it after the path, producing a malformed URL.
+	port := u.Port()
+	if port == "" {
+		if scheme == "https" {
+			port = "443"
+		} else {
+			port = "80"
+		}
+	}
+	hostPort := host + ":" + port
+
+	// Preserve any routing prefix (e.g. /model-registry/<name>) that the
+	// gateway needs, but strip the MR API path suffix (/api/...).
+	path := u.Path
+	if idx := strings.Index(path, "/api/"); idx >= 0 {
+		path = path[:idx]
+	}
+	path = strings.TrimRight(path, "/")
+
+	return scheme + "://" + hostPort + path
 }
 
 func cloneDestSecretFromExisting(generateNamePrefix, namespace, jobID string, oldSecret *corev1.Secret) *corev1.Secret {
