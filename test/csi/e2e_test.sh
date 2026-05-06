@@ -267,7 +267,7 @@ EOF
     kubectl get all -n $kserve_namespace || true
 
     # wait for pod predictor to be initialized
-    repeat_cmd_until "kubectl get pod -n $kserve_namespace --selector='component=predictor' --output jsonpath='{.items[*].metadata.name}' | grep ${inference_service_name}-predictor | wc -l" "-gt 0" 60
+    repeat_cmd_until "kubectl get pod -n $kserve_namespace --selector='component=predictor' --output jsonpath='{.items[*].metadata.name}' | grep ${inference_service_name}-predictor | wc -l" 60 "" "-gt" "0"
 
     # If we failed to find the pod, show more debug info
     if [ $? -ne 0 ]; then

@@ -50,7 +50,8 @@ fi
 kubectl delete pod -n "$MR_NAMESPACE" --selector='component=model-registry-server'
 
 repeat_cmd_until "kubectl get pod -n "$MR_NAMESPACE" --selector='component=model-registry-server' \
--o jsonpath=\"{.items[*].spec.containers[?(@.name=='rest-container')].image}\" | tr ' ' '\n' | sort -u" "= $IMG" 500 "kubectl describe pod -n $MR_NAMESPACE --selector='component=model-registry-server'"
+--field-selector=status.phase=Running \
+-o jsonpath=\"{.items[*].spec.containers[?(@.name=='rest-container')].image}\" | tr ' ' '\n' | sort -u" 500 "kubectl describe pod -n $MR_NAMESPACE --selector='component=model-registry-server'" "=" "$IMG"
 
 if ! kubectl wait --for=condition=available -n "$MR_NAMESPACE" deployment/model-registry-deployment --timeout=5m ; then
     kubectl events -A
