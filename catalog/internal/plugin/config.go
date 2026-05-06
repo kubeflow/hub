@@ -1,6 +1,8 @@
 package plugin
 
 import (
+	"fmt"
+
 	"github.com/kubeflow/hub/catalog/internal/catalog/basecatalog"
 )
 
@@ -17,7 +19,7 @@ func LoadConfigs(paths []string) ([]*basecatalog.SourceConfig, error) {
 	for _, path := range paths {
 		cfg, err := LoadConfig(path)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("loading config %s: %w", path, err)
 		}
 		configs = append(configs, cfg)
 	}

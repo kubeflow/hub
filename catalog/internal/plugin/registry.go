@@ -45,7 +45,7 @@ func All() []CatalogPlugin {
 	return result
 }
 
-// Get returns a plugin by name, or nil if not found.
+// Get returns a plugin by name. The returned boolean is true if the plugin is found, false otherwise.
 func Get(name string) (CatalogPlugin, bool) {
 	globalRegistry.mu.RLock()
 	defer globalRegistry.mu.RUnlock()
