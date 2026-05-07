@@ -4,6 +4,7 @@
  * This hook provides a browser storage-backed feature flag that can be toggled
  * via the browser console using:
  *     window.setTempDevCatalogHuggingFaceApiKeyFeatureAvailable(true/false);
+ *     window.setTempDevToolCallingConfigurationFeatureAvailable(true/false);
  * The state persists across page reloads using browser storage.
  *
  * Each TempDevFeature and corresponding window.set* here should be removed once that feature is ready.
@@ -18,18 +19,27 @@ import { useBrowserStorage } from 'mod-arch-core';
 declare global {
   interface Window {
     setTempDevCatalogHuggingFaceApiKeyFeatureAvailable?: (enabled: boolean) => void;
+    setTempDevToolCallingConfigurationFeatureAvailable?: (enabled: boolean) => void;
   }
 }
 
 export enum TempDevFeature {
   CatalogHuggingFaceApiKey = 'tempDevCatalogHuggingFaceApiKeyFeatureAvailable',
+  ToolCallingConfiguration = 'tempDevToolCallingConfigurationFeatureAvailable',
 }
 
 export const useTempDevFeatureAvailable = (feature: TempDevFeature): boolean => {
   const [isAvailable, setIsAvailable] = useBrowserStorage(feature, false);
 
   React.useEffect(() => {
-    window.setTempDevCatalogHuggingFaceApiKeyFeatureAvailable = setIsAvailable;
+    switch (feature) {
+      case TempDevFeature.CatalogHuggingFaceApiKey:
+        window.setTempDevCatalogHuggingFaceApiKeyFeatureAvailable = setIsAvailable;
+        break;
+      case TempDevFeature.ToolCallingConfiguration:
+        window.setTempDevToolCallingConfigurationFeatureAvailable = setIsAvailable;
+        break;
+    }
   }, [feature, setIsAvailable]);
 
   return isAvailable;
