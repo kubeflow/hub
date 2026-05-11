@@ -386,7 +386,9 @@ func mapDBModelToAPIModel(m models.CatalogModel) apimodels.CatalogModel {
 			case "validated_tasks":
 				if prop.StringValue != nil {
 					var validatedTasks []string
-					if err := json.Unmarshal([]byte(*prop.StringValue), &validatedTasks); err == nil {
+					if err := json.Unmarshal([]byte(*prop.StringValue), &validatedTasks); err != nil {
+						glog.Warningf("failed to unmarshal validated_tasks for model %s: %v", res.Name, err)
+					} else {
 						res.ValidatedTasks = validatedTasks
 					}
 				}

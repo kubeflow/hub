@@ -875,7 +875,7 @@ components:
               type: array
               items:
                 type: string
-              description: List of tasks that have been validated for this model.
+              description: List of tasks for this model which have been validated by the catalog provider.
             servingConfig:
               $ref: "#/components/schemas/ServingConfig"
         - $ref: "#/components/schemas/BaseModel"
@@ -1865,7 +1865,7 @@ components:
       type: string
     ServingConfig:
       description: >-
-        Serving and deployment configuration for the model. Each property represents a distinct configuration concern with its own typed schema. All properties are optional — only the configurations that have been validated for a given model should be present.
+        Serving and deployment configuration for the model. Each property represents a distinct configuration concern with its own typed schema. All properties are optional.
       type: object
       properties:
         toolCalling:
@@ -1878,23 +1878,23 @@ components:
       type: string
     ToolCallingConfig:
       description: >-
-        Validated vLLM tool-calling arguments for this model. When present, these values have been tested end-to-end (tool call request, correct tool_calls output, tool response round-trip) on the target hardware.
+        Tool-calling arguments for this model.
       type: object
       properties:
         toolCallParser:
           type: string
           description: >-
-            The --tool-call-parser argument value for vLLM serve.
+            The tool-call parser identifier for the serving runtime.
           example: granite
         chatTemplate:
           type: string
           description: >-
-            Path to the chat template file, as used with the --chat-template argument. For RHOAI deployments, paths are converted from examples/* to opt/app-root/template/*.
+            Path to the chat template file packaged with the model.
           example: opt/app-root/template/tool_chat_template_granite.jinja
         enableAutoToolChoice:
           type: boolean
           description: >-
-            Whether to pass --enable-auto-tool-choice to vLLM serve.
+            Whether to enable automatic tool choice in the serving runtime.
           default: true
         requiredArgs:
           type: array

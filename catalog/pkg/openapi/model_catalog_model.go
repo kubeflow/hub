@@ -52,7 +52,7 @@ type CatalogModel struct {
 	LastUpdateTimeSinceEpoch *string `json:"lastUpdateTimeSinceEpoch,omitempty"`
 	// ID of the source this model belongs to.
 	SourceId *string `json:"source_id,omitempty"`
-	// List of tasks that have been validated for this model.
+	// List of tasks for this model which have been validated by the catalog provider.
 	ValidatedTasks []string       `json:"validatedTasks,omitempty"`
 	ServingConfig  *ServingConfig `json:"servingConfig,omitempty"`
 }

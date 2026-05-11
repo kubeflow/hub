@@ -17,13 +17,13 @@ import (
 // checks if the ToolCallingConfig type satisfies the MappedNullable interface at compile time
 var _ MappedNullable = &ToolCallingConfig{}
 
-// ToolCallingConfig Validated vLLM tool-calling arguments for this model. When present, these values have been tested end-to-end (tool call request, correct tool_calls output, tool response round-trip) on the target hardware.
+// ToolCallingConfig Tool-calling arguments for this model.
 type ToolCallingConfig struct {
-	// The --tool-call-parser argument value for vLLM serve.
+	// The tool-call parser identifier for the serving runtime.
 	ToolCallParser *string `json:"toolCallParser,omitempty"`
-	// Path to the chat template file, as used with the --chat-template argument. For RHOAI deployments, paths are converted from examples/_* to opt/app-root/template/_*.
+	// Path to the chat template file packaged with the model.
 	ChatTemplate *string `json:"chatTemplate,omitempty"`
-	// Whether to pass --enable-auto-tool-choice to vLLM serve.
+	// Whether to enable automatic tool choice in the serving runtime.
 	EnableAutoToolChoice *bool `json:"enableAutoToolChoice,omitempty"`
 	// Additional CLI arguments required for tool calling beyond the parser, template, and auto-tool-choice flags. Each entry is a complete argument (e.g., \"--config_format mistral\").
 	RequiredArgs []string `json:"requiredArgs,omitempty"`

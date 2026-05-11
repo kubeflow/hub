@@ -17,7 +17,7 @@ import (
 // checks if the ServingConfig type satisfies the MappedNullable interface at compile time
 var _ MappedNullable = &ServingConfig{}
 
-// ServingConfig Serving and deployment configuration for the model. Each property represents a distinct configuration concern with its own typed schema. All properties are optional — only the configurations that have been validated for a given model should be present.
+// ServingConfig Serving and deployment configuration for the model. Each property represents a distinct configuration concern with its own typed schema. All properties are optional.
 type ServingConfig struct {
 	ToolCalling *ToolCallingConfig `json:"toolCalling,omitempty"`
 }
