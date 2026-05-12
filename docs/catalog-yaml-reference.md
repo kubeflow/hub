@@ -18,6 +18,7 @@ This document describes the YAML configuration formats for the Kubeflow Hub cata
   - [Labels](#labels)
 - [Model Catalog Data Files](#model-catalog-data-files)
   - [Model Fields](#model-fields)
+  - [Validated Tasks and Serving Configuration](#validated-tasks-and-serving-configuration)
   - [Model Artifacts](#model-artifacts)
   - [Metrics Artifacts](#metrics-artifacts)
 - [MCP Server Catalog Data Files](#mcp-server-catalog-data-files)
@@ -231,6 +232,8 @@ models:
 | `licenseLink` | string (URI) | No | URL to the full license text |
 | `libraryName` | string | No | ML library name (e.g., `transformers`, `sentence-transformers`) |
 | `tasks` | string[] | No | Task identifiers the model is designed for |
+| `validatedTasks` | string[] | No | Tasks validated by the catalog provider (see [Validated Tasks and Serving Configuration](#validated-tasks-and-serving-configuration)) |
+| `servingConfig` | object | No | Serving and deployment configuration (see [Validated Tasks and Serving Configuration](#validated-tasks-and-serving-configuration)) |
 | `maturity` | string | No | Maturity level (e.g., `Production`) |
 | `logo` | string (URI) | No | Logo image (data URI or URL) |
 | `externalId` | string | No | External identifier from your system (must be unique) |
@@ -240,6 +243,69 @@ models:
 | `lastUpdateTimeSinceEpoch` | string | No | Last update timestamp in milliseconds since epoch |
 
 **Common task identifiers:** `text-generation`, `question-answering`, `summarization`, `translation`, `text-classification`, `sentiment-analysis`, `feature-extraction`, `sentence-similarity`, `text-embedding`, `image-to-text`, `visual-question-answering`, `conversational`, `code-generation`, `fill-mask`, `table-question-answering`, `tool-calling`
+
+### Validated Tasks and Serving Configuration
+
+The catalog uses a three-tier capability model to distinguish between what a model claims it can do, what has been independently verified, and what runtime configuration is needed to enable a capability.
+
+#### Three-Tier Capability Model
+
+| Layer | Field | Purpose | Filterable |
+|-------|-------|---------|-----------|
+| Declaration | `tasks` | Model declares a capability | Yes |
+| Validation | `validatedTasks` | Capability validated end-to-end by the catalog provider | Yes |
+| Configuration | `servingConfig` | Runtime arguments to enable the capability | No |
+
+**Invariants enforced by the catalog pipeline:**
+
+- Every entry in `validatedTasks` must also appear in `tasks`. A model cannot claim validation for a task it does not declare.
+- A model with `servingConfig.toolCalling` should have `"tool-calling"` in both `tasks` and `validatedTasks`.
+- A model may list `"tool-calling"` in `tasks` but not in `validatedTasks` — this means the capability is declared but not yet validated.
+
+> **Note:** `tasks` and `validatedTasks` are filterable via the catalog API. `servingConfig` is not filterable — it provides deployment-time configuration only.
+
+#### validatedTasks
+
+An array of task identifiers (from the same vocabulary as `tasks`) that have been validated end-to-end by the catalog provider. When absent or empty, no tasks have been validated for the model.
+
+```yaml
+validatedTasks:
+  - text-generation
+  - question-answering
+```
+
+#### servingConfig
+
+Serving and deployment configuration for the model. Each property represents a distinct configuration concern with its own typed schema. All properties are optional.
+
+Currently, `servingConfig` supports one configuration type:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `toolCalling` | object | No | Tool-calling arguments for this model (see below) |
+
+#### toolCalling (ToolCallingConfig)
+
+Tool-calling arguments for this model. All fields are optional.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `toolCallParser` | string | No | The tool-call parser identifier for the serving runtime |
+| `chatTemplate` | string | No | Path to the chat template file packaged with the model |
+| `enableAutoToolChoice` | boolean | No | Whether to enable automatic tool choice in the serving runtime (default: `true`) |
+| `requiredArgs` | string[] | No | Additional CLI arguments required for tool calling beyond the parser, template, and auto-tool-choice flags. Each entry is a complete argument (e.g., `"--config_format granite"`) |
+
+```yaml
+servingConfig:
+  toolCalling:
+    toolCallParser: granite
+    chatTemplate: opt/app-root/template/tool_chat_template_granite.jinja
+    enableAutoToolChoice: true
+    requiredArgs:
+      - "--config_format granite"
+```
+
+> **Note:** `chatTemplate` is a path to a file packaged alongside the model, not inline template content.
 
 ### Model Artifacts
 
@@ -670,6 +736,9 @@ models:
     tasks:
       - text-generation
       - question-answering
+    validatedTasks:
+      - text-generation
+      - question-answering
     createTimeSinceEpoch: "1737331200000"
     lastUpdateTimeSinceEpoch: "1737331200000"
     customProperties:
@@ -729,6 +798,45 @@ models:
           score_metric:
             string_value: "accuracy_percent"
             metadataType: MetadataStringValue
+```
+
+### Full Model with Tool-Calling Configuration
+
+```yaml
+source: Tool-Capable Models
+models:
+  - name: my-org/function-caller-7b
+    provider: My Organization
+    description: |-
+      A 7B parameter model optimized for tool calling and function execution
+      with structured JSON output.
+    language: ["en"]
+    license: mit
+    licenseLink: https://opensource.org/licenses/MIT
+    libraryName: transformers
+    tasks:
+      - tool-calling
+      - text-generation
+    validatedTasks:
+      - tool-calling
+      - text-generation
+    servingConfig:
+      toolCalling:
+        toolCallParser: granite
+        chatTemplate: opt/app-root/template/tool_chat_template_granite.jinja
+        enableAutoToolChoice: true
+        requiredArgs:
+          - "--config_format granite"
+    createTimeSinceEpoch: "1738368000000"
+    lastUpdateTimeSinceEpoch: "1738368000000"
+    customProperties:
+      model_type:
+        string_value: "agent"
+        metadataType: MetadataStringValue
+    artifacts:
+      - uri: oci://registry.example.com/my-org/function-caller-7b:v1.2
+        createTimeSinceEpoch: "1738368000000"
+        lastUpdateTimeSinceEpoch: "1738368000000"
 ```
 
 ### Full MCP Server with Runtime Metadata
