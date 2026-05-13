@@ -54,6 +54,7 @@ describe('filtersToFilterQuery', () => {
     hardware_configuration = [],
     use_case = [],
     tensor_type = [],
+    validatedTasks = [],
     rps_mean = undefined,
     ttft_mean = undefined,
   }: {
@@ -66,6 +67,7 @@ describe('filtersToFilterQuery', () => {
     use_case?: UseCaseOptionValue[];
     rps_mean?: number;
     tensor_type?: ModelCatalogTensorType[];
+    validatedTasks?: string[];
     ttft_mean?: number;
   }): ModelCatalogFilterStates => ({
     [ModelCatalogStringFilterKey.TASK]: tasks,
@@ -77,6 +79,7 @@ describe('filtersToFilterQuery', () => {
     [ModelCatalogStringFilterKey.USE_CASE]: use_case,
     [ModelCatalogNumberFilterKey.MAX_RPS]: rps_mean,
     [ModelCatalogStringFilterKey.TENSOR_TYPE]: tensor_type,
+    [ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION]: validatedTasks,
     'artifacts.ttft_mean.double_value': ttft_mean,
   });
 
@@ -803,6 +806,7 @@ describe('hasFiltersApplied', () => {
     use_case = [],
     tensor_type = [],
     rps_mean = undefined,
+    validatedTasks = [],
     ttft_mean = undefined,
   }: {
     tasks?: ModelCatalogTask[];
@@ -813,6 +817,7 @@ describe('hasFiltersApplied', () => {
     hardware_configuration?: string[];
     use_case?: UseCaseOptionValue[];
     tensor_type?: ModelCatalogTensorType[];
+    validatedTasks?: string[];
     rps_mean?: number;
     ttft_mean?: number;
   }): ModelCatalogFilterStates => ({
@@ -825,6 +830,7 @@ describe('hasFiltersApplied', () => {
     [ModelCatalogStringFilterKey.USE_CASE]: use_case,
     [ModelCatalogNumberFilterKey.MAX_RPS]: rps_mean,
     [ModelCatalogStringFilterKey.TENSOR_TYPE]: tensor_type,
+    [ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION]: validatedTasks,
     'artifacts.ttft_mean.double_value': ttft_mean,
   });
 

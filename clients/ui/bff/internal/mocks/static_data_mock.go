@@ -1730,6 +1730,13 @@ func GetFilterOptionMocks() map[string]models.FilterOption {
 		},
 	}
 
+	filterOptions["validatedTasks"] = models.FilterOption{
+		Type: FilterOptionTypeString,
+		Values: []interface{}{
+			"tool-calling",
+		},
+	}
+
 	filterOptions["language"] = models.FilterOption{
 		Type: FilterOptionTypeString,
 		Values: []interface{}{

@@ -111,6 +111,10 @@ export const mockCatalogFilterOptionsList = (
         ModelCatalogTensorType.MXFP4,
       ],
     },
+    [ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION]: {
+      type: 'string',
+      values: [ModelCatalogTask.TOOL_CALLING],
+    },
     [ModelCatalogStringFilterKey.HARDWARE_TYPE]: {
       type: 'string',
       values: ['GPU', 'CPU', 'TPU', 'FPGA'],

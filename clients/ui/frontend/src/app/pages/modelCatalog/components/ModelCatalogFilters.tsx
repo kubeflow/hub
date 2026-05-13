@@ -2,16 +2,24 @@ import * as React from 'react';
 import { Stack, Spinner, Alert } from '@patternfly/react-core';
 import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
 import { ModelCatalogStringFilterKey } from '~/concepts/modelCatalog/const';
+import {
+  TempDevFeature,
+  useTempDevFeatureAvailable,
+} from '~/app/hooks/useTempDevFeatureAvailable';
 import ModelPerformanceViewToggleCard from './ModelPerformanceViewToggleCard';
 import TaskFilter from './globalFilters/TaskFilter';
 import ProviderFilter from './globalFilters/ProviderFilter';
 import LicenseFilter from './globalFilters/LicenseFilter';
 import LanguageFilter from './globalFilters/LanguageFilter';
 import TensorTypeFilter from './globalFilters/TensorTypeFilter';
+import ValidatedConfigurationFilter from './globalFilters/ValidatedConfigurationFilter';
 
 const ModelCatalogFilters: React.FC = () => {
   const { filterOptions, filterOptionsLoaded, filterOptionsLoadError } =
     React.useContext(ModelCatalogContext);
+  const toolCallingFeatureAvailable = useTempDevFeatureAvailable(
+    TempDevFeature.ToolCallingConfiguration,
+  );
   const filters = filterOptions?.filters;
   if (!filterOptionsLoaded) {
     return <Spinner />;
@@ -31,6 +39,11 @@ const ModelCatalogFilters: React.FC = () => {
     <Stack hasGutter>
       <ModelPerformanceViewToggleCard />
       <TaskFilter filters={getFilterProps(ModelCatalogStringFilterKey.TASK)} />
+      {toolCallingFeatureAvailable && (
+        <ValidatedConfigurationFilter
+          filters={getFilterProps(ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION)}
+        />
+      )}
       <ProviderFilter filters={getFilterProps(ModelCatalogStringFilterKey.PROVIDER)} />
       <LicenseFilter filters={getFilterProps(ModelCatalogStringFilterKey.LICENSE)} />
       <LanguageFilter filters={getFilterProps(ModelCatalogStringFilterKey.LANGUAGE)} />

@@ -4,6 +4,7 @@ export enum ModelCatalogStringFilterKey {
   LICENSE = 'license',
   LANGUAGE = 'language',
   TENSOR_TYPE = 'tensor_type.string_value',
+  VALIDATED_CONFIGURATION = 'validatedTasks',
   // Performance filter keys use backend format
   HARDWARE_TYPE = 'artifacts.hardware_type.string_value',
   HARDWARE_CONFIGURATION = 'artifacts.hardware_configuration.string_value',
@@ -443,6 +444,7 @@ export const BASIC_FILTER_KEYS: ModelCatalogFilterKey[] = [
   ModelCatalogStringFilterKey.TASK,
   ModelCatalogStringFilterKey.LANGUAGE,
   ModelCatalogStringFilterKey.TENSOR_TYPE,
+  ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION,
 ];
 
 /**
@@ -549,6 +551,7 @@ export const MODEL_CATALOG_FILTER_CATEGORY_NAMES: Record<ModelCatalogFilterKey, 
   [ModelCatalogStringFilterKey.HARDWARE_CONFIGURATION]: 'Hardware',
   [ModelCatalogStringFilterKey.USE_CASE]: 'Workload type',
   [ModelCatalogStringFilterKey.TENSOR_TYPE]: 'Tensor type',
+  [ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION]: 'Validated configuration',
   // Number filter keys
   [ModelCatalogNumberFilterKey.MAX_RPS]: 'Max RPS',
   // Latency field names - all use "Latency" as category name
