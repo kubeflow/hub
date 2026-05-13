@@ -2,10 +2,7 @@ import * as React from 'react';
 import { Stack, Spinner, Alert } from '@patternfly/react-core';
 import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
 import { ModelCatalogStringFilterKey } from '~/concepts/modelCatalog/const';
-import {
-  TempDevFeature,
-  useTempDevFeatureAvailable,
-} from '~/app/hooks/useTempDevFeatureAvailable';
+import { TempDevFeature, useTempDevFeatureAvailable } from '~/app/hooks/useTempDevFeatureAvailable';
 import ModelPerformanceViewToggleCard from './ModelPerformanceViewToggleCard';
 import TaskFilter from './globalFilters/TaskFilter';
 import ProviderFilter from './globalFilters/ProviderFilter';

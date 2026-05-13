@@ -354,13 +354,8 @@ describe('Model Catalog Page', () => {
     window.localStorage.setItem(TempDevFeature.ToolCallingConfiguration, 'true');
     initIntercepts({});
     modelCatalog.visit();
-    modelCatalog
-      .findFilter('Validated configuration')
-      .scrollIntoView()
-      .should('be.visible');
-    modelCatalog
-      .findFilterCheckbox('Validated configuration', 'tool-calling')
-      .should('be.visible');
+    modelCatalog.findFilter('Validated configuration').scrollIntoView().should('be.visible');
+    modelCatalog.findFilterCheckbox('Validated configuration', 'tool-calling').should('be.visible');
   });
 
   it('validated configuration filter checkbox should work', () => {
@@ -379,9 +374,7 @@ describe('Model Catalog Page', () => {
       .click();
 
     cy.wait('@getFilteredModels').then((interception) => {
-      expect(interception.request.url).to.include(
-        'validatedTasks%3D%27tool-calling%27',
-      );
+      expect(interception.request.url).to.include('validatedTasks%3D%27tool-calling%27');
     });
   });
 
