@@ -10,6 +10,8 @@ import {
 import { mockCatalogModelArtifact, mockCatalogModel } from '~/__mocks__';
 import { ModelRegistryMetadataType } from '~/app/types';
 import { MODEL_CATALOG_API_VERSION } from '~/__tests__/cypress/cypress/support/commands/api';
+import { TempDevFeature } from '~/app/hooks/useTempDevFeatureAvailable';
+import { ModelCatalogTask } from '~/concepts/modelCatalog/const';
 
 describe('Model Catalog Details Page', () => {
   beforeEach(() => {
@@ -310,5 +312,70 @@ describe('Model Catalog Details Page - Edge Cases', () => {
     modelCatalog.findBreadcrumb().should('exist');
 
     cy.findByRole('progressbar').should('exist');
+  });
+});
+
+describe('Model Catalog Details Page - Validated Configurations Card', () => {
+  beforeEach(() => {
+    cy.intercept('GET', '/model-registry/api/v1/model_registry*', [
+      mockModelRegistry({ name: 'modelregistry-sample' }),
+    ]).as('getModelRegistries');
+  });
+
+  describe('with feature flag enabled', () => {
+    beforeEach(() => {
+      window.localStorage.setItem(TempDevFeature.ToolCallingConfiguration, 'true');
+      setupValidatedModelIntercepts({});
+      interceptArtifactsList();
+      modelCatalog.visit();
+      modelCatalog.findLoadingState().should('not.exist');
+      modelCatalog.findModelCatalogDetailLink().first().click();
+      modelCatalog.findBreadcrumb().should('exist');
+    });
+
+    it('should display the validated configurations card with tool calling content', () => {
+      modelCatalog.findValidatedConfigurationsCard().should('be.visible');
+      modelCatalog
+        .findValidatedConfigurationsCard()
+        .should('contain.text', 'Validated configurations');
+      modelCatalog.findToolCallingCard().should('be.visible');
+      modelCatalog.findToolCallingCard().should('contain.text', 'Tool Calling');
+    });
+
+    it('should show CLI args inside the tool calling card when expanded', () => {
+      modelCatalog.findToolCallingToggle().click();
+      modelCatalog.findToolCallingCard().should('contain.text', '--enable-auto-tool-choice');
+      modelCatalog.findToolCallingCard().should('contain.text', '--tool-call-parser granite');
+    });
+  });
+
+  describe('with feature flag disabled', () => {
+    it('should not display the validated configurations card', () => {
+      window.localStorage.removeItem(TempDevFeature.ToolCallingConfiguration);
+      setupValidatedModelIntercepts({});
+      interceptArtifactsList();
+      modelCatalog.visit();
+      modelCatalog.findLoadingState().should('not.exist');
+      modelCatalog.findModelCatalogDetailLink().first().click();
+      modelCatalog.findBreadcrumb().should('exist');
+      modelCatalog.findValidatedConfigurationsCard().should('not.exist');
+    });
+  });
+
+  describe('for a non-validated model', () => {
+    it('should not display the validated configurations card', () => {
+      window.localStorage.setItem(TempDevFeature.ToolCallingConfiguration, 'true');
+      setupModelCatalogIntercepts({
+        customNonValidatedModel: mockCatalogModel({
+          name: 'non-validated-model',
+          tasks: [ModelCatalogTask.TEXT_GENERATION],
+        }),
+      });
+      modelCatalog.visit();
+      modelCatalog.findLoadingState().should('not.exist');
+      modelCatalog.findModelCatalogDetailLink().first().click();
+      modelCatalog.findBreadcrumb().should('exist');
+      modelCatalog.findValidatedConfigurationsCard().should('not.exist');
+    });
   });
 });

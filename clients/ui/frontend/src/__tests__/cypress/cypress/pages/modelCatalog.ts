@@ -421,6 +421,19 @@ class ModelCatalog {
     return cy.get('[data-testid^="compression-variant-"]');
   }
 
+  // Validated Configurations Card
+  findValidatedConfigurationsCard() {
+    return cy.findByTestId('validated-configurations-card');
+  }
+
+  findToolCallingCard() {
+    return cy.findByTestId('tool-calling-card');
+  }
+
+  findToolCallingToggle() {
+    return cy.get('#tool-calling-toggle');
+  }
+
   // Performance Empty State
   findPerformanceEmptyState() {
     return cy.findByTestId('performance-empty-state');
