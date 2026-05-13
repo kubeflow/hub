@@ -136,7 +136,7 @@ class ModelCatalog {
   }
 
   findTaskLabel() {
-    return cy.contains('text-generation');
+    return cy.contains('Text generation');
   }
 
   findProviderLabel() {

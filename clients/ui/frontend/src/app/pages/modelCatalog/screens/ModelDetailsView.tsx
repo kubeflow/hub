@@ -3,6 +3,7 @@ import {
   Button,
   Card,
   CardBody,
+  CardExpandableContent,
   CardHeader,
   Content,
   DescriptionList,
@@ -41,9 +42,12 @@ import {
   getModelArtifactUri,
   hasModelArtifacts,
   isModelValidated,
+  hasValidatedToolCalling,
   formatModelTypeDisplay,
 } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
 import { CatalogModelCustomPropertyKey } from '~/concepts/modelCatalog/const';
+import { useTempDevFeatureAvailable, TempDevFeature } from '~/app/hooks/useTempDevFeatureAvailable';
+import CodeBlockComponent from '~/app/shared/markdown/components/CodeBlockComponent';
 
 type ModelDetailsViewProps = {
   model: CatalogModel;
@@ -58,14 +62,13 @@ const ModelDetailsView: React.FC<ModelDetailsViewProps> = ({
   artifactLoaded,
   artifactsLoadError,
 }) => {
-  // Extract all labels from customProperties
   const allLabels = model.customProperties ? getLabels(model.customProperties) : [];
   const isValidated = isModelValidated(model);
+  const isToolCallingEnabled = useTempDevFeatureAvailable(TempDevFeature.ToolCallingConfiguration);
+  const isToolCallingValidated = isToolCallingEnabled && hasValidatedToolCalling(model);
 
-  // Extract validated_on platforms
   const validatedOnPlatforms = getValidatedOnPlatforms(model.customProperties);
 
-  // Extract model type from customProperties
   const modelTypeRaw = model.customProperties
     ? getCustomPropString(model.customProperties, CatalogModelCustomPropertyKey.MODEL_TYPE)
     : null;
@@ -75,7 +78,6 @@ const ModelDetailsView: React.FC<ModelDetailsViewProps> = ({
     [modelTypeRaw],
   );
 
-  // Extract tensor type and size from customProperties
   const tensorType = model.customProperties
     ? getCustomPropString(model.customProperties, CatalogModelCustomPropertyKey.TENSOR_TYPE)
     : '';
@@ -83,11 +85,12 @@ const ModelDetailsView: React.FC<ModelDetailsViewProps> = ({
     ? getCustomPropString(model.customProperties, CatalogModelCustomPropertyKey.SIZE)
     : '';
 
-  // Extract architectures from artifacts with memoization to prevent unnecessary recalculations
   const architectures = React.useMemo(
     () => (artifactLoaded ? getArchitecturesFromArtifacts(artifacts.items) : []),
     [artifactLoaded, artifacts.items],
   );
+
+  const [isToolCallingExpanded, setIsToolCallingExpanded] = React.useState(false);
 
   return (
     <PageSection hasBodyWrapper={false} isFilled padding={{ default: 'noPadding' }}>
@@ -132,124 +135,186 @@ const ModelDetailsView: React.FC<ModelDetailsViewProps> = ({
           </Stack>
         </SidebarContent>
         <SidebarPanel width={{ default: 'width_33' }}>
-          <Card>
-            <CardHeader>
-              <Title headingLevel="h2" size="lg">
-                Model details
-              </Title>
-            </CardHeader>
-            <CardBody>
-              <DescriptionList>
-                <DescriptionListGroup>
-                  <DescriptionListTerm>Labels</DescriptionListTerm>
-                  <DescriptionListDescription>
-                    <ModelCatalogLabels
-                      tasks={model.tasks ?? []}
-                      labels={allLabels.filter((label) => label !== 'validated')}
-                      numLabels={isValidated ? 2 : 3}
-                    />
-                  </DescriptionListDescription>
-                </DescriptionListGroup>
-                <DescriptionListGroup>
-                  <DescriptionListTerm>Model type</DescriptionListTerm>
-                  <DescriptionListDescription data-testid="model-type">
-                    {modelTypeDisplay}
-                  </DescriptionListDescription>
-                </DescriptionListGroup>
-                <DescriptionListGroup>
-                  <DescriptionListTerm>Tensor type</DescriptionListTerm>
-                  <DescriptionListDescription>{tensorType || 'N/A'}</DescriptionListDescription>
-                </DescriptionListGroup>
-                <DescriptionListGroup>
-                  <DescriptionListTerm>Size</DescriptionListTerm>
-                  <DescriptionListDescription>{size || 'N/A'}</DescriptionListDescription>
-                </DescriptionListGroup>
-                <DescriptionListGroup>
-                  <DescriptionListTerm>License</DescriptionListTerm>
-                  <DescriptionListDescription>
-                    <ExternalLink
-                      text="Agreement"
-                      to={model.licenseLink || ''}
-                      testId="model-license-link"
-                    />
-                  </DescriptionListDescription>
-                </DescriptionListGroup>
-                <DescriptionListGroup>
-                  <DescriptionListTerm>Provider</DescriptionListTerm>
-                  <DescriptionListDescription>{model.provider || 'N/A'}</DescriptionListDescription>
-                </DescriptionListGroup>
-                {validatedOnPlatforms.length > 0 && (
-                  <DescriptionListGroup>
-                    <DescriptionListTerm>
-                      Certified platforms{' '}
-                      <Popover bodyContent="The model has been tested and verified to operate correctly on the specified enterprise platforms.">
-                        <Button
-                          variant="plain"
-                          aria-label="More info for validated on"
-                          className="pf-v6-u-p-xs"
-                          icon={<HelpIcon />}
+          <Stack hasGutter>
+            {isToolCallingValidated && (
+              <StackItem>
+                <Card data-testid="validated-configurations-card">
+                  <CardHeader>
+                    <Title headingLevel="h2" size="lg">
+                      Validated configurations
+                    </Title>
+                  </CardHeader>
+                  <CardBody>
+                    <Content component="p" className="pf-v6-u-mb-md">
+                      These configurations have been tested and validated for this model. Use them
+                      as runtime arguments when deploying.
+                    </Content>
+                    <Card
+                      id="tool-calling-card"
+                      isExpanded={isToolCallingExpanded}
+                      data-testid="tool-calling-card"
+                    >
+                      <CardHeader
+                        onExpand={() => setIsToolCallingExpanded((prev) => !prev)}
+                        toggleButtonProps={{
+                          id: 'tool-calling-toggle',
+                          'aria-label': 'Tool Calling',
+                          'aria-expanded': isToolCallingExpanded,
+                        }}
+                      >
+                        <Stack>
+                          <StackItem>
+                            <Title headingLevel="h3" size="md">
+                              Tool Calling
+                            </Title>
+                          </StackItem>
+                          <StackItem>
+                            <Content component="small">
+                              Enables agentic workflows and function calling capabilities.
+                            </Content>
+                          </StackItem>
+                        </Stack>
+                      </CardHeader>
+                      <CardExpandableContent>
+                        <CardBody>
+                          <CodeBlockComponent>
+                            {model.servingConfig?.toolCalling?.args ?? ''}
+                          </CodeBlockComponent>
+                        </CardBody>
+                      </CardExpandableContent>
+                    </Card>
+                  </CardBody>
+                </Card>
+              </StackItem>
+            )}
+            <StackItem>
+              <Card>
+                <CardHeader>
+                  <Title headingLevel="h2" size="lg">
+                    Model details
+                  </Title>
+                </CardHeader>
+                <CardBody>
+                  <DescriptionList>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Labels</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        <ModelCatalogLabels
+                          tasks={model.tasks ?? []}
+                          validatedTasks={isToolCallingEnabled ? model.validatedTasks : undefined}
+                          labels={allLabels.filter((label) => label !== 'validated')}
+                          numLabels={isValidated ? 2 : 3}
                         />
-                      </Popover>
-                    </DescriptionListTerm>
-                    <DescriptionListDescription>
-                      <LabelGroup numLabels={5} isCompact>
-                        {validatedOnPlatforms.map((platform) => (
-                          <Label data-testid="validated-on-label" key={platform} variant="outline">
-                            {platform}
-                          </Label>
-                        ))}
-                      </LabelGroup>
-                    </DescriptionListDescription>
-                  </DescriptionListGroup>
-                )}
-                <DescriptionListGroup>
-                  <DescriptionListTerm>Model location</DescriptionListTerm>
-                  {artifactsLoadError ? (
-                    <Alert variant="danger" isInline title={artifactsLoadError.name}>
-                      {artifactsLoadError.message}
-                    </Alert>
-                  ) : !artifactLoaded ? (
-                    <Spinner size="sm" />
-                  ) : artifacts.items.length > 0 && hasModelArtifacts(artifacts.items) ? (
-                    <DescriptionListDescription>
-                      <InlineTruncatedClipboardCopy
-                        testId="source-image-location"
-                        textToCopy={getModelArtifactUri(artifacts.items) || ''}
-                      />
-                    </DescriptionListDescription>
-                  ) : (
-                    <p className={text.textColorDisabled}>No artifacts available</p>
-                  )}
-                </DescriptionListGroup>
-                {architectures.length > 0 && (
-                  <DescriptionListGroup>
-                    <DescriptionListTerm>Architecture</DescriptionListTerm>
-                    <DescriptionListDescription data-testid="model-architecture">
-                      {architectures.join(', ')}
-                    </DescriptionListDescription>
-                  </DescriptionListGroup>
-                )}
-                <DescriptionListGroup>
-                  <DescriptionListTerm>Last modified</DescriptionListTerm>
-                  <DescriptionListDescription>
-                    <Icon isInline style={{ marginRight: 4 }}>
-                      <OutlinedClockIcon />
-                    </Icon>
-                    <ModelTimestamp timeSinceEpoch={model.lastUpdateTimeSinceEpoch} />
-                  </DescriptionListDescription>
-                </DescriptionListGroup>
-                <DescriptionListGroup>
-                  <DescriptionListTerm>Published</DescriptionListTerm>
-                  <DescriptionListDescription>
-                    <Icon isInline style={{ marginRight: 4 }}>
-                      <OutlinedClockIcon />
-                    </Icon>
-                    <ModelTimestamp timeSinceEpoch={model.createTimeSinceEpoch} />
-                  </DescriptionListDescription>
-                </DescriptionListGroup>
-              </DescriptionList>
-            </CardBody>
-          </Card>
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Model type</DescriptionListTerm>
+                      <DescriptionListDescription data-testid="model-type">
+                        {modelTypeDisplay}
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Tensor type</DescriptionListTerm>
+                      <DescriptionListDescription>{tensorType || 'N/A'}</DescriptionListDescription>
+                    </DescriptionListGroup>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Size</DescriptionListTerm>
+                      <DescriptionListDescription>{size || 'N/A'}</DescriptionListDescription>
+                    </DescriptionListGroup>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>License</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        <ExternalLink
+                          text="Agreement"
+                          to={model.licenseLink || ''}
+                          testId="model-license-link"
+                        />
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Provider</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        {model.provider || 'N/A'}
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+                    {validatedOnPlatforms.length > 0 && (
+                      <DescriptionListGroup>
+                        <DescriptionListTerm>
+                          Certified platforms{' '}
+                          <Popover bodyContent="The model has been tested and verified to operate correctly on the specified enterprise platforms.">
+                            <Button
+                              variant="plain"
+                              aria-label="More info for validated on"
+                              className="pf-v6-u-p-xs"
+                              icon={<HelpIcon />}
+                            />
+                          </Popover>
+                        </DescriptionListTerm>
+                        <DescriptionListDescription>
+                          <LabelGroup numLabels={5} isCompact>
+                            {validatedOnPlatforms.map((platform) => (
+                              <Label
+                                data-testid="validated-on-label"
+                                key={platform}
+                                variant="outline"
+                              >
+                                {platform}
+                              </Label>
+                            ))}
+                          </LabelGroup>
+                        </DescriptionListDescription>
+                      </DescriptionListGroup>
+                    )}
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Model location</DescriptionListTerm>
+                      {artifactsLoadError ? (
+                        <Alert variant="danger" isInline title={artifactsLoadError.name}>
+                          {artifactsLoadError.message}
+                        </Alert>
+                      ) : !artifactLoaded ? (
+                        <Spinner size="sm" />
+                      ) : artifacts.items.length > 0 && hasModelArtifacts(artifacts.items) ? (
+                        <DescriptionListDescription>
+                          <InlineTruncatedClipboardCopy
+                            testId="source-image-location"
+                            textToCopy={getModelArtifactUri(artifacts.items) || ''}
+                          />
+                        </DescriptionListDescription>
+                      ) : (
+                        <p className={text.textColorDisabled}>No artifacts available</p>
+                      )}
+                    </DescriptionListGroup>
+                    {architectures.length > 0 && (
+                      <DescriptionListGroup>
+                        <DescriptionListTerm>Architecture</DescriptionListTerm>
+                        <DescriptionListDescription data-testid="model-architecture">
+                          {architectures.join(', ')}
+                        </DescriptionListDescription>
+                      </DescriptionListGroup>
+                    )}
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Last modified</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        <Icon isInline style={{ marginRight: 4 }}>
+                          <OutlinedClockIcon />
+                        </Icon>
+                        <ModelTimestamp timeSinceEpoch={model.lastUpdateTimeSinceEpoch} />
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Published</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        <Icon isInline style={{ marginRight: 4 }}>
+                          <OutlinedClockIcon />
+                        </Icon>
+                        <ModelTimestamp timeSinceEpoch={model.createTimeSinceEpoch} />
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+                  </DescriptionList>
+                </CardBody>
+              </Card>
+            </StackItem>
+          </Stack>
         </SidebarPanel>
       </Sidebar>
     </PageSection>

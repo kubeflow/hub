@@ -4,6 +4,14 @@ import (
 	"github.com/kubeflow/model-registry/pkg/openapi"
 )
 
+type ToolCallingConfig struct {
+	Args *string `json:"args,omitempty"`
+}
+
+type ServingConfig struct {
+	ToolCalling *ToolCallingConfig `json:"toolCalling,omitempty"`
+}
+
 type CatalogModel struct {
 	CreateTimeSinceEpoch     *string                           `json:"createTimeSinceEpoch,omitempty"`
 	CustomProperties         *map[string]openapi.MetadataValue `json:"customProperties,omitempty"`
@@ -20,6 +28,8 @@ type CatalogModel struct {
 	Readme                   *string                           `json:"readme,omitempty"`
 	SourceId                 *string                           `json:"source_id,omitempty"`
 	Tasks                    []string                          `json:"tasks,omitempty"`
+	ValidatedTasks           []string                          `json:"validatedTasks,omitempty"`
+	ServingConfig            *ServingConfig                    `json:"servingConfig,omitempty"`
 }
 
 type CatalogModelList struct {

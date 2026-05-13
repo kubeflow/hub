@@ -21,6 +21,7 @@ import type { CatalogLabelList, CatalogModel, CatalogSource } from '~/app/modelC
 import type { ModelRegistryCustomProperties } from '~/app/types';
 import { ModelRegistryMetadataType } from '~/app/types';
 import { MODEL_CATALOG_API_VERSION } from '~/__tests__/cypress/cypress/support/commands/api';
+import { ModelCatalogTask } from '~/concepts/modelCatalog/const';
 
 /**
  * Options for setting up model catalog intercepts
@@ -91,22 +92,29 @@ export const createMockModelsForLabel = (
 ): ReturnType<typeof mockCatalogModelList> =>
   mockCatalogModelList({
     items: Array.from({ length: modelsPerCategory }, (_, i) => {
-      const customProperties =
-        i === 0 && useValidatedModel
-          ? ({
-              validated: {
-                metadataType: ModelRegistryMetadataType.STRING,
-                string_value: '',
-              },
-            } as ModelRegistryCustomProperties)
-          : undefined;
-      const name =
-        i === 0 && useValidatedModel ? 'validated-model' : `${label.toLowerCase()}-model-${i + 1}`;
+      const isValidated = i === 0 && useValidatedModel;
+      const customProperties = isValidated
+        ? ({
+            validated: {
+              metadataType: ModelRegistryMetadataType.STRING,
+              string_value: '',
+            },
+          } as ModelRegistryCustomProperties)
+        : undefined;
+      const name = isValidated ? 'validated-model' : `${label.toLowerCase()}-model-${i + 1}`;
 
       return mockCatalogModel({
         name,
         source_id: source.id,
         customProperties,
+        ...(isValidated && {
+          validatedTasks: [ModelCatalogTask.TOOL_CALLING],
+          servingConfig: {
+            toolCalling: {
+              args: '--enable-auto-tool-choice \\\n--tool-call-parser granite \\\n--chat-template\nopt/app-root/template/tool_chat_template_granite.jinja',
+            },
+          },
+        }),
       });
     }),
   });
@@ -150,20 +158,28 @@ export const interceptModelsByLabel = (
 export const interceptAllModels = (modelsPerCategory: number, useValidatedModel: boolean): void => {
   const allModelsResponse = mockCatalogModelList({
     items: Array.from({ length: modelsPerCategory }, (_, i) => {
-      const customProperties =
-        i === 0 && useValidatedModel
-          ? ({
-              validated: {
-                metadataType: ModelRegistryMetadataType.STRING,
-                string_value: '',
-              },
-            } as ModelRegistryCustomProperties)
-          : undefined;
-      const name = i === 0 && useValidatedModel ? 'validated-model' : `all-models-model-${i + 1}`;
+      const isValidated = i === 0 && useValidatedModel;
+      const customProperties = isValidated
+        ? ({
+            validated: {
+              metadataType: ModelRegistryMetadataType.STRING,
+              string_value: '',
+            },
+          } as ModelRegistryCustomProperties)
+        : undefined;
+      const name = isValidated ? 'validated-model' : `all-models-model-${i + 1}`;
       return mockCatalogModel({
         name,
         source_id: 'sample-source',
         customProperties,
+        ...(isValidated && {
+          validatedTasks: [ModelCatalogTask.TOOL_CALLING],
+          servingConfig: {
+            toolCalling: {
+              args: '--enable-auto-tool-choice \\\n--tool-call-parser granite \\\n--chat-template\nopt/app-root/template/tool_chat_template_granite.jinja',
+            },
+          },
+        }),
       });
     }),
   });

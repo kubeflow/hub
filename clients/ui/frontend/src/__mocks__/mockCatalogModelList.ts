@@ -1,6 +1,7 @@
 /* eslint-disable camelcase */
 import { CatalogModel, CatalogModelList } from '~/app/modelCatalogTypes';
 import { ModelRegistryMetadataType } from '~/app/types';
+import { ModelCatalogTask } from '~/concepts/modelCatalog/const';
 
 export const mockCatalogModel = (partial?: Partial<CatalogModel>): CatalogModel => ({
   source_id: 'sample-source',
@@ -373,7 +374,8 @@ export const mockCatalogModelList = (partial?: Partial<CatalogModelList>): Catal
 // Mock models for testing
 export const mockValidatedModel = mockCatalogModel({
   name: 'validated-model',
-  tasks: ['text-generation'],
+  tasks: [ModelCatalogTask.TEXT_GENERATION, ModelCatalogTask.TOOL_CALLING],
+  validatedTasks: [ModelCatalogTask.TOOL_CALLING],
   customProperties: {
     model_type: {
       metadataType: ModelRegistryMetadataType.STRING,
@@ -382,6 +384,11 @@ export const mockValidatedModel = mockCatalogModel({
     validated: {
       metadataType: ModelRegistryMetadataType.STRING,
       string_value: '',
+    },
+  },
+  servingConfig: {
+    toolCalling: {
+      args: '--enable-auto-tool-choice \\\n--tool-call-parser granite \\\n--chat-template\nopt/app-root/template/tool_chat_template_granite.jinja',
     },
   },
 });

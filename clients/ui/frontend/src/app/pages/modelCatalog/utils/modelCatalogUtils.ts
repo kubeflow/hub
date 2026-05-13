@@ -33,6 +33,7 @@ import {
   SortField,
   CatalogModelCustomPropertyKey,
   ModelType,
+  ModelCatalogTask,
 } from '~/concepts/modelCatalog/const';
 import { isSourceStatusWithModels } from '~/concepts/modelCatalogSettings/const';
 import { ModelRegistryCustomProperties, ModelRegistryMetadataType } from '~/app/types';
@@ -187,6 +188,10 @@ export const shouldShowValidatedInsights = (
   model: CatalogModel,
   artifacts: CatalogArtifacts[],
 ): boolean => isModelValidated(model) && hasPerformanceArtifacts(artifacts);
+
+export const hasValidatedToolCalling = (model: CatalogModel): boolean =>
+  model.validatedTasks?.includes(ModelCatalogTask.TOOL_CALLING) === true &&
+  model.servingConfig?.toolCalling != null;
 
 export const useCatalogStringFilterState = <K extends ModelCatalogStringFilterKey>(
   filterKey: K,

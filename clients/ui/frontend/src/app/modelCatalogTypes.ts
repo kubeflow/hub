@@ -35,6 +35,14 @@ export type CatalogSource = {
 
 export type CatalogSourceList = PaginationParams & { items?: CatalogSource[] };
 
+export type ToolCallingConfig = {
+  args?: string;
+};
+
+export type ServingConfig = {
+  toolCalling?: ToolCallingConfig;
+};
+
 export type CatalogModel = {
   source_id?: string;
   name: string;
@@ -44,6 +52,7 @@ export type CatalogModel = {
   language?: string[];
   logo?: string;
   tasks?: string[];
+  validatedTasks?: string[];
   libraryName?: string;
   license?: string;
   licenseLink?: string;
@@ -51,6 +60,7 @@ export type CatalogModel = {
   createTimeSinceEpoch?: string;
   lastUpdateTimeSinceEpoch?: string;
   customProperties?: ModelRegistryCustomProperties;
+  servingConfig?: ServingConfig;
 };
 
 export type PaginationParams = {

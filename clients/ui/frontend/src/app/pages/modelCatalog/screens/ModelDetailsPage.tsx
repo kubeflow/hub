@@ -17,7 +17,7 @@ import {
   Skeleton,
   Label,
 } from '@patternfly/react-core';
-import { ChartBarIcon } from '@patternfly/react-icons';
+import { CheckCircleIcon } from '@patternfly/react-icons';
 import { ApplicationsPage } from 'mod-arch-shared';
 import {
   decodeParams,
@@ -43,7 +43,6 @@ const ModelDetailsPage: React.FC<ModelDetailsPageProps> = ({ tab }) => {
   const params = useParams<CatalogModelDetailsParams>();
   const decodedParams = decodeParams(params);
   const navigate = useNavigate();
-
   const state = useCatalogModel(
     decodedParams.sourceId || '',
     encodeURIComponent(`${decodedParams.modelName}`),
@@ -148,7 +147,12 @@ const ModelDetailsPage: React.FC<ModelDetailsPageProps> = ({ tab }) => {
                     <FlexItem>{getModelName(model.name)}</FlexItem>
                     {isModelValidated(model) && (
                       <Popover bodyContent={MODEL_CATALOG_POPOVER_MESSAGES.VALIDATED}>
-                        <Label color="purple" isClickable icon={<ChartBarIcon />}>
+                        <Label
+                          variant="outline"
+                          isClickable
+                          status="success"
+                          icon={<CheckCircleIcon />}
+                        >
                           Validated
                         </Label>
                       </Popover>

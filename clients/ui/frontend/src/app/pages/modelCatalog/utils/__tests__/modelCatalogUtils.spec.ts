@@ -38,6 +38,7 @@ import {
   getModelName,
   getCatalogModelTypePropertyForRegistration,
   getActiveSourceLabels,
+  hasValidatedToolCalling,
 } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
 import { mockCatalogModelArtifact } from '~/__mocks__/mockCatalogModelArtifactList';
 import { ModelRegistryMetadataType } from '~/app/types';
@@ -1652,5 +1653,59 @@ describe('getActiveSourceLabels', () => {
 
     const result = getActiveSourceLabels(sources, catalogLabels);
     expect(result).toEqual(['Red Hat', 'Partner', 'Community']);
+  });
+});
+
+describe('hasValidatedToolCalling', () => {
+  it('should return true when model has tool-calling in validatedTasks and servingConfig.toolCalling', () => {
+    expect(
+      hasValidatedToolCalling({
+        name: 'test-model',
+        validatedTasks: [ModelCatalogTask.TOOL_CALLING],
+        servingConfig: { toolCalling: { args: '--some-args' } },
+      }),
+    ).toBe(true);
+  });
+
+  it('should return false when validatedTasks is missing', () => {
+    expect(
+      hasValidatedToolCalling({
+        name: 'test-model',
+        servingConfig: { toolCalling: { args: '--some-args' } },
+      }),
+    ).toBe(false);
+  });
+
+  it('should return false when validatedTasks does not include tool-calling', () => {
+    expect(
+      hasValidatedToolCalling({
+        name: 'test-model',
+        validatedTasks: ['text-generation'],
+        servingConfig: { toolCalling: { args: '--some-args' } },
+      }),
+    ).toBe(false);
+  });
+
+  it('should return false when servingConfig is missing', () => {
+    expect(
+      hasValidatedToolCalling({
+        name: 'test-model',
+        validatedTasks: [ModelCatalogTask.TOOL_CALLING],
+      }),
+    ).toBe(false);
+  });
+
+  it('should return false when servingConfig.toolCalling is missing', () => {
+    expect(
+      hasValidatedToolCalling({
+        name: 'test-model',
+        validatedTasks: [ModelCatalogTask.TOOL_CALLING],
+        servingConfig: {},
+      }),
+    ).toBe(false);
+  });
+
+  it('should return false when both validatedTasks and servingConfig are missing', () => {
+    expect(hasValidatedToolCalling({ name: 'test-model' })).toBe(false);
   });
 });
