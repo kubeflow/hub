@@ -70,3 +70,5 @@ patches:
             capabilities:
               drop:
                 - ALL
+
+namespace: kubeflow

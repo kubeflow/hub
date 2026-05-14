@@ -41,3 +41,5 @@ replacements:
       kind: Deployment
       name: model-registry-deployment
       version: v1
+
+namespace: kubeflow
