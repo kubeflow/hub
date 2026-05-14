@@ -174,6 +174,10 @@ describe('filtersToFilterQuery', () => {
           ModelCatalogTensorType.MXFP4,
         ],
       },
+      [ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION]: {
+        type: 'string',
+        values: ['tool-calling', 'text-generation', 'question-answering'],
+      },
       [ModelCatalogStringFilterKey.HARDWARE_TYPE]: {
         type: 'string',
         values: ['GPU', 'CPU', 'TPU', 'FPGA'],
@@ -351,6 +355,38 @@ describe('filtersToFilterQuery', () => {
         ),
       ).toBe(
         "tasks='text-to-text' AND provider='Google' AND tensor_type.string_value IN ('FP16','INT8')",
+      );
+    });
+  });
+
+  describe('match-all (AND logic) filters', () => {
+    it('handles a single validated configuration value', () => {
+      expect(
+        filtersToFilterQuery(mockFormData({ validatedTasks: ['tool-calling'] }), mockFilterOptions),
+      ).toBe("validatedTasks='tool-calling'");
+    });
+
+    it('handles multiple validated configuration values with AND logic instead of IN', () => {
+      expect(
+        filtersToFilterQuery(
+          mockFormData({ validatedTasks: ['tool-calling', 'text-generation'] }),
+          mockFilterOptions,
+        ),
+      ).toBe("validatedTasks='tool-calling' AND validatedTasks='text-generation'");
+    });
+
+    it('handles validated configuration combined with other OR-logic filters', () => {
+      expect(
+        filtersToFilterQuery(
+          mockFormData({
+            tasks: [ModelCatalogTask.TEXT_TO_TEXT, ModelCatalogTask.IMAGE_TO_TEXT],
+            validatedTasks: ['tool-calling', 'text-generation'],
+            provider: [ModelCatalogProvider.GOOGLE],
+          }),
+          mockFilterOptions,
+        ),
+      ).toBe(
+        "tasks IN ('text-to-text','image-to-text') AND provider='Google' AND validatedTasks='tool-calling' AND validatedTasks='text-generation'",
       );
     });
   });

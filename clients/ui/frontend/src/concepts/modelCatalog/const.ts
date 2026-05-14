@@ -185,6 +185,14 @@ export const MODEL_CATALOG_TASK_NAME_MAPPING = {
   [ModelCatalogTask.VIDEO_TO_TEXT]: 'Video-to-text',
 };
 
+export enum ValidatedConfiguration {
+  TOOL_CALLING = 'tool-calling',
+}
+
+export const MODEL_CATALOG_VALIDATED_CONFIGURATION_NAME_MAPPING: Record<string, string> = {
+  [ValidatedConfiguration.TOOL_CALLING]: 'Tool calling',
+};
+
 export const MODEL_CATALOG_TASK_DESCRIPTION = {
   [ModelCatalogTask.AUDIO_TO_TEXT]: 'Audio transcription and speech recognition models',
   [ModelCatalogTask.IMAGE_TEXT_TO_TEXT]: 'Multimodal models that process both images and text',
@@ -444,6 +452,16 @@ export const BASIC_FILTER_KEYS: ModelCatalogFilterKey[] = [
   ModelCatalogStringFilterKey.TASK,
   ModelCatalogStringFilterKey.LANGUAGE,
   ModelCatalogStringFilterKey.TENSOR_TYPE,
+  ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION,
+];
+
+/**
+ * Filters that use AND logic when multiple values are selected.
+ * Standard filters use OR (IN operator): items matching ANY selected value.
+ * AND filters require items to match ALL selected values.
+ * Add a filter key here to switch it from OR to AND behavior.
+ */
+export const MATCH_ALL_FILTER_KEYS: ModelCatalogStringFilterKey[] = [
   ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION,
 ];
 

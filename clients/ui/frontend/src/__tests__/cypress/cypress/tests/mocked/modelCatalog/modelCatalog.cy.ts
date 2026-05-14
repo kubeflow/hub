@@ -19,6 +19,7 @@ import { mockCatalogFilterOptionsList } from '~/__mocks__/mockCatalogFilterOptio
 import { SourceLabel, type CatalogSource } from '~/app/modelCatalogTypes';
 import { ModelRegistryMetadataType } from '~/app/types';
 import { TempDevFeature } from '~/app/hooks/useTempDevFeatureAvailable';
+import { ModelCatalogStringFilterKey } from '~/concepts/modelCatalog/const';
 
 type FilteredModelsInterceptConfig = {
   returnModelsForFilters?: boolean;
@@ -350,57 +351,128 @@ describe('Model Catalog Page', () => {
     modelCatalog.findFilter('Validated configuration').should('not.exist');
   });
 
-  it('should display validated configuration filter when feature flag is on', () => {
-    window.localStorage.setItem(TempDevFeature.ToolCallingConfiguration, 'true');
-    initIntercepts({});
-    modelCatalog.visit();
-    modelCatalog.findFilter('Validated configuration').scrollIntoView().should('be.visible');
-    modelCatalog.findFilterCheckbox('Validated configuration', 'tool-calling').should('be.visible');
-  });
-
-  it('validated configuration filter checkbox should work', () => {
-    window.localStorage.setItem(TempDevFeature.ToolCallingConfiguration, 'true');
-    initIntercepts({ includeAllModelsIntercept: true });
-
-    setupFilteredModelsIntercept({
-      returnModelsForFilters: true,
-      modelsToReturn: [mockCatalogModel({})],
+  describe('Validated Configuration Filter (feature flag on)', () => {
+    beforeEach(() => {
+      window.localStorage.setItem(TempDevFeature.ToolCallingConfiguration, 'true');
     });
 
-    modelCatalog.visit();
-    modelCatalog
-      .findFilterCheckbox('Validated configuration', 'tool-calling')
-      .scrollIntoView()
-      .click();
-
-    cy.wait('@getFilteredModels').then((interception) => {
-      expect(interception.request.url).to.include('validatedTasks%3D%27tool-calling%27');
-    });
-  });
-
-  it('validated configuration filter combined with other filters should work', () => {
-    window.localStorage.setItem(TempDevFeature.ToolCallingConfiguration, 'true');
-
-    initIntercepts({ includeAllModelsIntercept: true });
-
-    setupFilteredModelsIntercept({
-      returnModelsForFilters: true,
-      modelsToReturn: [mockCatalogModel({})],
+    it('should display filter and checkbox', () => {
+      initIntercepts({});
+      modelCatalog.visit();
+      modelCatalog.findFilter('Validated configuration').scrollIntoView().should('be.visible');
+      modelCatalog
+        .findFilterCheckbox('Validated configuration', 'tool-calling')
+        .should('be.visible');
     });
 
-    modelCatalog.visit();
-    modelCatalog
-      .findFilterCheckbox('Validated configuration', 'tool-calling')
-      .scrollIntoView()
-      .click();
-    cy.wait('@getFilteredModels');
+    it('checkbox should filter models', () => {
+      initIntercepts({ includeAllModelsIntercept: true });
+      setupFilteredModelsIntercept({
+        returnModelsForFilters: true,
+        modelsToReturn: [mockCatalogModel({})],
+      });
 
-    modelCatalog.findFilterCheckbox('Provider', 'Google').click();
+      modelCatalog.visit();
+      modelCatalog
+        .findFilterCheckbox('Validated configuration', 'tool-calling')
+        .scrollIntoView()
+        .click();
 
-    cy.wait('@getFilteredModels').then((interception) => {
-      const { url } = interception.request;
-      expect(url).to.include('validatedTasks%3D%27tool-calling%27');
-      expect(url).to.include('provider%3D%27Google%27');
+      cy.wait('@getFilteredModels').then((interception) => {
+        expect(interception.request.url).to.include('validatedTasks%3D%27tool-calling%27');
+      });
+    });
+
+    it('should work combined with other filters', () => {
+      initIntercepts({ includeAllModelsIntercept: true });
+      setupFilteredModelsIntercept({
+        returnModelsForFilters: true,
+        modelsToReturn: [mockCatalogModel({})],
+      });
+
+      modelCatalog.visit();
+      modelCatalog
+        .findFilterCheckbox('Validated configuration', 'tool-calling')
+        .scrollIntoView()
+        .click();
+      cy.wait('@getFilteredModels');
+
+      modelCatalog.findFilterCheckbox('Provider', 'Google').click();
+
+      cy.wait('@getFilteredModels').then((interception) => {
+        const { url } = interception.request;
+        expect(url).to.include('validatedTasks%3D%27tool-calling%27');
+        expect(url).to.include('provider%3D%27Google%27');
+      });
+    });
+
+    it('should not show helper text when only one option exists', () => {
+      initIntercepts({});
+      modelCatalog.visit();
+      modelCatalog
+        .findFilterCheckbox('Validated configuration', 'tool-calling')
+        .scrollIntoView()
+        .click();
+      cy.contains('Showing models with all selected configurations').should('not.exist');
+    });
+
+    describe('with multiple options', () => {
+      const multiOptionFilterOptions = mockCatalogFilterOptionsList({
+        filters: {
+          ...mockCatalogFilterOptionsList().filters,
+          [ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION]: {
+            type: 'string',
+            values: ['tool-calling', 'text-generation', 'question-answering'],
+          },
+        },
+      });
+
+      const initMultiOptionIntercepts = (props: HandlersProps) => {
+        initIntercepts(props);
+        cy.interceptApi(
+          `GET /api/:apiVersion/model_catalog/models/filter_options`,
+          {
+            path: { apiVersion: MODEL_CATALOG_API_VERSION },
+            query: { namespace: 'kubeflow' },
+          },
+          multiOptionFilterOptions,
+        );
+      };
+
+      it('should show helper text when an option is selected', () => {
+        initMultiOptionIntercepts({});
+        modelCatalog.visit();
+        modelCatalog
+          .findFilterCheckbox('Validated configuration', 'tool-calling')
+          .scrollIntoView()
+          .click();
+        cy.contains('Showing models with all selected configurations').should('be.visible');
+      });
+
+      it('should send AND conditions instead of IN for multiple selections', () => {
+        initMultiOptionIntercepts({ includeAllModelsIntercept: true });
+        setupFilteredModelsIntercept({
+          returnModelsForFilters: true,
+          modelsToReturn: [mockCatalogModel({})],
+        });
+
+        modelCatalog.visit();
+        modelCatalog
+          .findFilterCheckbox('Validated configuration', 'tool-calling')
+          .scrollIntoView()
+          .click();
+        cy.wait('@getFilteredModels');
+
+        modelCatalog.findFilterCheckbox('Validated configuration', 'text-generation').click();
+
+        cy.wait('@getFilteredModels').then((interception) => {
+          const { url } = interception.request;
+          expect(url).to.include('validatedTasks%3D%27tool-calling%27');
+          expect(url).to.include('AND');
+          expect(url).to.include('validatedTasks%3D%27text-generation%27');
+          expect(url).to.not.include('IN');
+        });
+      });
     });
   });
 });

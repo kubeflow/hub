@@ -1,9 +1,10 @@
 import * as React from 'react';
-import { Divider, StackItem } from '@patternfly/react-core';
+import { Content, ContentVariants, Divider, StackItem } from '@patternfly/react-core';
 import ModelCatalogStringFilter from '~/app/pages/modelCatalog/components/ModelCatalogStringFilter';
+import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
 import {
   ModelCatalogStringFilterKey,
-  MODEL_CATALOG_TASK_NAME_MAPPING,
+  MODEL_CATALOG_VALIDATED_CONFIGURATION_NAME_MAPPING,
 } from '~/concepts/modelCatalog/const';
 import { CatalogFilterOptions, ModelCatalogStringFilterOptions } from '~/app/modelCatalogTypes';
 
@@ -14,7 +15,11 @@ type ValidatedConfigurationFilterProps = {
 };
 
 const ValidatedConfigurationFilter: React.FC<ValidatedConfigurationFilterProps> = ({ filters }) => {
+  const { filterData } = React.useContext(ModelCatalogContext);
   const validatedConfiguration = filters?.[filterKey];
+  const filterValues = validatedConfiguration?.values ?? [];
+  const hasMultipleOptions = filterValues.length > 1;
+  const hasSelection = filterData[filterKey].length > 0;
 
   if (!validatedConfiguration) {
     return null;
@@ -26,9 +31,14 @@ const ValidatedConfigurationFilter: React.FC<ValidatedConfigurationFilterProps> 
         <ModelCatalogStringFilter<ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION>
           title="Validated configuration"
           filterKey={filterKey}
-          filterToNameMapping={MODEL_CATALOG_TASK_NAME_MAPPING}
+          filterToNameMapping={MODEL_CATALOG_VALIDATED_CONFIGURATION_NAME_MAPPING}
           filters={validatedConfiguration}
         />
+        {hasMultipleOptions && hasSelection && (
+          <Content component={ContentVariants.small} className="pf-v6-u-mt-sm">
+            Showing models with all selected configurations
+          </Content>
+        )}
       </StackItem>
       <Divider />
     </>
