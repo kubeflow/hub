@@ -21,7 +21,7 @@ import type { CatalogLabelList, CatalogModel, CatalogSource } from '~/app/modelC
 import type { ModelRegistryCustomProperties } from '~/app/types';
 import { ModelRegistryMetadataType } from '~/app/types';
 import { MODEL_CATALOG_API_VERSION } from '~/__tests__/cypress/cypress/support/commands/api';
-import { ModelCatalogTask } from '~/concepts/modelCatalog/const';
+import { ValidatedConfiguration } from '~/concepts/modelCatalog/const';
 
 /**
  * Options for setting up model catalog intercepts
@@ -108,7 +108,7 @@ export const createMockModelsForLabel = (
         source_id: source.id,
         customProperties,
         ...(isValidated && {
-          validatedTasks: [ModelCatalogTask.TOOL_CALLING],
+          validatedTasks: [ValidatedConfiguration.TOOL_CALLING],
           servingConfig: {
             toolCalling: {
               args: '--enable-auto-tool-choice \\\n--tool-call-parser granite \\\n--chat-template\nopt/app-root/template/tool_chat_template_granite.jinja',
@@ -173,7 +173,7 @@ export const interceptAllModels = (modelsPerCategory: number, useValidatedModel:
         source_id: 'sample-source',
         customProperties,
         ...(isValidated && {
-          validatedTasks: [ModelCatalogTask.TOOL_CALLING],
+          validatedTasks: [ValidatedConfiguration.TOOL_CALLING],
           servingConfig: {
             toolCalling: {
               args: '--enable-auto-tool-choice \\\n--tool-call-parser granite \\\n--chat-template\nopt/app-root/template/tool_chat_template_granite.jinja',

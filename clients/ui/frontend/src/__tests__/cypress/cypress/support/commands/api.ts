@@ -15,6 +15,7 @@ import type {
 import type {
   CatalogFilterOptionsList,
   CatalogArtifactList,
+  CatalogLabelList,
   CatalogModel,
   CatalogModelList,
   CatalogSourceList,
@@ -191,6 +192,11 @@ declare global {
           type: 'POST /api/:apiVersion/model_registry/:modelRegistryName/model_transfer_jobs',
           options: { path: { modelRegistryName: string; apiVersion: string } },
           response: ApiResponse<ModelTransferJob>,
+        ) => Cypress.Chainable<null>) &
+        ((
+          type: 'GET /api/:apiVersion/model_catalog/labels',
+          options: { path: { apiVersion: string } },
+          response: ApiResponse<CatalogLabelList>,
         ) => Cypress.Chainable<null>) &
         ((
           type: 'GET /api/:apiVersion/mcp_catalog/mcp_servers',

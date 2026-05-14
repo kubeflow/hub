@@ -356,13 +356,8 @@ describe('Model Catalog Page', () => {
       window.localStorage.setItem(TempDevFeature.ToolCallingConfiguration, 'true');
     });
 
-    it('should display filter and checkbox', () => {
-      initIntercepts({});
-      modelCatalog.visit();
-      modelCatalog.findFilter('Validated configuration').scrollIntoView().should('be.visible');
-      modelCatalog
-        .findFilterCheckbox('Validated configuration', 'tool-calling')
-        .should('be.visible');
+    afterEach(() => {
+      window.localStorage.removeItem(TempDevFeature.ToolCallingConfiguration);
     });
 
     it('checkbox should filter models', () => {

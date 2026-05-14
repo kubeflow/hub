@@ -12,11 +12,18 @@ import TensorTypeFilter from './globalFilters/TensorTypeFilter';
 import ValidatedConfigurationFilter from './globalFilters/ValidatedConfigurationFilter';
 
 const ModelCatalogFilters: React.FC = () => {
-  const { filterOptions, filterOptionsLoaded, filterOptionsLoadError } =
+  const { filterOptions, filterOptionsLoaded, filterOptionsLoadError, setFilterData } =
     React.useContext(ModelCatalogContext);
   const toolCallingFeatureAvailable = useTempDevFeatureAvailable(
     TempDevFeature.ToolCallingConfiguration,
   );
+
+  React.useEffect(() => {
+    if (!toolCallingFeatureAvailable) {
+      setFilterData(ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION, []);
+    }
+  }, [toolCallingFeatureAvailable, setFilterData]);
+
   const filters = filterOptions?.filters;
   if (!filterOptionsLoaded) {
     return <Spinner />;

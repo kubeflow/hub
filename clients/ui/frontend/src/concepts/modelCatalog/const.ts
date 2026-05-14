@@ -189,7 +189,10 @@ export enum ValidatedConfiguration {
   TOOL_CALLING = 'tool-calling',
 }
 
-export const MODEL_CATALOG_VALIDATED_CONFIGURATION_NAME_MAPPING: Record<string, string> = {
+export const MODEL_CATALOG_VALIDATED_CONFIGURATION_NAME_MAPPING: Record<
+  ValidatedConfiguration,
+  string
+> = {
   [ValidatedConfiguration.TOOL_CALLING]: 'Tool calling',
 };
 
