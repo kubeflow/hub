@@ -12,17 +12,22 @@ import TensorTypeFilter from './globalFilters/TensorTypeFilter';
 import ValidatedConfigurationFilter from './globalFilters/ValidatedConfigurationFilter';
 
 const ModelCatalogFilters: React.FC = () => {
-  const { filterOptions, filterOptionsLoaded, filterOptionsLoadError, setFilterData } =
+  const { filterOptions, filterOptionsLoaded, filterOptionsLoadError, filterData, setFilterData } =
     React.useContext(ModelCatalogContext);
   const toolCallingFeatureAvailable = useTempDevFeatureAvailable(
     TempDevFeature.ToolCallingConfiguration,
   );
 
   React.useEffect(() => {
-    if (!toolCallingFeatureAvailable) {
+    if (
+      !toolCallingFeatureAvailable &&
+      filterData[ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION].length > 0
+    ) {
       setFilterData(ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION, []);
     }
-  }, [toolCallingFeatureAvailable, setFilterData]);
+    // Only react to flag changes, not filterData changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toolCallingFeatureAvailable]);
 
   const filters = filterOptions?.filters;
   if (!filterOptionsLoaded) {
