@@ -88,8 +88,7 @@ export const getProperties = <T extends ModelRegistryCustomProperties>(
 ): ModelRegistryEditableCustomProperties => {
   const initial: ModelRegistryEditableCustomProperties = {};
   return Object.keys(customProperties).reduce((acc, key) => {
-    // _lastModified is a property that is required to update the timestamp on the backend and we have a workaround for it. It should be resolved by
-    // backend team
+    // _lastModified was used by a previous workaround and may still exist on older models; filter it out so users don't see it
     if (
       key === '_lastModified' ||
       key === CatalogModelCustomPropertyKey.MODEL_TYPE ||

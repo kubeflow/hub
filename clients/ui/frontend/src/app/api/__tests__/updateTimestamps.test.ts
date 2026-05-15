@@ -1,11 +1,5 @@
 import { mockModelVersion, mockRegisteredModel } from '~/__mocks__';
-import {
-  ModelRegistryAPIs,
-  ModelState,
-  ModelRegistryMetadataType,
-  ModelVersion,
-  RegisteredModel,
-} from '~/app/types';
+import { ModelRegistryAPIs, ModelState, ModelVersion, RegisteredModel } from '~/app/types';
 import {
   bumpModelVersionTimestamp,
   bumpRegisteredModelTimestamp,
@@ -36,10 +30,6 @@ describe('updateTimestamps', () => {
   const fakeModelVersionId = 'test-model-version-id';
   const fakeRegisteredModelId = 'test-registered-model-id';
 
-  beforeEach(() => {
-    jest.spyOn(Date.prototype, 'toISOString').mockReturnValue('2024-01-01T00:00:00.000Z');
-  });
-
   describe('bumpModelVersionTimestamp', () => {
     it('should successfully update model version timestamp', async () => {
       await bumpModelVersionTimestamp(mockApi, mockModelVersion({ id: fakeModelVersionId }));
@@ -48,59 +38,6 @@ describe('updateTimestamps', () => {
         {},
         {
           state: ModelState.LIVE,
-          customProperties: {
-            _lastModified: {
-              metadataType: ModelRegistryMetadataType.STRING,
-              // eslint-disable-next-line camelcase
-              string_value: '2024-01-01T00:00:00.000Z',
-            },
-          },
-        },
-        fakeModelVersionId,
-      );
-    });
-
-    it('should successfully update model version timestamp with customProperties of version', async () => {
-      await bumpModelVersionTimestamp(
-        mockApi,
-        mockModelVersion({
-          id: fakeModelVersionId,
-          customProperties: {
-            'Registered from': {
-              // eslint-disable-next-line camelcase
-              string_value: 'Model catalog',
-              metadataType: ModelRegistryMetadataType.STRING,
-            },
-            'Source model': {
-              // eslint-disable-next-line camelcase
-              string_value: 'test',
-              metadataType: ModelRegistryMetadataType.STRING,
-            },
-          },
-        }),
-      );
-
-      expect(mockApi.patchModelVersion).toHaveBeenCalledWith(
-        {},
-        {
-          state: ModelState.LIVE,
-          customProperties: {
-            'Registered from': {
-              // eslint-disable-next-line camelcase
-              string_value: 'Model catalog',
-              metadataType: ModelRegistryMetadataType.STRING,
-            },
-            'Source model': {
-              // eslint-disable-next-line camelcase
-              string_value: 'test',
-              metadataType: ModelRegistryMetadataType.STRING,
-            },
-            _lastModified: {
-              metadataType: ModelRegistryMetadataType.STRING,
-              // eslint-disable-next-line camelcase
-              string_value: '2024-01-01T00:00:00.000Z',
-            },
-          },
         },
         fakeModelVersionId,
       );
@@ -125,52 +62,6 @@ describe('updateTimestamps', () => {
   });
 
   describe('bumpRegisteredModelTimestamp', () => {
-    it('should successfully update registered model timestamp with model customProperties', async () => {
-      await bumpRegisteredModelTimestamp(
-        mockApi,
-        mockRegisteredModel({
-          id: fakeRegisteredModelId,
-          customProperties: {
-            'Registered from': {
-              // eslint-disable-next-line camelcase
-              string_value: 'Model catalog',
-              metadataType: ModelRegistryMetadataType.STRING,
-            },
-            'Source model': {
-              // eslint-disable-next-line camelcase
-              string_value: 'test',
-              metadataType: ModelRegistryMetadataType.STRING,
-            },
-          },
-        }),
-      );
-
-      expect(mockApi.patchRegisteredModel).toHaveBeenCalledWith(
-        {},
-        {
-          state: ModelState.LIVE,
-          customProperties: {
-            'Registered from': {
-              // eslint-disable-next-line camelcase
-              string_value: 'Model catalog',
-              metadataType: ModelRegistryMetadataType.STRING,
-            },
-            'Source model': {
-              // eslint-disable-next-line camelcase
-              string_value: 'test',
-              metadataType: ModelRegistryMetadataType.STRING,
-            },
-            _lastModified: {
-              metadataType: ModelRegistryMetadataType.STRING,
-              // eslint-disable-next-line camelcase
-              string_value: '2024-01-01T00:00:00.000Z',
-            },
-          },
-        },
-        fakeRegisteredModelId,
-      );
-    });
-
     it('should successfully update registered model timestamp', async () => {
       await bumpRegisteredModelTimestamp(
         mockApi,
@@ -183,13 +74,6 @@ describe('updateTimestamps', () => {
         {},
         {
           state: ModelState.LIVE,
-          customProperties: {
-            _lastModified: {
-              metadataType: ModelRegistryMetadataType.STRING,
-              // eslint-disable-next-line camelcase
-              string_value: '2024-01-01T00:00:00.000Z',
-            },
-          },
         },
         fakeRegisteredModelId,
       );
@@ -234,49 +118,6 @@ describe('updateTimestamps', () => {
           id: fakeRegisteredModelId,
         }),
         mockModelVersion({ id: fakeModelVersionId }),
-      );
-
-      expect(mockApi.patchModelVersion).toHaveBeenCalled();
-      expect(mockApi.patchRegisteredModel).toHaveBeenCalled();
-    });
-
-    it('should update both timestamps successfully with both model and version customProperties', async () => {
-      mockApi.patchModelVersion.mockResolvedValue({} as ModelVersion);
-      mockApi.patchRegisteredModel.mockResolvedValue({} as RegisteredModel);
-
-      await bumpBothTimestamps(
-        mockApi,
-
-        mockRegisteredModel({
-          id: fakeRegisteredModelId,
-          customProperties: {
-            'Registered from': {
-              // eslint-disable-next-line camelcase
-              string_value: 'Model catalog',
-              metadataType: ModelRegistryMetadataType.STRING,
-            },
-            'Source model': {
-              // eslint-disable-next-line camelcase
-              string_value: 'test',
-              metadataType: ModelRegistryMetadataType.STRING,
-            },
-          },
-        }),
-        mockModelVersion({
-          id: fakeModelVersionId,
-          customProperties: {
-            'Registered from': {
-              // eslint-disable-next-line camelcase
-              string_value: 'Model catalog',
-              metadataType: ModelRegistryMetadataType.STRING,
-            },
-            'Source model': {
-              // eslint-disable-next-line camelcase
-              string_value: 'test-version',
-              metadataType: ModelRegistryMetadataType.STRING,
-            },
-          },
-        }),
       );
 
       expect(mockApi.patchModelVersion).toHaveBeenCalled();
