@@ -27,7 +27,7 @@ h11==0.16.0 ; python_version >= "3.11" and python_version < "4.0"
 hf-xet==1.4.3 ; python_version >= "3.11" and python_version < "4.0" and (platform_machine == "x86_64" or platform_machine == "amd64" or platform_machine == "AMD64" or platform_machine == "arm64" or platform_machine == "aarch64")
 httpcore==1.0.9 ; python_version >= "3.11" and python_version < "4.0"
 httpx==0.28.1 ; python_version >= "3.11" and python_version < "4.0"
-huggingface-hub==1.10.1 ; python_version >= "3.11" and python_version < "4.0"
+huggingface-hub==1.15.0 ; python_version >= "3.11" and python_version < "4.0"
 id==1.6.1 ; python_version >= "3.11" and python_version < "4.0"
 idna==3.10 ; python_version >= "3.11" and python_version < "4.0"
 in-toto-attestation==0.9.3 ; python_version >= "3.11" and python_version < "4.0"
