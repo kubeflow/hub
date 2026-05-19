@@ -14,13 +14,12 @@ import {
   ModalBody,
 } from '@patternfly/react-core';
 import { useNavigate } from 'react-router';
-import { FormSection } from 'mod-arch-shared';
+import { FormSection, ThemeAwareFormGroupWrapper } from 'mod-arch-shared';
 import { createModelRegistrySettings } from '~/app/api/k8s';
 import ModelRegistryDatabasePassword from '~/app/pages/settings/ModelRegistryDatabasePassword';
 import K8sNameDescriptionField, {
   useK8sNameDescriptionFieldData,
 } from '~/concepts/k8s/K8sNameDescriptionField/K8sNameDescriptionField';
-import { ThemeAwareFormGroupWrapper } from 'mod-arch-shared';
 
 type ModelRegistryPayload = {
   modelRegistry: {

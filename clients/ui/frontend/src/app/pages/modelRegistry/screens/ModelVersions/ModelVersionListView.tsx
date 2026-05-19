@@ -172,9 +172,7 @@ const ModelVersionListView: React.FC<ModelVersionListViewProps> = ({
               data-testid="model-versions-table-kebab-action"
               ref={tr}
               variant="plain"
-              onClick={() =>
-                setIsArchivedModelVersionKebabOpen(!isArchivedModelVersionKebabOpen)
-              }
+              onClick={() => setIsArchivedModelVersionKebabOpen(!isArchivedModelVersionKebabOpen)}
               isExpanded={isArchivedModelVersionKebabOpen}
               aria-label="View archived versions"
             >
@@ -186,9 +184,7 @@ const ModelVersionListView: React.FC<ModelVersionListViewProps> = ({
         >
           <DropdownList>
             <DropdownItem
-              onClick={() =>
-                navigate(modelVersionArchiveUrl(rm.id, preferredModelRegistry?.name))
-              }
+              onClick={() => navigate(modelVersionArchiveUrl(rm.id, preferredModelRegistry?.name))}
             >
               View archived versions
             </DropdownItem>
