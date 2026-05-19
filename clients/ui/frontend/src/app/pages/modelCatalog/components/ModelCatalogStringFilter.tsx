@@ -6,7 +6,7 @@ import {
   ModelCatalogStringFilterValueType,
 } from '~/app/modelCatalogTypes';
 import { ModelCatalogStringFilterKey } from '~/concepts/modelCatalog/const';
-import { useCatalogStringFilterState } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
+import { useCatalogStringFilterState } from '~/app/pages/modelCatalog/hooks/useCatalogFilterState';
 
 function isFilterMappingKey<K extends string>(obj: Partial<Record<K, string>>, s: string): s is K {
   return Object.hasOwn(obj, s);

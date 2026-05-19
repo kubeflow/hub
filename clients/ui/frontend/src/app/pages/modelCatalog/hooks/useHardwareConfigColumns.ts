@@ -15,7 +15,7 @@ import {
   LATENCY_COLUMN_FIELDS,
   TPS_COLUMN_FIELDS,
   HARDWARE_CONFIG_COLUMNS_STORAGE_KEY,
-} from './HardwareConfigurationTableColumns';
+} from '~/app/pages/modelCatalog/components/HardwareConfigurationTableColumns';
 
 /** Controlled sort props for the Table component */
 export type ControlledTableSortProps = {

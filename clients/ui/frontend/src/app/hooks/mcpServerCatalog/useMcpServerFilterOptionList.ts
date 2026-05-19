@@ -4,9 +4,9 @@ import { CatalogFilterOptionsList } from '~/app/modelCatalogTypes';
 import { McpCatalogContext } from '~/app/context/mcpCatalog/McpCatalogContext';
 import type { ModelCatalogAPIState } from '~/app/hooks/modelCatalog/useModelCatalogAPIState';
 import { BACKEND_TO_FRONTEND_FILTER_KEY, MCP_FILTER_KEYS } from '~/app/pages/mcpCatalog/const';
+import type { CatalogFilterStringOption } from '~/app/shared/components/catalog';
 import type {
   McpCatalogFilterOptionsList,
-  McpCatalogFilterStringOption,
   McpFilterCategoryKey,
 } from '~/app/pages/mcpCatalog/types/mcpCatalogFilterOptions';
 
@@ -14,7 +14,7 @@ function isMcpFilterCategoryKey(s: string): s is McpFilterCategoryKey {
   return MCP_FILTER_KEYS.some((k) => k === s);
 }
 
-function isMcpFilterStringOption(v: unknown): v is McpCatalogFilterStringOption {
+function isMcpFilterStringOption(v: unknown): v is CatalogFilterStringOption {
   if (typeof v !== 'object' || v === null || !('type' in v)) {
     return false;
   }

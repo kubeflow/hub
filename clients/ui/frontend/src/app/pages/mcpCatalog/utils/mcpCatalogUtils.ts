@@ -5,6 +5,7 @@ import type {
   McpEndpoints,
   McpSecurityIndicator,
 } from '~/app/mcpServerCatalogTypes';
+import { stringFiltersToFilterQuery } from '~/app/shared/components/catalog';
 
 export const isMcpRemoteDeploymentMode = (mode?: McpDeploymentMode): boolean => mode === 'remote';
 
@@ -70,21 +71,6 @@ const FRONTEND_TO_BACKEND_FILTER_KEY: Record<string, string> = Object.fromEntrie
   Object.entries(BACKEND_TO_FRONTEND_FILTER_KEY).map(([backend, frontend]) => [frontend, backend]),
 );
 
-const wrapInQuotes = (v: string): string => `'${v.replace(/'/g, "''")}'`;
-
 export function mcpFiltersToFilterQuery(filters: McpCatalogFiltersState): string {
-  const clauses: string[] = [];
-  for (const key of MCP_FILTER_KEYS) {
-    const values = filters[key];
-    if (!values || values.length === 0) {
-      continue;
-    }
-    const backendKey = FRONTEND_TO_BACKEND_FILTER_KEY[key] ?? key;
-    if (values.length === 1) {
-      clauses.push(`${backendKey}=${wrapInQuotes(values[0])}`);
-    } else {
-      clauses.push(`${backendKey} IN (${values.map(wrapInQuotes).join(',')})`);
-    }
-  }
-  return clauses.join(' AND ');
+  return stringFiltersToFilterQuery(filters, FRONTEND_TO_BACKEND_FILTER_KEY);
 }

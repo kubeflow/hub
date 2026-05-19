@@ -11,6 +11,10 @@ import {
   ModelCatalogFilterKey,
   ModelCatalogTensorType,
 } from '~/concepts/modelCatalog/const';
+import type {
+  CatalogFilterStringOption,
+  CatalogFilterNumberOption,
+} from '~/app/shared/components/catalog';
 import {
   ModelRegistryCustomProperties,
   ModelRegistryCustomPropertyString,
@@ -178,18 +182,7 @@ export type CatalogPerformanceArtifactList = PaginationParams & {
   items: CatalogPerformanceMetricsArtifact[];
 };
 
-export type CatalogFilterNumberOption = {
-  type: 'number';
-  range?: {
-    max?: number;
-    min?: number;
-  };
-};
-
-export type CatalogFilterStringOption<T extends string> = {
-  type: 'string';
-  values?: T[];
-};
+export type { CatalogFilterStringOption, CatalogFilterNumberOption };
 
 export type GetCatalogModelsBySource = (
   opts: APIOptions,

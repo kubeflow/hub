@@ -8,7 +8,7 @@ import {
   MenuToggleElement,
 } from '@patternfly/react-core';
 import { ModelCatalogNumberFilterKey } from '~/concepts/modelCatalog/const';
-import { useCatalogNumberFilterState } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
+import { useCatalogNumberFilterState } from '~/app/pages/modelCatalog/hooks/useCatalogFilterState';
 import { MAX_RPS_RANGE } from '~/app/pages/modelCatalog/utils/performanceMetricsUtils';
 import SliderWithInput from './SliderWithInput';
 

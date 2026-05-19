@@ -11,7 +11,7 @@ import {
   PanelMain,
   SearchInput,
 } from '@patternfly/react-core';
-import { useHardwareConfigurationFilterState } from '~/app/pages/modelCatalog/utils/hardwareConfigurationFilterState';
+import { useHardwareConfigurationFilterState } from '~/app/pages/modelCatalog/hooks/useHardwareConfigurationFilterState';
 import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
 import { ModelCatalogStringFilterKey } from '~/concepts/modelCatalog/const';
 

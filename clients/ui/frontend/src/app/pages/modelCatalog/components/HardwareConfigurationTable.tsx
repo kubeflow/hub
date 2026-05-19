@@ -7,9 +7,12 @@ import { CatalogPerformanceMetricsArtifact } from '~/app/modelCatalogTypes';
 import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
 import { getActiveLatencyFieldName } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
 import { SortOrder } from '~/concepts/modelCatalog/const';
+import {
+  useHardwareConfigColumns,
+  ControlledTableSortProps,
+} from '~/app/pages/modelCatalog/hooks/useHardwareConfigColumns';
 import HardwareConfigurationTableRow from './HardwareConfigurationTableRow';
 import HardwareConfigurationFilterToolbar from './HardwareConfigurationFilterToolbar';
-import { useHardwareConfigColumns, ControlledTableSortProps } from './useHardwareConfigColumns';
 
 type HardwareConfigurationTableProps = {
   performanceArtifacts: CatalogPerformanceMetricsArtifact[];

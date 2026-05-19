@@ -1,15 +1,48 @@
 import * as React from 'react';
-import { Stack, Spinner, Alert } from '@patternfly/react-core';
+import { Content, ContentVariants } from '@patternfly/react-core';
 import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
-import { ModelCatalogStringFilterKey } from '~/concepts/modelCatalog/const';
+import {
+  ModelCatalogStringFilterKey,
+  MODEL_CATALOG_FILTER_CATEGORY_NAMES,
+  MODEL_CATALOG_TASK_NAME_MAPPING,
+  MODEL_CATALOG_PROVIDER_NAME_MAPPING,
+  MODEL_CATALOG_VALIDATED_CONFIGURATION_NAME_MAPPING,
+  MODEL_CATALOG_ASIAN_LANGUAGES_DETAILS,
+  MODEL_CATALOG_EUROPEAN_LANGUAGES_DETAILS,
+  MODEL_CATALOG_MIDDLE_EASTERN_AND_OTHER_LANGUAGES_DETAILS,
+  ModelCatalogTensorType,
+} from '~/concepts/modelCatalog/const';
 import { TempDevFeature, useTempDevFeatureAvailable } from '~/app/hooks/useTempDevFeatureAvailable';
+import {
+  CatalogFilterPanel,
+  useCatalogFilterConfigs,
+  type FilterPanelItem,
+} from '~/app/shared/components/catalog';
 import ModelPerformanceViewToggleCard from './ModelPerformanceViewToggleCard';
-import TaskFilter from './globalFilters/TaskFilter';
-import ProviderFilter from './globalFilters/ProviderFilter';
-import LicenseFilter from './globalFilters/LicenseFilter';
-import LanguageFilter from './globalFilters/LanguageFilter';
-import TensorTypeFilter from './globalFilters/TensorTypeFilter';
-import ValidatedConfigurationFilter from './globalFilters/ValidatedConfigurationFilter';
+
+const BASIC_STRING_FILTER_KEYS: ModelCatalogStringFilterKey[] = [
+  ModelCatalogStringFilterKey.TASK,
+  ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION,
+  ModelCatalogStringFilterKey.PROVIDER,
+  ModelCatalogStringFilterKey.LICENSE,
+  ModelCatalogStringFilterKey.LANGUAGE,
+  ModelCatalogStringFilterKey.TENSOR_TYPE,
+];
+
+const LANGUAGE_NAME_MAPPING: Record<string, string> = {
+  ...MODEL_CATALOG_EUROPEAN_LANGUAGES_DETAILS,
+  ...MODEL_CATALOG_ASIAN_LANGUAGES_DETAILS,
+  ...MODEL_CATALOG_MIDDLE_EASTERN_AND_OTHER_LANGUAGES_DETAILS,
+};
+
+const LABEL_MAPPINGS: Record<string, Record<string, string>> = {
+  [ModelCatalogStringFilterKey.TASK]: MODEL_CATALOG_TASK_NAME_MAPPING,
+  [ModelCatalogStringFilterKey.PROVIDER]: MODEL_CATALOG_PROVIDER_NAME_MAPPING,
+  [ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION]:
+    MODEL_CATALOG_VALIDATED_CONFIGURATION_NAME_MAPPING,
+  [ModelCatalogStringFilterKey.LANGUAGE]: LANGUAGE_NAME_MAPPING,
+  [ModelCatalogStringFilterKey.TENSOR_TYPE]: ModelCatalogTensorType,
+};
 
 const ModelCatalogFilters: React.FC = () => {
   const { filterOptions, filterOptionsLoaded, filterOptionsLoadError, filterData, setFilterData } =
@@ -25,39 +58,65 @@ const ModelCatalogFilters: React.FC = () => {
     ) {
       setFilterData(ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION, []);
     }
-    // Only react to flag changes, not filterData changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolCallingFeatureAvailable]);
 
-  const filters = filterOptions?.filters;
-  if (!filterOptionsLoaded) {
-    return <Spinner />;
-  }
-  if (filterOptionsLoadError) {
-    return (
-      <Alert variant="danger" title="Failed to load filter options" isInline>
-        {filterOptionsLoadError.message}
-      </Alert>
-    );
-  }
+  const onFilterChange = React.useCallback(
+    (key: string, values: string[]) => {
+      const match = BASIC_STRING_FILTER_KEYS.find((k) => k === key);
+      if (match) {
+        setFilterData(match, values);
+      }
+    },
+    [setFilterData],
+  );
 
-  const getFilterProps = (filterKey: ModelCatalogStringFilterKey) =>
-    filters && filterKey in filters ? filters : undefined;
+  const stringFilterData = React.useMemo(() => {
+    const result: Record<string, string[] | undefined> = {};
+    for (const key of BASIC_STRING_FILTER_KEYS) {
+      result[key] = filterData[key];
+    }
+    return result;
+  }, [filterData]);
+
+  const filterConfigs = useCatalogFilterConfigs({
+    filterKeys: BASIC_STRING_FILTER_KEYS,
+    filterNames: MODEL_CATALOG_FILTER_CATEGORY_NAMES,
+    filterOptions: filterOptions?.filters,
+    selectedFilters: stringFilterData,
+    onFilterChange,
+    labelMappings: LABEL_MAPPINGS,
+  });
+
+  const enrichedFilters = React.useMemo((): FilterPanelItem[] => {
+    const vcKey = ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION;
+    return filterConfigs.map((item) => {
+      if (item.key === vcKey) {
+        const hasMultiple = item.filterValues.length > 1;
+        const hasSelection = item.selectedValues.length > 0;
+        return {
+          ...item,
+          visible: toolCallingFeatureAvailable,
+          footer:
+            hasMultiple && hasSelection ? (
+              <Content component={ContentVariants.small} className="pf-v6-u-mt-sm">
+                Showing models with all selected configurations
+              </Content>
+            ) : undefined,
+        };
+      }
+      return item;
+    });
+  }, [filterConfigs, toolCallingFeatureAvailable]);
 
   return (
-    <Stack hasGutter>
-      <ModelPerformanceViewToggleCard />
-      <TaskFilter filters={getFilterProps(ModelCatalogStringFilterKey.TASK)} />
-      {toolCallingFeatureAvailable && (
-        <ValidatedConfigurationFilter
-          filters={getFilterProps(ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION)}
-        />
-      )}
-      <ProviderFilter filters={getFilterProps(ModelCatalogStringFilterKey.PROVIDER)} />
-      <LicenseFilter filters={getFilterProps(ModelCatalogStringFilterKey.LICENSE)} />
-      <LanguageFilter filters={getFilterProps(ModelCatalogStringFilterKey.LANGUAGE)} />
-      <TensorTypeFilter filters={getFilterProps(ModelCatalogStringFilterKey.TENSOR_TYPE)} />
-    </Stack>
+    <CatalogFilterPanel
+      loaded={filterOptionsLoaded}
+      loadError={filterOptionsLoadError}
+      filters={enrichedFilters}
+      extraContent={<ModelPerformanceViewToggleCard />}
+      testIdPrefix="model-catalog-filter"
+    />
   );
 };
 

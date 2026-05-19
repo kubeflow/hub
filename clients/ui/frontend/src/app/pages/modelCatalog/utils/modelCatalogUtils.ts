@@ -1,6 +1,4 @@
-import React from 'react';
 import { capitalize } from '@patternfly/react-core';
-import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
 import {
   CatalogArtifacts,
   CatalogArtifactType,
@@ -14,7 +12,6 @@ import {
   CatalogSource,
   CatalogSourceList,
   ModelCatalogFilterStates,
-  ModelCatalogStringFilterValueType,
   MetricsType,
   ModelCatalogFilterKey,
   SourceLabel,
@@ -42,6 +39,7 @@ import {
   buildCustomPropertiesWithModelType,
   getModelTypeStoredValueFromCustomProperties,
 } from '~/app/pages/modelRegistry/screens/RegisterModel/registerModelTypeUtils';
+import { eqFilter, inFilter, andFilter } from '~/app/shared/components/catalog';
 
 /**
  * Prefix used by the backend for artifact-specific filter options.
@@ -194,47 +192,6 @@ export const hasValidatedToolCalling = (model: CatalogModel): boolean =>
   model.validatedTasks?.includes(ModelCatalogTask.TOOL_CALLING) === true &&
   model.servingConfig?.toolCalling != null;
 
-export const useCatalogStringFilterState = <K extends ModelCatalogStringFilterKey>(
-  filterKey: K,
-): {
-  isSelected: (value: ModelCatalogStringFilterValueType[K]) => boolean;
-  setSelected: (value: string, selected: boolean) => void;
-} => {
-  type Value = ModelCatalogStringFilterValueType[K];
-  const { filterData, setFilterData } = React.useContext(ModelCatalogContext);
-  const selections: string[] = filterData[filterKey];
-  const isValidStringState = (state: string[]): state is ModelCatalogFilterStates[K] =>
-    Object.values(ModelCatalogStringFilterKey).includes(filterKey);
-  const isSelected = React.useCallback((value: Value) => selections.includes(value), [selections]);
-  const setSelected = (value: string, selected: boolean) => {
-    const nextState = selected
-      ? [...selections, value]
-      : selections.filter((item) => item !== value);
-    if (isValidStringState(nextState)) {
-      setFilterData(filterKey, nextState);
-    }
-  };
-
-  return { isSelected, setSelected };
-};
-
-export const useCatalogNumberFilterState = (
-  filterKey: ModelCatalogNumberFilterKey,
-): {
-  value: number | undefined;
-  setValue: (value: number | undefined) => void;
-} => {
-  const { filterData, setFilterData } = React.useContext(ModelCatalogContext);
-  const value = filterData[filterKey];
-  const setValue = React.useCallback(
-    (newValue: number | undefined) => {
-      setFilterData(filterKey, newValue);
-    },
-    [filterKey, setFilterData],
-  );
-  return { value, setValue };
-};
-
 const isArrayOfSelections = (
   filterOption: CatalogFilterOptions[keyof CatalogFilterOptions],
   data: unknown,
@@ -345,13 +302,6 @@ export const getSortParams = (
     sortOrder: SortOrder.ASC, // Lowest first (ascending)
   };
 };
-
-const wrapInQuotes = (v: string): string => `'${v.replace(/'/g, "''")}'`;
-
-const eqFilter = (k: string, v: string) => `${k}=${wrapInQuotes(v)}`;
-const inFilter = (k: string, values: string[]) =>
-  `${k} IN (${values.map((v) => wrapInQuotes(v)).join(',')})`;
-const andFilter = (k: string, values: string[]) => values.map((v) => eqFilter(k, v)).join(' AND ');
 
 const isMatchAllFilter = (filterId: string): boolean =>
   MATCH_ALL_FILTER_KEYS.some((key) => key === filterId);
