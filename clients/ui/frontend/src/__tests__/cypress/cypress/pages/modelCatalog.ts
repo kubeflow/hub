@@ -448,6 +448,14 @@ class ModelCatalog {
       name: /View all models with performance data/i,
     });
   }
+
+  findRegisterModelButton() {
+    return cy.findByTestId('register-model-button');
+  }
+
+  findModelTypeSelect() {
+    return cy.findByTestId('register-model-type-select');
+  }
 }
 
 export const modelCatalog = new ModelCatalog();
