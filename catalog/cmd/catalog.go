@@ -95,9 +95,9 @@ func runCatalogServer(_ *cobra.Command, _ []string) error {
 
 	// Database setup
 	err := db.Init(
-		"postgres",
-		"",
-		nil,
+		"postgres", // We only support postgres right now
+		"",         // Empty DSN, see https://www.postgresql.org/docs/current/libpq-envars.html
+		nil,        // Default TLS config
 	)
 	if err != nil {
 		return fmt.Errorf("error creating datastore: %w", err)
