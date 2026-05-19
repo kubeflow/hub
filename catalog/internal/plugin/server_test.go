@@ -103,10 +103,6 @@ func TestServerZeroPlugins(t *testing.T) {
 	// Readyz with zero plugins is "ready"
 	body := getJSON(t, router, "/readyz")
 	assert.Equal(t, "ready", body["status"])
-
-	// Plugins endpoint returns empty list
-	body = getJSON(t, router, "/api/plugins")
-	assert.Equal(t, float64(0), body["count"])
 }
 
 func TestServerInitLifecycle(t *testing.T) {
@@ -318,51 +314,6 @@ func TestServerMountRoutes(t *testing.T) {
 	// Server endpoints coexist
 	assertStatus(t, router, "/healthz", http.StatusOK)
 	assertStatus(t, router, "/readyz", http.StatusOK)
-	assertStatus(t, router, "/api/plugins", http.StatusOK)
-}
-
-func TestServerPluginsEndpoint(t *testing.T) {
-	Reset()
-	defer Reset()
-
-	Register(&mockPlugin{name: "model", version: "v1alpha1", description: "Model catalog", healthy: true})
-
-	s := newTestServer()
-	require.NoError(t, s.Init(context.Background()))
-	router, err := s.MountRoutes()
-	require.NoError(t, err)
-
-	body := getJSON(t, router, "/api/plugins")
-	assert.Equal(t, float64(1), body["count"])
-
-	plugins := body["plugins"].([]any)
-	p := plugins[0].(map[string]any)
-	assert.Equal(t, "model", p["name"])
-	assert.Equal(t, "v1alpha1", p["version"])
-	assert.Equal(t, "Model catalog", p["description"])
-	assert.Equal(t, "/api/model_catalog/v1alpha1", p["basePath"])
-	assert.Equal(t, true, p["healthy"])
-}
-
-func TestServerBasePathProvider(t *testing.T) {
-	Reset()
-	defer Reset()
-
-	bp := &basePathPlugin{
-		mockPlugin: mockPlugin{name: "custom", version: "v1"},
-		basePath:   "/api/my/custom/path",
-	}
-	Register(bp)
-
-	s := newTestServer()
-	require.NoError(t, s.Init(context.Background()))
-	router, err := s.MountRoutes()
-	require.NoError(t, err)
-
-	body := getJSON(t, router, "/api/plugins")
-	plugins := body["plugins"].([]any)
-	p := plugins[0].(map[string]any)
-	assert.Equal(t, "/api/my/custom/path", p["basePath"])
 }
 
 // failingRoutePlugin returns an error from RegisterRoutes.
@@ -387,13 +338,6 @@ func TestServerMountRoutesFailure(t *testing.T) {
 	assert.Contains(t, err.Error(), "broken")
 	assert.Contains(t, err.Error(), "route registration failed")
 }
-
-type basePathPlugin struct {
-	mockPlugin
-	basePath string
-}
-
-func (p *basePathPlugin) BasePath() string { return p.basePath }
 
 // Test helpers
 

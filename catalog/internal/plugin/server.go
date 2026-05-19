@@ -125,7 +125,6 @@ func (s *Server) MountRoutes() (chi.Router, error) {
 
 	s.router.Get("/healthz", s.healthHandler)
 	s.router.Get("/readyz", s.readyHandler)
-	s.router.Get("/api/plugins", s.pluginsHandler)
 
 	return s.router, nil
 }
@@ -233,36 +232,6 @@ func (s *Server) readyHandler(w http.ResponseWriter, _ *http.Request) {
 	_ = json.NewEncoder(w).Encode(response)
 }
 
-func (s *Server) pluginsHandler(w http.ResponseWriter, _ *http.Request) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	type pluginInfo struct {
-		Name        string `json:"name"`
-		Version     string `json:"version"`
-		Description string `json:"description"`
-		BasePath    string `json:"basePath"`
-		Healthy     bool   `json:"healthy"`
-	}
-
-	plugins := make([]pluginInfo, 0, len(s.plugins))
-	for _, p := range s.plugins {
-		plugins = append(plugins, pluginInfo{
-			Name:        p.Name(),
-			Version:     p.Version(),
-			Description: p.Description(),
-			BasePath:    computeBasePath(p),
-			Healthy:     p.Healthy(),
-		})
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(map[string]any{
-		"plugins": plugins,
-		"count":   len(plugins),
-	})
-}
 
 func computeBasePath(p CatalogPlugin) string {
 	if bp, ok := p.(BasePathProvider); ok {
