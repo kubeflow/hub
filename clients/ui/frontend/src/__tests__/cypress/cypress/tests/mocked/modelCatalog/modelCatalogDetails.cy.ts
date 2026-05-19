@@ -387,9 +387,7 @@ describe('Model Catalog Details Page - Validated Configurations Card', () => {
 
 describe('Model Catalog Registration - Model Type Field', () => {
   const modelArtifacts = {
-    items: [
-      mockCatalogModelArtifact({ uri: 'oci://quay.io/test-org/test-model:latest' }),
-    ],
+    items: [mockCatalogModelArtifact({ uri: 'oci://quay.io/test-org/test-model:latest' })],
     size: 1,
     pageSize: 10,
     nextPageToken: '',
@@ -474,9 +472,7 @@ describe('Model Catalog Registration - Model Type Field', () => {
 
     navigateToRegisterPage();
 
-    modelCatalog
-      .findModelTypeSelect()
-      .should('contain.text', 'Generative AI model (Example, LLM)');
+    modelCatalog.findModelTypeSelect().should('contain.text', 'Generative AI model (Example, LLM)');
     modelCatalog.findModelTypeSelect().should('be.disabled');
   });
 
