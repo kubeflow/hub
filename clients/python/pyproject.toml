@@ -52,7 +52,7 @@ pytest-cov = ">=4.1,<8.0"
 pytest-mock = ">=3.7.0"
 pytest-xdist = "^3.5.0"
 ruff = ">=0.5.2,<0.16.0"
-mypy = "^1.7.0"
+mypy = ">=1.7,<3.0"
 # E2E test using Ray in compatible py environments:
 # TODO: add back ray for 3.14 once https://github.com/ray-project/ray/issues/56434 is resolved
 ray = {version = "^2.52.1", python = "<3.14"}
