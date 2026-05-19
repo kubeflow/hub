@@ -7,24 +7,21 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"reflect"
 	"syscall"
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/kubeflow/hub/catalog/internal/catalog"
-	mcpcatalogmodels "github.com/kubeflow/hub/catalog/internal/catalog/mcpcatalog/models"
-	modelcatalogmodels "github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog/models"
-	"github.com/kubeflow/hub/catalog/internal/db/models"
 	"github.com/kubeflow/hub/catalog/internal/db/service"
 	"github.com/kubeflow/hub/catalog/internal/leader"
-	"github.com/kubeflow/hub/catalog/internal/server/openapi"
+	"github.com/kubeflow/hub/catalog/internal/plugin"
 	"github.com/kubeflow/hub/internal/datastore/embedmd"
 	"github.com/kubeflow/hub/internal/platform/datastore"
 	"github.com/kubeflow/hub/internal/platform/db"
 	"github.com/kubeflow/hub/internal/platform/server/middleware"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
+
+	_ "github.com/kubeflow/hub/catalog/internal/plugins/catalog"
 )
 
 var catalogCfg = struct {
@@ -92,14 +89,15 @@ func init() {
 	fs.StringSliceVar(&catalogCfg.PerformanceMetricsPath, "performance-metrics", catalogCfg.PerformanceMetricsPath, "Path to performance metrics data directory")
 }
 
-func runCatalogServer(cmd *cobra.Command, args []string) error {
+func runCatalogServer(_ *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	// Database setup
 	err := db.Init(
-		"postgres", // We only support postgres right now
-		"",         // Empty DSN, see https://www.postgresql.org/docs/current/libpq-envars.html
-		nil,        // Default TLS config
+		"postgres",
+		"",
+		nil,
 	)
 	if err != nil {
 		return fmt.Errorf("error creating datastore: %w", err)
@@ -117,6 +115,7 @@ func runCatalogServer(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error creating datastore: %w", err)
 	}
 
+	// Leader election setup
 	lockDuration, heartbeat := getLeaderElectionConfig()
 	glog.Infof("Leader election configured: lock duration=%v, heartbeat=%v", lockDuration, heartbeat)
 
@@ -124,9 +123,8 @@ func runCatalogServer(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("error creating leader elector: %w", err)
 	}
-	elector.OnBecomeLeader(func(leaderCtx context.Context) {
-		err := ds.RunMigrations(service.DatastoreSpec())
-		if err != nil {
+	elector.OnBecomeLeader(func(_ context.Context) {
+		if err := ds.RunMigrations(service.DatastoreSpec()); err != nil {
 			glog.Errorf("unable to run migrations: %v", err)
 		}
 	})
@@ -136,33 +134,29 @@ func runCatalogServer(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing datastore: %v", err)
 	}
 
-	services := service.NewServices(
-		getRepo[modelcatalogmodels.CatalogModelRepository](repoSet),
-		getRepo[models.CatalogArtifactRepository](repoSet),
-		getRepo[modelcatalogmodels.CatalogModelArtifactRepository](repoSet),
-		getRepo[modelcatalogmodels.CatalogMetricsArtifactRepository](repoSet),
-		getRepo[models.CatalogSourceRepository](repoSet),
-		getRepo[models.PropertyOptionsRepository](repoSet),
-		getRepo[mcpcatalogmodels.MCPServerRepository](repoSet),
-		getRepo[mcpcatalogmodels.MCPServerToolRepository](repoSet),
-	)
-
-	loader := catalog.NewLoader(services, catalogCfg.ConfigPath)
-
-	perfLoader, err := catalog.NewPerformanceMetricsLoader(catalogCfg.PerformanceMetricsPath, services.CatalogModelRepository, services.CatalogMetricsArtifactRepository, repoSet.TypeMap())
-	if err != nil {
-		return fmt.Errorf("error initializing performance metrics: %v", err)
-	}
-	loader.RegisterEventHandler(perfLoader.Load)
-
-	elector.OnBecomeLeader(func(leaderCtx context.Context) {
-		poRefresher := models.NewPropertyOptionsRefresher(leaderCtx, services.PropertyOptionsRepository, time.Second)
-		loader.RegisterEventHandler(func(ctx context.Context, record catalog.ModelProviderRecord) error {
-			poRefresher.Trigger()
-			return nil
-		})
+	// Plugin server setup
+	pluginServer := plugin.NewServer(plugin.ServerConfig{
+		DB:                     gormDB,
+		ConfigPaths:            catalogCfg.ConfigPath,
+		PerformanceMetricsPath: catalogCfg.PerformanceMetricsPath,
+		RepoSet:                repoSet,
+		TypeMap:                repoSet.TypeMap(),
 	})
 
+	if err := pluginServer.Init(ctx); err != nil {
+		return fmt.Errorf("error initializing plugins: %w", err)
+	}
+
+	router, err := pluginServer.MountRoutes()
+	if err != nil {
+		return fmt.Errorf("error mounting routes: %w", err)
+	}
+
+	if err := pluginServer.Start(ctx); err != nil {
+		return fmt.Errorf("error starting plugins: %w", err)
+	}
+
+	// Signal handling
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
 	go func() {
@@ -171,39 +165,13 @@ func runCatalogServer(cmd *cobra.Command, args []string) error {
 		cancel()
 	}()
 
-	glog.Info("Starting loader in read-only mode (standby)")
-	if err := loader.StartReadOnly(ctx); err != nil {
-		return fmt.Errorf("error starting loader in read-only mode: %v", err)
-	}
-
-	// Create MCP source collection first so it can be shared with the model catalog service.
-	mcpSources := loader.MCPSources()
-
-	// Set up HTTP server (runs continuously regardless of leadership)
-	svc := openapi.NewModelCatalogServiceAPIService(
-		catalog.NewDBCatalog(services, loader.Sources()),
-		loader.Sources(),
-		mcpSources,
-		loader.Labels(),
-		services.CatalogSourceRepository,
-	)
-	ctrl := openapi.NewModelCatalogServiceAPIController(svc)
-
-	// Create MCP provider and service, wiring named query resolution from loaded sources.
-	mcpProvider := catalog.NewDBMCPCatalog(services, mcpSources, func(name string) (map[string]catalog.FieldFilter, bool) {
-		return mcpSources.GetNamedQuery(name)
-	})
-	mcpSvc := openapi.NewMCPCatalogServiceAPIService(mcpProvider, mcpSources)
-	mcpCtrl := openapi.NewMCPCatalogServiceAPIController(mcpSvc)
-
 	server := &http.Server{
 		Addr:    catalogCfg.ListenAddress,
-		Handler: middleware.ValidationMiddleware(openapi.NewRouter(ctrl, mcpCtrl)),
+		Handler: middleware.ValidationMiddleware(router),
 	}
 
 	g, gctx := errgroup.WithContext(ctx)
 
-	// HTTP server goroutine
 	g.Go(func() error {
 		glog.Infof("Catalog API server listening on %s", catalogCfg.ListenAddress)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -212,7 +180,6 @@ func runCatalogServer(cmd *cobra.Command, args []string) error {
 		return nil
 	})
 
-	// HTTP server shutdown goroutine
 	g.Go(func() error {
 		<-gctx.Done()
 		glog.Info("Shutting down HTTP server...")
@@ -225,13 +192,8 @@ func runCatalogServer(cmd *cobra.Command, args []string) error {
 	})
 
 	elector.OnBecomeLeader(func(leaderCtx context.Context) {
-		glog.Info("Became leader - starting leader-only operations")
-
-		// StartLeader blocks until leaderCtx is cancelled (leadership lost)
-		if err := loader.StartLeader(leaderCtx); err != nil && !errors.Is(err, context.Canceled) {
-			glog.Errorf("StartLeader exited with error: %v", err)
-		}
-
+		glog.Info("Became leader - notifying plugins")
+		pluginServer.NotifyLeader(leaderCtx)
 		glog.Info("Leader callback complete")
 	})
 
@@ -242,24 +204,16 @@ func runCatalogServer(cmd *cobra.Command, args []string) error {
 		return nil
 	})
 
-	// Wait for all goroutines and collect errors
 	errs := []error{}
 	if err := g.Wait(); err != nil && !errors.Is(err, context.Canceled) {
 		errs = append(errs, err)
 	}
 
-	if err := loader.Shutdown(); err != nil {
-		errs = append(errs, fmt.Errorf("loader shutdown error: %w", err))
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownCancel()
+	if err := pluginServer.Stop(shutdownCtx); err != nil {
+		errs = append(errs, fmt.Errorf("plugin shutdown error: %w", err))
 	}
 
 	return errors.Join(errs...)
-}
-
-func getRepo[T any](repoSet datastore.RepoSet) T {
-	repo, err := repoSet.Repository(reflect.TypeFor[T]())
-	if err != nil {
-		panic(fmt.Sprintf("unable to get repository: %v", err))
-	}
-
-	return repo.(T)
 }

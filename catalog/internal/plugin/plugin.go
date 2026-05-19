@@ -3,11 +3,13 @@ package plugin
 import (
 	"context"
 	"flag"
+	"log/slog"
 
 	"github.com/go-chi/chi/v5"
 	"gorm.io/gorm"
 
 	"github.com/kubeflow/hub/catalog/internal/catalog/basecatalog"
+	"github.com/kubeflow/hub/internal/platform/datastore"
 )
 
 // CatalogPlugin defines the interface that all catalog plugins must implement.
@@ -40,7 +42,8 @@ type CatalogPlugin interface {
 	Healthy() bool
 
 	// RegisterRoutes mounts the plugin's HTTP routes on the provided router.
-	// The router is already scoped to the plugin's base path.
+	// The router is the server's root router; plugins are responsible for
+	// using full path patterns (e.g., "/api/model_catalog/v1alpha1/models").
 	RegisterRoutes(router chi.Router) error
 
 	// Migrations returns database migrations for this plugin.
@@ -66,6 +69,14 @@ type SourceKeyProvider interface {
 // to register custom CLI flags before flag parsing.
 type FlagProvider interface {
 	RegisterFlags(fs *flag.FlagSet)
+}
+
+// LeaderAware is an optional interface that plugins can implement
+// to receive leadership notifications. When the pod becomes leader,
+// the server calls OnBecomeLeader. The implementation should block
+// until ctx is cancelled (leadership lost).
+type LeaderAware interface {
+	OnBecomeLeader(ctx context.Context) error
 }
 
 // CatalogLoader defines the interface for data loading strategies.
@@ -101,4 +112,16 @@ type Config struct {
 
 	// ConfigPaths are the paths to all sources.yaml files being used.
 	ConfigPaths []string
+
+	// RepoSet is the shared set of repositories from the datastore.
+	RepoSet datastore.RepoSet
+
+	// TypeMap maps entity type names to their integer IDs.
+	TypeMap map[string]int32
+
+	// PerformanceMetricsPath holds paths to performance metrics data directories.
+	PerformanceMetricsPath []string
+
+	// Logger is a structured logger scoped to this plugin.
+	Logger *slog.Logger
 }
