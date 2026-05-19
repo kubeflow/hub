@@ -118,11 +118,19 @@ class ModelVersionArchive {
   }
 
   findArchiveVersionTableSearch() {
-    return cy.findByTestId('model-versions-archive-table-Keyword-input');
+    return cy
+      .findByTestId('model-versions-archive-table-toolbar')
+      .find('[data-testid$="-input"]')
+      .filter(':visible');
   }
 
   findArchiveVersionTableFilterOption(name: string) {
-    return cy.findByTestId('model-versions-archive-table-dropdown').findDropdownItem(name);
+    return cy.findByTestId('model-versions-archive-table-dropdown').then(($el) => {
+      if ($el.attr('aria-expanded') === 'false') {
+        cy.wrap($el).click();
+      }
+      return cy.findByRole('option', { name });
+    });
   }
 
   findRestoreButton() {

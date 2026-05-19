@@ -107,11 +107,19 @@ class ModelArchive {
   }
 
   findTableSearch() {
-    return cy.findByTestId('registered-models-archive-table-Keyword-input');
+    return cy
+      .findByTestId('registered-models-archive-table-toolbar')
+      .find('[data-testid$="-input"]')
+      .filter(':visible');
   }
 
   findFilterDropdownItem(name: string) {
-    return cy.findByTestId(`registered-models-archive-table-dropdown`).findDropdownItem(name);
+    return cy.findByTestId('registered-models-archive-table-dropdown').then(($el) => {
+      if ($el.attr('aria-expanded') === 'false') {
+        cy.wrap($el).click();
+      }
+      return cy.findByRole('option', { name });
+    });
   }
 
   findArchiveModelTable() {
