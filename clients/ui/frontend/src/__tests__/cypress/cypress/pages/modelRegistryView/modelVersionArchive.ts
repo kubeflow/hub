@@ -118,11 +118,11 @@ class ModelVersionArchive {
   }
 
   findArchiveVersionTableSearch() {
-    return cy.findByTestId('filter-toolbar-text-field');
+    return cy.findByTestId('model-versions-archive-table-Keyword-input');
   }
 
   findArchiveVersionTableFilterOption(name: string) {
-    return cy.findByTestId('filter-toolbar-dropdown').findDropdownItem(name);
+    return cy.findByTestId('model-versions-archive-table-dropdown').findDropdownItem(name);
   }
 
   findRestoreButton() {

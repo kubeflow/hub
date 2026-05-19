@@ -20,7 +20,7 @@ import ModelRegistryDatabasePassword from '~/app/pages/settings/ModelRegistryDat
 import K8sNameDescriptionField, {
   useK8sNameDescriptionFieldData,
 } from '~/concepts/k8s/K8sNameDescriptionField/K8sNameDescriptionField';
-import ThemeAwareFormGroupWrapper from '~/app/pages/settings/components/ThemeAwareFormGroupWrapper';
+import { ThemeAwareFormGroupWrapper } from 'mod-arch-shared';
 
 type ModelRegistryPayload = {
   modelRegistry: {
@@ -254,6 +254,7 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, refresh }) => {
               label="Host"
               fieldId="mr-host"
               isRequired
+              hasError={!!hostHelperText}
               helperTextNode={hostHelperText}
             >
               {hostInput}
@@ -263,6 +264,7 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, refresh }) => {
               label="Port"
               fieldId="mr-port"
               isRequired
+              hasError={!!portHelperText}
               helperTextNode={portHelperText}
             >
               {portInput}
@@ -272,6 +274,7 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, refresh }) => {
               label="Username"
               fieldId="mr-username"
               isRequired
+              hasError={!!usernameHelperText}
               helperTextNode={usernameHelperText}
             >
               {userNameInput}
@@ -281,6 +284,7 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, refresh }) => {
               label="Password"
               fieldId="mr-password"
               isRequired
+              hasError={!!passwordHelperText}
               helperTextNode={passwordHelperText}
             >
               {passwordInput}
@@ -290,6 +294,7 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, refresh }) => {
               label="Database"
               fieldId="mr-database"
               isRequired
+              hasError={!!databaseHelperText}
               helperTextNode={databaseHelperText}
             >
               {databaseInput}

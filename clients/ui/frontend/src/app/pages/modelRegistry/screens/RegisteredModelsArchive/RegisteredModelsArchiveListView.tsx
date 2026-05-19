@@ -1,17 +1,13 @@
 import * as React from 'react';
-import { Toolbar, ToolbarContent, ToolbarGroup, ToolbarToggleGroup } from '@patternfly/react-core';
-import { FilterIcon, SearchIcon } from '@patternfly/react-icons';
+import { SearchIcon } from '@patternfly/react-icons';
+import { ToolbarFilter, FilterState, FilterConfigMap } from 'mod-arch-shared';
 import { ModelVersion, RegisteredModel } from '~/app/types';
 import { filterRegisteredModels } from '~/app/pages/modelRegistry/screens/utils';
 import EmptyModelRegistryState from '~/app/pages/modelRegistry/screens/components/EmptyModelRegistryState';
 import {
   ModelRegistryFilterDataType,
   ModelRegistryFilterOptions,
-  initialModelRegistryFilterData,
-  modelRegistryFilterOptions,
 } from '~/app/pages/modelRegistry/screens/const';
-import FilterToolbar from '~/app/shared/components/FilterToolbar';
-import ThemeAwareSearchInput from '~/app/pages/modelRegistry/screens/components/ThemeAwareSearchInput';
 import RegisteredModelsArchiveTable from './RegisteredModelsArchiveTable';
 
 type RegisteredModelsArchiveListViewProps = {
@@ -20,25 +16,58 @@ type RegisteredModelsArchiveListViewProps = {
   refresh: () => void;
 };
 
+const filterConfig: FilterConfigMap<ModelRegistryFilterOptions> = {
+  [ModelRegistryFilterOptions.keyword]: {
+    type: 'text',
+    label: 'Keyword',
+    placeholder: 'Filter by name, description or label',
+  },
+  [ModelRegistryFilterOptions.owner]: {
+    type: 'text',
+    label: 'Owner',
+    placeholder: 'Filter by owner',
+  },
+};
+
+const visibleFilterKeys = [
+  ModelRegistryFilterOptions.keyword,
+  ModelRegistryFilterOptions.owner,
+] as const;
+
+const initialFilterValues: FilterState<ModelRegistryFilterOptions> = {
+  [ModelRegistryFilterOptions.keyword]: '',
+  [ModelRegistryFilterOptions.owner]: '',
+};
+
+const getTextValue = (v: string | string[]): string | undefined => {
+  const s = typeof v === 'string' ? v : v[0];
+  return s || undefined;
+};
+
 const RegisteredModelsArchiveListView: React.FC<RegisteredModelsArchiveListViewProps> = ({
   registeredModels: unfilteredRegisteredModels,
   modelVersions,
   refresh,
 }) => {
-  const [filterData, setFilterData] = React.useState<ModelRegistryFilterDataType>(
-    initialModelRegistryFilterData,
+  const [filterValues, setFilterValues] =
+    React.useState<FilterState<ModelRegistryFilterOptions>>(initialFilterValues);
+
+  const onFilterChange = React.useCallback(
+    (key: ModelRegistryFilterOptions, value: string | string[]) =>
+      setFilterValues((prev) => ({ ...prev, [key]: value })),
+    [],
   );
 
-  const onFilterUpdate = React.useCallback(
-    (key: string, value: string | { label: string; value: string } | undefined) =>
-      setFilterData((prevValues) => ({ ...prevValues, [key]: value })),
-    [setFilterData],
-  );
+  const onClearAllFilters = React.useCallback(() => setFilterValues(initialFilterValues), []);
 
-  const onClearFilters = React.useCallback(
-    () => setFilterData(initialModelRegistryFilterData),
-    [setFilterData],
-  );
+  const filterData: ModelRegistryFilterDataType = {
+    [ModelRegistryFilterOptions.keyword]: getTextValue(
+      filterValues[ModelRegistryFilterOptions.keyword],
+    ),
+    [ModelRegistryFilterOptions.owner]: getTextValue(
+      filterValues[ModelRegistryFilterOptions.owner],
+    ),
+  };
 
   const filteredRegisteredModels = filterRegisteredModels(
     unfilteredRegisteredModels,
@@ -61,46 +90,18 @@ const RegisteredModelsArchiveListView: React.FC<RegisteredModelsArchiveListViewP
   return (
     <RegisteredModelsArchiveTable
       refresh={refresh}
-      clearFilters={onClearFilters}
+      clearFilters={onClearAllFilters}
       registeredModels={filteredRegisteredModels}
       modelVersions={modelVersions}
       toolbarContent={
-        <Toolbar
-          data-testid="registered-models-archive-table-toolbar"
-          clearAllFilters={onClearFilters}
-        >
-          <ToolbarContent>
-            <ToolbarToggleGroup toggleIcon={<FilterIcon />} breakpoint="xl">
-              <ToolbarGroup variant="filter-group">
-                <FilterToolbar
-                  filterOptions={modelRegistryFilterOptions}
-                  filterOptionRenders={{
-                    [ModelRegistryFilterOptions.keyword]: ({ onChange, ...props }) => (
-                      <ThemeAwareSearchInput
-                        {...props}
-                        placeholder="Filter by name, description or label"
-                        className="toolbar-fieldset-wrapper"
-                        style={{ minWidth: '270px' }}
-                        onChange={(value) => onChange(value)}
-                      />
-                    ),
-                    [ModelRegistryFilterOptions.owner]: ({ onChange, ...props }) => (
-                      <ThemeAwareSearchInput
-                        {...props}
-                        placeholder="Filter by owner"
-                        className="toolbar-fieldset-wrapper"
-                        style={{ minWidth: '270px' }}
-                        onChange={(value) => onChange(value)}
-                      />
-                    ),
-                  }}
-                  filterData={filterData}
-                  onFilterUpdate={onFilterUpdate}
-                />
-              </ToolbarGroup>
-            </ToolbarToggleGroup>
-          </ToolbarContent>
-        </Toolbar>
+        <ToolbarFilter
+          filterConfig={filterConfig}
+          visibleFilterKeys={visibleFilterKeys}
+          filterValues={filterValues}
+          onFilterChange={onFilterChange}
+          onClearAllFilters={onClearAllFilters}
+          testIdPrefix="registered-models-archive-table"
+        />
       }
     />
   );

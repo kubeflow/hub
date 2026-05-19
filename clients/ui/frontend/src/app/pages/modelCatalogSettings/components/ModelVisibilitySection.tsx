@@ -7,9 +7,8 @@ import {
   HelperText,
   HelperTextItem,
 } from '@patternfly/react-core';
-import { UpdateObjectAtPropAndValue } from 'mod-arch-shared';
+import { UpdateObjectAtPropAndValue, ThemeAwareFormGroupWrapper } from 'mod-arch-shared';
 import FormSection from '~/app/pages/modelRegistry/components/pf-overrides/FormSection';
-import ThemeAwareFormGroupWrapper from '~/app/pages/settings/components/ThemeAwareFormGroupWrapper';
 import { ManageSourceFormData } from '~/app/pages/modelCatalogSettings/useManageSourceData';
 import {
   FORM_LABELS,
@@ -116,18 +115,18 @@ const ModelVisibilitySection: React.FC<ModelVisibilitySectionProps> = ({
         <ThemeAwareFormGroupWrapper
           label={FORM_LABELS.ALLOWED_MODELS}
           fieldId="allowed-models"
-          descriptionTextNode={allowedModelsDescriptionTxtNode}
           helperTextNode={allowedModelsHelperTxtNode}
         >
+          {allowedModelsDescriptionTxtNode}
           {allowedModelsInput}
         </ThemeAwareFormGroupWrapper>
 
         <ThemeAwareFormGroupWrapper
           label={FORM_LABELS.EXCLUDED_MODELS}
           fieldId="excluded-models"
-          descriptionTextNode={excludedModelsDescriptionTxtNode}
           helperTextNode={excludedModelsHelperTxtNode}
         >
+          {excludedModelsDescriptionTxtNode}
           {excludedModelsInput}
         </ThemeAwareFormGroupWrapper>
       </FormFieldGroupExpandable>

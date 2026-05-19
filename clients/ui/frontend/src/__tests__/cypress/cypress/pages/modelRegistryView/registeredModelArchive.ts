@@ -107,11 +107,11 @@ class ModelArchive {
   }
 
   findTableSearch() {
-    return cy.findByTestId('filter-toolbar-text-field');
+    return cy.findByTestId('registered-models-archive-table-Keyword-input');
   }
 
   findFilterDropdownItem(name: string) {
-    return cy.findByTestId(`filter-toolbar-dropdown`).findDropdownItem(name);
+    return cy.findByTestId(`registered-models-archive-table-dropdown`).findDropdownItem(name);
   }
 
   findArchiveModelTable() {

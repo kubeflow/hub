@@ -1,10 +1,8 @@
 import * as React from 'react';
-import { ToolbarGroup } from '@patternfly/react-core';
 import { SearchIcon } from '@patternfly/react-icons';
+import { ToolbarFilter, FilterState, FilterConfigMap } from 'mod-arch-shared';
 import { ModelTransferJob } from '~/app/types';
 import EmptyModelRegistryState from '~/app/pages/modelRegistry/screens/components/EmptyModelRegistryState';
-import FilterToolbar from '~/app/shared/components/FilterToolbar';
-import ThemeAwareSearchInput from '~/app/pages/modelRegistry/screens/components/ThemeAwareSearchInput';
 import ModelTransferJobsTable from './ModelTransferJobsTable';
 
 enum ModelTransferJobsFilterOptions {
@@ -16,24 +14,55 @@ enum ModelTransferJobsFilterOptions {
   status = 'status',
 }
 
-const modelTransferJobsFilterOptions = {
-  [ModelTransferJobsFilterOptions.jobName]: 'Job name',
-  [ModelTransferJobsFilterOptions.modelName]: 'Model name',
-  [ModelTransferJobsFilterOptions.versionName]: 'Version name',
-  [ModelTransferJobsFilterOptions.namespace]: 'Namespace',
-  [ModelTransferJobsFilterOptions.author]: 'Author',
-  [ModelTransferJobsFilterOptions.status]: 'Status',
+const modelTransferJobsFilterConfig: FilterConfigMap<ModelTransferJobsFilterOptions> = {
+  [ModelTransferJobsFilterOptions.jobName]: {
+    type: 'text',
+    label: 'Job name',
+    placeholder: 'Filter by job name',
+  },
+  [ModelTransferJobsFilterOptions.modelName]: {
+    type: 'text',
+    label: 'Model name',
+    placeholder: 'Filter by model name',
+  },
+  [ModelTransferJobsFilterOptions.versionName]: {
+    type: 'text',
+    label: 'Version name',
+    placeholder: 'Filter by version name',
+  },
+  [ModelTransferJobsFilterOptions.namespace]: {
+    type: 'text',
+    label: 'Namespace',
+    placeholder: 'Filter by namespace',
+  },
+  [ModelTransferJobsFilterOptions.author]: {
+    type: 'text',
+    label: 'Author',
+    placeholder: 'Filter by author',
+  },
+  [ModelTransferJobsFilterOptions.status]: {
+    type: 'text',
+    label: 'Status',
+    placeholder: 'Filter by status',
+  },
 };
 
-type ModelTransferJobsFilterDataType = Record<ModelTransferJobsFilterOptions, string | undefined>;
+const visibleFilterKeys = [
+  ModelTransferJobsFilterOptions.jobName,
+  ModelTransferJobsFilterOptions.modelName,
+  ModelTransferJobsFilterOptions.versionName,
+  ModelTransferJobsFilterOptions.namespace,
+  ModelTransferJobsFilterOptions.author,
+  ModelTransferJobsFilterOptions.status,
+] as const;
 
-const initialFilterData: ModelTransferJobsFilterDataType = {
-  [ModelTransferJobsFilterOptions.jobName]: undefined,
-  [ModelTransferJobsFilterOptions.modelName]: undefined,
-  [ModelTransferJobsFilterOptions.versionName]: undefined,
-  [ModelTransferJobsFilterOptions.namespace]: undefined,
-  [ModelTransferJobsFilterOptions.author]: undefined,
-  [ModelTransferJobsFilterOptions.status]: undefined,
+const initialFilterValues: FilterState<ModelTransferJobsFilterOptions> = {
+  [ModelTransferJobsFilterOptions.jobName]: '',
+  [ModelTransferJobsFilterOptions.modelName]: '',
+  [ModelTransferJobsFilterOptions.versionName]: '',
+  [ModelTransferJobsFilterOptions.namespace]: '',
+  [ModelTransferJobsFilterOptions.author]: '',
+  [ModelTransferJobsFilterOptions.status]: '',
 };
 
 type ModelTransferJobsListViewProps = {
@@ -47,24 +76,28 @@ const ModelTransferJobsListView: React.FC<ModelTransferJobsListViewProps> = ({
   onRequestDelete,
   onRequestRetry,
 }) => {
-  const [filterData, setFilterData] =
-    React.useState<ModelTransferJobsFilterDataType>(initialFilterData);
+  const [filterValues, setFilterValues] =
+    React.useState<FilterState<ModelTransferJobsFilterOptions>>(initialFilterValues);
 
-  const onFilterUpdate = React.useCallback(
-    (key: string, value: string | { label: string; value: string } | undefined) =>
-      setFilterData((prevValues) => ({ ...prevValues, [key]: value })),
-    [setFilterData],
+  const onFilterChange = React.useCallback(
+    (key: ModelTransferJobsFilterOptions, value: string | string[]) =>
+      setFilterValues((prev) => ({ ...prev, [key]: value })),
+    [],
   );
 
-  const onClearFilters = React.useCallback(() => setFilterData(initialFilterData), [setFilterData]);
+  const onClearAllFilters = React.useCallback(() => setFilterValues(initialFilterValues), []);
 
   const filteredJobs = React.useMemo(() => {
-    const jobNameFilter = filterData[ModelTransferJobsFilterOptions.jobName]?.toLowerCase();
-    const modelNameFilter = filterData[ModelTransferJobsFilterOptions.modelName]?.toLowerCase();
-    const versionNameFilter = filterData[ModelTransferJobsFilterOptions.versionName]?.toLowerCase();
-    const namespaceFilter = filterData[ModelTransferJobsFilterOptions.namespace]?.toLowerCase();
-    const authorFilter = filterData[ModelTransferJobsFilterOptions.author]?.toLowerCase();
-    const statusFilter = filterData[ModelTransferJobsFilterOptions.status]?.toLowerCase();
+    const getValue = (key: ModelTransferJobsFilterOptions): string => {
+      const v = filterValues[key];
+      return typeof v === 'string' ? v.toLowerCase() : '';
+    };
+    const jobNameFilter = getValue(ModelTransferJobsFilterOptions.jobName);
+    const modelNameFilter = getValue(ModelTransferJobsFilterOptions.modelName);
+    const versionNameFilter = getValue(ModelTransferJobsFilterOptions.versionName);
+    const namespaceFilter = getValue(ModelTransferJobsFilterOptions.namespace);
+    const authorFilter = getValue(ModelTransferJobsFilterOptions.author);
+    const statusFilter = getValue(ModelTransferJobsFilterOptions.status);
 
     return jobs.filter((job) => {
       const jobNameForDisplay = (job.jobDisplayName || job.name || '').toLowerCase();
@@ -88,7 +121,7 @@ const ModelTransferJobsListView: React.FC<ModelTransferJobsListViewProps> = ({
       }
       return true;
     });
-  }, [jobs, filterData]);
+  }, [jobs, filterValues]);
 
   if (jobs.length === 0) {
     return (
@@ -101,77 +134,20 @@ const ModelTransferJobsListView: React.FC<ModelTransferJobsListViewProps> = ({
     );
   }
 
-  const toggleGroupItems = (
-    <ToolbarGroup variant="filter-group">
-      <FilterToolbar
-        filterOptions={modelTransferJobsFilterOptions}
-        filterOptionRenders={{
-          [ModelTransferJobsFilterOptions.jobName]: ({ onChange, ...props }) => (
-            <ThemeAwareSearchInput
-              {...props}
-              placeholder="Filter by job name"
-              className="toolbar-fieldset-wrapper"
-              style={{ minWidth: '270px' }}
-              onChange={(value) => onChange(value)}
-            />
-          ),
-          [ModelTransferJobsFilterOptions.modelName]: ({ onChange, ...props }) => (
-            <ThemeAwareSearchInput
-              {...props}
-              placeholder="Filter by model name"
-              className="toolbar-fieldset-wrapper"
-              style={{ minWidth: '270px' }}
-              onChange={(value) => onChange(value)}
-            />
-          ),
-          [ModelTransferJobsFilterOptions.versionName]: ({ onChange, ...props }) => (
-            <ThemeAwareSearchInput
-              {...props}
-              placeholder="Filter by version name"
-              className="toolbar-fieldset-wrapper"
-              style={{ minWidth: '270px' }}
-              onChange={(value) => onChange(value)}
-            />
-          ),
-          [ModelTransferJobsFilterOptions.namespace]: ({ onChange, ...props }) => (
-            <ThemeAwareSearchInput
-              {...props}
-              placeholder="Filter by namespace"
-              className="toolbar-fieldset-wrapper"
-              style={{ minWidth: '270px' }}
-              onChange={(value) => onChange(value)}
-            />
-          ),
-          [ModelTransferJobsFilterOptions.author]: ({ onChange, ...props }) => (
-            <ThemeAwareSearchInput
-              {...props}
-              placeholder="Filter by author"
-              className="toolbar-fieldset-wrapper"
-              style={{ minWidth: '270px' }}
-              onChange={(value) => onChange(value)}
-            />
-          ),
-          [ModelTransferJobsFilterOptions.status]: ({ onChange, ...props }) => (
-            <ThemeAwareSearchInput
-              {...props}
-              placeholder="Filter by status"
-              className="toolbar-fieldset-wrapper"
-              style={{ minWidth: '270px' }}
-              onChange={(value) => onChange(value)}
-            />
-          ),
-        }}
-        filterData={filterData}
-        onFilterUpdate={onFilterUpdate}
-      />
-    </ToolbarGroup>
-  );
-
   return (
     <ModelTransferJobsTable
       jobs={filteredJobs}
-      clearFilters={onClearFilters}
-      toolbarContent={toggleGroupItems}
+      clearFilters={onClearAllFilters}
+      toolbarContent={
+        <ToolbarFilter
+          filterConfig={modelTransferJobsFilterConfig}
+          visibleFilterKeys={visibleFilterKeys}
+          filterValues={filterValues}
+          onFilterChange={onFilterChange}
+          onClearAllFilters={onClearAllFilters}
+          testIdPrefix="model-transfer-jobs"
+        />
+      }
       onRequestDelete={onRequestDelete}
       onRequestRetry={onRequestRetry}
     />

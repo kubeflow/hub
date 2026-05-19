@@ -189,11 +189,11 @@ class ModelRegistry {
   }
 
   findTableSearch() {
-    return cy.findByTestId('filter-toolbar-text-field');
+    return cy.findByTestId('model-versions-table-Keyword-input');
   }
 
   findFilterDropdownItem(name: string) {
-    return cy.findByTestId(`filter-toolbar-dropdown`).findDropdownItem(name);
+    return cy.findByTestId(`model-versions-table-dropdown`).findDropdownItem(name);
   }
 
   findModelVersionsTableToolbar() {
@@ -213,7 +213,7 @@ class ModelRegistry {
   }
 
   findModelVersionsTableFilterOption(name: string) {
-    return cy.findByTestId('filter-toolbar-dropdown').findDropdownItem(name);
+    return cy.findByTestId('model-versions-table-dropdown').findDropdownItem(name);
   }
 
   findRegisterModelButton() {

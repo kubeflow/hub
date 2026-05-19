@@ -1,7 +1,13 @@
 import * as React from 'react';
-import { Button, ToolbarGroup } from '@patternfly/react-core';
+import { Button } from '@patternfly/react-core';
 import { useNavigate } from 'react-router-dom';
-import { ProjectObjectType, typedEmptyImage } from 'mod-arch-shared';
+import {
+  ProjectObjectType,
+  typedEmptyImage,
+  ToolbarFilter,
+  FilterState,
+  FilterConfigMap,
+} from 'mod-arch-shared';
 import { ModelVersion, RegisteredModel } from '~/app/types';
 import { ModelRegistrySelectorContext } from '~/app/context/ModelRegistrySelectorContext';
 import {
@@ -13,20 +19,39 @@ import EmptyModelRegistryState from '~/app/pages/modelRegistry/screens/component
 import { filterRegisteredModels } from '~/app/pages/modelRegistry/screens/utils';
 import { filterArchiveModels, filterLiveModels } from '~/app/utils';
 import {
-  initialModelRegistryFilterData,
   ModelRegistryFilterDataType,
-  modelRegistryFilterOptions,
   ModelRegistryFilterOptions,
 } from '~/app/pages/modelRegistry/screens/const';
-import FilterToolbar from '~/app/shared/components/FilterToolbar';
-import ThemeAwareSearchInput from '~/app/pages/modelRegistry/screens/components/ThemeAwareSearchInput';
 import RegisteredModelTable from './RegisteredModelTable';
-import RegisteredModelsTableToolbar from './RegisteredModelsTableToolbar';
+import RegisteredModelsToolbarActions from './RegisteredModelsToolbarActions';
 
 type RegisteredModelListViewProps = {
   registeredModels: RegisteredModel[];
   modelVersions: ModelVersion[];
   refresh: () => void;
+};
+
+const filterConfig: FilterConfigMap<ModelRegistryFilterOptions> = {
+  [ModelRegistryFilterOptions.keyword]: {
+    type: 'text',
+    label: 'Keyword',
+    placeholder: 'Filter by name, description or label',
+  },
+  [ModelRegistryFilterOptions.owner]: {
+    type: 'text',
+    label: 'Owner',
+    placeholder: 'Filter by owner',
+  },
+};
+
+const visibleFilterKeys = [
+  ModelRegistryFilterOptions.keyword,
+  ModelRegistryFilterOptions.owner,
+] as const;
+
+const initialFilterValues: FilterState<ModelRegistryFilterOptions> = {
+  [ModelRegistryFilterOptions.keyword]: '',
+  [ModelRegistryFilterOptions.owner]: '',
 };
 
 const RegisteredModelListView: React.FC<RegisteredModelListViewProps> = ({
@@ -36,22 +61,18 @@ const RegisteredModelListView: React.FC<RegisteredModelListViewProps> = ({
 }) => {
   const navigate = useNavigate();
   const { preferredModelRegistry } = React.useContext(ModelRegistrySelectorContext);
-  const [filterData, setFilterData] = React.useState<ModelRegistryFilterDataType>(
-    initialModelRegistryFilterData,
-  );
+  const [filterValues, setFilterValues] =
+    React.useState<FilterState<ModelRegistryFilterOptions>>(initialFilterValues);
   const unfilteredRegisteredModels = filterLiveModels(registeredModels);
   const archiveRegisteredModels = filterArchiveModels(registeredModels);
 
-  const onFilterUpdate = React.useCallback(
-    (key: string, value: string | { label: string; value: string } | undefined) =>
-      setFilterData((prevValues) => ({ ...prevValues, [key]: value })),
-    [setFilterData],
+  const onFilterChange = React.useCallback(
+    (key: ModelRegistryFilterOptions, value: string | string[]) =>
+      setFilterValues((prev) => ({ ...prev, [key]: value })),
+    [],
   );
 
-  const onClearFilters = React.useCallback(
-    () => setFilterData(initialModelRegistryFilterData),
-    [setFilterData],
-  );
+  const onClearAllFilters = React.useCallback(() => setFilterValues(initialFilterValues), []);
 
   if (unfilteredRegisteredModels.length === 0) {
     return (
@@ -90,52 +111,41 @@ const RegisteredModelListView: React.FC<RegisteredModelListViewProps> = ({
     );
   }
 
+  const getTextValue = (v: string | string[]): string | undefined => {
+    const s = typeof v === 'string' ? v : v[0];
+    return s || undefined;
+  };
+
+  const filterData: ModelRegistryFilterDataType = {
+    [ModelRegistryFilterOptions.keyword]: getTextValue(
+      filterValues[ModelRegistryFilterOptions.keyword],
+    ),
+    [ModelRegistryFilterOptions.owner]: getTextValue(
+      filterValues[ModelRegistryFilterOptions.owner],
+    ),
+  };
+
   const filteredRegisteredModels = filterRegisteredModels(
     unfilteredRegisteredModels,
     modelVersions,
     filterData,
   );
 
-  const toggleGroupItems = (
-    <ToolbarGroup variant="filter-group">
-      <FilterToolbar
-        filterOptions={modelRegistryFilterOptions}
-        filterOptionRenders={{
-          [ModelRegistryFilterOptions.keyword]: ({ onChange, ...props }) => (
-            <ThemeAwareSearchInput
-              {...props}
-              placeholder="Filter by name, description or label"
-              className="toolbar-fieldset-wrapper"
-              style={{ minWidth: '270px' }}
-              onChange={(value) => onChange(value)}
-            />
-          ),
-          [ModelRegistryFilterOptions.owner]: ({ onChange, ...props }) => (
-            <ThemeAwareSearchInput
-              {...props}
-              placeholder="Filter by owner"
-              className="toolbar-fieldset-wrapper"
-              style={{ minWidth: '270px' }}
-              onChange={(value) => onChange(value)}
-            />
-          ),
-        }}
-        filterData={filterData}
-        onFilterUpdate={onFilterUpdate}
-      />
-    </ToolbarGroup>
-  );
-
   return (
     <RegisteredModelTable
       refresh={refresh}
-      clearFilters={onClearFilters}
+      clearFilters={onClearAllFilters}
       registeredModels={filteredRegisteredModels}
       modelVersions={modelVersions}
       toolbarContent={
-        <RegisteredModelsTableToolbar
-          toggleGroupItems={toggleGroupItems}
-          onClearAllFilters={onClearFilters}
+        <ToolbarFilter
+          filterConfig={filterConfig}
+          visibleFilterKeys={visibleFilterKeys}
+          filterValues={filterValues}
+          onFilterChange={onFilterChange}
+          onClearAllFilters={onClearAllFilters}
+          toolbarActions={<RegisteredModelsToolbarActions />}
+          testIdPrefix="registered-models-table"
         />
       }
     />

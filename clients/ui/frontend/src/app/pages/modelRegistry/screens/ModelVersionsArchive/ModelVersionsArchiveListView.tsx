@@ -1,17 +1,13 @@
 import * as React from 'react';
-import { Toolbar, ToolbarContent, ToolbarGroup, ToolbarToggleGroup } from '@patternfly/react-core';
-import { FilterIcon, SearchIcon } from '@patternfly/react-icons';
+import { SearchIcon } from '@patternfly/react-icons';
+import { ToolbarFilter, FilterState, FilterConfigMap } from 'mod-arch-shared';
 import { ModelVersion } from '~/app/types';
 import { filterModelVersions } from '~/app/pages/modelRegistry/screens/utils';
 import EmptyModelRegistryState from '~/app/pages/modelRegistry/screens/components/EmptyModelRegistryState';
-import FilterToolbar from '~/app/shared/components/FilterToolbar';
 import {
-  initialModelRegistryVersionsFilterData,
   ModelRegistryVersionsFilterDataType,
-  modelRegistryVersionsFilterOptions,
   ModelRegistryVersionsFilterOptions,
 } from '~/app/pages/modelRegistry/screens/const';
-import ThemeAwareSearchInput from '~/app/pages/modelRegistry/screens/components/ThemeAwareSearchInput';
 import ModelVersionsArchiveTable from './ModelVersionsArchiveTable';
 
 type ModelVersionsArchiveListViewProps = {
@@ -19,24 +15,57 @@ type ModelVersionsArchiveListViewProps = {
   refresh: () => void;
 };
 
+const filterConfig: FilterConfigMap<ModelRegistryVersionsFilterOptions> = {
+  [ModelRegistryVersionsFilterOptions.keyword]: {
+    type: 'text',
+    label: 'Keyword',
+    placeholder: 'Filter by name, description or label',
+  },
+  [ModelRegistryVersionsFilterOptions.author]: {
+    type: 'text',
+    label: 'Author',
+    placeholder: 'Filter by author',
+  },
+};
+
+const visibleFilterKeys = [
+  ModelRegistryVersionsFilterOptions.keyword,
+  ModelRegistryVersionsFilterOptions.author,
+] as const;
+
+const initialFilterValues: FilterState<ModelRegistryVersionsFilterOptions> = {
+  [ModelRegistryVersionsFilterOptions.keyword]: '',
+  [ModelRegistryVersionsFilterOptions.author]: '',
+};
+
+const getTextValue = (v: string | string[]): string | undefined => {
+  const s = typeof v === 'string' ? v : v[0];
+  return s || undefined;
+};
+
 const ModelVersionsArchiveListView: React.FC<ModelVersionsArchiveListViewProps> = ({
   modelVersions: unfilteredmodelVersions,
   refresh,
 }) => {
-  const [filterData, setFilterData] = React.useState<ModelRegistryVersionsFilterDataType>(
-    initialModelRegistryVersionsFilterData,
+  const [filterValues, setFilterValues] =
+    React.useState<FilterState<ModelRegistryVersionsFilterOptions>>(initialFilterValues);
+
+  const onFilterChange = React.useCallback(
+    (key: ModelRegistryVersionsFilterOptions, value: string | string[]) =>
+      setFilterValues((prev) => ({ ...prev, [key]: value })),
+    [],
   );
 
-  const onFilterUpdate = React.useCallback(
-    (key: string, value: string | { label: string; value: string } | undefined) =>
-      setFilterData((prevValues) => ({ ...prevValues, [key]: value })),
-    [setFilterData],
-  );
+  const onClearAllFilters = React.useCallback(() => setFilterValues(initialFilterValues), []);
 
-  const onClearFilters = React.useCallback(
-    () => setFilterData(initialModelRegistryVersionsFilterData),
-    [setFilterData],
-  );
+  const filterData: ModelRegistryVersionsFilterDataType = {
+    [ModelRegistryVersionsFilterOptions.keyword]: getTextValue(
+      filterValues[ModelRegistryVersionsFilterOptions.keyword],
+    ),
+    [ModelRegistryVersionsFilterOptions.author]: getTextValue(
+      filterValues[ModelRegistryVersionsFilterOptions.author],
+    ),
+  };
 
   const filteredModelVersions = filterModelVersions(unfilteredmodelVersions, filterData);
 
@@ -54,45 +83,17 @@ const ModelVersionsArchiveListView: React.FC<ModelVersionsArchiveListViewProps> 
   return (
     <ModelVersionsArchiveTable
       refresh={refresh}
-      clearFilters={onClearFilters}
+      clearFilters={onClearAllFilters}
       modelVersions={filteredModelVersions}
       toolbarContent={
-        <Toolbar
-          data-testid="model-versions-archive-table-toolbar"
-          clearAllFilters={onClearFilters}
-        >
-          <ToolbarContent>
-            <ToolbarToggleGroup toggleIcon={<FilterIcon />} breakpoint="xl">
-              <ToolbarGroup variant="filter-group">
-                <FilterToolbar
-                  filterOptions={modelRegistryVersionsFilterOptions}
-                  filterOptionRenders={{
-                    [ModelRegistryVersionsFilterOptions.keyword]: ({ onChange, ...props }) => (
-                      <ThemeAwareSearchInput
-                        {...props}
-                        placeholder="Filter by name, description or label"
-                        className="toolbar-fieldset-wrapper"
-                        style={{ minWidth: '270px' }}
-                        onChange={(value) => onChange(value)}
-                      />
-                    ),
-                    [ModelRegistryVersionsFilterOptions.author]: ({ onChange, ...props }) => (
-                      <ThemeAwareSearchInput
-                        {...props}
-                        placeholder="Filter by author"
-                        className="toolbar-fieldset-wrapper"
-                        style={{ minWidth: '270px' }}
-                        onChange={(value) => onChange(value)}
-                      />
-                    ),
-                  }}
-                  filterData={filterData}
-                  onFilterUpdate={onFilterUpdate}
-                />
-              </ToolbarGroup>
-            </ToolbarToggleGroup>
-          </ToolbarContent>
-        </Toolbar>
+        <ToolbarFilter
+          filterConfig={filterConfig}
+          visibleFilterKeys={visibleFilterKeys}
+          filterValues={filterValues}
+          onFilterChange={onFilterChange}
+          onClearAllFilters={onClearAllFilters}
+          testIdPrefix="model-versions-archive-table"
+        />
       }
     />
   );

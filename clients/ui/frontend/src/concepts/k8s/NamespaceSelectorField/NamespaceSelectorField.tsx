@@ -13,7 +13,7 @@ import {
 import { SimpleSelect } from 'mod-arch-shared';
 import { SimpleSelectOption } from 'mod-arch-shared/dist/components/SimpleSelect';
 import { useNamespaces } from '~/app/hooks/useNamespaces';
-import ThemeAwareFormGroupWrapper from '~/app/pages/settings/components/ThemeAwareFormGroupWrapper';
+import { ThemeAwareFormGroupWrapper } from 'mod-arch-shared';
 import { NamespaceSelectorMessages } from '~/app/utilities/const';
 
 const WHO_IS_MY_ADMIN_POPOVER_CONTENT = (
