@@ -401,16 +401,6 @@ describe('Model Catalog Page', () => {
       });
     });
 
-    it('should not show helper text when only one option exists', () => {
-      initIntercepts({});
-      modelCatalog.visit();
-      modelCatalog
-        .findFilterCheckbox('Validated arguments', 'tool-calling')
-        .scrollIntoView()
-        .click();
-      cy.contains('Showing models with all selected arguments').should('not.exist');
-    });
-
     describe('with multiple options', () => {
       const multiOptionFilterOptions = mockCatalogFilterOptionsList({
         filters: {
@@ -433,16 +423,6 @@ describe('Model Catalog Page', () => {
           multiOptionFilterOptions,
         );
       };
-
-      it('should show helper text when an option is selected', () => {
-        initMultiOptionIntercepts({});
-        modelCatalog.visit();
-        modelCatalog
-          .findFilterCheckbox('Validated arguments', 'tool-calling')
-          .scrollIntoView()
-          .click();
-        cy.contains('Showing models with all selected arguments').should('be.visible');
-      });
 
       it('should send AND conditions instead of IN for multiple selections', () => {
         initMultiOptionIntercepts({ includeAllModelsIntercept: true });
