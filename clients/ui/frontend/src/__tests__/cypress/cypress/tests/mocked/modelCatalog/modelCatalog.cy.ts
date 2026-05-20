@@ -345,13 +345,13 @@ describe('Model Catalog Page', () => {
     });
   });
 
-  it('should not display validated configuration filter when feature flag is off', () => {
+  it('should not display validated arguments filter when feature flag is off', () => {
     initIntercepts({});
     modelCatalog.visit();
     modelCatalog.findFilter('Validated arguments').should('not.exist');
   });
 
-  describe('Validated Configuration Filter (feature flag on)', () => {
+  describe('Validated arguments Filter (feature flag on)', () => {
     beforeEach(() => {
       window.localStorage.setItem(TempDevFeature.ToolCallingConfiguration, 'true');
     });
@@ -369,7 +369,7 @@ describe('Model Catalog Page', () => {
 
       modelCatalog.visit();
       modelCatalog
-        .findFilterCheckbox('Validated configuration', 'tool-calling')
+        .findFilterCheckbox('Validated arguments', 'tool-calling')
         .scrollIntoView()
         .click();
 
@@ -405,10 +405,10 @@ describe('Model Catalog Page', () => {
       initIntercepts({});
       modelCatalog.visit();
       modelCatalog
-        .findFilterCheckbox('Validated configuration', 'tool-calling')
+        .findFilterCheckbox('Validated arguments', 'tool-calling')
         .scrollIntoView()
         .click();
-      cy.contains('Showing models with all selected configurations').should('not.exist');
+      cy.contains('Showing models with all selected arguments').should('not.exist');
     });
 
     describe('with multiple options', () => {
@@ -438,10 +438,10 @@ describe('Model Catalog Page', () => {
         initMultiOptionIntercepts({});
         modelCatalog.visit();
         modelCatalog
-          .findFilterCheckbox('Validated configuration', 'tool-calling')
+          .findFilterCheckbox('Validated arguments', 'tool-calling')
           .scrollIntoView()
           .click();
-        cy.contains('Showing models with all selected configurations').should('be.visible');
+        cy.contains('Showing models with all selected arguments').should('be.visible');
       });
 
       it('should send AND conditions instead of IN for multiple selections', () => {
@@ -453,12 +453,12 @@ describe('Model Catalog Page', () => {
 
         modelCatalog.visit();
         modelCatalog
-          .findFilterCheckbox('Validated configuration', 'tool-calling')
+          .findFilterCheckbox('Validated arguments', 'tool-calling')
           .scrollIntoView()
           .click();
         cy.wait('@getFilteredModels');
 
-        modelCatalog.findFilterCheckbox('Validated configuration', 'text-generation').click();
+        modelCatalog.findFilterCheckbox('Validated arguments', 'text-generation').click();
 
         cy.wait('@getFilteredModels').then((interception) => {
           const { url } = interception.request;

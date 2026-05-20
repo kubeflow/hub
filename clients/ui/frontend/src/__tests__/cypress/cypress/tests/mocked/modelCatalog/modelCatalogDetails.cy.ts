@@ -342,7 +342,7 @@ describe('Model Catalog Details Page - Validated Configurations Card', () => {
       modelCatalog.findValidatedConfigurationsCard().should('be.visible');
       modelCatalog.findValidatedConfigurationsCard().should('contain.text', 'Validated arguments');
       modelCatalog.findToolCallingCard().should('be.visible');
-      modelCatalog.findToolCallingCard().should('contain.text', 'Tool Calling');
+      modelCatalog.findToolCallingCard().should('contain.text', 'Tool calling');
     });
 
     it('should show CLI args inside the tool calling card when expanded', () => {
