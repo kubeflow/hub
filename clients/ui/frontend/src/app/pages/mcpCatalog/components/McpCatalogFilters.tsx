@@ -14,7 +14,7 @@ const McpCatalogFilters: React.FC = () => {
     [setFilters],
   );
 
-  const filterConfigs = useCatalogFilterConfigs({
+  const filterPanelItems = useCatalogFilterConfigs({
     filterKeys: MCP_FILTER_KEYS,
     filterNames: MCP_FILTER_CATEGORY_NAMES,
     filterOptions: filterOptions?.filters,
@@ -26,7 +26,7 @@ const McpCatalogFilters: React.FC = () => {
     <CatalogFilterPanel
       loaded={filterOptionsLoaded}
       loadError={filterOptionsLoadError}
-      filters={filterConfigs}
+      filters={filterPanelItems}
       testIdPrefix="mcp-filter"
     />
   );

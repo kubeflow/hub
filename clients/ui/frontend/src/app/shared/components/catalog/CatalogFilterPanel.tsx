@@ -44,7 +44,8 @@ const CatalogFilterPanel: React.FC<CatalogFilterPanelProps> = ({
               selectedValues={item.selectedValues}
               onToggle={item.onToggle}
               getLabel={item.getLabel}
-              testIdBase={`${testIdPrefix}-${item.key}`}
+              testIdBase={item.testIdBase ?? `${testIdPrefix}-${item.key}`}
+              getCheckboxTestId={item.getCheckboxTestId}
             />
             {item.footer}
           </StackItem>

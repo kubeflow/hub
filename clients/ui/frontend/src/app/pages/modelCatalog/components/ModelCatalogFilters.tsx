@@ -58,6 +58,7 @@ const ModelCatalogFilters: React.FC = () => {
     ) {
       setFilterData(ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION, []);
     }
+    // Only react to flag changes — including filterData would cause an infinite loop
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolCallingFeatureAvailable]);
 
@@ -71,7 +72,7 @@ const ModelCatalogFilters: React.FC = () => {
     [setFilterData],
   );
 
-  const stringFilterData = React.useMemo(() => {
+  const selectedStringFilters = React.useMemo(() => {
     const result: Record<string, string[] | undefined> = {};
     for (const key of BASIC_STRING_FILTER_KEYS) {
       result[key] = filterData[key];
@@ -79,23 +80,28 @@ const ModelCatalogFilters: React.FC = () => {
     return result;
   }, [filterData]);
 
-  const filterConfigs = useCatalogFilterConfigs({
+  const baseFilterItems = useCatalogFilterConfigs({
     filterKeys: BASIC_STRING_FILTER_KEYS,
     filterNames: MODEL_CATALOG_FILTER_CATEGORY_NAMES,
     filterOptions: filterOptions?.filters,
-    selectedFilters: stringFilterData,
+    selectedFilters: selectedStringFilters,
     onFilterChange,
     labelMappings: LABEL_MAPPINGS,
   });
 
-  const enrichedFilters = React.useMemo((): FilterPanelItem[] => {
-    const vcKey = ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION;
-    return filterConfigs.map((item) => {
-      if (item.key === vcKey) {
+  const filterPanelItems = React.useMemo((): FilterPanelItem[] => {
+    const validatedConfigKey = ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION;
+    return baseFilterItems.map((item) => {
+      const itemWithTestIds: FilterPanelItem = {
+        ...item,
+        testIdBase: `${item.title}-filter`,
+        getCheckboxTestId: (value: string) => `${item.title}-${value}-checkbox`,
+      };
+      if (item.key === validatedConfigKey) {
         const hasMultiple = item.filterValues.length > 1;
         const hasSelection = item.selectedValues.length > 0;
         return {
-          ...item,
+          ...itemWithTestIds,
           visible: toolCallingFeatureAvailable,
           footer:
             hasMultiple && hasSelection ? (
@@ -105,15 +111,15 @@ const ModelCatalogFilters: React.FC = () => {
             ) : undefined,
         };
       }
-      return item;
+      return itemWithTestIds;
     });
-  }, [filterConfigs, toolCallingFeatureAvailable]);
+  }, [baseFilterItems, toolCallingFeatureAvailable]);
 
   return (
     <CatalogFilterPanel
       loaded={filterOptionsLoaded}
       loadError={filterOptionsLoadError}
-      filters={enrichedFilters}
+      filters={filterPanelItems}
       extraContent={<ModelPerformanceViewToggleCard />}
       testIdPrefix="model-catalog-filter"
     />
