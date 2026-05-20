@@ -9,6 +9,8 @@ export type FilterPanelItem = {
   getLabel?: (value: string) => string;
   footer?: React.ReactNode;
   visible?: boolean;
+  testIdBase?: string;
+  getCheckboxTestId?: (value: string) => string;
 };
 
 type CatalogFilterConfigsInput = {
@@ -40,30 +42,32 @@ export function useCatalogFilterConfigs({
   return React.useMemo(
     () =>
       filterKeys
-        .map((key): FilterPanelItem | null => {
-          const option = filterOptions?.[key];
-          if (!option?.values || option.values.length === 0) {
+        .map((filterKey): FilterPanelItem | null => {
+          const filterOption = filterOptions?.[filterKey];
+          if (!filterOption?.values || filterOption.values.length === 0) {
             return null;
           }
 
-          const currentValues = selectedFilters[key] ?? [];
-          const mapping = labelMappings?.[key];
+          const selectedValues = selectedFilters[filterKey] ?? [];
+          const labelMapping = labelMappings?.[filterKey];
 
           return {
-            key,
-            title: filterNames[key] ?? key,
-            filterValues: option.values,
-            selectedValues: currentValues,
-            onToggle: (value: string, checked: boolean) => {
-              const latest = selectedFiltersRef.current[key] ?? [];
-              const next = checked
-                ? latest.includes(value)
-                  ? latest
-                  : [...latest, value]
-                : latest.filter((v) => v !== value);
-              onFilterChange(key, next);
+            key: filterKey,
+            title: filterNames[filterKey] ?? filterKey,
+            filterValues: filterOption.values,
+            selectedValues,
+            onToggle: (filterValue: string, isChecked: boolean) => {
+              const currentSelectedValues = selectedFiltersRef.current[filterKey] ?? [];
+              const updatedValues = isChecked
+                ? currentSelectedValues.includes(filterValue)
+                  ? currentSelectedValues
+                  : [...currentSelectedValues, filterValue]
+                : currentSelectedValues.filter((selected) => selected !== filterValue);
+              onFilterChange(filterKey, updatedValues);
             },
-            getLabel: mapping ? (value: string) => mapping[value] ?? value : undefined,
+            getLabel: labelMapping
+              ? (filterValue: string) => labelMapping[filterValue] ?? filterValue
+              : undefined,
           };
         })
         .filter((item): item is FilterPanelItem => item !== null),
