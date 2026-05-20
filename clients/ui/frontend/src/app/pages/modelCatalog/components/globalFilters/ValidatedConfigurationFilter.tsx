@@ -29,7 +29,7 @@ const ValidatedConfigurationFilter: React.FC<ValidatedConfigurationFilterProps> 
     <>
       <StackItem>
         <ModelCatalogStringFilter<ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION>
-          title="Validated configuration"
+          title="Validated arguments"
           filterKey={filterKey}
           filterToNameMapping={MODEL_CATALOG_VALIDATED_CONFIGURATION_NAME_MAPPING}
           filters={validatedConfiguration}

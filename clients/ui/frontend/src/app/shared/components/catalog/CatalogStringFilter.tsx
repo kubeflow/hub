@@ -55,7 +55,7 @@ const CatalogStringFilter: React.FC<CatalogStringFilterProps> = ({
       <Content component={ContentVariants.h6}>{title}</Content>
       {showSearch && (
         <SearchInput
-          placeholder={`Search ${title.toLowerCase()}`}
+          placeholder="Search"
           value={searchValue}
           onChange={(_event, value) => setSearchValue(value)}
           data-testid={`${testIdBase}-search`}

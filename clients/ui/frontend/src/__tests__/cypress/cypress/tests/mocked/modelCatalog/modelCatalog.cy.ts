@@ -348,7 +348,7 @@ describe('Model Catalog Page', () => {
   it('should not display validated configuration filter when feature flag is off', () => {
     initIntercepts({});
     modelCatalog.visit();
-    modelCatalog.findFilter('Validated configuration').should('not.exist');
+    modelCatalog.findFilter('Validated arguments').should('not.exist');
   });
 
   describe('Validated Configuration Filter (feature flag on)', () => {
@@ -387,7 +387,7 @@ describe('Model Catalog Page', () => {
 
       modelCatalog.visit();
       modelCatalog
-        .findFilterCheckbox('Validated configuration', 'tool-calling')
+        .findFilterCheckbox('Validated arguments', 'tool-calling')
         .scrollIntoView()
         .click();
       cy.wait('@getFilteredModels');

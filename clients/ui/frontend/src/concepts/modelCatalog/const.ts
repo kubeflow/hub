@@ -259,7 +259,7 @@ export enum ModelCatalogTensorType {
 
 export const MODEL_CATALOG_POPOVER_MESSAGES = {
   VALIDATED:
-    'Validated models are benchmarked for performance and quality using leading open source evaluation datasets.',
+    'Validated models are benchmarked for performance and quality using leading open source evaluation datasets. Some of these include tested runtime arguments for enabling additional capabilities.',
 } as const;
 
 export enum CatalogModelCustomPropertyKey {
@@ -572,7 +572,7 @@ export const MODEL_CATALOG_FILTER_CATEGORY_NAMES: Record<ModelCatalogFilterKey, 
   [ModelCatalogStringFilterKey.HARDWARE_CONFIGURATION]: 'Hardware',
   [ModelCatalogStringFilterKey.USE_CASE]: 'Workload type',
   [ModelCatalogStringFilterKey.TENSOR_TYPE]: 'Tensor type',
-  [ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION]: 'Validated configuration',
+  [ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION]: 'Validated arguments',
   // Number filter keys
   [ModelCatalogNumberFilterKey.MAX_RPS]: 'Max RPS',
   // Latency field names - all use "Latency" as category name

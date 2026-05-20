@@ -141,13 +141,14 @@ const ModelDetailsView: React.FC<ModelDetailsViewProps> = ({
                 <Card data-testid="validated-configurations-card">
                   <CardHeader>
                     <Title headingLevel="h2" size="lg">
-                      Validated configurations
+                      Validated arguments
                     </Title>
                   </CardHeader>
                   <CardBody>
                     <Content component="p" className="pf-v6-u-mb-md">
-                      These configurations have been tested and validated for this model. Use them
-                      as runtime arguments when deploying.
+                      These runtime arguments have been tested to work with this model. To enable
+                      each capability, copy and paste the arguments into the{' '}
+                      <b>Additional arguments</b> field when deploying.
                     </Content>
                     <Card
                       id="tool-calling-card"
@@ -165,12 +166,13 @@ const ModelDetailsView: React.FC<ModelDetailsViewProps> = ({
                         <Stack>
                           <StackItem>
                             <Title headingLevel="h3" size="md">
-                              Tool Calling
+                              Tool calling
                             </Title>
                           </StackItem>
                           <StackItem>
                             <Content component="small">
-                              Enables agentic workflows and function calling capabilities.
+                              Allows the model to call external tools and APIs, enabling it to take
+                              actions like querying databases or running code.
                             </Content>
                           </StackItem>
                         </Stack>
