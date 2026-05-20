@@ -9,6 +9,21 @@ export const andFilter = (k: string, values: string[]): string =>
   values.map((v) => eqFilter(k, v)).join(' AND ');
 
 /**
+ * Computes the next filter selection array after toggling a value.
+ * Returns null if checked=true and the value is already present (no-op).
+ */
+export function toggleFilterValue(
+  current: string[],
+  value: string,
+  checked: boolean,
+): string[] | null {
+  if (checked) {
+    return current.includes(value) ? null : [...current, value];
+  }
+  return current.filter((x) => x !== value);
+}
+
+/**
  * Converts a record of string-array filters into a filterQuery string.
  * Handles single-value equality and multi-value IN (OR) or AND clauses, joined with AND.
  *

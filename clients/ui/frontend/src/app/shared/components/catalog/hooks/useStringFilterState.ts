@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { toggleFilterValue } from '~/app/shared/components/catalog/utils/catalogFilterUtils';
 
 /**
  * Shared hook for managing a string-array filter selection.
@@ -23,12 +24,9 @@ export function useStringFilterState(
 
   const setSelected = React.useCallback(
     (value: string, checked: boolean) => {
-      if (checked) {
-        if (!currentValues.includes(value)) {
-          onChange([...currentValues, value]);
-        }
-      } else {
-        onChange(currentValues.filter((x) => x !== value));
+      const next = toggleFilterValue(currentValues, value, checked);
+      if (next !== null) {
+        onChange(next);
       }
     },
     [currentValues, onChange],

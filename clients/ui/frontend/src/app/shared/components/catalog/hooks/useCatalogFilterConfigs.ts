@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { toggleFilterValue } from '~/app/shared/components/catalog/utils/catalogFilterUtils';
 
 export type FilterPanelItem = {
   key: string;
@@ -58,12 +59,14 @@ export function useCatalogFilterConfigs({
             selectedValues,
             onToggle: (filterValue: string, isChecked: boolean) => {
               const currentSelectedValues = selectedFiltersRef.current[filterKey] ?? [];
-              const updatedValues = isChecked
-                ? currentSelectedValues.includes(filterValue)
-                  ? currentSelectedValues
-                  : [...currentSelectedValues, filterValue]
-                : currentSelectedValues.filter((selected) => selected !== filterValue);
-              onFilterChange(filterKey, updatedValues);
+              const updatedValues = toggleFilterValue(
+                currentSelectedValues,
+                filterValue,
+                isChecked,
+              );
+              if (updatedValues !== null) {
+                onFilterChange(filterKey, updatedValues);
+              }
             },
             getLabel: labelMapping
               ? (filterValue: string) => labelMapping[filterValue] ?? filterValue

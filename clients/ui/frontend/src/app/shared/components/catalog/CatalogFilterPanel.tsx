@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Alert, Divider, Spinner, Stack, StackItem } from '@patternfly/react-core';
 import CatalogStringFilter from './CatalogStringFilter';
-import type { FilterPanelItem } from './useCatalogFilterConfigs';
+import type { FilterPanelItem } from './hooks/useCatalogFilterConfigs';
 
 type CatalogFilterPanelProps = {
   loaded: boolean;
