@@ -165,10 +165,12 @@ func (s *Server) Stop(ctx context.Context) error {
 // until all return (typically when ctx is cancelled / leadership lost).
 func (s *Server) NotifyLeader(ctx context.Context) {
 	s.mu.RLock()
-	defer s.mu.RUnlock()
+	plugins := make([]CatalogPlugin, len(s.plugins))
+	copy(plugins, s.plugins)
+	s.mu.RUnlock()
 
 	var wg sync.WaitGroup
-	for _, p := range s.plugins {
+	for _, p := range plugins {
 		la, ok := p.(LeaderAware)
 		if !ok {
 			continue
