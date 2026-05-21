@@ -18,17 +18,6 @@ import (
 	model "github.com/kubeflow/hub/catalog/pkg/openapi"
 )
 
-// MCPCatalogServiceAPIRouter defines the required methods for binding the api requests to a responses for the MCPCatalogServiceAPI
-// The MCPCatalogServiceAPIRouter implementation should parse necessary information from the http request,
-// pass the data to a MCPCatalogServiceAPIServicer to perform the required actions, then write the service results to the http response.
-type MCPCatalogServiceAPIRouter interface {
-	FindMCPServers(http.ResponseWriter, *http.Request)
-	FindMCPServersFilterOptions(http.ResponseWriter, *http.Request)
-	GetMCPServer(http.ResponseWriter, *http.Request)
-	FindMCPServerTools(http.ResponseWriter, *http.Request)
-	GetMCPServerTool(http.ResponseWriter, *http.Request)
-}
-
 // ModelCatalogServiceAPIRouter defines the required methods for binding the api requests to a responses for the ModelCatalogServiceAPI
 // The ModelCatalogServiceAPIRouter implementation should parse necessary information from the http request,
 // pass the data to a ModelCatalogServiceAPIServicer to perform the required actions, then write the service results to the http response.
@@ -41,18 +30,6 @@ type ModelCatalogServiceAPIRouter interface {
 	GetModel(http.ResponseWriter, *http.Request)
 	GetAllModelArtifacts(http.ResponseWriter, *http.Request)
 	GetAllModelPerformanceArtifacts(http.ResponseWriter, *http.Request)
-}
-
-// MCPCatalogServiceAPIServicer defines the api actions for the MCPCatalogServiceAPI service
-// This interface intended to stay up to date with the openapi yaml used to generate it,
-// while the service implementation can be ignored with the .openapi-generator-ignore file
-// and updated with the logic required for the API.
-type MCPCatalogServiceAPIServicer interface {
-	FindMCPServers(context.Context, string, string, []string, string, string, bool, int32, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
-	FindMCPServersFilterOptions(context.Context) (ImplResponse, error)
-	GetMCPServer(context.Context, string, bool, int32) (ImplResponse, error)
-	FindMCPServerTools(context.Context, string, string, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
-	GetMCPServerTool(context.Context, string, string) (ImplResponse, error)
 }
 
 // ModelCatalogServiceAPIServicer defines the api actions for the ModelCatalogServiceAPI service
