@@ -10,10 +10,10 @@ GO ?= "$(shell which go)"
 .PHONY: gen/openapi-server
 gen/openapi-server: internal/server/openapi/api_model_catalog_service.go internal/server/openapi/api_mcp_catalog_service.go internal/server/openapi/type_asserts.go
 
-internal/server/openapi/api_model_catalog_service.go: ../api/openapi/src/catalog.yaml plugins/model/api/openapi/*.yaml ../api/openapi/src/lib/common.yaml
+internal/server/openapi/api_model_catalog_service.go: ../api/openapi/src/catalog.yaml ../api/openapi/src/plugins/model/*.yaml ../api/openapi/src/lib/common.yaml
 	OPENAPI_GENERATOR="$(OPENAPI_GENERATOR)" ./plugins/model/scripts/gen_openapi_server.sh
 
-internal/server/openapi/api_mcp_catalog_service.go: ../api/openapi/src/catalog.yaml plugins/mcp/api/openapi/*.yaml ../api/openapi/src/lib/common.yaml
+internal/server/openapi/api_mcp_catalog_service.go: ../api/openapi/src/catalog.yaml ../api/openapi/src/plugins/mcp/*.yaml ../api/openapi/src/lib/common.yaml
 	OPENAPI_GENERATOR="$(OPENAPI_GENERATOR)" ./plugins/mcp/scripts/gen_openapi_server.sh
 
 internal/server/openapi/type_asserts.go: internal/server/openapi/api_model_catalog_service.go internal/server/openapi/api_mcp_catalog_service.go

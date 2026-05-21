@@ -87,11 +87,10 @@ cp "$SOURCE_FILE" "$OUT_FILE"
 PLUGIN_DIRS=()
 while IFS= read -r dir; do
     PLUGIN_DIRS+=("$dir")
-done < <(find catalog/plugins/*/api/openapi -maxdepth 0 -type d 2>/dev/null | sort || true)
+done < <(find api/openapi/src/plugins/* -maxdepth 0 -type d 2>/dev/null | sort || true)
 
 for plugin_dir in "${PLUGIN_DIRS[@]}"; do
-    plugin_name=${plugin_dir#catalog/plugins/}
-    plugin_name=${plugin_name%%/*}
+    plugin_name=$(basename "$plugin_dir")
 
     if [[ -z "$plugin_name" ]]; then
         continue

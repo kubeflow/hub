@@ -18,7 +18,7 @@ usage() {
     echo ""
     echo "Assembles a standalone OpenAPI spec for a plugin by merging:"
     echo "  - Core catalog spec (api/openapi/src/catalog.yaml)"
-    echo "  - Plugin paths and schemas (catalog/plugins/<name>/api/openapi/)"
+    echo "  - Plugin paths and schemas (api/openapi/src/plugins/<name>/)"
     echo "  - Shared libraries (api/openapi/src/lib/*.yaml)"
     echo ""
     echo "Example: $0 model /tmp/model_spec.yaml"
@@ -32,7 +32,7 @@ if [[ -z "$PLUGIN_NAME" || -z "$OUT_PATH" ]]; then
     usage
 fi
 
-PLUGIN_DIR="catalog/plugins/$PLUGIN_NAME/api/openapi"
+PLUGIN_DIR="api/openapi/src/plugins/$PLUGIN_NAME"
 if [[ ! -d "$PLUGIN_DIR" ]]; then
     echo "Error: Plugin directory not found at $PLUGIN_DIR" >&2
     exit 1

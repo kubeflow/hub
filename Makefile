@@ -66,7 +66,7 @@ gen/converter: internal/converter/generated/converter.go
 api/openapi/model-registry.yaml: api/openapi/src/model-registry.yaml api/openapi/src/lib/*.yaml bin/yq
 	scripts/merge_openapi.sh model-registry.yaml
 
-api/openapi/catalog.yaml: api/openapi/src/catalog.yaml api/openapi/src/lib/*.yaml $(wildcard catalog/plugins/*/api/openapi/*.yaml) bin/yq
+api/openapi/catalog.yaml: api/openapi/src/catalog.yaml api/openapi/src/lib/*.yaml $(wildcard api/openapi/src/plugins/*/*.yaml) bin/yq
 	scripts/merge_catalog_specs.sh catalog.yaml
 
 # validate the openapi schema
