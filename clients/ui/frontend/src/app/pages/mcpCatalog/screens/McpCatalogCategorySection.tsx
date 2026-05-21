@@ -1,23 +1,10 @@
 import * as React from 'react';
-import {
-  Alert,
-  Button,
-  Content,
-  Flex,
-  FlexItem,
-  Grid,
-  GridItem,
-  Skeleton,
-  StackItem,
-  Title,
-} from '@patternfly/react-core';
-import { ArrowRightIcon, SearchIcon } from '@patternfly/react-icons';
 import { useMcpServersBySourceLabelWithAPI } from '~/app/hooks/mcpServerCatalog/useMcpServersBySourceLabel';
 import {
   getLabelDescription,
   getLabelDisplayName,
 } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
-import EmptyModelCatalogState from '~/app/pages/modelCatalog/EmptyModelCatalogState';
+import { CatalogCategorySection } from '~/app/shared/components/catalog';
 import { McpCatalogContext } from '~/app/context/mcpCatalog/McpCatalogContext';
 import {
   MCP_CATALOG_GRID_SPAN,
@@ -48,101 +35,37 @@ const McpCatalogCategorySection: React.FC<McpCatalogCategorySectionProps> = ({
     },
   );
 
-  const itemsToDisplay = mcpServers.items.slice(0, pageSize);
-
   const categoryTitle = getLabelDisplayName(
     label,
     catalogLabels,
     OTHER_MCP_SERVERS_DISPLAY_NAME,
     'servers',
   );
-  const description = getLabelDescription(label, catalogLabels);
+  const categoryDescription = getLabelDescription(label, catalogLabels);
+  const labelSlug = label.toLowerCase().replace(/\s+/g, '-');
 
   return (
-    <StackItem className="pf-v6-u-pb-xl">
-      <Flex
-        alignItems={{ default: 'alignItemsCenter' }}
-        justifyContent={{ default: 'justifyContentSpaceBetween' }}
-        className="pf-v6-u-mb-md"
-      >
-        <FlexItem>
-          <Title headingLevel="h3" size="lg" data-testid={`mcp-category-title-${label}`}>
-            {categoryTitle}
-          </Title>
-          {description && (
-            <Content component="p" className="pf-v6-u-color-200 pf-v6-u-mt-sm">
-              {description}
-            </Content>
-          )}
-        </FlexItem>
-
-        {mcpServers.items.length >= pageSize && (
-          <FlexItem>
-            <Button
-              variant="link"
-              size="sm"
-              isInline
-              icon={<ArrowRightIcon />}
-              iconPosition="right"
-              data-testid={`mcp-show-all-${label.toLowerCase().replace(/\s+/g, '-')}`}
-              onClick={() => onShowMore(label)}
-            >
-              Show all {categoryTitle}
-            </Button>
-          </FlexItem>
-        )}
-      </Flex>
-
-      {mcpServersLoadError ? (
-        <Alert
-          variant="danger"
-          title={`Failed to load ${categoryTitle}`}
-          data-testid={`mcp-error-state-${label}`}
-        >
-          {mcpServersLoadError.message}
-        </Alert>
-      ) : !mcpServersLoaded ? (
-        <Grid hasGutter>
-          {Array.from({ length: pageSize }).map((_, index) => (
-            <GridItem
-              key={index}
-              sm={MCP_CATALOG_GRID_SPAN.sm}
-              md={MCP_CATALOG_GRID_SPAN.md}
-              lg={MCP_CATALOG_GRID_SPAN.lg}
-              xl2={MCP_CATALOG_GRID_SPAN.xl2}
-            >
-              <Skeleton
-                height="280px"
-                width="100%"
-                screenreaderText={`Loading ${label} servers`}
-                data-testid={`mcp-category-skeleton-${label.toLowerCase().replace(/\s+/g, '-')}-${index}`}
-              />
-            </GridItem>
-          ))}
-        </Grid>
-      ) : mcpServers.items.length === 0 ? (
-        <EmptyModelCatalogState
-          testid={`empty-mcp-catalog-state-${label}`}
-          title="No result found"
-          headerIcon={SearchIcon}
-          description="Adjust your filters and try again."
-        />
-      ) : (
-        <Grid hasGutter>
-          {itemsToDisplay.map((server) => (
-            <GridItem
-              key={server.id}
-              sm={MCP_CATALOG_GRID_SPAN.sm}
-              md={MCP_CATALOG_GRID_SPAN.md}
-              lg={MCP_CATALOG_GRID_SPAN.lg}
-              xl2={MCP_CATALOG_GRID_SPAN.xl2}
-            >
-              <McpCatalogCard server={server} />
-            </GridItem>
-          ))}
-        </Grid>
-      )}
-    </StackItem>
+    <CatalogCategorySection
+      label={label}
+      categoryTitle={categoryTitle}
+      categoryDescription={categoryDescription}
+      items={mcpServers.items}
+      loaded={mcpServersLoaded}
+      loadError={mcpServersLoadError}
+      pageSize={pageSize}
+      onShowMore={onShowMore}
+      renderCard={(server) => <McpCatalogCard server={server} />}
+      getItemKey={(server) => server.id}
+      gridSpans={MCP_CATALOG_GRID_SPAN}
+      loadingScreenReaderText={`Loading ${label} servers`}
+      testIds={{
+        title: `mcp-category-title-${label}`,
+        showMore: `mcp-show-all-${labelSlug}`,
+        error: `mcp-error-state-${label}`,
+        skeleton: (index) => `mcp-category-skeleton-${labelSlug}-${index}`,
+        empty: `empty-mcp-catalog-state-${label}`,
+      }}
+    />
   );
 };
 export default McpCatalogCategorySection;

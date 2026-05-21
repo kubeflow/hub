@@ -8,7 +8,7 @@ import {
 } from '@patternfly/react-core';
 import { PlusCircleIcon } from '@patternfly/react-icons';
 
-type EmptyModelCatalogStateType = {
+type EmptyCatalogStateProps = {
   testid?: string;
   className?: string;
   title: string;
@@ -20,7 +20,7 @@ type EmptyModelCatalogStateType = {
   variant?: EmptyStateVariant;
 };
 
-const EmptyModelCatalogState: React.FC<EmptyModelCatalogStateType> = ({
+const EmptyCatalogState: React.FC<EmptyCatalogStateProps> = ({
   testid,
   className,
   title,
@@ -47,4 +47,4 @@ const EmptyModelCatalogState: React.FC<EmptyModelCatalogStateType> = ({
   </EmptyState>
 );
 
-export default EmptyModelCatalogState;
+export default EmptyCatalogState;

@@ -1,14 +1,8 @@
 import React from 'react';
-import { Stack } from '@patternfly/react-core';
 import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
-import {
-  filterEnabledCatalogSources,
-  getUniqueSourceLabels,
-  hasSourcesWithoutLabels,
-  orderLabelsByPriority,
-} from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
-import { CategoryName, SourceLabel } from '~/app/modelCatalogTypes';
-import CatalogCategorySection from './CatalogCategorySection';
+import { CategoryName } from '~/app/modelCatalogTypes';
+import { CatalogAllItemsView } from '~/app/shared/components/catalog';
+import ModelCatalogCategorySection from './ModelCatalogCategorySection';
 
 type ModelCatalogAllModelsViewProps = {
   searchTerm: string;
@@ -18,18 +12,6 @@ const ModelCatalogAllModelsView: React.FC<ModelCatalogAllModelsViewProps> = ({ s
   const { catalogSources, catalogLabels, updateSelectedSourceLabel } =
     React.useContext(ModelCatalogContext);
 
-  const sourceLabels = React.useMemo(() => {
-    const enabledSources = filterEnabledCatalogSources(catalogSources);
-    const uniqueLabels = getUniqueSourceLabels(enabledSources);
-    // Order labels according to catalogLabels priority
-    return orderLabelsByPriority(uniqueLabels, catalogLabels);
-  }, [catalogSources, catalogLabels]);
-
-  const hasSourcesWithoutLabelsValue = React.useMemo(
-    () => hasSourcesWithoutLabels(catalogSources),
-    [catalogSources],
-  );
-
   const handleShowMoreCategory = React.useCallback(
     (categoryLabel: string) => {
       updateSelectedSourceLabel(categoryLabel);
@@ -38,28 +20,23 @@ const ModelCatalogAllModelsView: React.FC<ModelCatalogAllModelsViewProps> = ({ s
   );
 
   return (
-    <Stack hasGutter>
-      {sourceLabels.map((label) => (
-        <CatalogCategorySection
-          key={label}
+    <CatalogAllItemsView
+      searchTerm={searchTerm}
+      catalogSources={catalogSources}
+      catalogLabels={catalogLabels}
+      pageSize={4}
+      otherSectionKey={CategoryName.otherModels}
+      onShowMore={handleShowMoreCategory}
+      renderCategorySection={(label, term, pageSize, onShowMore) => (
+        <ModelCatalogCategorySection
           label={label}
-          searchTerm={searchTerm}
-          pageSize={4}
+          searchTerm={term}
+          pageSize={pageSize}
           catalogSources={catalogSources}
-          onShowMore={handleShowMoreCategory}
-        />
-      ))}
-      {hasSourcesWithoutLabelsValue && (
-        <CatalogCategorySection
-          key={CategoryName.otherModels}
-          label={SourceLabel.other}
-          searchTerm={searchTerm}
-          pageSize={4}
-          catalogSources={catalogSources}
-          onShowMore={handleShowMoreCategory}
+          onShowMore={onShowMore}
         />
       )}
-    </Stack>
+    />
   );
 };
 

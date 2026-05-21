@@ -1,92 +1,34 @@
 import * as React from 'react';
-import { ToggleGroup, ToggleGroupItem } from '@patternfly/react-core';
-import { SourceLabel } from '~/app/modelCatalogTypes';
-import {
-  filterEnabledCatalogSources,
-  getLabelDisplayName,
-  getUniqueSourceLabels,
-  hasSourcesWithoutLabels,
-  orderLabelsByPriority,
-} from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
 import { McpCatalogContext } from '~/app/context/mcpCatalog/McpCatalogContext';
+import { CatalogSourceLabelToggle } from '~/app/shared/components/catalog';
+import { getLabelDisplayName } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
 import { OTHER_MCP_SERVERS_DISPLAY_NAME } from '~/app/pages/mcpCatalog/const';
 
 const ALL_SERVERS_LABEL = 'All MCP servers';
-
-type SourceLabelBlock = { id: string; label?: string; displayName: string };
 
 const McpCatalogSourceLabelBlocks: React.FC = () => {
   const { catalogSources, catalogLabels, selectedSourceLabel, setSelectedSourceLabel } =
     React.useContext(McpCatalogContext);
 
-  const blocks: SourceLabelBlock[] = React.useMemo(() => {
-    if (!catalogSources) {
-      return [];
-    }
-
-    const enabledSources = filterEnabledCatalogSources(catalogSources);
-    const uniqueLabels = getUniqueSourceLabels(enabledSources);
-    const hasNoLabels = hasSourcesWithoutLabels(enabledSources);
-    const orderedLabels = orderLabelsByPriority(uniqueLabels, catalogLabels);
-
-    const allBlock: SourceLabelBlock = { id: 'all', displayName: ALL_SERVERS_LABEL };
-
-    const labelBlocks: SourceLabelBlock[] = orderedLabels.map((label) => ({
-      id: `label-${label}`,
-      label,
-      displayName: getLabelDisplayName(
-        label,
-        catalogLabels,
-        OTHER_MCP_SERVERS_DISPLAY_NAME,
-        'servers',
-      ),
-    }));
-
-    const result: SourceLabelBlock[] = [allBlock, ...labelBlocks];
-
-    if (hasNoLabels) {
-      result.push({
-        id: 'no-labels',
-        label: SourceLabel.other,
-        displayName: getLabelDisplayName(
-          SourceLabel.other,
-          catalogLabels,
-          OTHER_MCP_SERVERS_DISPLAY_NAME,
-          'servers',
-        ),
-      });
-    }
-
-    return result;
-  }, [catalogSources, catalogLabels]);
-
-  if (!catalogSources) {
-    return null;
-  }
-
-  const activeCategoryCount = blocks.length - 1;
-  if (activeCategoryCount <= 1) {
-    return null;
-  }
-
-  const isSelected = (block: SourceLabelBlock) =>
-    block.label === undefined
-      ? selectedSourceLabel === undefined
-      : selectedSourceLabel === block.label;
+  const getLabelDisplayNameForMcp = React.useCallback(
+    (label: string) =>
+      getLabelDisplayName(label, catalogLabels, OTHER_MCP_SERVERS_DISPLAY_NAME, 'servers'),
+    [catalogLabels],
+  );
 
   return (
-    <ToggleGroup aria-label="MCP category selection" data-testid="mcp-catalog-category-toggle">
-      {blocks.map((block) => (
-        <ToggleGroupItem
-          buttonId={block.id}
-          data-testid={`mcp-category-${block.id}`}
-          key={block.id}
-          text={block.displayName}
-          isSelected={isSelected(block)}
-          onChange={() => setSelectedSourceLabel(block.label)}
-        />
-      ))}
-    </ToggleGroup>
+    <CatalogSourceLabelToggle
+      catalogSources={catalogSources}
+      catalogLabels={catalogLabels}
+      selectedSourceLabel={selectedSourceLabel}
+      onSelectSourceLabel={setSelectedSourceLabel}
+      allBlockLabel={undefined}
+      allBlockDisplayName={ALL_SERVERS_LABEL}
+      ariaLabel="MCP category selection"
+      hideWhenSingleCategory
+      getLabelDisplayNameOverride={getLabelDisplayNameForMcp}
+      getTestId={(blockId) => `mcp-category-${blockId}`}
+    />
   );
 };
 

@@ -1,16 +1,5 @@
 import * as React from 'react';
-import {
-  Alert,
-  Bullseye,
-  Button,
-  Content,
-  EmptyState,
-  Flex,
-  Grid,
-  GridItem,
-  Spinner,
-  Title,
-} from '@patternfly/react-core';
+import { Button } from '@patternfly/react-core';
 import { SearchIcon } from '@patternfly/react-icons';
 import { McpCatalogContext } from '~/app/context/mcpCatalog/McpCatalogContext';
 import { useMcpServersBySourceLabelWithAPI } from '~/app/hooks/mcpServerCatalog/useMcpServersBySourceLabel';
@@ -23,8 +12,7 @@ import {
   getLabelDisplayName,
   getLabelDescription,
 } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
-import EmptyModelCatalogState from '~/app/pages/modelCatalog/EmptyModelCatalogState';
-import ScrollViewOnMount from '~/app/shared/components/ScrollViewOnMount';
+import { CatalogGalleryLayout, EmptyCatalogState } from '~/app/shared/components/catalog';
 import McpCatalogCard from '~/app/pages/mcpCatalog/components/McpCatalogCard';
 
 const PAGE_SIZE = 10;
@@ -61,44 +49,7 @@ const McpCatalogGalleryView: React.FC<McpCatalogGalleryViewProps> = ({
     },
   );
 
-  const { items } = mcpServers;
-
   const loaded = mcpServersLoaded && catalogLabelsLoaded;
-
-  if (mcpServersLoadError) {
-    return (
-      <Alert variant="danger" title="Failed to load MCP servers" isInline>
-        {mcpServersLoadError.message}
-      </Alert>
-    );
-  }
-
-  if (!loaded) {
-    return (
-      <EmptyState>
-        <Spinner />
-        <Title headingLevel="h4" size="lg">
-          Loading MCP servers...
-        </Title>
-      </EmptyState>
-    );
-  }
-
-  if (items.length === 0) {
-    return (
-      <EmptyModelCatalogState
-        testid="empty-mcp-catalog-state"
-        title="No results found"
-        headerIcon={SearchIcon}
-        description="Adjust your filters and try again."
-        primaryAction={
-          <Button variant="link" onClick={handleFilterReset}>
-            Reset filters
-          </Button>
-        }
-      />
-    );
-  }
 
   const effectiveCategoryLabel = singleCategoryLabel || selectedSourceLabel || '';
   const categoryTitle = isSingleCategory
@@ -114,54 +65,36 @@ const McpCatalogGalleryView: React.FC<McpCatalogGalleryViewProps> = ({
     : undefined;
 
   return (
-    <>
-      <ScrollViewOnMount shouldScroll scrollToTop />
-      {isSingleCategory && categoryTitle && (
-        <div className="pf-v6-u-mb-lg" data-testid="single-category-header">
-          <Title headingLevel="h3" size="lg">
-            {categoryTitle}
-          </Title>
-          {categoryDescription && (
-            <Content component="p" className="pf-v6-u-color-200 pf-v6-u-mt-sm">
-              {categoryDescription}
-            </Content>
-          )}
-        </div>
-      )}
-      <Grid hasGutter>
-        {items.map((server) => (
-          <GridItem
-            key={server.id}
-            sm={MCP_CATALOG_GRID_SPAN.sm}
-            md={MCP_CATALOG_GRID_SPAN.md}
-            lg={MCP_CATALOG_GRID_SPAN.lg}
-            xl2={MCP_CATALOG_GRID_SPAN.xl2}
-          >
-            <McpCatalogCard server={server} />
-          </GridItem>
-        ))}
-      </Grid>
-      {mcpServers.hasMore && items.length >= PAGE_SIZE && (
-        <Bullseye className="pf-v6-u-mt-lg">
-          {mcpServers.isLoadingMore ? (
-            <Flex
-              direction={{ default: 'column' }}
-              alignItems={{ default: 'alignItemsCenter' }}
-              gap={{ default: 'gapMd' }}
-            >
-              <Spinner size="lg" />
-              <Title size="lg" headingLevel="h5">
-                Loading more MCP servers...
-              </Title>
-            </Flex>
-          ) : (
-            <Button variant="tertiary" onClick={mcpServers.loadMore} size="lg">
-              Load more servers
+    <CatalogGalleryLayout
+      items={mcpServers.items}
+      loaded={loaded}
+      loadError={mcpServersLoadError}
+      renderCard={(server) => <McpCatalogCard server={server} />}
+      getItemKey={(server) => server.id}
+      gridSpans={MCP_CATALOG_GRID_SPAN}
+      hasMore={mcpServers.hasMore && mcpServers.items.length >= PAGE_SIZE}
+      isLoadingMore={mcpServers.isLoadingMore}
+      onLoadMore={mcpServers.loadMore}
+      loadMoreLabel="Load more servers"
+      loadingMoreLabel="Loading more MCP servers..."
+      loadingLabel="Loading MCP servers..."
+      errorTitle="Failed to load MCP servers"
+      categoryTitle={categoryTitle}
+      categoryDescription={categoryDescription}
+      renderEmptyState={() => (
+        <EmptyCatalogState
+          testid="empty-mcp-catalog-state"
+          title="No results found"
+          headerIcon={SearchIcon}
+          description="Adjust your filters and try again."
+          primaryAction={
+            <Button variant="link" onClick={handleFilterReset}>
+              Reset filters
             </Button>
-          )}
-        </Bullseye>
+          }
+        />
       )}
-    </>
+    />
   );
 };
 

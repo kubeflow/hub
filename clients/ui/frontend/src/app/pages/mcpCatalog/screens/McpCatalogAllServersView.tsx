@@ -1,13 +1,6 @@
 import React from 'react';
-import { Stack } from '@patternfly/react-core';
 import { McpCatalogContext } from '~/app/context/mcpCatalog/McpCatalogContext';
-import {
-  filterEnabledCatalogSources,
-  hasSourcesWithoutLabels,
-  orderLabelsByPriority,
-  getUniqueSourceLabels,
-} from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
-import { SourceLabel } from '~/app/modelCatalogTypes';
+import { CatalogAllItemsView } from '~/app/shared/components/catalog';
 import McpCatalogCategorySection from './McpCatalogCategorySection';
 
 type McpCatalogAllServersViewProps = {
@@ -18,17 +11,6 @@ const McpCatalogAllServersView: React.FC<McpCatalogAllServersViewProps> = ({ sea
   const { catalogSources, catalogLabels, setSelectedSourceLabel } =
     React.useContext(McpCatalogContext);
 
-  const sourceLabels = React.useMemo(() => {
-    const enabledSources = filterEnabledCatalogSources(catalogSources);
-    const uniqueLabels = getUniqueSourceLabels(enabledSources);
-    return orderLabelsByPriority(uniqueLabels, catalogLabels);
-  }, [catalogSources, catalogLabels]);
-
-  const hasSourcesWithoutLabelsValue = React.useMemo(
-    () => hasSourcesWithoutLabels(catalogSources),
-    [catalogSources],
-  );
-
   const handleShowMoreCategory = React.useCallback(
     (categoryLabel: string) => {
       setSelectedSourceLabel(categoryLabel);
@@ -37,26 +19,22 @@ const McpCatalogAllServersView: React.FC<McpCatalogAllServersViewProps> = ({ sea
   );
 
   return (
-    <Stack hasGutter>
-      {sourceLabels.map((label) => (
+    <CatalogAllItemsView
+      searchTerm={searchTerm}
+      catalogSources={catalogSources}
+      catalogLabels={catalogLabels}
+      pageSize={4}
+      otherSectionKey="other-servers"
+      onShowMore={handleShowMoreCategory}
+      renderCategorySection={(label, term, pageSize, onShowMore) => (
         <McpCatalogCategorySection
-          key={label}
           label={label}
-          searchTerm={searchTerm}
-          pageSize={4}
-          onShowMore={handleShowMoreCategory}
-        />
-      ))}
-      {hasSourcesWithoutLabelsValue && (
-        <McpCatalogCategorySection
-          key="other-servers"
-          label={SourceLabel.other}
-          searchTerm={searchTerm}
-          pageSize={4}
-          onShowMore={handleShowMoreCategory}
+          searchTerm={term}
+          pageSize={pageSize}
+          onShowMore={onShowMore}
         />
       )}
-    </Stack>
+    />
   );
 };
 

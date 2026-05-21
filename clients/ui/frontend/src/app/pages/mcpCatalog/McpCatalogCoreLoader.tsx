@@ -11,7 +11,7 @@ import {
 import { useThemeContext } from 'mod-arch-kubeflow';
 import { Outlet } from 'react-router-dom';
 import { McpCatalogContext } from '~/app/context/mcpCatalog/McpCatalogContext';
-import EmptyModelCatalogState from '~/app/pages/modelCatalog/EmptyModelCatalogState';
+import { EmptyCatalogState } from '~/app/shared/components/catalog';
 import { hasSourcesWithModels } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
 import { MCP_CATALOG_TITLE, MCP_CATALOG_DESCRIPTION } from '~/app/pages/mcpCatalog/const';
 
@@ -65,7 +65,7 @@ const McpCatalogCoreLoader: React.FC = () => {
         description={MCP_CATALOG_DESCRIPTION}
         empty
         emptyStatePage={
-          <EmptyModelCatalogState
+          <EmptyCatalogState
             testid="empty-mcp-catalog-state"
             title="MCP catalog configuration required"
             description={

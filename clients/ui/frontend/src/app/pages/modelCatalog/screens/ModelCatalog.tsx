@@ -1,14 +1,11 @@
 import * as React from 'react';
-import { PageSection, Sidebar, SidebarContent, SidebarPanel, Stack } from '@patternfly/react-core';
 import { ApplicationsPage, ProjectObjectType, TitleWithIcon } from 'mod-arch-shared';
 import { SearchIcon } from '@patternfly/react-icons';
-import ScrollViewOnMount from '~/app/shared/components/ScrollViewOnMount';
 import ModelCatalogFilters from '~/app/pages/modelCatalog/components/ModelCatalogFilters';
 import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
 import { CategoryName } from '~/app/modelCatalogTypes';
 import { useHasVisibleFiltersApplied } from '~/app/hooks/modelCatalog/useHasVisibleFiltersApplied';
-import { getActiveSourceLabels } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
-import EmptyModelCatalogState from '~/app/pages/modelCatalog/EmptyModelCatalogState';
+import { CatalogPageLayout, EmptyCatalogState } from '~/app/shared/components/catalog';
 import ModelCatalogSourceLabelSelectorNavigator from './ModelCatalogSourceLabelSelectorNavigator';
 import ModelCatalogAllModelsView from './ModelCatalogAllModelsView';
 import ModelCatalogGalleryView from './ModelCatalogGalleryView';
@@ -24,26 +21,6 @@ const ModelCatalog: React.FC = () => {
     catalogSourcesLoaded,
   } = React.useContext(ModelCatalogContext);
   const filtersApplied = useHasVisibleFiltersApplied();
-
-  const activeCategories = React.useMemo(
-    () => getActiveSourceLabels(catalogSources, catalogLabels),
-    [catalogSources, catalogLabels],
-  );
-
-  const isSingleCategory = activeCategories.length === 1;
-  const hasNoCategories = activeCategories.length === 0;
-
-  React.useEffect(() => {
-    if (catalogSourcesLoaded && isSingleCategory && selectedSourceLabel !== activeCategories[0]) {
-      updateSelectedSourceLabel(activeCategories[0]);
-    }
-  }, [
-    catalogSourcesLoaded,
-    isSingleCategory,
-    activeCategories,
-    selectedSourceLabel,
-    updateSelectedSourceLabel,
-  ]);
 
   const isAllModelsView =
     selectedSourceLabel === CategoryName.allModels && !searchTerm && !filtersApplied;
@@ -63,53 +40,48 @@ const ModelCatalog: React.FC = () => {
   }, [clearAllFilters]);
 
   return (
-    <>
-      <ScrollViewOnMount shouldScroll scrollToTop />
-      <ApplicationsPage
-        title={<TitleWithIcon title="Model Catalog" objectType={ProjectObjectType.modelCatalog} />}
-        description="Discover models that are available for your organization to register, deploy, and customize."
-        empty={false}
-        loaded
-        provideChildrenPadding
-      >
-        {catalogSourcesLoaded && hasNoCategories ? (
-          <EmptyModelCatalogState
+    <ApplicationsPage
+      title={<TitleWithIcon title="Model Catalog" objectType={ProjectObjectType.modelCatalog} />}
+      description="Discover models that are available for your organization to register, deploy, and customize."
+      empty={false}
+      loaded
+      provideChildrenPadding
+    >
+      <CatalogPageLayout
+        catalogSources={catalogSources}
+        catalogLabels={catalogLabels}
+        catalogSourcesLoaded={catalogSourcesLoaded}
+        selectedSourceLabel={selectedSourceLabel}
+        onSelectSourceLabel={updateSelectedSourceLabel}
+        isAllItemsView={isAllModelsView}
+        renderEmptyCategoriesState={() => (
+          <EmptyCatalogState
             testid="empty-model-catalog-no-categories"
             title="No models available"
             headerIcon={SearchIcon}
             description="There are no model categories available. Configure model sources in settings to get started."
           />
-        ) : (
-          <Sidebar hasBorder hasGutter>
-            <SidebarPanel variant="sticky">
-              <ModelCatalogFilters />
-            </SidebarPanel>
-            <SidebarContent>
-              <Stack hasGutter>
-                <ModelCatalogSourceLabelSelectorNavigator
-                  searchTerm={searchTerm}
-                  onSearch={handleSearch}
-                  onClearSearch={handleClearSearch}
-                  onResetAllFilters={handleFilterReset}
-                />
-                <PageSection isFilled padding={{ default: 'noPadding' }}>
-                  {isAllModelsView && !isSingleCategory ? (
-                    <ModelCatalogAllModelsView searchTerm={searchTerm} />
-                  ) : (
-                    <ModelCatalogGalleryView
-                      searchTerm={searchTerm}
-                      handleFilterReset={handleFilterReset}
-                      isSingleCategory={isSingleCategory}
-                      singleCategoryLabel={isSingleCategory ? activeCategories[0] : undefined}
-                    />
-                  )}
-                </PageSection>
-              </Stack>
-            </SidebarContent>
-          </Sidebar>
         )}
-      </ApplicationsPage>
-    </>
+        renderFilterSidebar={() => <ModelCatalogFilters />}
+        renderToolbar={() => (
+          <ModelCatalogSourceLabelSelectorNavigator
+            searchTerm={searchTerm}
+            onSearch={handleSearch}
+            onClearSearch={handleClearSearch}
+            onResetAllFilters={handleFilterReset}
+          />
+        )}
+        renderAllItemsView={() => <ModelCatalogAllModelsView searchTerm={searchTerm} />}
+        renderGalleryView={(isSingleCategory, singleCategoryLabel) => (
+          <ModelCatalogGalleryView
+            searchTerm={searchTerm}
+            handleFilterReset={handleFilterReset}
+            isSingleCategory={isSingleCategory}
+            singleCategoryLabel={singleCategoryLabel}
+          />
+        )}
+      />
+    </ApplicationsPage>
   );
 };
 
