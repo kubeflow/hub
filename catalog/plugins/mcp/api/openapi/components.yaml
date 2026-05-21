@@ -1,0 +1,708 @@
+components:
+  schemas:
+    MCPServer:
+      description: An MCP server in the model catalog.
+      allOf:
+        - $ref: "#/components/schemas/BaseResource"
+        - type: object
+          required:
+            - name
+            - toolCount
+          properties:
+            name:
+              type: string
+              description: Human-readable MCP server name. Must be unique within a source.
+            source_id:
+              type: string
+              description: Catalog source that provides this server.
+            provider:
+              type: string
+              description: Organization providing the server.
+            logo:
+              type: string
+              description: MCP server logo.
+            version:
+              type: string
+              description: Semantic version string of the MCP server.
+            tags:
+              type: array
+              description: Categorization tags for this MCP server.
+              example:
+                - observability
+                - monitoring
+                - apm
+              items:
+                type: string
+            license:
+              type: string
+              description: SPDX identifier for the server license.
+            license_link:
+              type: string
+              format: uri
+              description: URL to the full license text.
+            toolCount:
+              type: integer
+              description: Number of tools exposed by this MCP server.
+              example: 15
+            tools:
+              type: array
+              description: Array of tools exposed by this MCP server.
+              items:
+                $ref: "#/components/schemas/MCPTool"
+            securityIndicators:
+              $ref: "#/components/schemas/MCPSecurityIndicator"
+            deploymentMode:
+              type: string
+              description: Deployment mode for the MCP server.
+              enum:
+                - local
+                - remote
+            transports:
+              type: array
+              description: Supported transport protocols.
+              items:
+                type: string
+                enum:
+                  - stdio
+                  - http
+                  - sse
+            artifacts:
+              type: array
+              description: OCI artifacts used for local deployment.
+              items:
+                $ref: "#/components/schemas/MCPArtifact"
+            endpoints:
+              $ref: "#/components/schemas/MCPEndpoints"
+            readme:
+              type: string
+              description: Full Markdown documentation for this MCP server.
+            documentationUrl:
+              type: string
+              format: uri
+              description: URL to external documentation.
+            repositoryUrl:
+              type: string
+              format: uri
+              description: URL to source repository.
+            sourceCode:
+              type: string
+              format: uri
+              description: URL to browsable source code.
+            publishedDate:
+              type: string
+              format: date-time
+              description: Initial publication timestamp for the server.
+            lastUpdated:
+              type: string
+              format: date-time
+              description: Last update timestamp for the server metadata.
+            runtimeMetadata:
+              $ref: "#/components/schemas/MCPRuntimeMetadata"
+              description: |-
+                Runtime metadata for deploying this MCP server via MCPServer CRDs.
+                Provides defaults, recommendations, and requirements for creating deployments.
+                This is discovery metadata, not actual deployment configuration.
+    MCPServerList:
+      description: List of MCP server entities.
+      allOf:
+        - type: object
+          properties:
+            items:
+              description: Array of `MCPServer` entities.
+              type: array
+              items:
+                $ref: "#/components/schemas/MCPServer"
+          required:
+            - items
+        - $ref: "#/components/schemas/BaseResourceList"
+    MCPSecurityIndicator:
+      type: object
+      description: Security posture metadata for an MCP server.
+      properties:
+        verifiedSource:
+          type: boolean
+          description: Whether the source of this server has been verified.
+        secureEndpoint:
+          type: boolean
+          description: Whether the server exposes secure communication endpoints.
+        sast:
+          type: boolean
+          description: Whether static analysis has been performed.
+        readOnlyTools:
+          type: boolean
+          description: Whether all exposed tools are read-only.
+    MCPArtifact:
+      description: Artifact metadata for local MCP server deployment.
+      allOf:
+        - $ref: "#/components/schemas/BaseResourceDates"
+        - type: object
+          required:
+            - uri
+          properties:
+            uri:
+              type: string
+              format: uri
+              description: OCI image URI for local deployment.
+    MCPEndpoints:
+      type: object
+      description: Remote endpoint metadata for MCP server access.
+      properties:
+        http:
+          type: string
+          format: uri
+          description: HTTP endpoint URL for the MCP server.
+        sse:
+          type: string
+          format: uri
+          description: SSE endpoint URL for the MCP server.
+    MCPTool:
+      description: An MCP tool exposed by an MCP server.
+      allOf:
+        - $ref: "#/components/schemas/BaseResource"
+        - type: object
+          required:
+            - name
+            - accessType
+          properties:
+            name:
+              type: string
+              description: Tool identifier.
+            accessType:
+              type: string
+              description: Access mode supported by this tool.
+              enum:
+                - read_only
+                - read_write
+                - execute
+            parameters:
+              type: array
+              description: Input parameters accepted by this tool.
+              items:
+                $ref: "#/components/schemas/MCPToolParameter"
+    MCPToolWithServer:
+      type: object
+      required:
+        - serverId
+        - serverName
+        - tool
+      properties:
+        serverId:
+          type: string
+          description: ID of the MCP server that exposes this tool
+          example: prometheus-mcp
+        serverName:
+          type: string
+          description: Human-readable name of the MCP server
+          example: Prometheus MCP Server
+        tool:
+          $ref: "#/components/schemas/MCPTool"
+    MCPToolParameter:
+      type: object
+      description: Metadata describing a single MCP tool parameter.
+      required:
+        - name
+        - type
+        - required
+      properties:
+        name:
+          type: string
+          description: Parameter name.
+        type:
+          type: string
+          description: Parameter type.
+        required:
+          type: boolean
+          description: Whether this parameter is required.
+        description:
+          type: string
+          description: Parameter purpose.
+    MCPToolsList:
+      description: List of MCP tool entities.
+      allOf:
+        - type: object
+          properties:
+            items:
+              description: Array of `MCPTool` entities.
+              type: array
+              items:
+                $ref: "#/components/schemas/MCPTool"
+          required:
+            - items
+        - $ref: "#/components/schemas/BaseResourceList"
+    MCPRuntimeMetadata:
+      type: object
+      properties:
+        defaultPort:
+          type: integer
+          description: |-
+            Default port the MCP server listens on. Maps to MCPServer.spec.mcpPort.
+            Should align with the primary transport type.
+          example: 8080
+          minimum: 1
+          maximum: 65535
+        defaultArgs:
+          type: array
+          description: |-
+            Default command-line arguments for the MCP server.
+            Users can override or extend these in the MCPServer CRD.
+          items:
+            type: string
+          example: ["--log-level", "info", "--metrics-enabled"]
+        requiredEnvironmentVariables:
+          type: array
+          description: |-
+            Environment variables that MUST be set for the server to function.
+            Documents the names and purposes - values come from user's Secrets/ConfigMaps.
+          items:
+            $ref: "#/components/schemas/MCPEnvVarMetadata"
+        optionalEnvironmentVariables:
+          type: array
+          description: |-
+            Optional environment variables that configure server behavior.
+            Documents the names, purposes, and default values.
+          items:
+            $ref: "#/components/schemas/MCPEnvVarMetadata"
+        recommendedResources:
+          $ref: "#/components/schemas/MCPResourceRecommendation"
+          description: |-
+            Recommended CPU and memory resources based on typical workloads.
+            Users should adjust based on their specific usage patterns.
+        healthEndpoints:
+          type: object
+          description: Health check endpoint paths
+          properties:
+            liveness:
+              type: string
+              description: Liveness probe endpoint path
+              example: /health
+            readiness:
+              type: string
+              description: Readiness probe endpoint path
+              example: /ready
+        capabilities:
+          type: object
+          description: |-
+            Runtime capabilities and requirements for this MCP server.
+            Helps users understand what the server needs to run properly.
+          properties:
+            requiresNetwork:
+              type: boolean
+              description: Whether server requires network access
+              default: true
+            requiresFileSystem:
+              type: boolean
+              description: Whether server requires writable filesystem
+              default: false
+            requiresGPU:
+              type: boolean
+              description: Whether server requires GPU access
+              default: false
+        mcpPath:
+          type: string
+          description: |-
+            HTTP path where MCP server accepts requests.
+            Used for HTTP and SSE transports.
+            Aligns with MCP Lifecycle operator conventions.
+          pattern: '^/[a-zA-Z0-9/_.-]*$'
+          default: /mcp
+          example: /mcp
+        prerequisites:
+          $ref: "#/components/schemas/MCPPrerequisites"
+          description: |-
+            Kubernetes prerequisites discovery metadata.
+            Helps users understand what K8s resources to create before deployment.
+    MCPEnvVarMetadata:
+      type: object
+      required:
+        - name
+        - description
+      properties:
+        name:
+          type: string
+          description: Environment variable name
+          example: API_KEY
+        description:
+          type: string
+          description: Purpose and usage of this variable
+          example: API key for authenticating with external service
+        required:
+          type: boolean
+          description: Whether this variable must be set
+          default: false
+        defaultValue:
+          type: string
+          description: |-
+            Default value if not provided. Only for optional variables.
+            Secrets should NEVER have default values.
+          example: info
+        type:
+          type: string
+          enum: [string, int, boolean, secret, config]
+          description: Expected variable type
+          default: string
+        example:
+          type: string
+          description: Example value for documentation purposes
+          example: my-api-key-123
+    MCPResourceRecommendation:
+      type: object
+      properties:
+        minimal:
+          type: object
+          description: Minimum viable resources for low-traffic scenarios
+          properties:
+            cpu:
+              type: string
+              description: CPU request (e.g., 50m, 0.1, 1)
+              example: 50m
+            memory:
+              type: string
+              description: Memory request (e.g., 64Mi, 128Mi, 1Gi)
+              example: 64Mi
+        recommended:
+          type: object
+          description: Recommended resources for typical production use
+          properties:
+            cpu:
+              type: string
+              example: 100m
+            memory:
+              type: string
+              example: 128Mi
+        high:
+          type: object
+          description: Resources for high-traffic or compute-intensive scenarios
+          properties:
+            cpu:
+              type: string
+              example: 500m
+            memory:
+              type: string
+              example: 512Mi
+    MCPServiceAccountRequirement:
+      type: object
+      description: |-
+        ServiceAccount requirements for Kubernetes deployment.
+        Provides discovery hints about RBAC permissions needed.
+      properties:
+        required:
+          type: boolean
+          description: Whether a ServiceAccount is required for this MCP server
+          default: false
+          example: true
+        hint:
+          type: string
+          description: |-
+            Human-readable description of required RBAC permissions.
+            Example: "Needs 'view' ClusterRole for read-only K8s access"
+          maxLength: 500
+          example: "Requires read-only access to pods and services in the namespace"
+        suggestedName:
+          type: string
+          description: Suggested ServiceAccount name (must be valid Kubernetes name)
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+          maxLength: 253
+          example: mcp-server-viewer
+    MCPSecretKey:
+      type: object
+      required:
+        - key
+        - description
+      description: Individual key within a Kubernetes Secret
+      properties:
+        key:
+          type: string
+          description: Secret key name
+          maxLength: 253
+          example: api-key
+        description:
+          type: string
+          description: What this key should contain (never actual values)
+          maxLength: 500
+          example: OpenAI API key for authentication
+        envVarName:
+          type: string
+          description: Environment variable name to map this key to
+          maxLength: 253
+          example: OPENAI_API_KEY
+        required:
+          type: boolean
+          description: Whether this key must be present in the Secret
+          default: false
+    MCPSecretRequirement:
+      type: object
+      required:
+        - name
+        - description
+      description: |-
+        Kubernetes Secret requirement metadata.
+        Never stores actual secret values - provides discovery hints only.
+      properties:
+        name:
+          type: string
+          description: Suggested Secret name (must be valid Kubernetes name)
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+          maxLength: 253
+          example: openai-credentials
+        description:
+          type: string
+          description: |-
+            Purpose of the Secret and kubectl creation hint.
+            Example: "kubectl create secret generic openai-credentials --from-literal=api-key=sk-..."
+          maxLength: 1000
+          example: Create with kubectl create secret generic openai-credentials --from-literal=api-key=YOUR_KEY
+        keys:
+          type: array
+          description: Expected keys within the Secret
+          items:
+            $ref: "#/components/schemas/MCPSecretKey"
+        mountAsFile:
+          type: boolean
+          description: Whether to mount Secret as files instead of environment variables
+          default: false
+        mountPath:
+          type: string
+          description: Mount path when mountAsFile is true (must be absolute path)
+          pattern: '^/[a-zA-Z0-9/_.-]*$'
+          maxLength: 4096
+          example: /etc/secrets
+    MCPConfigMapKey:
+      type: object
+      required:
+        - key
+        - description
+      description: Individual key within a Kubernetes ConfigMap
+      properties:
+        key:
+          type: string
+          description: ConfigMap key name (often a filename)
+          maxLength: 253
+          example: config.toml
+        description:
+          type: string
+          description: What this key should contain
+          maxLength: 500
+          example: Main configuration file for MCP server
+        defaultContent:
+          type: string
+          description: |-
+            Default content users can copy and customize.
+            Limited to 10KB for performance. For larger configs, reference external documentation.
+          maxLength: 10000
+          example: |
+            log_level = "info"
+            port = 8080
+        envVarName:
+          type: string
+          description: Environment variable name if not mounted as file
+          maxLength: 253
+          example: MCP_CONFIG
+        required:
+          type: boolean
+          description: Whether this key is required
+          default: false
+    MCPConfigMapRequirement:
+      type: object
+      required:
+        - name
+        - description
+      description: Kubernetes ConfigMap requirement metadata
+      properties:
+        name:
+          type: string
+          description: Suggested ConfigMap name (must be valid Kubernetes name)
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+          maxLength: 253
+          example: mcp-server-config
+        description:
+          type: string
+          description: Purpose of the ConfigMap
+          maxLength: 1000
+          example: Configuration files for MCP server runtime
+        keys:
+          type: array
+          description: Expected keys within the ConfigMap
+          items:
+            $ref: "#/components/schemas/MCPConfigMapKey"
+        mountAsFile:
+          type: boolean
+          description: Whether to mount ConfigMap as files
+          default: true
+        mountPath:
+          type: string
+          description: Mount path when mountAsFile is true (must be absolute path)
+          pattern: '^/[a-zA-Z0-9/_.-]*$'
+          maxLength: 4096
+          example: /etc/mcp-config
+    MCPPrerequisites:
+      type: object
+      description: |-
+        Aggregated Kubernetes prerequisites metadata for MCP server deployment.
+        All fields are discovery hints - not deployment configuration.
+      properties:
+        serviceAccount:
+          $ref: "#/components/schemas/MCPServiceAccountRequirement"
+          description: ServiceAccount requirements and RBAC hints
+        secrets:
+          type: array
+          description: Required Kubernetes Secrets
+          items:
+            $ref: "#/components/schemas/MCPSecretRequirement"
+        configMaps:
+          type: array
+          description: Required Kubernetes ConfigMaps
+          items:
+            $ref: "#/components/schemas/MCPConfigMapRequirement"
+        environmentVariables:
+          type: array
+          description: |-
+            Aggregated environment variables list.
+            Combines required and optional environment variables for convenience.
+          items:
+            $ref: "#/components/schemas/MCPEnvVarMetadata"
+        customResources:
+          type: array
+          description: |-
+            Other Kubernetes resources needed (e.g., PersistentVolumeClaims, NetworkPolicies).
+            Free-form hints for advanced deployment scenarios.
+          items:
+            type: string
+          example: ["PersistentVolumeClaim: mcp-data-storage"]
+      example:
+        serviceAccount:
+          required: true
+          hint: "Needs 'view' ClusterRole for read-only K8s access"
+          suggestedName: mcp-viewer
+        secrets:
+          - name: openai-credentials
+            description: "kubectl create secret generic openai-credentials --from-literal=api-key=YOUR_KEY"
+            keys:
+              - key: api-key
+                description: OpenAI API key
+                envVarName: OPENAI_API_KEY
+        configMaps:
+          - name: mcp-server-config
+            description: Configuration files
+            mountAsFile: true
+            mountPath: /etc/mcp-config
+            keys:
+              - key: config.toml
+                description: Main configuration
+                defaultContent: "log_level = \"info\"\nport = 8080\n"
+  responses:
+    MCPServerListResponse:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/MCPServerList"
+      description: A response containing a list of MCP server entities.
+    MCPServerResponse:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/MCPServer"
+      description: A response containing an `MCPServer` entity.
+    MCPToolsListResponse:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/MCPToolsList"
+      description: A response containing a list of MCP tool entities.
+    MCPToolResponse:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/MCPTool"
+      description: A response containing an `MCPTool` entity.
+    MCPToolWithServerResponse:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/MCPToolWithServer"
+      description: A response containing an `MCPToolWithServer` entity.
+  parameters:
+    mcpServerFilterQuery:
+      examples:
+        mcpServerFilterQuery:
+          value: "license='Apache 2.0' AND securityIndicators.verifiedSource=true"
+      name: filterQuery
+      description: |
+        A SQL-like query string to filter MCP servers.
+
+        **Supported Operators:**
+        - Comparison: `=`, `!=`, `<>`, `>`, `<`, `>=`, `<=`
+        - Pattern matching: `LIKE`, `ILIKE` (case-insensitive)
+        - Set membership: `IN`
+        - Logical: `AND`, `OR`
+        - Grouping: `()` for complex expressions
+
+        **Examples:**
+        - `license = "Apache 2.0"`
+        - `verifiedSource = true`
+        - `provider ILIKE "%local%"`
+        - `(license = "Apache 2.0" OR license = "MIT") AND verifiedSource = true`
+      schema:
+        type: string
+        pattern: "^[\\x20-\\x7E]*$"
+      in: query
+      required: false
+    mcpToolFilterQuery:
+      examples:
+        mcpToolFilterQuery:
+          value: "accessType='read_only' AND name ILIKE '%list%'"
+      name: filterQuery
+      description: |
+        A SQL-like query string to filter MCP tools for a specific MCP server.
+
+        **Supported Operators:**
+        - Comparison: `=`, `!=`, `<>`, `>`, `<`, `>=`, `<=`
+        - Pattern matching: `LIKE`, `ILIKE` (case-insensitive)
+        - Set membership: `IN`
+        - Logical: `AND`, `OR`
+        - Grouping: `()` for complex expressions
+
+        **Examples:**
+        - `name = "list_models"`
+        - `accessType = "read_only"`
+        - `name ILIKE "%search%"`
+        - `(accessType = "read_only" OR accessType = "execute") AND name LIKE "%model%"`
+      schema:
+        type: string
+        pattern: "^[\\x20-\\x7E]*$"
+      in: query
+      required: false
+    namedQuery:
+      examples:
+        namedQuery:
+          value: secure_servers
+      name: namedQuery
+      description: Predefined filter template name to apply when listing MCP servers.
+      schema:
+        type: string
+      in: query
+      required: false
+    includeTools:
+      examples:
+        includeTools:
+          value: true
+      name: includeTools
+      description: Whether to include the tools array in each MCP server result.
+      schema:
+        type: boolean
+        default: false
+      in: query
+      required: false
+    toolLimit:
+      examples:
+        toolLimit:
+          value: 10
+      name: toolLimit
+      description: Maximum number of tools to include when includeTools is true.
+      schema:
+        type: integer
+        format: int32
+        default: 10
+        minimum: 0
+        maximum: 100
+      in: query
+      required: false

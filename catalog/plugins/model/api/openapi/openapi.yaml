@@ -1,0 +1,282 @@
+paths:
+  /api/model_catalog/v1alpha1/models:
+    description: >-
+      The REST endpoint/path used to list zero or more `CatalogModel` entities from all `CatalogSources`.
+    get:
+      summary: Search catalog models across sources.
+      tags:
+        - ModelCatalogService
+      parameters:
+        - name: recommendations
+          in: query
+          description: Sort models by lowest recommended latency using Pareto filtering
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: targetRPS
+          in: query
+          description: Target requests per second for latency calculations
+          required: false
+          schema:
+            type: integer
+            format: int32
+        - name: latencyProperty
+          in: query
+          description: Property name for latency metric
+          required: false
+          schema:
+            type: string
+            default: "ttft_p90"
+        - name: rpsProperty
+          in: query
+          description: Property name for RPS metric
+          required: false
+          schema:
+            type: string
+            default: "requests_per_second"
+        - name: hardwareCountProperty
+          in: query
+          description: Property name for hardware count
+          required: false
+          schema:
+            type: string
+            default: "hardware_count"
+        - name: hardwareTypeProperty
+          in: query
+          description: Property name for hardware type grouping
+          required: false
+          schema:
+            type: string
+            default: "hardware_type"
+        - name: source
+          description: |-
+            Filter models by source. Multiple values can be separated by commas
+            to filter by multiple sources (OR logic). For example:
+            ?source=huggingface,local will return models from either
+            huggingface OR local sources.
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          in: query
+          required: false
+        - name: q
+          description: Free-form keyword search used to filter the response.
+          schema:
+            type: string
+          in: query
+          required: false
+        - name: sourceLabel
+          description: |-
+            Filter models by the label associated with the source. Multiple
+            values can be separated by commas. If one of the values is the
+            string `null`, then models from every source without a label will
+            be returned.
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+          required: false
+        - $ref: "#/components/parameters/filterQuery"
+        - $ref: "#/components/parameters/pageSize"
+        - name: orderBy
+          style: form
+          explode: true
+          examples:
+            orderBy:
+              value: ID
+          description: |-
+            Specifies the order by criteria for listing entities.
+
+            Supported values are:
+            - CREATE_TIME
+            - LAST_UPDATE_TIME
+            - ID
+            - NAME
+            - ACCURACY
+
+            Defaults to `NAME`.
+
+            The `ACCURACY` sort will sort by the `overall_average` property in any linked metrics artifact.
+
+            In addition, models can be sorted by properties. For example:
+            - `provider.string_value` sorts by provider name
+            - `artifacts.ifeval.double_value` sorts by the min/max value a property called ifeval across all associated artifacts
+          schema:
+            $ref: "#/components/schemas/OrderByField"
+          in: query
+          required: false
+        - $ref: "#/components/parameters/sortOrder"
+        - $ref: "#/components/parameters/nextPageToken"
+      responses:
+        "200":
+          $ref: "#/components/responses/CatalogModelListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      operationId: findModels
+  /api/model_catalog/v1alpha1/models/filter_options:
+    description: Lists options for `filterQuery` when listing models.
+    get:
+      summary: Lists fields and available options that can be used in `filterQuery` on the list models endpoint.
+      tags:
+        - ModelCatalogService
+      responses:
+        "200":
+          $ref: "#/components/responses/FilterOptionsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      operationId: findModelsFilterOptions
+  /api/model_catalog/v1alpha1/sources/{source_id}/models/{model_name+}:
+    description: >-
+      The REST endpoint/path used to get a `CatalogModel`.
+    get:
+      summary: Get a `CatalogModel`.
+      tags:
+        - ModelCatalogService
+      responses:
+        "200":
+          $ref: "#/components/responses/CatalogModelResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      operationId: getModel
+    parameters:
+      - name: source_id
+        description: A unique identifier for a `CatalogSource`.
+        schema:
+          type: string
+        in: path
+        required: true
+      - name: model_name+
+        description: A unique identifier for the model.
+        schema:
+          type: string
+        in: path
+        required: true
+  /api/model_catalog/v1alpha1/sources/{source_id}/models/{model_name}/artifacts:
+    description: >-
+      The REST endpoint/path used to list `CatalogArtifacts`.
+    get:
+      summary: List CatalogArtifacts.
+      tags:
+        - ModelCatalogService
+      responses:
+        "200":
+          $ref: "#/components/responses/CatalogArtifactListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      operationId: getAllModelArtifacts
+    parameters:
+      - name: source_id
+        description: A unique identifier for a `CatalogSource`.
+        schema:
+          type: string
+        in: path
+        required: true
+      - name: model_name
+        description: A unique identifier for the model.
+        schema:
+          type: string
+        in: path
+        required: true
+      - $ref: "#/components/parameters/artifactType"
+      - $ref: "#/components/parameters/artifact_type"
+      - $ref: "#/components/parameters/artifactFilterQuery"
+      - $ref: "#/components/parameters/pageSize"
+      - $ref: "#/components/parameters/artifactOrderBy"
+      - $ref: "#/components/parameters/sortOrder"
+      - $ref: "#/components/parameters/nextPageToken"
+  /api/model_catalog/v1alpha1/sources/{source_id}/models/{model_name}/artifacts/performance:
+    description: >-
+      Lists performance metrics artifacts (that is, artifacts of type `CatalogMetricsArtifact` where `metricsType` is `performance-metrics`).
+    get:
+      summary: List CatalogArtifacts.
+      tags:
+        - ModelCatalogService
+      responses:
+        "200":
+          $ref: "#/components/responses/CatalogArtifactListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      operationId: getAllModelPerformanceArtifacts
+    parameters:
+      - name: source_id
+        description: A unique identifier for a `CatalogSource`.
+        schema:
+          type: string
+        in: path
+        required: true
+      - name: model_name
+        description: A unique identifier for the model.
+        schema:
+          type: string
+        in: path
+        required: true
+      - name: targetRPS
+        description: |-
+          Target requests per second. If specified, values for `replicas` and
+          `total_requests_per_second` will be calculated and returned as custom
+          properties.
+        schema:
+          type: integer
+        in: query
+      - name: recommendations
+        description: Filter records that are less optimal based on approximate cost to run and latency.
+        schema:
+          type: boolean
+          default: false
+        in: query
+      - name: rpsProperty
+        description: Custom property name for requests per second metric.
+        schema:
+          type: string
+          default: "requests_per_second"
+        in: query
+      - name: latencyProperty
+        description: Custom property name for latency metric (e.g., ttft_p90, p90_latency).
+        schema:
+          type: string
+          default: "ttft_p90"
+        in: query
+      - name: hardwareCountProperty
+        description: Custom property name for hardware count metric.
+        schema:
+          type: string
+          default: "hardware_count"
+        in: query
+      - name: hardwareTypeProperty
+        description: Custom property name for hardware type grouping.
+        schema:
+          type: string
+          default: "hardware_type"
+        in: query
+      - $ref: "#/components/parameters/artifactFilterQuery"
+      - $ref: "#/components/parameters/pageSize"
+      - $ref: "#/components/parameters/artifactOrderBy"
+      - $ref: "#/components/parameters/sortOrder"
+      - $ref: "#/components/parameters/nextPageToken"

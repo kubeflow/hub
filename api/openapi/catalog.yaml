@@ -2117,6 +2117,79 @@ components:
             $ref: "#/components/schemas/Error"
       description: Unprocessable Entity error
   parameters:
+    filterQuery:
+      examples:
+        filterQuery:
+          value: "name='my-model' AND state='LIVE'"
+      name: filterQuery
+      description: |
+        A SQL-like query string to filter the list of entities. The query supports rich filtering capabilities with automatic type inference.
+
+        **Supported Operators:**
+        - Comparison: `=`, `!=`, `<>`, `>`, `<`, `>=`, `<=`
+        - Pattern matching: `LIKE`, `ILIKE` (case-insensitive)
+        - Set membership: `IN`
+        - Logical: `AND`, `OR`
+        - Grouping: `()` for complex expressions
+
+        **Data Types:**
+        - Strings: `"value"` or `'value'`
+        - Numbers: `42`, `3.14`, `1e-5`
+        - Booleans: `true`, `false` (case-insensitive)
+
+        **Property Access:**
+        - Standard properties: `name`, `id`, `state`, `createTimeSinceEpoch`
+        - Custom properties: Any user-defined property name
+        - Escaped properties: Use backticks for special characters: `` `custom-property` ``
+        - Type-specific access: `property.string_value`, `property.double_value`, `property.int_value`, `property.bool_value`
+
+        **Examples:**
+        - Basic: `name = "my-model"`
+        - Comparison: `accuracy > 0.95`
+        - Pattern: `name LIKE "%tensorflow%"`
+        - Complex: `(name = "model-a" OR name = "model-b") AND state = "LIVE"`
+        - Custom property: `framework.string_value = "pytorch"`
+        - Escaped property: `` `mlflow.source.type` = "notebook" ``
+      schema:
+        type: string
+        pattern: "^[\\x20-\\x7E]*$"
+      in: query
+      required: false
+    orderBy:
+      style: form
+      explode: true
+      examples:
+        orderBy:
+          value: ID
+      name: orderBy
+      description: Specifies the order by criteria for listing entities.
+      schema:
+        $ref: "#/components/schemas/OrderByField"
+      in: query
+      required: false
+    labelOrderBy:
+      style: form
+      explode: true
+      examples:
+        labelOrderBy:
+          value: name
+      name: orderBy
+      description: |
+        Specifies the key to order catalog labels by. You can provide any string key
+        that may exist in the label maps. Labels that contain the specified key will
+        be sorted by that key's value. Labels that don't contain the key will maintain
+        their original order and appear after labels that do contain the key.
+      schema:
+        type: string
+      in: query
+      required: false
+    assetType:
+      name: assetType
+      description: Filter by asset type.
+      schema:
+        $ref: "#/components/schemas/CatalogAssetType"
+      in: query
+      required: false
     mcpServerFilterQuery:
       examples:
         mcpServerFilterQuery:
@@ -2167,42 +2240,39 @@ components:
         pattern: "^[\\x20-\\x7E]*$"
       in: query
       required: false
-    filterQuery:
+    namedQuery:
       examples:
-        filterQuery:
-          value: "name='my-model' AND state='LIVE'"
-      name: filterQuery
-      description: |
-        A SQL-like query string to filter the list of entities. The query supports rich filtering capabilities with automatic type inference.
-
-        **Supported Operators:**
-        - Comparison: `=`, `!=`, `<>`, `>`, `<`, `>=`, `<=`
-        - Pattern matching: `LIKE`, `ILIKE` (case-insensitive)
-        - Set membership: `IN`
-        - Logical: `AND`, `OR`
-        - Grouping: `()` for complex expressions
-
-        **Data Types:**
-        - Strings: `"value"` or `'value'`
-        - Numbers: `42`, `3.14`, `1e-5`
-        - Booleans: `true`, `false` (case-insensitive)
-
-        **Property Access:**
-        - Standard properties: `name`, `id`, `state`, `createTimeSinceEpoch`
-        - Custom properties: Any user-defined property name
-        - Escaped properties: Use backticks for special characters: `` `custom-property` ``
-        - Type-specific access: `property.string_value`, `property.double_value`, `property.int_value`, `property.bool_value`
-
-        **Examples:**
-        - Basic: `name = "my-model"`
-        - Comparison: `accuracy > 0.95`
-        - Pattern: `name LIKE "%tensorflow%"`
-        - Complex: `(name = "model-a" OR name = "model-b") AND state = "LIVE"`
-        - Custom property: `framework.string_value = "pytorch"`
-        - Escaped property: `` `mlflow.source.type` = "notebook" ``
+        namedQuery:
+          value: secure_servers
+      name: namedQuery
+      description: Predefined filter template name to apply when listing MCP servers.
       schema:
         type: string
-        pattern: "^[\\x20-\\x7E]*$"
+      in: query
+      required: false
+    includeTools:
+      examples:
+        includeTools:
+          value: true
+      name: includeTools
+      description: Whether to include the tools array in each MCP server result.
+      schema:
+        type: boolean
+        default: false
+      in: query
+      required: false
+    toolLimit:
+      examples:
+        toolLimit:
+          value: 10
+      name: toolLimit
+      description: Maximum number of tools to include when includeTools is true.
+      schema:
+        type: integer
+        format: int32
+        default: 10
+        minimum: 0
+        maximum: 100
       in: query
       required: false
     artifactFilterQuery:
@@ -2241,18 +2311,6 @@ components:
       schema:
         type: string
         pattern: "^[\\x20-\\x7E]*$"
-      in: query
-      required: false
-    orderBy:
-      style: form
-      explode: true
-      examples:
-        orderBy:
-          value: ID
-      name: orderBy
-      description: Specifies the order by criteria for listing entities.
-      schema:
-        $ref: "#/components/schemas/OrderByField"
       in: query
       required: false
     artifactOrderBy:
@@ -2305,64 +2363,6 @@ components:
         - Empty property names (e.g., `.double_value`) return an error
       schema:
         type: string
-      in: query
-      required: false
-    labelOrderBy:
-      style: form
-      explode: true
-      examples:
-        labelOrderBy:
-          value: name
-      name: orderBy
-      description: |
-        Specifies the key to order catalog labels by. You can provide any string key
-        that may exist in the label maps. Labels that contain the specified key will
-        be sorted by that key's value. Labels that don't contain the key will maintain
-        their original order and appear after labels that do contain the key.
-      schema:
-        type: string
-      in: query
-      required: false
-    namedQuery:
-      examples:
-        namedQuery:
-          value: secure_servers
-      name: namedQuery
-      description: Predefined filter template name to apply when listing MCP servers.
-      schema:
-        type: string
-      in: query
-      required: false
-    includeTools:
-      examples:
-        includeTools:
-          value: true
-      name: includeTools
-      description: Whether to include the tools array in each MCP server result.
-      schema:
-        type: boolean
-        default: false
-      in: query
-      required: false
-    toolLimit:
-      examples:
-        toolLimit:
-          value: 10
-      name: toolLimit
-      description: Maximum number of tools to include when includeTools is true.
-      schema:
-        type: integer
-        format: int32
-        default: 10
-        minimum: 0
-        maximum: 100
-      in: query
-      required: false
-    assetType:
-      name: assetType
-      description: Filter by asset type.
-      schema:
-        $ref: "#/components/schemas/CatalogAssetType"
       in: query
       required: false
     artifactType:
