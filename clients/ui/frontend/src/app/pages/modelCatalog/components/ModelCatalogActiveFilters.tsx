@@ -1,5 +1,5 @@
 import React from 'react';
-import { ToolbarFilter, ToolbarLabelGroup, ToolbarLabel, capitalize } from '@patternfly/react-core';
+import { ToolbarFilter, ToolbarLabelGroup, ToolbarLabel } from '@patternfly/react-core';
 import { isEnumMember } from 'mod-arch-core';
 import { Theme } from 'mod-arch-kubeflow';
 import { STYLE_THEME } from '~/app/utilities/const';
@@ -16,6 +16,8 @@ import {
   ModelCatalogTask,
   AllLanguageCode,
   ModelCatalogNumberFilterKey,
+  ValidatedConfiguration,
+  MODEL_CATALOG_VALIDATED_CONFIGURATION_NAME_MAPPING,
   isCatalogFilterKey,
   isPerformanceFilterKey,
   parseLatencyFilterKey,
@@ -106,7 +108,9 @@ const ModelCatalogActiveFilters: React.FC<ModelCatalogActiveFiltersProps> = ({ f
           return isEnumMember(valueStr, AllLanguageCode) ? AllLanguageCodesMap[valueStr] : valueStr;
         }
         case ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION: {
-          return capitalize(valueStr.replace(/-/g, ' '));
+          return isEnumMember(valueStr, ValidatedConfiguration)
+            ? MODEL_CATALOG_VALIDATED_CONFIGURATION_NAME_MAPPING[valueStr]
+            : valueStr;
         }
         case ModelCatalogStringFilterKey.USE_CASE: {
           if (isUseCaseOptionValue(valueStr)) {
