@@ -50,6 +50,8 @@ clean-graphql:
 .PHONY: clean-internal-server-openapi
 clean-internal-server-openapi:
 	while IFS= read -r file; do rm -f "internal/server/openapi/$$file"; done < internal/server/openapi/.openapi-generator/FILES
+	rm -f internal/server/openapi/api_model_catalog_service.go internal/server/openapi/api_mcp_catalog_service.go
+	rm -f internal/server/openapi/api_model.go internal/server/openapi/api_mcp.go
 
 .PHONY: test
 test:

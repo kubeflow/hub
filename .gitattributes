@@ -68,8 +68,9 @@ catalog/clients/python/src/catalog_openapi/models/model_preview_result.py lingui
 catalog/clients/python/src/catalog_openapi/models/order_by_field.py linguist-generated=true
 catalog/clients/python/src/catalog_openapi/models/sort_order.py linguist-generated=true
 catalog/clients/python/src/catalog_openapi/rest.py linguist-generated=true
-catalog/internal/server/openapi/api.go linguist-generated=true
+catalog/internal/server/openapi/api_mcp.go linguist-generated=true
 catalog/internal/server/openapi/api_mcp_catalog_service.go linguist-generated=true
+catalog/internal/server/openapi/api_model.go linguist-generated=true
 catalog/internal/server/openapi/api_model_catalog_service.go linguist-generated=true
 catalog/internal/server/openapi/error.go linguist-generated=true
 catalog/internal/server/openapi/helpers.go linguist-generated=true
