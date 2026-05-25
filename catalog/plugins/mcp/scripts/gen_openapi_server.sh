@@ -46,6 +46,9 @@ py-re-replace 1 'github\.com/kubeflow/hub/pkg/openapi' 'github.com/kubeflow/hub/
 # Rename api.go to api_mcp.go (avoid collision with model gen)
 mv "$DST/api.go" "$DST/api_mcp.go"
 
+# Remove generator boilerplate that shouldn't be tracked
+rm -rf "$DST/README.md" "$DST/api/openapi.yaml" "$DST/.openapi-generator-ignore"
+
 # Format generated files
 "$REPO_ROOT/bin/goimports" -w "$DST/api_mcp_catalog_service.go" "$DST/api_mcp.go"
 

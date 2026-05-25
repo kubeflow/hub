@@ -49,6 +49,9 @@ py-re-replace 1 '\{model_name\+\}|model_name\+' '*' "$DST/api_model_catalog_serv
 # Rename api.go to api_model.go (avoid collision with MCP gen)
 mv "$DST/api.go" "$DST/api_model.go"
 
+# Remove generator boilerplate that shouldn't be tracked
+rm -rf "$DST/README.md" "$DST/api/openapi.yaml" "$DST/.openapi-generator-ignore"
+
 # Format generated files
 "$REPO_ROOT/bin/goimports" -w "$DST/api_model_catalog_service.go" "$DST/api_model.go"
 
