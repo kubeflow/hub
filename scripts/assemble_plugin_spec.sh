@@ -18,7 +18,7 @@ usage() {
     echo ""
     echo "Assembles a standalone OpenAPI spec for a plugin by merging:"
     echo "  - Core catalog spec (api/openapi/src/catalog.yaml)"
-    echo "  - Plugin paths and schemas (api/openapi/src/plugins/<name>/)"
+    echo "  - Plugin spec (api/openapi/src/plugins/<name>.yaml)"
     echo "  - Shared libraries (api/openapi/src/lib/*.yaml)"
     echo ""
     echo "Example: $0 model /tmp/model_spec.yaml"
@@ -32,32 +32,19 @@ if [[ -z "$PLUGIN_NAME" || -z "$OUT_PATH" ]]; then
     usage
 fi
 
-PLUGIN_DIR="api/openapi/src/plugins/$PLUGIN_NAME"
-if [[ ! -d "$PLUGIN_DIR" ]]; then
-    echo "Error: Plugin directory not found at $PLUGIN_DIR" >&2
+PLUGIN_FILE="api/openapi/src/plugins/$PLUGIN_NAME.yaml"
+if [[ ! -f "$PLUGIN_FILE" ]]; then
+    echo "Error: Plugin spec not found at $PLUGIN_FILE" >&2
     exit 1
 fi
 
-# Collect plugin spec files
-PLUGIN_FILES=()
-for f in "$PLUGIN_DIR/openapi.yaml" "$PLUGIN_DIR/components.yaml"; do
-    if [[ -f "$f" ]]; then
-        PLUGIN_FILES+=("$f")
-    fi
-done
-
-if [[ ${#PLUGIN_FILES[@]} -eq 0 ]]; then
-    echo "Error: No spec files found in $PLUGIN_DIR" >&2
-    exit 1
-fi
-
-# Merge: core catalog + plugin specs + shared libs
+# Merge: core catalog + plugin spec + shared libs
 # Core comes first (provides envelope, shared paths, shared schemas),
-# then plugin specs (add plugin-specific paths/schemas),
+# then plugin spec (adds plugin-specific paths/schemas),
 # then shared libs last (common.yaml provides base types, overrides on conflicts)
 $YQ eval-all '. as $item ireduce ({}; . * $item)' \
     api/openapi/src/catalog.yaml \
-    "${PLUGIN_FILES[@]}" \
+    "$PLUGIN_FILE" \
     api/openapi/src/lib/*.yaml \
     >"$OUT_PATH"
 

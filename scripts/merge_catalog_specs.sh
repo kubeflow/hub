@@ -84,44 +84,15 @@ cp "$SOURCE_FILE" "$OUT_FILE"
 # Step 2: Discover and merge plugin specs (before shared libraries,
 # so catalog-specific parameters appear before common.yaml parameters
 # in the final output — preserving the original key order)
-PLUGIN_DIRS=()
-while IFS= read -r dir; do
-    PLUGIN_DIRS+=("$dir")
-done < <(find api/openapi/src/plugins/* -maxdepth 0 -type d 2>/dev/null | sort || true)
+PLUGIN_FILES=()
+while IFS= read -r f; do
+    PLUGIN_FILES+=("$f")
+done < <(find api/openapi/src/plugins -maxdepth 1 -name '*.yaml' -type f 2>/dev/null | sort || true)
 
-for plugin_dir in "${PLUGIN_DIRS[@]}"; do
-    plugin_name=$(basename "$plugin_dir")
-
-    if [[ -z "$plugin_name" ]]; then
-        continue
-    fi
-
-    # Collect plugin spec files (openapi.yaml + components.yaml)
-    plugin_files=()
-    for f in "$plugin_dir/openapi.yaml" "$plugin_dir/components.yaml"; do
-        if [[ -f "$f" ]]; then
-            plugin_files+=("$f")
-        fi
-    done
-
-    if [[ ${#plugin_files[@]} -eq 0 ]]; then
-        continue
-    fi
-
-    # Merge plugin files into a single temporary spec
-    temp_plugin="$(mktemp -t "plugin_${plugin_name}_XXXXXX").yaml"
-    register_temp "$temp_plugin"
-
-    if [[ ${#plugin_files[@]} -eq 1 ]]; then
-        cp "${plugin_files[0]}" "$temp_plugin"
-    else
-        $YQ eval-all '. as $item ireduce ({}; . * $item)' "${plugin_files[@]}" >"$temp_plugin"
-    fi
-
-    # Deep-merge plugin spec into the main output
+for plugin_file in "${PLUGIN_FILES[@]}"; do
     temp_merged="$(mktemp -t merged_tempXXXXXX).yaml"
     register_temp "$temp_merged"
-    $YQ eval-all '. as $item ireduce ({}; . * $item)' "$OUT_FILE" "$temp_plugin" >"$temp_merged"
+    $YQ eval-all '. as $item ireduce ({}; . * $item)' "$OUT_FILE" "$plugin_file" >"$temp_merged"
     mv "$temp_merged" "$OUT_FILE"
 done
 
