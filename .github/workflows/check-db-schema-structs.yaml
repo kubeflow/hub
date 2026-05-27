@@ -18,7 +18,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
-          go-version: "1.25.7"
+          go-version: "1.26.3"
       - name: Generate MySQL DB schema structs
         run: make gen/gorm/mysql
       - name: Check if there are uncommitted file changes
@@ -38,7 +38,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
-          go-version: "1.25.7"
+          go-version: "1.26.3"
       - name: Generate PostgreSQL DB schema structs
         run: make gen/gorm/postgres
       - name: Check if there are uncommitted file changes

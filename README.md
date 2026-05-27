@@ -48,7 +48,7 @@ The project was formerly known as Model Registry.
 8. [UI](clients/ui/README.md)
 
 ## Pre-requisites:
-- go >= 1.25.7
+- go >= 1.26
 - protoc v24.3 - [Protocol Buffers v24.3 Release](https://github.com/protocolbuffers/protobuf/releases/tag/v24.3)
 - npm >= 10.2.0 - [Installing Node.js and npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
 - Java >= 11.0

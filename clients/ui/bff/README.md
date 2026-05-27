@@ -6,7 +6,7 @@ The Kubeflow Hub UI BFF is the _backend for frontend_ (BFF) used by the Kubeflow
 
 ### Dependencies
 
-- Go >= 1.25.7
+- Go >= 1.26
 
 ### Running model registry
 

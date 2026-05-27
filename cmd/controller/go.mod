@@ -1,6 +1,6 @@
 module github.com/kubeflow/hub/cmd/controller
 
-go 1.25.7
+go 1.26
 
 require (
 	github.com/kserve/kserve v0.17.0-rc1

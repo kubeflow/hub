@@ -473,7 +473,7 @@ The `excludedModels` property supports prefixes like `includedModels` and also s
 ## Development
 
 ### Prerequisites
-- Go >= 1.25
+- Go >= 1.26
 - Java >= 11.0 (for OpenAPI generation)
 - Node.js >= 20.0.0 (for GraphQL schema downloads)
 

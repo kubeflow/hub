@@ -7,7 +7,7 @@ Local Kubernetes development environment for the model-registry UI using Kind an
 - A Docker-compatible runtime (e.g. Docker Desktop, Colima, Podman with `podman-docker`)
 - [Kind](https://kind.sigs.k8s.io/) installed
 - kubectl installed
-- Go >= 1.25.7
+- Go >= 1.26
 - Node.js >= 22.0.0
 - Tilt v0.33.22+ (auto-downloaded by `make tilt-up` if not present)
 
