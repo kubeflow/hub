@@ -37,16 +37,14 @@ func TestIntegration_PreservedRecommendationAlgorithm(t *testing.T) {
 	metricsArtifactRepo := modelservice.NewCatalogMetricsArtifactRepository(sharedDB, metricsArtifactTypeID)
 	catalogSourceRepo := service.NewCatalogSourceRepository(sharedDB, catalogSourceTypeID)
 
-	services := service.NewServices(
-		catalogModelRepo,
-		catalogArtifactRepo,
-		modelArtifactRepo,
-		metricsArtifactRepo,
-		catalogSourceRepo,
-		service.NewPropertyOptionsRepository(sharedDB),
-		nil, // MCPServerRepository
-		nil, // MCPServerToolRepository
-	)
+	services := Services{
+		CatalogModelRepository:           catalogModelRepo,
+		CatalogArtifactRepository:        catalogArtifactRepo,
+		CatalogModelArtifactRepository:   modelArtifactRepo,
+		CatalogMetricsArtifactRepository: metricsArtifactRepo,
+		CatalogSourceRepository:          catalogSourceRepo,
+		PropertyOptionsRepository:        service.NewPropertyOptionsRepository(sharedDB),
+	}
 
 	provider := NewDBCatalog(services, nil)
 
@@ -295,16 +293,14 @@ func TestIntegration_ServiceLayerBehavior(t *testing.T) {
 	metricsArtifactRepo := modelservice.NewCatalogMetricsArtifactRepository(sharedDB, metricsArtifactTypeID)
 	catalogSourceRepo := service.NewCatalogSourceRepository(sharedDB, catalogSourceTypeID)
 
-	services := service.NewServices(
-		catalogModelRepo,
-		catalogArtifactRepo,
-		modelArtifactRepo,
-		metricsArtifactRepo,
-		catalogSourceRepo,
-		service.NewPropertyOptionsRepository(sharedDB),
-		nil,
-		nil,
-	)
+	services := Services{
+		CatalogModelRepository:           catalogModelRepo,
+		CatalogArtifactRepository:        catalogArtifactRepo,
+		CatalogModelArtifactRepository:   modelArtifactRepo,
+		CatalogMetricsArtifactRepository: metricsArtifactRepo,
+		CatalogSourceRepository:          catalogSourceRepo,
+		PropertyOptionsRepository:        service.NewPropertyOptionsRepository(sharedDB),
+	}
 
 	provider := NewDBCatalog(services, nil)
 
@@ -459,16 +455,14 @@ func TestIntegration_ConfigurableProperties(t *testing.T) {
 	metricsArtifactRepo := modelservice.NewCatalogMetricsArtifactRepository(sharedDB, metricsArtifactTypeID)
 	catalogSourceRepo := service.NewCatalogSourceRepository(sharedDB, catalogSourceTypeID)
 
-	services := service.NewServices(
-		catalogModelRepo,
-		catalogArtifactRepo,
-		modelArtifactRepo,
-		metricsArtifactRepo,
-		catalogSourceRepo,
-		service.NewPropertyOptionsRepository(sharedDB),
-		nil,
-		nil,
-	)
+	services := Services{
+		CatalogModelRepository:           catalogModelRepo,
+		CatalogArtifactRepository:        catalogArtifactRepo,
+		CatalogModelArtifactRepository:   modelArtifactRepo,
+		CatalogMetricsArtifactRepository: metricsArtifactRepo,
+		CatalogSourceRepository:          catalogSourceRepo,
+		PropertyOptionsRepository:        service.NewPropertyOptionsRepository(sharedDB),
+	}
 
 	provider := NewDBCatalog(services, nil)
 

@@ -11,7 +11,6 @@ import (
 	"github.com/kubeflow/hub/catalog/internal/catalog/basecatalog"
 	"github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog/models"
 	sharedmodels "github.com/kubeflow/hub/catalog/internal/db/models"
-	"github.com/kubeflow/hub/catalog/internal/db/service"
 	apimodels "github.com/kubeflow/hub/catalog/pkg/openapi"
 	"github.com/kubeflow/hub/internal/platform/apiutils"
 	"github.com/stretchr/testify/assert"
@@ -106,16 +105,14 @@ func TestRemoveModelsFromMissingSources(t *testing.T) {
 				ErrorType:         tt.repositoryError,
 			}
 
-			services := service.NewServices(
-				mockModelRepo,
-				&MockCatalogArtifactRepository{},
-				&MockCatalogModelArtifactRepository{},
-				&MockCatalogMetricsArtifactRepository{},
-				&MockCatalogSourceRepository{},
-				&MockPropertyOptionsRepository{},
-				nil, // MCPServerRepository
-				nil, // MCPServerToolRepository
-			)
+			services := Services{
+				CatalogModelRepository:           mockModelRepo,
+				CatalogArtifactRepository:        &MockCatalogArtifactRepository{},
+				CatalogModelArtifactRepository:   &MockCatalogModelArtifactRepository{},
+				CatalogMetricsArtifactRepository: &MockCatalogMetricsArtifactRepository{},
+				CatalogSourceRepository:          &MockCatalogSourceRepository{},
+				PropertyOptionsRepository:        &MockPropertyOptionsRepository{},
+			}
 
 			// Create loader and populate sources
 			loader := NewModelLoader(services, basecatalog.NewBaseLoader([]string{}))
@@ -302,16 +299,14 @@ func TestLoader_StartWithLeaderElection(t *testing.T) {
 	mockMetricsArtifactRepo := &MockCatalogMetricsArtifactRepository{}
 	mockSourceRepo := &MockCatalogSourceRepository{}
 
-	services := service.NewServices(
-		mockModelRepo,
-		mockArtifactRepo,
-		mockModelArtifactRepo,
-		mockMetricsArtifactRepo,
-		mockSourceRepo,
-		&MockPropertyOptionsRepository{},
-		nil, // MCPServerRepository
-		nil, // MCPServerToolRepository
-	)
+	services := Services{
+		CatalogModelRepository:           mockModelRepo,
+		CatalogArtifactRepository:        mockArtifactRepo,
+		CatalogModelArtifactRepository:   mockModelArtifactRepo,
+		CatalogMetricsArtifactRepository: mockMetricsArtifactRepo,
+		CatalogSourceRepository:          mockSourceRepo,
+		PropertyOptionsRepository:        &MockPropertyOptionsRepository{},
+	}
 
 	// Register a test provider
 	testProviderName := "test-leader-provider"
@@ -517,16 +512,14 @@ func TestSourceStatusPartialVsFull(t *testing.T) {
 			}))
 
 			mockSourceRepo := &MockCatalogSourceRepository{}
-			services := service.NewServices(
-				&MockCatalogModelRepository{},
-				&MockCatalogArtifactRepository{},
-				&MockCatalogModelArtifactRepository{},
-				&MockCatalogMetricsArtifactRepository{},
-				mockSourceRepo,
-				&MockPropertyOptionsRepository{},
-				nil,
-				nil,
-			)
+			services := Services{
+				CatalogModelRepository:           &MockCatalogModelRepository{},
+				CatalogArtifactRepository:        &MockCatalogArtifactRepository{},
+				CatalogModelArtifactRepository:   &MockCatalogModelArtifactRepository{},
+				CatalogMetricsArtifactRepository: &MockCatalogMetricsArtifactRepository{},
+				CatalogSourceRepository:          mockSourceRepo,
+				PropertyOptionsRepository:        &MockPropertyOptionsRepository{},
+			}
 
 			baseLoader := basecatalog.NewBaseLoader([]string{})
 			baseLoader.SetLeader(true)

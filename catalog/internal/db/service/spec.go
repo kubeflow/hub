@@ -1,11 +1,8 @@
 package service
 
 import (
-	mcpcatalogmodels "github.com/kubeflow/hub/catalog/internal/catalog/mcpcatalog/models"
 	mcpcatalogservice "github.com/kubeflow/hub/catalog/internal/catalog/mcpcatalog/service"
-	modelcatalogmodels "github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog/models"
 	modelcatalogservice "github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog/service"
-	sharedmodels "github.com/kubeflow/hub/catalog/internal/db/models"
 	"github.com/kubeflow/hub/internal/platform/datastore"
 )
 
@@ -73,35 +70,3 @@ func DatastoreSpec() *datastore.Spec {
 		AddOther(NewPropertyOptionsRepository)
 }
 
-type Services struct {
-	CatalogModelRepository           modelcatalogmodels.CatalogModelRepository
-	CatalogArtifactRepository        sharedmodels.CatalogArtifactRepository
-	CatalogModelArtifactRepository   modelcatalogmodels.CatalogModelArtifactRepository
-	CatalogMetricsArtifactRepository modelcatalogmodels.CatalogMetricsArtifactRepository
-	CatalogSourceRepository          sharedmodels.CatalogSourceRepository
-	PropertyOptionsRepository        sharedmodels.PropertyOptionsRepository
-	MCPServerRepository              mcpcatalogmodels.MCPServerRepository
-	MCPServerToolRepository          mcpcatalogmodels.MCPServerToolRepository
-}
-
-func NewServices(
-	catalogModelRepository modelcatalogmodels.CatalogModelRepository,
-	catalogArtifactRepository sharedmodels.CatalogArtifactRepository,
-	catalogModelArtifactRepository modelcatalogmodels.CatalogModelArtifactRepository,
-	catalogMetricsArtifactRepository modelcatalogmodels.CatalogMetricsArtifactRepository,
-	catalogSourceRepository sharedmodels.CatalogSourceRepository,
-	propertyOptionsRepository sharedmodels.PropertyOptionsRepository,
-	mcpServerRepository mcpcatalogmodels.MCPServerRepository,
-	mcpServerToolRepository mcpcatalogmodels.MCPServerToolRepository,
-) Services {
-	return Services{
-		CatalogModelRepository:           catalogModelRepository,
-		CatalogArtifactRepository:        catalogArtifactRepository,
-		CatalogModelArtifactRepository:   catalogModelArtifactRepository,
-		CatalogMetricsArtifactRepository: catalogMetricsArtifactRepository,
-		CatalogSourceRepository:          catalogSourceRepository,
-		PropertyOptionsRepository:        propertyOptionsRepository,
-		MCPServerRepository:              mcpServerRepository,
-		MCPServerToolRepository:          mcpServerToolRepository,
-	}
-}

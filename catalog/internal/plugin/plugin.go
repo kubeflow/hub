@@ -5,10 +5,10 @@ import (
 	"flag"
 	"log/slog"
 
+	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/go-chi/chi/v5"
 	"gorm.io/gorm"
 
-	"github.com/kubeflow/hub/catalog/internal/catalog/basecatalog"
 	"github.com/kubeflow/hub/internal/platform/datastore"
 )
 
@@ -79,6 +79,14 @@ type LeaderAware interface {
 	OnBecomeLeader(ctx context.Context) error
 }
 
+// SourceIDProvider is an optional interface that plugins can implement
+// to expose their known source IDs. Used during leader operations to
+// collect the union of all source IDs across plugins, preventing
+// cross-contamination when cleaning up shared CatalogSource records.
+type SourceIDProvider interface {
+	KnownSourceIDs() mapset.Set[string]
+}
+
 // CatalogLoader defines the interface for data loading strategies.
 type CatalogLoader interface {
 	Start(ctx context.Context) error
@@ -95,15 +103,6 @@ type Migration struct {
 
 // Config is passed to each plugin during Init.
 type Config struct {
-	// SourceConfig is the parsed sources.yaml configuration.
-	// Plugins use basecatalog methods (GetModelCatalogs, etc.) to extract
-	// their relevant sections.
-	//
-	// This couples plugins to basecatalog's schema — adding a new catalog type
-	// requires extending SourceConfig. Full decoupling (plugin-defined config
-	// types with raw YAML routing) is a server orchestration concern.
-	SourceConfig *basecatalog.SourceConfig
-
 	// DB is the shared database connection.
 	DB *gorm.DB
 

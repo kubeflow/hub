@@ -34,16 +34,14 @@ func setupIntegrationTestProvider(t *testing.T, ctx context.Context, sharedDB *g
 	metricsArtifactRepo := modelservice.NewCatalogMetricsArtifactRepository(sharedDB, metricsArtifactTypeID)
 	catalogSourceRepo := service.NewCatalogSourceRepository(sharedDB, catalogSourceTypeID)
 
-	svcs := service.NewServices(
-		catalogModelRepo,
-		catalogArtifactRepo,
-		modelArtifactRepo,
-		metricsArtifactRepo,
-		catalogSourceRepo,
-		service.NewPropertyOptionsRepository(sharedDB),
-		nil, // MCPServerRepository
-		nil, // MCPServerToolRepository
-	)
+	svcs := Services{
+		CatalogModelRepository:           catalogModelRepo,
+		CatalogArtifactRepository:        catalogArtifactRepo,
+		CatalogModelArtifactRepository:   modelArtifactRepo,
+		CatalogMetricsArtifactRepository: metricsArtifactRepo,
+		CatalogSourceRepository:          catalogSourceRepo,
+		PropertyOptionsRepository:        service.NewPropertyOptionsRepository(sharedDB),
+	}
 
 	// Insert test data:
 	//   - Models: "fast-model", "medium-model", "slow-model", "no-perf-model"
@@ -55,7 +53,7 @@ func setupIntegrationTestProvider(t *testing.T, ctx context.Context, sharedDB *g
 	return NewDBCatalog(svcs, nil).(*dbCatalogImpl)
 }
 
-func insertTestData(t *testing.T, ctx context.Context, svcs service.Services, catalogModelTypeID, metricsArtifactTypeID int32) {
+func insertTestData(t *testing.T, ctx context.Context, svcs Services, catalogModelTypeID, metricsArtifactTypeID int32) {
 	// Create test models
 	testModels := []struct {
 		name        string
@@ -177,16 +175,14 @@ func setupBenchmarkProvider(b *testing.B, ctx context.Context, sharedDB *gorm.DB
 	metricsArtifactRepo := modelservice.NewCatalogMetricsArtifactRepository(sharedDB, metricsArtifactTypeID)
 	catalogSourceRepo := service.NewCatalogSourceRepository(sharedDB, catalogSourceTypeID)
 
-	svcs := service.NewServices(
-		catalogModelRepo,
-		catalogArtifactRepo,
-		modelArtifactRepo,
-		metricsArtifactRepo,
-		catalogSourceRepo,
-		service.NewPropertyOptionsRepository(sharedDB),
-		nil, // MCPServerRepository
-		nil, // MCPServerToolRepository
-	)
+	svcs := Services{
+		CatalogModelRepository:           catalogModelRepo,
+		CatalogArtifactRepository:        catalogArtifactRepo,
+		CatalogModelArtifactRepository:   modelArtifactRepo,
+		CatalogMetricsArtifactRepository: metricsArtifactRepo,
+		CatalogSourceRepository:          catalogSourceRepo,
+		PropertyOptionsRepository:        service.NewPropertyOptionsRepository(sharedDB),
+	}
 
 	// Insert 100+ models with performance data for benchmarking
 	insertBenchmarkData(b, ctx, svcs, catalogModelTypeID, metricsArtifactTypeID)
@@ -194,7 +190,7 @@ func setupBenchmarkProvider(b *testing.B, ctx context.Context, sharedDB *gorm.DB
 	return NewDBCatalog(svcs, nil).(*dbCatalogImpl)
 }
 
-func insertBenchmarkData(b *testing.B, ctx context.Context, svcs service.Services, catalogModelTypeID, metricsArtifactTypeID int32) {
+func insertBenchmarkData(b *testing.B, ctx context.Context, svcs Services, catalogModelTypeID, metricsArtifactTypeID int32) {
 	const numModels = 100
 
 	var modelIDs []int32

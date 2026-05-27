@@ -50,16 +50,14 @@ func TestDBCatalog(t *testing.T) {
 	metricsArtifactRepo := modelservice.NewCatalogMetricsArtifactRepository(sharedDB, metricsArtifactTypeID)
 	catalogSourceRepo := service.NewCatalogSourceRepository(sharedDB, catalogSourceTypeID)
 
-	svcs := service.NewServices(
-		catalogModelRepo,
-		catalogArtifactRepo,
-		modelArtifactRepo,
-		metricsArtifactRepo,
-		catalogSourceRepo,
-		service.NewPropertyOptionsRepository(sharedDB),
-		nil, // MCPServerRepository
-		nil, // MCPServerToolRepository
-	)
+	svcs := Services{
+		CatalogModelRepository:           catalogModelRepo,
+		CatalogArtifactRepository:        catalogArtifactRepo,
+		CatalogModelArtifactRepository:   modelArtifactRepo,
+		CatalogMetricsArtifactRepository: metricsArtifactRepo,
+		CatalogSourceRepository:          catalogSourceRepo,
+		PropertyOptionsRepository:        service.NewPropertyOptionsRepository(sharedDB),
+	}
 
 	// Create DB catalog instance
 	dbCatalog := NewDBCatalog(svcs, nil)
@@ -1492,16 +1490,14 @@ func TestDBCatalog_GetPerformanceArtifactsWithService(t *testing.T) {
 	metricsArtifactRepo := modelservice.NewCatalogMetricsArtifactRepository(sharedDB, metricsArtifactTypeID)
 	catalogSourceRepo := service.NewCatalogSourceRepository(sharedDB, catalogSourceTypeID)
 
-	services := service.NewServices(
-		catalogModelRepo,
-		catalogArtifactRepo,
-		modelArtifactRepo,
-		metricsArtifactRepo,
-		catalogSourceRepo,
-		service.NewPropertyOptionsRepository(sharedDB),
-		nil, // MCPServerRepository
-		nil, // MCPServerToolRepository
-	)
+	services := Services{
+		CatalogModelRepository:           catalogModelRepo,
+		CatalogArtifactRepository:        catalogArtifactRepo,
+		CatalogModelArtifactRepository:   modelArtifactRepo,
+		CatalogMetricsArtifactRepository: metricsArtifactRepo,
+		CatalogSourceRepository:          catalogSourceRepo,
+		PropertyOptionsRepository:        service.NewPropertyOptionsRepository(sharedDB),
+	}
 
 	sources := NewSourceCollection()
 	err := sources.Merge("test-origin", map[string]basecatalog.ModelSource{
@@ -1600,7 +1596,7 @@ func TestGetFilterOptionsWithNamedQueries(t *testing.T) {
 	// Use a realistic non-zero TypeID to validate that GetFilterOptions
 	// correctly scopes context property queries by type.
 	const mockTypeID int32 = 42
-	mockServices := service.Services{
+	mockServices := Services{
 		CatalogModelRepository: &MockCatalogModelRepository{TypeID: mockTypeID},
 		PropertyOptionsRepository: &mockPropertyRepositoryWithRanges{
 			t:              t,
@@ -2021,16 +2017,14 @@ func TestFindModelsWithRecommendedLatency(t *testing.T) {
 	metricsArtifactRepo := modelservice.NewCatalogMetricsArtifactRepository(sharedDB, metricsArtifactTypeID)
 	catalogSourceRepo := service.NewCatalogSourceRepository(sharedDB, catalogSourceTypeID)
 
-	svcs := service.NewServices(
-		catalogModelRepo,
-		catalogArtifactRepo,
-		modelArtifactRepo,
-		metricsArtifactRepo,
-		catalogSourceRepo,
-		service.NewPropertyOptionsRepository(sharedDB),
-		nil, // MCPServerRepository
-		nil, // MCPServerToolRepository
-	)
+	svcs := Services{
+		CatalogModelRepository:           catalogModelRepo,
+		CatalogArtifactRepository:        catalogArtifactRepo,
+		CatalogModelArtifactRepository:   modelArtifactRepo,
+		CatalogMetricsArtifactRepository: metricsArtifactRepo,
+		CatalogSourceRepository:          catalogSourceRepo,
+		PropertyOptionsRepository:        service.NewPropertyOptionsRepository(sharedDB),
+	}
 
 	// Create DB catalog instance
 	dbCatalog := NewDBCatalog(svcs, nil)
@@ -2222,17 +2216,13 @@ func TestGetFilterOptions_NoMCPServerContamination(t *testing.T) {
 	// NOTE: catalogModelArtifactRepository and catalogMetricsArtifactRepository are nil
 	// because GetFilterOptions does not access them. If GetFilterOptions is ever extended
 	// to use artifact repositories, this test will panic and must be updated with stubs.
-	svcs := service.NewServices(
-		catalogModelRepo,
-		catalogArtifactRepo,
-		nil, // catalogModelArtifactRepository — unused by GetFilterOptions
-		nil, // catalogMetricsArtifactRepository — unused by GetFilterOptions
-		catalogSourceRepo,
-		propertyOptionsRepo,
-		mcpServerRepo,
-		mcpServerToolRepo,
-	)
-	dbCatalog := NewDBCatalog(svcs, nil)
+	modelSvcs := Services{
+		CatalogModelRepository:    catalogModelRepo,
+		CatalogArtifactRepository: catalogArtifactRepo,
+		CatalogSourceRepository:   catalogSourceRepo,
+		PropertyOptionsRepository: propertyOptionsRepo,
+	}
+	dbCatalog := NewDBCatalog(modelSvcs, nil)
 
 	filterOptions, err := dbCatalog.GetFilterOptions(context.Background())
 	require.NoError(t, err)
@@ -2255,7 +2245,13 @@ func TestGetFilterOptions_NoMCPServerContamination(t *testing.T) {
 	assert.NotContains(t, filters, "source_id", "source_id should be excluded by the model catalog skip list")
 
 	// Reverse direction: verify MCP catalog's GetFilterOptions doesn't leak model properties
-	dbMCPCatalog := mcpcatalog.NewDBMCPCatalog(svcs, nil, nil)
+	mcpSvcs := mcpcatalog.Services{
+		MCPServerRepository:       mcpServerRepo,
+		MCPServerToolRepository:   mcpServerToolRepo,
+		CatalogSourceRepository:   catalogSourceRepo,
+		PropertyOptionsRepository: propertyOptionsRepo,
+	}
+	dbMCPCatalog := mcpcatalog.NewDBMCPCatalog(mcpSvcs, nil, nil)
 	mcpFilterOptions, err := dbMCPCatalog.GetFilterOptions(context.Background())
 	require.NoError(t, err)
 	require.NotNil(t, mcpFilterOptions)

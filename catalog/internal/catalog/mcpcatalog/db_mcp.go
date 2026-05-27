@@ -9,7 +9,6 @@ import (
 	"github.com/kubeflow/hub/catalog/internal/catalog/mcpcatalog/models"
 	"github.com/kubeflow/hub/catalog/internal/converter"
 	sharedmodels "github.com/kubeflow/hub/catalog/internal/db/models"
-	"github.com/kubeflow/hub/catalog/internal/db/service"
 	openapi "github.com/kubeflow/hub/catalog/pkg/openapi"
 	"github.com/kubeflow/hub/internal/platform/apiutils"
 	"github.com/kubeflow/hub/pkg/api"
@@ -27,7 +26,7 @@ type dbMCPCatalogImpl struct {
 	mcpSources                *MCPSourceCollection
 }
 
-func NewDBMCPCatalog(services service.Services, mcpSources *MCPSourceCollection, resolver NamedQueryResolver) MCPCatalogProvider {
+func NewDBMCPCatalog(services Services, mcpSources *MCPSourceCollection, resolver NamedQueryResolver) MCPCatalogProvider {
 	return &dbMCPCatalogImpl{
 		mcpServerRepo:             services.MCPServerRepository,
 		mcpServerToolRepo:         services.MCPServerToolRepository,

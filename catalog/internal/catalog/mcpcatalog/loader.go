@@ -12,7 +12,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/kubeflow/hub/catalog/internal/catalog/basecatalog"
 	"github.com/kubeflow/hub/catalog/internal/catalog/mcpcatalog/models"
-	"github.com/kubeflow/hub/catalog/internal/db/service"
 	mrmodels "github.com/kubeflow/hub/internal/platform/db/entity"
 )
 
@@ -45,7 +44,7 @@ type MCPLoader struct {
 	// Sources contains current MCP source information loaded from the configuration files.
 	Sources *MCPSourceCollection
 
-	services service.Services
+	services Services
 	handlers []MCPLoaderEventHandler
 
 	closerMu sync.Mutex
@@ -64,7 +63,7 @@ func (ml *MCPLoader) setCloser(closer func()) {
 }
 
 // NewMCPLoaderWithState creates a new MCP loader with external state
-func NewMCPLoaderWithState(services service.Services, state basecatalog.LoaderState) *MCPLoader {
+func NewMCPLoaderWithState(services Services, state basecatalog.LoaderState) *MCPLoader {
 	paths := state.Paths()
 	return &MCPLoader{
 		state:    state,

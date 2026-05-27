@@ -13,7 +13,6 @@ import (
 	"github.com/kubeflow/hub/catalog/internal/catalog/basecatalog"
 	"github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog/models"
 	sharedmodels "github.com/kubeflow/hub/catalog/internal/db/models"
-	"github.com/kubeflow/hub/catalog/internal/db/service"
 	apimodels "github.com/kubeflow/hub/catalog/pkg/openapi"
 	"github.com/kubeflow/hub/internal/platform/apiutils"
 	"github.com/kubeflow/hub/internal/converter"
@@ -30,7 +29,7 @@ type dbCatalogImpl struct {
 	sources                   *SourceCollection
 }
 
-func NewDBCatalog(services service.Services, sources *SourceCollection) APIProvider {
+func NewDBCatalog(services Services, sources *SourceCollection) APIProvider {
 	return &dbCatalogImpl{
 		catalogArtifactRepository: services.CatalogArtifactRepository,
 		catalogModelRepository:    services.CatalogModelRepository,

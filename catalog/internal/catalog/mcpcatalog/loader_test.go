@@ -11,7 +11,6 @@ import (
 	"github.com/kubeflow/hub/catalog/internal/catalog/basecatalog"
 	mcpmodels "github.com/kubeflow/hub/catalog/internal/catalog/mcpcatalog/models"
 	mcpcatalogservice "github.com/kubeflow/hub/catalog/internal/catalog/mcpcatalog/service"
-	modelcatalogservice "github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog/service"
 	"github.com/kubeflow/hub/catalog/internal/db/service"
 	"github.com/kubeflow/hub/catalog/internal/testhelpers"
 	"github.com/kubeflow/hub/internal/testutils"
@@ -24,39 +23,19 @@ func TestMain(m *testing.M) {
 	os.Exit(testutils.TestMainPostgresHelper(m))
 }
 
-func setupMCPLoaderTest(t *testing.T) (*gorm.DB, service.Services, func()) {
+func setupMCPLoaderTest(t *testing.T) (*gorm.DB, Services, func()) {
 	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, service.DatastoreSpec())
 
-	// Get type IDs
-	catalogModelTypeID := testhelpers.GetCatalogModelTypeIDForDBTest(t, sharedDB)
-	modelArtifactTypeID := testhelpers.GetCatalogModelArtifactTypeIDForDBTest(t, sharedDB)
-	metricsArtifactTypeID := testhelpers.GetCatalogMetricsArtifactTypeIDForDBTest(t, sharedDB)
 	catalogSourceTypeID := testhelpers.GetCatalogSourceTypeIDForDBTest(t, sharedDB)
 	mcpServerTypeID := testhelpers.GetMCPServerTypeIDForDBTest(t, sharedDB)
 	mcpServerToolTypeID := testhelpers.GetMCPServerToolTypeIDForDBTest(t, sharedDB)
 
-	// Create repositories
-	catalogModelRepo := modelcatalogservice.NewCatalogModelRepository(sharedDB, catalogModelTypeID)
-	catalogArtifactRepo := service.NewCatalogArtifactRepository(sharedDB, map[string]int32{
-		service.CatalogModelArtifactTypeName:   modelArtifactTypeID,
-		service.CatalogMetricsArtifactTypeName: metricsArtifactTypeID,
-	})
-	modelArtifactRepo := modelcatalogservice.NewCatalogModelArtifactRepository(sharedDB, modelArtifactTypeID)
-	metricsArtifactRepo := modelcatalogservice.NewCatalogMetricsArtifactRepository(sharedDB, metricsArtifactTypeID)
-	catalogSourceRepo := service.NewCatalogSourceRepository(sharedDB, catalogSourceTypeID)
-	mcpServerRepo := mcpcatalogservice.NewMCPServerRepository(sharedDB, mcpServerTypeID)
-	mcpServerToolRepo := mcpcatalogservice.NewMCPServerToolRepository(sharedDB, mcpServerToolTypeID)
-
-	services := service.NewServices(
-		catalogModelRepo,
-		catalogArtifactRepo,
-		modelArtifactRepo,
-		metricsArtifactRepo,
-		catalogSourceRepo,
-		service.NewPropertyOptionsRepository(sharedDB),
-		mcpServerRepo,
-		mcpServerToolRepo,
-	)
+	services := Services{
+		MCPServerRepository:       mcpcatalogservice.NewMCPServerRepository(sharedDB, mcpServerTypeID),
+		MCPServerToolRepository:   mcpcatalogservice.NewMCPServerToolRepository(sharedDB, mcpServerToolTypeID),
+		CatalogSourceRepository:   service.NewCatalogSourceRepository(sharedDB, catalogSourceTypeID),
+		PropertyOptionsRepository: service.NewPropertyOptionsRepository(sharedDB),
+	}
 
 	return sharedDB, services, cleanup
 }
