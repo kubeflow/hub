@@ -115,9 +115,6 @@ type Config struct {
 	// RepoSet is the shared set of repositories from the datastore.
 	RepoSet datastore.RepoSet
 
-	// TypeMap maps entity type names to their integer IDs.
-	TypeMap map[string]int32
-
 	// PerformanceMetricsPath holds paths to performance metrics data directories.
 	PerformanceMetricsPath []string
 

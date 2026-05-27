@@ -141,7 +141,6 @@ func runCatalogServer(_ *cobra.Command, _ []string) error {
 		ConfigPaths:            catalogCfg.ConfigPath,
 		PerformanceMetricsPath: catalogCfg.PerformanceMetricsPath,
 		RepoSet:                repoSet,
-		TypeMap:                repoSet.TypeMap(),
 	})
 
 	if err := pluginServer.Init(ctx); err != nil {

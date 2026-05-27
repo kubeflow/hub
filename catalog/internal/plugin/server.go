@@ -23,7 +23,6 @@ type ServerConfig struct {
 	ConfigPaths            []string
 	PerformanceMetricsPath []string
 	RepoSet                datastore.RepoSet
-	TypeMap                map[string]int32
 	Logger                 *slog.Logger
 }
 
@@ -66,7 +65,6 @@ func (s *Server) Init(ctx context.Context) error {
 			BasePath:               basePath,
 			ConfigPaths:            s.cfg.ConfigPaths,
 			RepoSet:                s.cfg.RepoSet,
-			TypeMap:                s.cfg.TypeMap,
 			PerformanceMetricsPath: s.cfg.PerformanceMetricsPath,
 			Logger:                 s.cfg.Logger.With("plugin", p.Name()),
 		}
