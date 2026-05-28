@@ -28,6 +28,10 @@ export const mockNamedQueries: Record<string, NamedQuery> = {
       operator: FilterOperator.LESS_THAN_OR_EQUAL,
       value: 'max', // 'max' means use the max value from the range in filters (300 in mock)
     },
+    [ModelCatalogNumberFilterKey.COLD_START_LATENCY]: {
+      operator: FilterOperator.LESS_THAN_OR_EQUAL,
+      value: 'max',
+    },
   },
   high_performance_gpu: {
     [ModelCatalogStringFilterKey.HARDWARE_TYPE]: {
@@ -134,6 +138,13 @@ export const mockCatalogFilterOptionsList = (
       range: {
         min: 1,
         max: 300,
+      },
+    },
+    [ModelCatalogNumberFilterKey.COLD_START_LATENCY]: {
+      type: 'number',
+      range: {
+        min: 45000,
+        max: 200000,
       },
     },
     // All latency metric combinations for dropdown options (using full filter key format)

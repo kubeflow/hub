@@ -32,6 +32,7 @@ const assertPerformanceFiltersVisible = (shouldExist: boolean): void => {
   cy.findByTestId(PERFORMANCE_FILTER_TEST_IDS.workloadType).should(assertion);
   cy.findByTestId(PERFORMANCE_FILTER_TEST_IDS.latency).should(assertion);
   cy.findByTestId(PERFORMANCE_FILTER_TEST_IDS.maxRps).should(assertion);
+  cy.findByTestId(PERFORMANCE_FILTER_TEST_IDS.coldStartLatency).should(assertion);
 };
 
 const visitWithPerformanceToggle = (toggleOn: boolean): void => {
@@ -74,6 +75,7 @@ describe('Model Catalog Performance Filters API Behavior', () => {
         expect(url).to.not.include('artifacts.e2e');
         expect(url).to.not.include('artifacts.itl');
         expect(url).to.not.include('artifacts.requests_per_second');
+        expect(url).to.not.include('cold_start_load_time_seconds');
         expect(url).to.not.include('targetRPS');
         expect(url).to.not.include('latencyProperty');
 
@@ -156,6 +158,7 @@ describe('Model Catalog Performance Filters API Behavior', () => {
 
         expect(url).to.not.include('artifacts.use_case');
         expect(url).to.not.include('artifacts.ttft');
+        expect(url).to.not.include('cold_start_load_time_seconds');
         expect(url).to.not.include('targetRPS');
       });
 
@@ -294,6 +297,59 @@ describe('Model Catalog Performance Filters API Behavior', () => {
       cy.findByTestId(PERFORMANCE_FILTER_TEST_IDS.latency)
         .should('be.visible')
         .and('not.contain.text', 'E2E');
+    });
+  });
+
+  describe('Cold start latency filter API behavior', () => {
+    it('should include cold_start_load_time_seconds in filterQuery when applied with toggle ON', () => {
+      visitWithPerformanceToggle(true);
+
+      modelCatalog.openColdStartLatencyFilter();
+      modelCatalog.applyColdStartLatencyFilter();
+
+      cy.intercept('GET', '**/model_catalog/models*').as('getModelsWithColdStart');
+
+      triggerFilterRefresh();
+
+      cy.wait('@getModelsWithColdStart').then((interception) => {
+        const decodedUrl = decodeURIComponent(interception.request.url);
+        expect(decodedUrl).to.include('cold_start_load_time_seconds');
+      });
+    });
+
+    it('should NOT include cold_start_load_time_seconds after toggle is turned OFF', () => {
+      visitWithPerformanceToggle(true);
+
+      modelCatalog.openColdStartLatencyFilter();
+      modelCatalog.applyColdStartLatencyFilter();
+
+      modelCatalog.togglePerformanceView();
+      modelCatalog.findLoadingState().should('not.exist');
+
+      cy.intercept('GET', '**/model_catalog/models*').as('getModelsWithoutColdStart');
+
+      triggerFilterRefresh();
+
+      cy.wait('@getModelsWithoutColdStart').then((interception) => {
+        const decodedUrl = decodeURIComponent(interception.request.url);
+        expect(decodedUrl).to.not.include('cold_start_load_time_seconds');
+      });
+    });
+
+    it('should pass cold_start_load_time_seconds as orderBy when cold start sort is selected', () => {
+      visitWithPerformanceToggle(true);
+
+      modelCatalog.selectSortOption('sort-option-lowest-cold-start');
+
+      cy.intercept('GET', '**/model_catalog/models*').as('getModelsSortedColdStart');
+
+      triggerFilterRefresh();
+
+      cy.wait('@getModelsSortedColdStart').then((interception) => {
+        const decodedUrl = decodeURIComponent(interception.request.url);
+        expect(decodedUrl).to.include('cold_start_load_time_seconds');
+        expect(decodedUrl).to.include('sortOrder=ASC');
+      });
     });
   });
 

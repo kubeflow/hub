@@ -136,6 +136,8 @@ const ModelCatalogActiveFilters: React.FC<ModelCatalogActiveFiltersProps> = ({
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         case ModelCatalogNumberFilterKey.MAX_RPS:
           return `${MODEL_CATALOG_FILTER_CHIP_PREFIXES.MAX_RPS} ${value}`;
+        case ModelCatalogNumberFilterKey.COLD_START_LATENCY:
+          return `${MODEL_CATALOG_FILTER_CHIP_PREFIXES.COLD_START_LATENCY} ${value} ms`;
         default:
           return String(value);
       }
@@ -234,7 +236,8 @@ const ModelCatalogActiveFilters: React.FC<ModelCatalogActiveFiltersProps> = ({
         // All other filters
         const isSingleValuePerformanceFilter =
           filterKey === ModelCatalogStringFilterKey.USE_CASE ||
-          filterKey === ModelCatalogNumberFilterKey.MAX_RPS;
+          filterKey === ModelCatalogNumberFilterKey.MAX_RPS ||
+          filterKey === ModelCatalogNumberFilterKey.COLD_START_LATENCY;
 
         let labels: ToolbarLabel[] = [];
 

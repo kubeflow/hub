@@ -11,13 +11,14 @@ import {
   CatalogModelDetailsParams,
   CatalogSource,
   CatalogSourceList,
+  HardwareConfiguration,
   ModelCatalogFilterStates,
   MetricsType,
   ModelCatalogFilterKey,
   SourceLabel,
   ToolCallingConfig,
 } from '~/app/modelCatalogTypes';
-import { getLabels } from '~/app/pages/modelRegistry/screens/utils';
+import { getLabels, getCustomPropString } from '~/app/pages/modelRegistry/screens/utils';
 import {
   ModelCatalogStringFilterKey,
   ModelCatalogNumberFilterKey,
@@ -222,6 +223,7 @@ const isArrayOfSelections = (
 const KNOWN_NUMERIC_FILTER_IDS: string[] = [
   ...ALL_LATENCY_FILTER_KEYS,
   ModelCatalogNumberFilterKey.MAX_RPS,
+  ModelCatalogNumberFilterKey.COLD_START_LATENCY,
 ];
 
 /**
@@ -306,18 +308,21 @@ export const getSortParams = (
     return recentPublishSort;
   }
 
+  if (effectiveSortBy === ModelCatalogSortOption.LOWEST_COLD_START) {
+    return {
+      orderBy: ModelCatalogNumberFilterKey.COLD_START_LATENCY,
+      sortOrder: SortOrder.ASC,
+    };
+  }
+
   // effectiveSortBy must be LOWEST_LATENCY at this point
   if (!activeLatencyField) {
-    // Fallback to recent publish if no latency field is available
     return recentPublishSort;
   }
 
-  // activeLatencyField is already in the correct format: artifacts.{metric}_{percentile}.double_value
-  // (e.g., artifacts.ttft_p90.double_value, artifacts.e2e_mean.double_value, artifacts.itl_p95.double_value)
-  // This matches the filter key format used in filterQuery, so we can use it directly
   return {
     orderBy: activeLatencyField,
-    sortOrder: SortOrder.ASC, // Lowest first (ascending)
+    sortOrder: SortOrder.ASC,
   };
 };
 
@@ -782,4 +787,39 @@ export const getCatalogModelTypePropertyForRegistration = (
 ): ModelRegistryCustomProperties => {
   const stored = getModelTypeStoredValueFromCustomProperties(customProperties) ?? ModelType.UNKNOWN;
   return buildCustomPropertiesWithModelType(undefined, stored);
+};
+
+export const getModelSizeFromCustomProperties = (
+  customProperties?: ModelRegistryCustomProperties,
+): string =>
+  customProperties
+    ? getCustomPropString(customProperties, CatalogModelCustomPropertyKey.MODEL_SIZE)
+    : '';
+
+export const getMinimumVramFromCustomProperties = (
+  customProperties?: ModelRegistryCustomProperties,
+): string =>
+  customProperties
+    ? getCustomPropString(customProperties, CatalogModelCustomPropertyKey.MINIMUM_VRAM)
+    : '';
+
+export const getHardwareConfigurationsFromCustomProperties = (
+  customProperties?: ModelRegistryCustomProperties,
+): HardwareConfiguration[] => {
+  if (!customProperties) {
+    return [];
+  }
+  const hwConfigStr = getCustomPropString(
+    customProperties,
+    CatalogModelCustomPropertyKey.HARDWARE_CONFIGURATIONS,
+  );
+  if (!hwConfigStr) {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(hwConfigStr);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 };

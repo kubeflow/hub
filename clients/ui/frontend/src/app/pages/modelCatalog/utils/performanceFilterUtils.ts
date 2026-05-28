@@ -85,11 +85,13 @@ export const applyFilterValue = (
   }
 
   // Handle performance number filters
-  // Currently only MAX_RPS, but structured for future extensibility
   if (isPerformanceNumberFilterKey(filterKey)) {
     const numberValue = extractNumberValue(value);
-    // Use explicit key to ensure type safety (MAX_RPS is currently the only performance number filter)
-    setFilterData(ModelCatalogNumberFilterKey.MAX_RPS, numberValue);
+    if (filterKey === ModelCatalogNumberFilterKey.MAX_RPS) {
+      setFilterData(ModelCatalogNumberFilterKey.MAX_RPS, numberValue);
+    } else {
+      setFilterData(ModelCatalogNumberFilterKey.COLD_START_LATENCY, numberValue);
+    }
     return;
   }
 
@@ -188,12 +190,14 @@ export const getDefaultFiltersFromNamedQuery = (
     }
 
     // Handle performance number filters
-    // Currently only MAX_RPS, but structured for future extensibility
     if (isPerformanceNumberFilterKey(fieldName)) {
       const resolvedValue = resolveFilterValue(filterOptions, fieldName, fieldFilter.value);
       if (resolvedValue !== undefined) {
-        // Use explicit key to ensure type safety (MAX_RPS is currently the only performance number filter)
-        result[ModelCatalogNumberFilterKey.MAX_RPS] = resolvedValue;
+        if (fieldName === ModelCatalogNumberFilterKey.MAX_RPS) {
+          result[ModelCatalogNumberFilterKey.MAX_RPS] = resolvedValue;
+        } else {
+          result[ModelCatalogNumberFilterKey.COLD_START_LATENCY] = resolvedValue;
+        }
       }
       return;
     }

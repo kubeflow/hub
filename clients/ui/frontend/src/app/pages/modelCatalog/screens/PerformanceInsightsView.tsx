@@ -29,7 +29,11 @@ import {
 import {
   decodeParams,
   getActiveLatencyFieldName,
+  getModelSizeFromCustomProperties,
+  getMinimumVramFromCustomProperties,
+  getHardwareConfigurationsFromCustomProperties,
 } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
+import { formatLatency } from '~/app/pages/modelCatalog/utils/performanceMetricsUtils';
 import {
   applyFilterValue,
   getDefaultFiltersFromNamedQuery,
@@ -127,6 +131,16 @@ const PerformanceInsightsView: React.FC<PerformanceInsightsViewProps> = ({ model
     model.name,
   ]);
 
+  const modelSize = getModelSizeFromCustomProperties(model.customProperties);
+  const minimumVram = getMinimumVramFromCustomProperties(model.customProperties);
+
+  const hardwareConfigurations = React.useMemo(
+    () => getHardwareConfigurationsFromCustomProperties(model.customProperties),
+    [model.customProperties],
+  );
+
+  const hasColdStartInfo = modelSize || minimumVram || hardwareConfigurations.length > 0;
+
   if (performanceArtifactsError) {
     return (
       <PageSection padding={{ default: 'noPadding' }}>
@@ -161,6 +175,7 @@ const PerformanceInsightsView: React.FC<PerformanceInsightsViewProps> = ({ model
               <FlexItem>
                 <HardwareConfigurationTable
                   performanceArtifacts={performanceArtifacts.items}
+                  hardwareConfigurations={hardwareConfigurations}
                   isLoading={!performanceArtifactsLoaded && performanceArtifacts.items.length === 0}
                   onSortChange={setTableSort}
                 />
@@ -194,6 +209,55 @@ const PerformanceInsightsView: React.FC<PerformanceInsightsViewProps> = ({ model
           </CardBody>
         </Card>
       </StackItem>
+      {hasColdStartInfo && (
+        <StackItem>
+          <Card>
+            <CardBody>
+              <Flex direction={{ default: 'column' }} gap={{ default: 'gapLg' }}>
+                <FlexItem>
+                  <Title headingLevel="h2" size="lg">
+                    Cold start &amp; resource requirements
+                  </Title>
+                </FlexItem>
+                <FlexItem>
+                  <Flex gap={{ default: 'gapXl' }}>
+                    {modelSize && (
+                      <FlexItem>
+                        <Flex direction={{ default: 'column' }}>
+                          <span className="pf-v6-u-font-weight-bold">{modelSize}</span>
+                          <span className="pf-v6-u-font-size-sm pf-v6-u-color-200">Model size</span>
+                        </Flex>
+                      </FlexItem>
+                    )}
+                    {minimumVram && (
+                      <FlexItem>
+                        <Flex direction={{ default: 'column' }}>
+                          <span className="pf-v6-u-font-weight-bold">{minimumVram}</span>
+                          <span className="pf-v6-u-font-size-sm pf-v6-u-color-200">
+                            Minimum vRAM
+                          </span>
+                        </Flex>
+                      </FlexItem>
+                    )}
+                    {hardwareConfigurations.map((config) => (
+                      <FlexItem key={config.hardware_type}>
+                        <Flex direction={{ default: 'column' }}>
+                          <span className="pf-v6-u-font-weight-bold">
+                            {formatLatency(config.cold_start_load_time_seconds * 1000)}
+                          </span>
+                          <span className="pf-v6-u-font-size-sm pf-v6-u-color-200">
+                            Cold start ({config.hardware_type})
+                          </span>
+                        </Flex>
+                      </FlexItem>
+                    ))}
+                  </Flex>
+                </FlexItem>
+              </Flex>
+            </CardBody>
+          </Card>
+        </StackItem>
+      )}
       <StackItem>
         <TensorTypeComparisonCard model={model} />
       </StackItem>

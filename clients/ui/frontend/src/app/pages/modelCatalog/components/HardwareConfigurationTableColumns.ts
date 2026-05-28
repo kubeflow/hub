@@ -12,7 +12,10 @@ import {
   PerformancePropertyKey,
 } from '~/concepts/modelCatalog/const';
 
-export type HardwareConfigColumnField = keyof PerformanceMetricsCustomProperties;
+export type HardwareConfigColumnField =
+  | keyof PerformanceMetricsCustomProperties
+  | 'cold_start_load_time'
+  | 'runtime_command';
 
 export type HardwareConfigColumn = Omit<
   SortableData<CatalogPerformanceMetricsArtifact>,
@@ -350,6 +353,33 @@ export const hardwareConfigColumns: HardwareConfigColumn[] = [
       const versionB = getStringValue(b.customProperties, 'framework_version');
       return versionA.localeCompare(versionB);
     },
+    width: 20,
+    modifier: 'wrap',
+  },
+  {
+    field: 'cold_start_load_time',
+    label: `Cold start\nlatency`,
+    info: {
+      popover:
+        'The estimated time required to provision hardware resources and initialize the container before the model can accept traffic.',
+      popoverProps: {
+        position: 'left',
+      },
+    },
+    sortable: false,
+    width: 20,
+    modifier: 'wrap',
+  },
+  {
+    field: 'runtime_command',
+    label: 'Runtime Command',
+    info: {
+      popover: 'Runtime configuration used to validate this model.',
+      popoverProps: {
+        position: 'left',
+      },
+    },
+    sortable: false,
     width: 20,
     modifier: 'wrap',
   },

@@ -364,6 +364,37 @@ class ModelCatalog {
     return this;
   }
 
+  // Cold start latency filter helpers
+  findColdStartLatencyFilter() {
+    return cy.findByTestId('cold-start-latency-filter');
+  }
+
+  openColdStartLatencyFilter() {
+    this.findColdStartLatencyFilter().click();
+    return this;
+  }
+
+  applyColdStartLatencyFilter() {
+    cy.findByTestId('cold-start-latency-apply-filter').click();
+    return this;
+  }
+
+  resetColdStartLatencyFilter() {
+    cy.findByTestId('cold-start-latency-reset-filter').click();
+    return this;
+  }
+
+  // Sort dropdown helpers
+  findSortDropdown() {
+    return cy.findByTestId('model-catalog-sort-dropdown');
+  }
+
+  selectSortOption(testId: string) {
+    this.findSortDropdown().click();
+    cy.findByTestId(testId).click();
+    return this;
+  }
+
   // Compression Comparison Card
   findCompressionComparisonCard() {
     return cy.findByTestId('compression-comparison-card');

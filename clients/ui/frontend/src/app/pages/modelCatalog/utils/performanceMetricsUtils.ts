@@ -34,6 +34,12 @@ export const FALLBACK_LATENCY_RANGE: SliderRange = {
   isSliderDisabled: false,
 };
 
+export const COLD_START_LATENCY_RANGE: SliderRange = {
+  minValue: 45000,
+  maxValue: 200000,
+  isSliderDisabled: false,
+};
+
 type CalculateSliderRangeOptions = {
   performanceArtifacts: CatalogPerformanceMetricsArtifact[];
   getArtifactFilterValue: (artifact: CatalogPerformanceMetricsArtifact) => number;

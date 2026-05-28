@@ -18,6 +18,7 @@ import { isValueDifferentFromDefault } from '~/app/pages/modelCatalog/utils/mode
 import WorkloadTypeFilter from './globalFilters/WorkloadTypeFilter';
 import HardwareConfigurationFilter from './globalFilters/HardwareConfigurationFilter';
 import MaxRpsFilter from './globalFilters/MaxRpsFilter';
+import ColdStartLatencyFilter from './globalFilters/ColdStartLatencyFilter';
 import LatencyFilter from './globalFilters/LatencyFilter';
 import ModelCatalogActiveFilters from './ModelCatalogActiveFilters';
 
@@ -163,7 +164,22 @@ const HardwareConfigurationFilterToolbar: React.FC<HardwareConfigurationFilterTo
             >
               <Button
                 variant="plain"
-                aria-label="More info for latency"
+                aria-label="More info for max RPS"
+                className="pf-v6-u-p-xs"
+                icon={<HelpIcon />}
+              />
+            </Popover>
+          </ToolbarItem>
+          <ToolbarItem>
+            <ColdStartLatencyFilter />
+            <Popover
+              bodyContent="The estimated time required to provision hardware resources and initialize the container before the model can accept traffic."
+              appendTo={() => document.body}
+              position="top"
+            >
+              <Button
+                variant="plain"
+                aria-label="More info for cold start latency"
                 className="pf-v6-u-p-xs"
                 icon={<HelpIcon />}
               />

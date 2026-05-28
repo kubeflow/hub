@@ -46,6 +46,8 @@ import {
   hasValidatedToolCalling,
   getToolCallingArgs,
   formatModelTypeDisplay,
+  getModelSizeFromCustomProperties,
+  getMinimumVramFromCustomProperties,
 } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
 import { CatalogModelCustomPropertyKey } from '~/concepts/modelCatalog/const';
 import { useTempDevFeatureAvailable, TempDevFeature } from '~/app/hooks/useTempDevFeatureAvailable';
@@ -87,6 +89,8 @@ const ModelDetailsView: React.FC<ModelDetailsViewProps> = ({
   const size = model.customProperties
     ? getCustomPropString(model.customProperties, CatalogModelCustomPropertyKey.SIZE)
     : '';
+  const modelSize = getModelSizeFromCustomProperties(model.customProperties);
+  const minimumVram = getMinimumVramFromCustomProperties(model.customProperties);
 
   const architectures = React.useMemo(
     () => (artifactLoaded ? getArchitecturesFromArtifacts(artifacts.items) : []),
@@ -252,6 +256,14 @@ const ModelDetailsView: React.FC<ModelDetailsViewProps> = ({
                       <DescriptionListTerm>Size</DescriptionListTerm>
                       <DescriptionListDescription>{size || 'N/A'}</DescriptionListDescription>
                     </DescriptionListGroup>
+                    {minimumVram && (
+                      <DescriptionListGroup>
+                        <DescriptionListTerm>Minimum vRAM</DescriptionListTerm>
+                        <DescriptionListDescription data-testid="minimum-vram">
+                          {minimumVram}
+                        </DescriptionListDescription>
+                      </DescriptionListGroup>
+                    )}
                     <DescriptionListGroup>
                       <DescriptionListTerm>License</DescriptionListTerm>
                       <DescriptionListDescription>
@@ -293,6 +305,14 @@ const ModelDetailsView: React.FC<ModelDetailsViewProps> = ({
                               </Label>
                             ))}
                           </LabelGroup>
+                        </DescriptionListDescription>
+                      </DescriptionListGroup>
+                    )}
+                    {modelSize && (
+                      <DescriptionListGroup>
+                        <DescriptionListTerm>Image size</DescriptionListTerm>
+                        <DescriptionListDescription data-testid="image-size">
+                          {modelSize}
                         </DescriptionListDescription>
                       </DescriptionListGroup>
                     )}
