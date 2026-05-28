@@ -1,6 +1,6 @@
 module github.com/kubeflow/hub
 
-go 1.26
+go 1.26.0
 
 require (
 	cirello.io/pglock v1.16.1
@@ -24,11 +24,11 @@ require (
 	github.com/testcontainers/testcontainers-go/modules/mysql v0.42.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.42.0
 	golang.org/x/sync v0.20.0
-	google.golang.org/protobuf v1.36.11
+	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af
 	gorm.io/driver/mysql v1.6.0
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.31.1
-	k8s.io/apimachinery v0.35.4
+	k8s.io/apimachinery v0.36.1
 )
 
 require (
