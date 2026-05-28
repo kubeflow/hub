@@ -385,10 +385,16 @@ export const mockValidatedModel = mockCatalogModel({
       metadataType: ModelRegistryMetadataType.STRING,
       string_value: '',
     },
+    validated_on: {
+      metadataType: ModelRegistryMetadataType.STRING,
+      string_value: '["RHOAI 2.20","RHAIIS 3.0","vLLM v0.8.5 - CUDA"]',
+    },
   },
   servingConfig: {
     toolCalling: {
-      args: '--enable-auto-tool-choice \\\n--tool-call-parser granite \\\n--chat-template\nopt/app-root/template/tool_chat_template_granite.jinja',
+      toolCallParser: 'granite',
+      chatTemplate: 'opt/app-root/template/tool_chat_template_granite.jinja',
+      enableAutoToolChoice: true,
     },
   },
 });

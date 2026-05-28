@@ -15,6 +15,7 @@ import {
   MetricsType,
   ModelCatalogFilterKey,
   SourceLabel,
+  ToolCallingConfig,
 } from '~/app/modelCatalogTypes';
 import { getLabels } from '~/app/pages/modelRegistry/screens/utils';
 import {
@@ -190,7 +191,24 @@ export const shouldShowValidatedInsights = (
 
 export const hasValidatedToolCalling = (model: CatalogModel): boolean =>
   model.validatedTasks?.includes(ModelCatalogTask.TOOL_CALLING) === true &&
-  model.servingConfig?.toolCalling != null;
+  !!model.servingConfig?.toolCalling?.toolCallParser;
+
+export const getToolCallingArgs = (config?: ToolCallingConfig): string => {
+  const parts: string[] = [];
+  if (config?.enableAutoToolChoice) {
+    parts.push('--enable-auto-tool-choice');
+  }
+  if (config?.toolCallParser) {
+    parts.push(`--tool-call-parser ${config.toolCallParser}`);
+  }
+  if (config?.chatTemplate) {
+    parts.push(`--chat-template ${config.chatTemplate}`);
+  }
+  if (config?.requiredArgs) {
+    parts.push(...config.requiredArgs);
+  }
+  return parts.join(' \\\n');
+};
 
 const isArrayOfSelections = (
   filterOption: CatalogFilterOptions[keyof CatalogFilterOptions],

@@ -39,6 +39,7 @@ import {
   getCatalogModelTypePropertyForRegistration,
   getActiveSourceLabels,
   hasValidatedToolCalling,
+  getToolCallingArgs,
 } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
 import { mockCatalogModelArtifact } from '~/__mocks__/mockCatalogModelArtifactList';
 import { ModelRegistryMetadataType } from '~/app/types';
@@ -363,7 +364,7 @@ describe('filtersToFilterQuery', () => {
     it('handles a single validated configuration value', () => {
       expect(
         filtersToFilterQuery(mockFormData({ validatedTasks: ['tool-calling'] }), mockFilterOptions),
-      ).toBe("validatedTasks='tool-calling'");
+      ).toBe("validated_tasks='tool-calling'");
     });
 
     it('handles multiple validated configuration values with AND logic instead of IN', () => {
@@ -372,7 +373,7 @@ describe('filtersToFilterQuery', () => {
           mockFormData({ validatedTasks: ['tool-calling', 'text-generation'] }),
           mockFilterOptions,
         ),
-      ).toBe("validatedTasks='tool-calling' AND validatedTasks='text-generation'");
+      ).toBe("validated_tasks='tool-calling' AND validated_tasks='text-generation'");
     });
 
     it('handles validated configuration combined with other OR-logic filters', () => {
@@ -386,7 +387,7 @@ describe('filtersToFilterQuery', () => {
           mockFilterOptions,
         ),
       ).toBe(
-        "tasks IN ('text-to-text','image-to-text') AND provider='Google' AND validatedTasks='tool-calling' AND validatedTasks='text-generation'",
+        "tasks IN ('text-to-text','image-to-text') AND provider='Google' AND validated_tasks='tool-calling' AND validated_tasks='text-generation'",
       );
     });
   });
@@ -1705,12 +1706,12 @@ describe('getActiveSourceLabels', () => {
 });
 
 describe('hasValidatedToolCalling', () => {
-  it('should return true when model has tool-calling in validatedTasks and servingConfig.toolCalling', () => {
+  it('should return true when model has tool-calling in validatedTasks and toolCallParser', () => {
     expect(
       hasValidatedToolCalling({
         name: 'test-model',
         validatedTasks: [ModelCatalogTask.TOOL_CALLING],
-        servingConfig: { toolCalling: { args: '--some-args' } },
+        servingConfig: { toolCalling: { toolCallParser: 'granite' } },
       }),
     ).toBe(true);
   });
@@ -1719,7 +1720,7 @@ describe('hasValidatedToolCalling', () => {
     expect(
       hasValidatedToolCalling({
         name: 'test-model',
-        servingConfig: { toolCalling: { args: '--some-args' } },
+        servingConfig: { toolCalling: { toolCallParser: 'granite' } },
       }),
     ).toBe(false);
   });
@@ -1729,7 +1730,7 @@ describe('hasValidatedToolCalling', () => {
       hasValidatedToolCalling({
         name: 'test-model',
         validatedTasks: ['text-generation'],
-        servingConfig: { toolCalling: { args: '--some-args' } },
+        servingConfig: { toolCalling: { toolCallParser: 'granite' } },
       }),
     ).toBe(false);
   });
@@ -1753,7 +1754,64 @@ describe('hasValidatedToolCalling', () => {
     ).toBe(false);
   });
 
+  it('should return false when servingConfig.toolCalling exists but has no toolCallParser', () => {
+    expect(
+      hasValidatedToolCalling({
+        name: 'test-model',
+        validatedTasks: [ModelCatalogTask.TOOL_CALLING],
+        servingConfig: { toolCalling: {} },
+      }),
+    ).toBe(false);
+  });
+
   it('should return false when both validatedTasks and servingConfig are missing', () => {
     expect(hasValidatedToolCalling({ name: 'test-model' })).toBe(false);
+  });
+});
+
+describe('getToolCallingArgs', () => {
+  it('should return empty string when config is undefined', () => {
+    expect(getToolCallingArgs(undefined)).toBe('');
+  });
+
+  it('should return empty string when config has no fields', () => {
+    expect(getToolCallingArgs({})).toBe('');
+  });
+
+  it('should build args from structured fields', () => {
+    const result = getToolCallingArgs({
+      toolCallParser: 'granite',
+      chatTemplate: 'opt/app-root/template/tool_chat_template_granite.jinja',
+      enableAutoToolChoice: true,
+    });
+    expect(result).toContain('--enable-auto-tool-choice');
+    expect(result).toContain('--tool-call-parser granite');
+    expect(result).toContain(
+      '--chat-template opt/app-root/template/tool_chat_template_granite.jinja',
+    );
+  });
+
+  it('should include requiredArgs in output', () => {
+    const result = getToolCallingArgs({
+      toolCallParser: 'granite',
+      enableAutoToolChoice: true,
+      requiredArgs: ['--config_format granite'],
+    });
+    expect(result).toContain('--config_format granite');
+  });
+
+  it('should join parts with backslash-newline separator', () => {
+    const result = getToolCallingArgs({
+      toolCallParser: 'granite',
+      enableAutoToolChoice: true,
+    });
+    expect(result).toBe('--enable-auto-tool-choice \\\n--tool-call-parser granite');
+  });
+
+  it('should handle only toolCallParser without enableAutoToolChoice', () => {
+    const result = getToolCallingArgs({
+      toolCallParser: 'mistral',
+    });
+    expect(result).toBe('--tool-call-parser mistral');
   });
 });

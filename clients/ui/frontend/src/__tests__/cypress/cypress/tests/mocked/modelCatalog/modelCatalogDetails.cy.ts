@@ -350,6 +350,15 @@ describe('Model Catalog Details Page - Validated Configurations Card', () => {
       modelCatalog.findToolCallingCard().should('contain.text', '--enable-auto-tool-choice');
       modelCatalog.findToolCallingCard().should('contain.text', '--tool-call-parser granite');
     });
+
+    it('should display validated deployment resources label when expanded', () => {
+      modelCatalog.findToolCallingToggle().click();
+      modelCatalog.findValidatedDeploymentResourceLabels().should('have.length', 1);
+      modelCatalog
+        .findValidatedDeploymentResourceLabels()
+        .first()
+        .should('contain.text', 'vLLM v0.8.5 - CUDA');
+    });
   });
 
   describe('with feature flag disabled', () => {

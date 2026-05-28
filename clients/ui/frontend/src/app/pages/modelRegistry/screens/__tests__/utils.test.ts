@@ -1,6 +1,9 @@
 /* eslint-disable camelcase */
 import { ModelRegistryMetadataType, ModelRegistryCustomProperties } from '~/app/types';
-import { getValidatedOnPlatforms } from '~/app/pages/modelRegistry/screens/utils';
+import {
+  getValidatedOnPlatforms,
+  getValidatedDeploymentResources,
+} from '~/app/pages/modelRegistry/screens/utils';
 
 describe('getValidatedOnPlatforms', () => {
   it('should return empty array when customProperties is undefined', () => {
@@ -162,5 +165,94 @@ describe('getValidatedOnPlatforms', () => {
     };
     const result = getValidatedOnPlatforms(customProperties);
     expect(result).toEqual(['OpenShift', 'Kubernetes']);
+  });
+
+  it('should exclude deployment resource entries starting with vllm', () => {
+    const customProperties: ModelRegistryCustomProperties = {
+      validated_on: {
+        string_value: '["rhoai-3.5","vllm 0.20.0 - CUDA","RHAIIS 3.0"]',
+        metadataType: ModelRegistryMetadataType.STRING,
+      },
+    };
+    const result = getValidatedOnPlatforms(customProperties);
+    expect(result).toEqual(['rhoai-3.5', 'RHAIIS 3.0']);
+  });
+
+  it('should exclude deployment resources case-insensitively', () => {
+    const customProperties: ModelRegistryCustomProperties = {
+      validated_on: {
+        string_value: '["RHOAI 2.20","VLLM v0.8.5 - CUDA"]',
+        metadataType: ModelRegistryMetadataType.STRING,
+      },
+    };
+    const result = getValidatedOnPlatforms(customProperties);
+    expect(result).toEqual(['RHOAI 2.20']);
+  });
+});
+
+describe('getValidatedDeploymentResources', () => {
+  it('should return empty array when customProperties is undefined', () => {
+    const result = getValidatedDeploymentResources(undefined);
+    expect(result).toEqual([]);
+  });
+
+  it('should return empty array when customProperties is empty', () => {
+    const result = getValidatedDeploymentResources({});
+    expect(result).toEqual([]);
+  });
+
+  it('should return empty array when no deployment resources exist', () => {
+    const customProperties: ModelRegistryCustomProperties = {
+      validated_on: {
+        string_value: '["rhoai-3.5","RHAIIS 3.0"]',
+        metadataType: ModelRegistryMetadataType.STRING,
+      },
+    };
+    const result = getValidatedDeploymentResources(customProperties);
+    expect(result).toEqual([]);
+  });
+
+  it('should return deployment resources starting with vllm', () => {
+    const customProperties: ModelRegistryCustomProperties = {
+      validated_on: {
+        string_value: '["rhoai-3.5","vllm 0.20.0 - CUDA"]',
+        metadataType: ModelRegistryMetadataType.STRING,
+      },
+    };
+    const result = getValidatedDeploymentResources(customProperties);
+    expect(result).toEqual(['vllm 0.20.0 - CUDA']);
+  });
+
+  it('should handle case-insensitive matching for vllm prefix', () => {
+    const customProperties: ModelRegistryCustomProperties = {
+      validated_on: {
+        string_value: '["RHOAI 2.20","VLLM v0.8.5 - CUDA","vLLM v0.9.0"]',
+        metadataType: ModelRegistryMetadataType.STRING,
+      },
+    };
+    const result = getValidatedDeploymentResources(customProperties);
+    expect(result).toEqual(['VLLM v0.8.5 - CUDA', 'vLLM v0.9.0']);
+  });
+
+  it('should return multiple deployment resources', () => {
+    const customProperties: ModelRegistryCustomProperties = {
+      validated_on: {
+        string_value: '["rhoai-3.5","vllm 0.20.0 - CUDA","vllm 0.8.5 - ROCm"]',
+        metadataType: ModelRegistryMetadataType.STRING,
+      },
+    };
+    const result = getValidatedDeploymentResources(customProperties);
+    expect(result).toEqual(['vllm 0.20.0 - CUDA', 'vllm 0.8.5 - ROCm']);
+  });
+
+  it('should return empty array when validated_on contains invalid JSON', () => {
+    const customProperties: ModelRegistryCustomProperties = {
+      validated_on: {
+        string_value: 'not valid json',
+        metadataType: ModelRegistryMetadataType.STRING,
+      },
+    };
+    const result = getValidatedDeploymentResources(customProperties);
+    expect(result).toEqual([]);
   });
 });

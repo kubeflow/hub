@@ -40,7 +40,10 @@ export type CatalogSource = {
 export type CatalogSourceList = PaginationParams & { items?: CatalogSource[] };
 
 export type ToolCallingConfig = {
-  args?: string;
+  toolCallParser?: string;
+  chatTemplate?: string;
+  enableAutoToolChoice?: boolean;
+  requiredArgs?: string[];
 };
 
 export type ServingConfig = {

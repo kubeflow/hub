@@ -31,6 +31,7 @@ import { CatalogArtifactList, CatalogModel } from '~/app/modelCatalogTypes';
 import {
   getLabels,
   getValidatedOnPlatforms,
+  getValidatedDeploymentResources,
   getCustomPropString,
 } from '~/app/pages/modelRegistry/screens/utils';
 import ModelCatalogLabels from '~/app/pages/modelCatalog/components/ModelCatalogLabels';
@@ -43,6 +44,7 @@ import {
   hasModelArtifacts,
   isModelValidated,
   hasValidatedToolCalling,
+  getToolCallingArgs,
   formatModelTypeDisplay,
 } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
 import { CatalogModelCustomPropertyKey } from '~/concepts/modelCatalog/const';
@@ -68,6 +70,7 @@ const ModelDetailsView: React.FC<ModelDetailsViewProps> = ({
   const isToolCallingValidated = isToolCallingEnabled && hasValidatedToolCalling(model);
 
   const validatedOnPlatforms = getValidatedOnPlatforms(model.customProperties);
+  const validatedDeploymentResources = getValidatedDeploymentResources(model.customProperties);
 
   const modelTypeRaw = model.customProperties
     ? getCustomPropString(model.customProperties, CatalogModelCustomPropertyKey.MODEL_TYPE)
@@ -138,7 +141,10 @@ const ModelDetailsView: React.FC<ModelDetailsViewProps> = ({
           <Stack hasGutter>
             {isToolCallingValidated && (
               <StackItem>
-                <Card data-testid="validated-configurations-card">
+                <Card
+                  data-testid="validated-configurations-card"
+                  style={{ contain: 'inline-size' }}
+                >
                   <CardHeader>
                     <Title headingLevel="h2" size="lg">
                       Validated arguments
@@ -165,7 +171,7 @@ const ModelDetailsView: React.FC<ModelDetailsViewProps> = ({
                       >
                         <Stack>
                           <StackItem>
-                            <Title headingLevel="h3" size="md">
+                            <Title headingLevel="h4" size="md">
                               Tool calling
                             </Title>
                           </StackItem>
@@ -179,9 +185,32 @@ const ModelDetailsView: React.FC<ModelDetailsViewProps> = ({
                       </CardHeader>
                       <CardExpandableContent>
                         <CardBody>
-                          <CodeBlockComponent>
-                            {model.servingConfig?.toolCalling?.args ?? ''}
-                          </CodeBlockComponent>
+                          <Stack hasGutter>
+                            <StackItem>
+                              <CodeBlockComponent>
+                                {getToolCallingArgs(model.servingConfig?.toolCalling)}
+                              </CodeBlockComponent>
+                            </StackItem>
+                            {validatedDeploymentResources.length > 0 && (
+                              <StackItem>
+                                <div className="pf-v6-u-font-weight-bold">
+                                  Validated deployment resources
+                                </div>
+                                <LabelGroup className="pf-v6-u-mt-sm">
+                                  {validatedDeploymentResources.map((resource) => (
+                                    <Label
+                                      key={resource}
+                                      data-testid="validated-deployment-resource-label"
+                                      color="blue"
+                                      isCompact
+                                    >
+                                      {resource}
+                                    </Label>
+                                  ))}
+                                </LabelGroup>
+                              </StackItem>
+                            )}
+                          </Stack>
                         </CardBody>
                       </CardExpandableContent>
                     </Card>

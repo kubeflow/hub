@@ -273,7 +273,12 @@ export const getLatestVersionForRegisteredModel = (
   return latestVersion;
 };
 
-export const getValidatedOnPlatforms = <T extends ModelRegistryCustomProperties>(
+const DEPLOYMENT_RESOURCE_PREFIXES = ['vllm'];
+
+const isDeploymentResource = (entry: string): boolean =>
+  DEPLOYMENT_RESOURCE_PREFIXES.some((prefix) => entry.toLowerCase().startsWith(prefix));
+
+const getValidatedOnEntries = <T extends ModelRegistryCustomProperties>(
   customProperties: T | undefined,
 ): string[] => {
   if (!customProperties) {
@@ -302,3 +307,12 @@ export const getValidatedOnPlatforms = <T extends ModelRegistryCustomProperties>
     return [];
   }
 };
+
+export const getValidatedOnPlatforms = <T extends ModelRegistryCustomProperties>(
+  customProperties: T | undefined,
+): string[] =>
+  getValidatedOnEntries(customProperties).filter((entry) => !isDeploymentResource(entry));
+
+export const getValidatedDeploymentResources = <T extends ModelRegistryCustomProperties>(
+  customProperties: T | undefined,
+): string[] => getValidatedOnEntries(customProperties).filter(isDeploymentResource);

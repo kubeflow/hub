@@ -434,6 +434,10 @@ class ModelCatalog {
     return cy.get('#tool-calling-toggle');
   }
 
+  findValidatedDeploymentResourceLabels() {
+    return cy.findAllByTestId('validated-deployment-resource-label');
+  }
+
   // Performance Empty State
   findPerformanceEmptyState() {
     return cy.findByTestId('performance-empty-state');

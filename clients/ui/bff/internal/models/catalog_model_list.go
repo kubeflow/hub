@@ -5,7 +5,10 @@ import (
 )
 
 type ToolCallingConfig struct {
-	Args *string `json:"args,omitempty"`
+	ToolCallParser       *string  `json:"toolCallParser,omitempty"`
+	ChatTemplate         *string  `json:"chatTemplate,omitempty"`
+	EnableAutoToolChoice *bool    `json:"enableAutoToolChoice,omitempty"`
+	RequiredArgs         []string `json:"requiredArgs,omitempty"`
 }
 
 type ServingConfig struct {

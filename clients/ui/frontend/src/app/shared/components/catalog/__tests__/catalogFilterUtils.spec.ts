@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 import {
   wrapInQuotes,
   eqFilter,
@@ -92,19 +93,19 @@ describe('stringFiltersToFilterQuery', () => {
   });
 
   it('uses AND logic for keys in matchAllKeys', () => {
-    const result = stringFiltersToFilterQuery({ validatedTasks: ['chat', 'code'] }, undefined, [
-      'validatedTasks',
+    const result = stringFiltersToFilterQuery({ validated_tasks: ['chat', 'code'] }, undefined, [
+      'validated_tasks',
     ]);
-    expect(result).toBe("validatedTasks='chat' AND validatedTasks='code'");
+    expect(result).toBe("validated_tasks='chat' AND validated_tasks='code'");
   });
 
   it('uses IN for multi-value keys not in matchAllKeys', () => {
     const result = stringFiltersToFilterQuery(
-      { validatedTasks: ['chat', 'code'], provider: ['Red Hat', 'IBM'] },
+      { validated_tasks: ['chat', 'code'], provider: ['Red Hat', 'IBM'] },
       undefined,
-      ['validatedTasks'],
+      ['validated_tasks'],
     );
-    expect(result).toContain("validatedTasks='chat' AND validatedTasks='code'");
+    expect(result).toContain("validated_tasks='chat' AND validated_tasks='code'");
     expect(result).toContain("provider IN ('Red Hat','IBM')");
   });
 

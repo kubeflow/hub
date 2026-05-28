@@ -4,7 +4,7 @@ export enum ModelCatalogStringFilterKey {
   LICENSE = 'license',
   LANGUAGE = 'language',
   TENSOR_TYPE = 'tensor_type.string_value',
-  VALIDATED_CONFIGURATION = 'validatedTasks',
+  VALIDATED_CONFIGURATION = 'validated_tasks',
   // Performance filter keys use backend format
   HARDWARE_TYPE = 'artifacts.hardware_type.string_value',
   HARDWARE_CONFIGURATION = 'artifacts.hardware_configuration.string_value',

@@ -162,3 +162,7 @@ func stateToPointer[T any](s T) *T {
 func stringToPointer(s string) *string {
 	return &s
 }
+
+func boolToPointer(b bool) *bool {
+	return &b
+}
