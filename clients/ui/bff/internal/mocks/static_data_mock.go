@@ -1771,7 +1771,7 @@ func GetFilterOptionMocks() map[string]models.FilterOption {
 		},
 	}
 
-	filterOptions["validatedTasks"] = models.FilterOption{
+	filterOptions["validated_tasks"] = models.FilterOption{
 		Type: FilterOptionTypeString,
 		Values: []interface{}{
 			"tool-calling",

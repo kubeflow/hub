@@ -15,7 +15,6 @@ import {
   MODEL_CATALOG_API_VERSION,
   MODEL_REGISTRY_API_VERSION,
 } from '~/__tests__/cypress/cypress/support/commands/api';
-import { TempDevFeature } from '~/app/hooks/useTempDevFeatureAvailable';
 import { ModelCatalogTask } from '~/concepts/modelCatalog/const';
 
 describe('Model Catalog Details Page', () => {
@@ -327,9 +326,8 @@ describe('Model Catalog Details Page - Validated Configurations Card', () => {
     ]).as('getModelRegistries');
   });
 
-  describe('with feature flag enabled', () => {
+  describe('with validated model', () => {
     beforeEach(() => {
-      window.localStorage.setItem(TempDevFeature.ToolCallingConfiguration, 'true');
       setupValidatedModelIntercepts({});
       interceptArtifactsList();
       modelCatalog.visit();
@@ -361,22 +359,8 @@ describe('Model Catalog Details Page - Validated Configurations Card', () => {
     });
   });
 
-  describe('with feature flag disabled', () => {
-    it('should not display the validated configurations card', () => {
-      window.localStorage.removeItem(TempDevFeature.ToolCallingConfiguration);
-      setupValidatedModelIntercepts({});
-      interceptArtifactsList();
-      modelCatalog.visit();
-      modelCatalog.findLoadingState().should('not.exist');
-      modelCatalog.findModelCatalogDetailLink().first().click();
-      modelCatalog.findBreadcrumb().should('exist');
-      modelCatalog.findValidatedConfigurationsCard().should('not.exist');
-    });
-  });
-
   describe('for a non-validated model', () => {
     it('should not display the validated configurations card', () => {
-      window.localStorage.setItem(TempDevFeature.ToolCallingConfiguration, 'true');
       setupModelCatalogIntercepts({
         customNonValidatedModel: mockCatalogModel({
           name: 'non-validated-model',

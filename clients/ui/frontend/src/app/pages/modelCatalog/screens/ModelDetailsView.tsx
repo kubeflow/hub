@@ -50,7 +50,6 @@ import {
   getMinimumVramFromCustomProperties,
 } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
 import { CatalogModelCustomPropertyKey } from '~/concepts/modelCatalog/const';
-import { useTempDevFeatureAvailable, TempDevFeature } from '~/app/hooks/useTempDevFeatureAvailable';
 import CodeBlockComponent from '~/app/shared/markdown/components/CodeBlockComponent';
 
 type ModelDetailsViewProps = {
@@ -68,8 +67,7 @@ const ModelDetailsView: React.FC<ModelDetailsViewProps> = ({
 }) => {
   const allLabels = model.customProperties ? getLabels(model.customProperties) : [];
   const isValidated = isModelValidated(model);
-  const isToolCallingEnabled = useTempDevFeatureAvailable(TempDevFeature.ToolCallingConfiguration);
-  const isToolCallingValidated = isToolCallingEnabled && hasValidatedToolCalling(model);
+  const isToolCallingValidated = hasValidatedToolCalling(model);
 
   const validatedOnPlatforms = getValidatedOnPlatforms(model.customProperties);
   const validatedDeploymentResources = getValidatedDeploymentResources(model.customProperties);
@@ -236,7 +234,7 @@ const ModelDetailsView: React.FC<ModelDetailsViewProps> = ({
                       <DescriptionListDescription>
                         <ModelCatalogLabels
                           tasks={model.tasks ?? []}
-                          validatedTasks={isToolCallingEnabled ? model.validatedTasks : undefined}
+                          validatedTasks={model.validatedTasks}
                           labels={allLabels.filter((label) => label !== 'validated')}
                           numLabels={isValidated ? 2 : 3}
                         />

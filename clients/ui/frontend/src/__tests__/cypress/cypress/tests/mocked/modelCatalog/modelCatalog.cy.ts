@@ -18,7 +18,6 @@ import { MODEL_CATALOG_API_VERSION } from '~/__tests__/cypress/cypress/support/c
 import { mockCatalogFilterOptionsList } from '~/__mocks__/mockCatalogFilterOptionsList';
 import { SourceLabel, type CatalogSource } from '~/app/modelCatalogTypes';
 import { ModelRegistryMetadataType } from '~/app/types';
-import { TempDevFeature } from '~/app/hooks/useTempDevFeatureAvailable';
 import { ModelCatalogStringFilterKey } from '~/concepts/modelCatalog/const';
 
 type FilteredModelsInterceptConfig = {
@@ -345,21 +344,7 @@ describe('Model Catalog Page', () => {
     });
   });
 
-  it('should not display validated arguments filter when feature flag is off', () => {
-    initIntercepts({});
-    modelCatalog.visit();
-    modelCatalog.findFilter('Validated arguments').should('not.exist');
-  });
-
-  describe('Validated arguments Filter (feature flag on)', () => {
-    beforeEach(() => {
-      window.localStorage.setItem(TempDevFeature.ToolCallingConfiguration, 'true');
-    });
-
-    afterEach(() => {
-      window.localStorage.removeItem(TempDevFeature.ToolCallingConfiguration);
-    });
-
+  describe('Validated arguments Filter', () => {
     it('checkbox should filter models', () => {
       initIntercepts({ includeAllModelsIntercept: true });
       setupFilteredModelsIntercept({
