@@ -12,7 +12,7 @@ import {
 import { Link } from 'react-router-dom';
 import { HelpIcon, AngleLeftIcon, AngleRightIcon, ArrowRightIcon } from '@patternfly/react-icons';
 import { TruncatedText } from 'mod-arch-shared';
-import { CatalogModel, CatalogSource } from '~/app/modelCatalogTypes';
+import { CatalogModel, CatalogSource, HardwareConfiguration } from '~/app/modelCatalogTypes';
 import {
   extractValidatedModelMetrics,
   getLatencyValue,
@@ -31,10 +31,24 @@ import { useCatalogPerformanceArtifacts } from '~/app/hooks/modelCatalog/useCata
 import {
   getActiveLatencyFieldName,
   stripArtifactsPrefix,
+  getHardwareConfigurationsFromCustomProperties,
 } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
 import { formatLatency } from '~/app/pages/modelCatalog/utils/performanceMetricsUtils';
 import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
 import { useNotification } from '~/app/hooks/useNotification';
+
+const findMatchedColdStart = (
+  customProperties: CatalogModel['customProperties'],
+  hwConfig: string,
+  hwType: string,
+): number | undefined => {
+  const configs = getHardwareConfigurationsFromCustomProperties(customProperties);
+  const match = configs.find(
+    (c: HardwareConfiguration) =>
+      hwConfig.startsWith(c.hardware_type) || c.hardware_type === hwType,
+  );
+  return match?.cold_start_load_time_seconds;
+};
 
 type ModelCatalogCardBodyProps = {
   model: CatalogModel;
@@ -199,6 +213,12 @@ const ModelCatalogCardBody: React.FC<ModelCatalogCardBodyProps> = ({
       ? parseLatencyFilterKey(activeLatencyField).metric
       : LatencyMetric.TTFT;
 
+    const matchedColdStart = findMatchedColdStart(
+      model.customProperties,
+      metrics.hardwareConfiguration,
+      metrics.hardwareType,
+    );
+
     return (
       <Stack hasGutter>
         <StackItem>
@@ -242,6 +262,34 @@ const ModelCatalogCardBody: React.FC<ModelCatalogCardBodyProps> = ({
                 </Popover>
               </Flex>
             </Flex>
+            {matchedColdStart !== undefined && (
+              <Flex direction={{ default: 'column' }}>
+                <span className="pf-v6-u-font-weight-bold" data-testid="validated-model-cold-start">
+                  {formatLatency(matchedColdStart * 1000)}
+                </span>
+                <Flex alignItems={{ default: 'alignItemsBaseline' }} gap={{ default: 'gapXs' }}>
+                  <Content component={ContentVariants.small}>Cold start latency</Content>
+                  <Popover
+                    bodyContent={
+                      <div>
+                        <p>
+                          <strong>Cold start latency:</strong> The estimated time required to
+                          provision hardware resources and initialize the container before the model
+                          can accept traffic.
+                        </p>
+                      </div>
+                    }
+                  >
+                    <Button
+                      icon={<HelpIcon />}
+                      hasNoPadding
+                      aria-label="More info for cold start latency"
+                      variant="plain"
+                    />
+                  </Popover>
+                </Flex>
+              </Flex>
+            )}
           </Flex>
         </StackItem>
 

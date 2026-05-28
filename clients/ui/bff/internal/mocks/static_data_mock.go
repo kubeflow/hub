@@ -381,15 +381,15 @@ const graniteVariantGroupId = "b6c850a4-aa4c-4a0f-91b1-0a69f4352843"
 
 func GetCatalogModelMocks() []models.CatalogModel {
 	sampleModel1 := models.CatalogModel{
-		Name:             "repo1/granite-8b-code-instruct",
-		Description:      stringToPointer("Granite-8B-Code-Instruct is a 8B parameter model fine tuned from\nGranite-8B-Code-Base on a combination of permissively licensed instruction\ndata to enhance instruction following capabilities including logical\nreasoning and problem-solving skills."),
-		Provider:         stringToPointer("provider1"),
-		Tasks:            []string{"text-generation", "image-to-text", "tool-calling"},
-		ValidatedTasks:   []string{"tool-calling"},
-		License:          stringToPointer("Apache 2.0"),
-		LicenseLink:      stringToPointer("https://www.apache.org/licenses/LICENSE-2.0.txt"),
-		Maturity:         stringToPointer("Technology preview"),
-		Language:         []string{"ar", "cs", "de", "en", "es", "fr", "it", "ja", "ko", "nl", "pt", "zh"},
+		Name:           "repo1/granite-8b-code-instruct",
+		Description:    stringToPointer("Granite-8B-Code-Instruct is a 8B parameter model fine tuned from\nGranite-8B-Code-Base on a combination of permissively licensed instruction\ndata to enhance instruction following capabilities including logical\nreasoning and problem-solving skills."),
+		Provider:       stringToPointer("provider1"),
+		Tasks:          []string{"text-generation", "image-to-text", "tool-calling"},
+		ValidatedTasks: []string{"tool-calling"},
+		License:        stringToPointer("Apache 2.0"),
+		LicenseLink:    stringToPointer("https://www.apache.org/licenses/LICENSE-2.0.txt"),
+		Maturity:       stringToPointer("Technology preview"),
+		Language:       []string{"ar", "cs", "de", "en", "es", "fr", "it", "ja", "ko", "nl", "pt", "zh"},
 		CustomProperties: withColdStartData(
 			catalogCustomPropertiesWithVariant(graniteVariantGroupId, "FP16"),
 			"8B", "24GB",
@@ -747,14 +747,14 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 	}
 
 	sampleModel2 := models.CatalogModel{
-		Name:             "repo1/granite-8b-code-instruct-quantized.w4a16",
-		Description:      stringToPointer("Granite 8B Code Instruct - INT4 quantized variant for efficient inference"),
-		Provider:         stringToPointer("Provider one"),
-		Tasks:            []string{"text-generation", "image-text-to-text"},
-		License:          stringToPointer("Apache 2.0"),
-		Maturity:         stringToPointer("Generally Available"),
-		Language:         []string{"en"},
-		SourceId:         stringToPointer("sample-source"),
+		Name:        "repo1/granite-8b-code-instruct-quantized.w4a16",
+		Description: stringToPointer("Granite 8B Code Instruct - INT4 quantized variant for efficient inference"),
+		Provider:    stringToPointer("Provider one"),
+		Tasks:       []string{"text-generation", "image-text-to-text"},
+		License:     stringToPointer("Apache 2.0"),
+		Maturity:    stringToPointer("Generally Available"),
+		Language:    []string{"en"},
+		SourceId:    stringToPointer("sample-source"),
 		CustomProperties: withColdStartData(
 			catalogCustomPropertiesWithVariant(graniteVariantGroupId, "INT4"),
 			"8B", "12GB",
@@ -764,14 +764,14 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 	}
 
 	sampleModel3 := models.CatalogModel{
-		Name:             "repo1/granite-8b-code-instruct-quantized.w8a8",
-		Description:      stringToPointer("Granite 8B Code Instruct - INT8 quantized variant for balanced performance"),
-		Provider:         stringToPointer("IBM"),
-		Tasks:            []string{"audio-to-text", "text-to-text", "video-to-text"},
-		License:          stringToPointer("MIT"),
-		Maturity:         stringToPointer("Generally Available"),
-		Language:         []string{"en"},
-		SourceId:         stringToPointer("sample-source"),
+		Name:        "repo1/granite-8b-code-instruct-quantized.w8a8",
+		Description: stringToPointer("Granite 8B Code Instruct - INT8 quantized variant for balanced performance"),
+		Provider:    stringToPointer("IBM"),
+		Tasks:       []string{"audio-to-text", "text-to-text", "video-to-text"},
+		License:     stringToPointer("MIT"),
+		Maturity:    stringToPointer("Generally Available"),
+		Language:    []string{"en"},
+		SourceId:    stringToPointer("sample-source"),
 		CustomProperties: withColdStartData(
 			catalogCustomPropertiesWithVariant(graniteVariantGroupId, "INT8"),
 			"8B", "16GB",
@@ -781,14 +781,14 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 	}
 
 	sampleModel4 := models.CatalogModel{
-		Name:             "repo1/granite-8b-code-instruct-bf16",
-		Description:      stringToPointer("Granite 8B Code Instruct - BF16 variant for high precision"),
-		Provider:         stringToPointer("IBM"),
-		Tasks:            []string{"text-generation", "code-generation"},
-		License:          stringToPointer("Apache 2.0"),
-		Maturity:         stringToPointer("Generally Available"),
-		Language:         []string{"en"},
-		SourceId:         stringToPointer("sample-source"),
+		Name:        "repo1/granite-8b-code-instruct-bf16",
+		Description: stringToPointer("Granite 8B Code Instruct - BF16 variant for high precision"),
+		Provider:    stringToPointer("IBM"),
+		Tasks:       []string{"text-generation", "code-generation"},
+		License:     stringToPointer("Apache 2.0"),
+		Maturity:    stringToPointer("Generally Available"),
+		Language:    []string{"en"},
+		SourceId:    stringToPointer("sample-source"),
 		CustomProperties: withColdStartData(
 			catalogCustomPropertiesWithVariant(graniteVariantGroupId, "BF16"),
 			"8B", "24GB",
