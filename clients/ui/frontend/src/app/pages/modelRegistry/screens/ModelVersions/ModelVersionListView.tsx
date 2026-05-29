@@ -27,6 +27,7 @@ import {
 } from '~/app/pages/modelRegistry/screens/routeUtils';
 import {
   filterModelVersions,
+  getTextValue,
   sortModelVersionsByCreateTime,
 } from '~/app/pages/modelRegistry/screens/utils';
 import ModelVersionsTable from '~/app/pages/modelRegistry/screens/ModelVersions/ModelVersionsTable';
@@ -57,11 +58,6 @@ const visibleFilterKeys = [
 const initialFilterValues: FilterState<ModelRegistryVersionsFilterOptions> = {
   [ModelRegistryVersionsFilterOptions.keyword]: '',
   [ModelRegistryVersionsFilterOptions.author]: '',
-};
-
-const getTextValue = (v: string | string[]): string | undefined => {
-  const s = typeof v === 'string' ? v : v[0];
-  return s || undefined;
 };
 
 type ModelVersionListViewProps = {

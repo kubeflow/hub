@@ -267,6 +267,11 @@ export const filterRegisteredModels = (
   });
 };
 
+export const getTextValue = (v: string | string[]): string | undefined => {
+  const s = typeof v === 'string' ? v : v[0];
+  return s || undefined;
+};
+
 export const getServerAddress = (resource: ModelRegistry): string => resource.serverAddress || '';
 
 export const isValidHttpUrl = (value: string): boolean => {

@@ -2,7 +2,7 @@ import * as React from 'react';
 import { SearchIcon } from '@patternfly/react-icons';
 import { ToolbarFilter, FilterState, FilterConfigMap } from 'mod-arch-shared';
 import { ModelVersion } from '~/app/types';
-import { filterModelVersions } from '~/app/pages/modelRegistry/screens/utils';
+import { filterModelVersions, getTextValue } from '~/app/pages/modelRegistry/screens/utils';
 import EmptyModelRegistryState from '~/app/pages/modelRegistry/screens/components/EmptyModelRegistryState';
 import {
   ModelRegistryVersionsFilterDataType,
@@ -36,11 +36,6 @@ const visibleFilterKeys = [
 const initialFilterValues: FilterState<ModelRegistryVersionsFilterOptions> = {
   [ModelRegistryVersionsFilterOptions.keyword]: '',
   [ModelRegistryVersionsFilterOptions.author]: '',
-};
-
-const getTextValue = (v: string | string[]): string | undefined => {
-  const s = typeof v === 'string' ? v : v[0];
-  return s || undefined;
 };
 
 const ModelVersionsArchiveListView: React.FC<ModelVersionsArchiveListViewProps> = ({

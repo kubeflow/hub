@@ -2,7 +2,7 @@ import * as React from 'react';
 import { SearchIcon } from '@patternfly/react-icons';
 import { ToolbarFilter, FilterState, FilterConfigMap } from 'mod-arch-shared';
 import { ModelVersion, RegisteredModel } from '~/app/types';
-import { filterRegisteredModels } from '~/app/pages/modelRegistry/screens/utils';
+import { filterRegisteredModels, getTextValue } from '~/app/pages/modelRegistry/screens/utils';
 import EmptyModelRegistryState from '~/app/pages/modelRegistry/screens/components/EmptyModelRegistryState';
 import {
   ModelRegistryFilterDataType,
@@ -37,11 +37,6 @@ const visibleFilterKeys = [
 const initialFilterValues: FilterState<ModelRegistryFilterOptions> = {
   [ModelRegistryFilterOptions.keyword]: '',
   [ModelRegistryFilterOptions.owner]: '',
-};
-
-const getTextValue = (v: string | string[]): string | undefined => {
-  const s = typeof v === 'string' ? v : v[0];
-  return s || undefined;
 };
 
 const RegisteredModelsArchiveListView: React.FC<RegisteredModelsArchiveListViewProps> = ({

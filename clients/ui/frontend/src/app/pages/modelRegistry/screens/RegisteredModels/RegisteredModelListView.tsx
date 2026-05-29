@@ -16,7 +16,7 @@ import {
   registerModelUrl,
 } from '~/app/pages/modelRegistry/screens/routeUtils';
 import EmptyModelRegistryState from '~/app/pages/modelRegistry/screens/components/EmptyModelRegistryState';
-import { filterRegisteredModels } from '~/app/pages/modelRegistry/screens/utils';
+import { filterRegisteredModels, getTextValue } from '~/app/pages/modelRegistry/screens/utils';
 import { filterArchiveModels, filterLiveModels } from '~/app/utils';
 import {
   ModelRegistryFilterDataType,
@@ -110,11 +110,6 @@ const RegisteredModelListView: React.FC<RegisteredModelListViewProps> = ({
       />
     );
   }
-
-  const getTextValue = (v: string | string[]): string | undefined => {
-    const s = typeof v === 'string' ? v : v[0];
-    return s || undefined;
-  };
 
   const filterData: ModelRegistryFilterDataType = {
     [ModelRegistryFilterOptions.keyword]: getTextValue(
