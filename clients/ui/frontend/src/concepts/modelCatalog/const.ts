@@ -14,7 +14,7 @@ export enum ModelCatalogStringFilterKey {
 export enum ModelCatalogNumberFilterKey {
   // Performance filter key uses backend format
   MAX_RPS = 'artifacts.requests_per_second.double_value',
-  COLD_START_LATENCY = 'cold_start_load_time_seconds.double_value',
+  COLD_START_LATENCY = 'artifacts.cold_start_load_time_seconds.double_value',
 }
 
 /**
