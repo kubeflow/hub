@@ -16,7 +16,10 @@ import {
   ModelRegistryFilterDataType,
   ModelRegistryVersionsFilterDataType,
 } from '~/app/pages/modelRegistry/screens/const';
-import { CatalogModelCustomPropertyKey } from '~/concepts/modelCatalog/const';
+import {
+  CatalogModelCustomPropertyKey,
+  DEPLOYMENT_RESOURCE_PREFIXES,
+} from '~/concepts/modelCatalog/const';
 
 export type ObjectStorageFields = {
   endpoint: string;
@@ -272,8 +275,6 @@ export const getLatestVersionForRegisteredModel = (
   const latestVersion = getLastCreatedItem(filteredVersions);
   return latestVersion;
 };
-
-const DEPLOYMENT_RESOURCE_PREFIXES = ['vllm'];
 
 const isDeploymentResource = (entry: string): boolean =>
   DEPLOYMENT_RESOURCE_PREFIXES.some((prefix) => entry.toLowerCase().startsWith(prefix));

@@ -469,6 +469,13 @@ export const MATCH_ALL_FILTER_KEYS: ModelCatalogStringFilterKey[] = [
 ];
 
 /**
+ * Prefixes used to identify deployment resource entries within validated_on.
+ * Entries starting with any of these prefixes are categorized as deployment resources
+ * rather than certified platforms.
+ */
+export const DEPLOYMENT_RESOURCE_PREFIXES = ['vllm'];
+
+/**
  * Performance filter keys that are shown when performance view is enabled.
  * These filters should reset to default values (from namedQueries) instead of clearing.
  * Note: HARDWARE_CONFIGURATION is NOT included here because it should clear normally
