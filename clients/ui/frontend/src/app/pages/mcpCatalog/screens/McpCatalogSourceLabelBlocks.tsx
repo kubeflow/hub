@@ -24,6 +24,7 @@ const McpCatalogSourceLabelBlocks: React.FC = () => {
       onSelectSourceLabel={setSelectedSourceLabel}
       allBlockLabel={undefined}
       allBlockDisplayName={ALL_SERVERS_LABEL}
+      testId="mcp-catalog-category-toggle"
       ariaLabel="MCP category selection"
       hideWhenSingleCategory
       getLabelDisplayNameOverride={getLabelDisplayNameForMcp}

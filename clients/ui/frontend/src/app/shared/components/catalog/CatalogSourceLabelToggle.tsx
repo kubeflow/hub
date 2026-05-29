@@ -23,6 +23,8 @@ type CatalogSourceLabelToggleProps = {
   onSelectSourceLabel: (label: string | undefined) => void;
   allBlockLabel?: string | undefined;
   allBlockDisplayName: string;
+  className?: string;
+  testId?: string;
   ariaLabel?: string;
   hideWhenSingleCategory?: boolean;
   getLabelDisplayNameOverride?: (label: string) => string;
@@ -36,6 +38,8 @@ const CatalogSourceLabelToggle: React.FC<CatalogSourceLabelToggleProps> = ({
   onSelectSourceLabel,
   allBlockLabel,
   allBlockDisplayName,
+  className,
+  testId,
   ariaLabel = 'Category selection',
   hideWhenSingleCategory = false,
   getLabelDisplayNameOverride,
@@ -96,7 +100,7 @@ const CatalogSourceLabelToggle: React.FC<CatalogSourceLabelToggleProps> = ({
   }
 
   return (
-    <ToggleGroup aria-label={ariaLabel}>
+    <ToggleGroup aria-label={ariaLabel} className={className} data-testid={testId}>
       {blocks.map((block) => (
         <ToggleGroupItem
           buttonId={block.id}

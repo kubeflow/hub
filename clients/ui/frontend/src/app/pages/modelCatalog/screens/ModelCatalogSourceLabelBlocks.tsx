@@ -15,6 +15,7 @@ const ModelCatalogSourceLabelBlocks: React.FC = () => {
       onSelectSourceLabel={(label) => updateSelectedSourceLabel(label ?? CategoryName.allModels)}
       allBlockLabel={CategoryName.allModels}
       allBlockDisplayName={CategoryName.allModels}
+      className="pf-v6-u-pb-0"
       ariaLabel="Source label selection"
     />
   );
