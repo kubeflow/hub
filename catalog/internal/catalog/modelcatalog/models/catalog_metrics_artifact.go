@@ -11,6 +11,7 @@ type MetricsType string
 const (
 	MetricsTypePerformance     MetricsType = "performance-metrics"
 	MetricsTypeAccuracy        MetricsType = "accuracy-metrics"
+	MetricsTypeSecurityMetrics MetricsType = "security-metrics"
 	CatalogMetricsArtifactType             = "metrics-artifact"
 )
 

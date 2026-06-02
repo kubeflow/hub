@@ -398,7 +398,7 @@ func TestCatalogMetricsArtifactRepository(t *testing.T) {
 
 	t.Run("TestMetricsTypeField", func(t *testing.T) {
 		// Test various metrics types
-		metricsTypes := []models.MetricsType{models.MetricsTypeAccuracy, models.MetricsTypePerformance}
+		metricsTypes := []models.MetricsType{models.MetricsTypeAccuracy, models.MetricsTypePerformance, models.MetricsTypeSecurityMetrics}
 
 		catalogModel := &models.CatalogModelImpl{
 			Attributes: &models.CatalogModelAttributes{
@@ -622,5 +622,64 @@ func TestCatalogMetricsArtifactRepository(t *testing.T) {
 		_, err = repo.Save(catalogMetricsArtifact, savedCatalogModel.GetID())
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "unknown metrics type")
+	})
+
+	t.Run("TestBatchSaveWithSecurityMetrics", func(t *testing.T) {
+		catalogModel := &models.CatalogModelImpl{
+			Attributes: &models.CatalogModelAttributes{
+				Name:       new("test-catalog-model-for-batch-security"),
+				ExternalID: new("catalog-model-batch-security-ext"),
+			},
+		}
+		savedCatalogModel, err := catalogModelRepo.Save(catalogModel)
+		require.NoError(t, err)
+
+		artifacts := []models.CatalogMetricsArtifact{
+			&models.CatalogMetricsArtifactImpl{
+				Attributes: &models.CatalogMetricsArtifactAttributes{
+					Name:        new("batch-security-artifact-1"),
+					ExternalID:  new("batch-security-ext-1"),
+					MetricsType: models.MetricsTypeSecurityMetrics,
+				},
+			},
+			&models.CatalogMetricsArtifactImpl{
+				Attributes: &models.CatalogMetricsArtifactAttributes{
+					Name:        new("batch-security-artifact-2"),
+					ExternalID:  new("batch-security-ext-2"),
+					MetricsType: models.MetricsTypeSecurityMetrics,
+				},
+				CustomProperties: &[]dbmodels.Properties{
+					{Name: "attack_success_rate", DoubleValue: new(0.15)},
+					{Name: "pass", BoolValue: new(true)},
+				},
+			},
+		}
+
+		saved, err := repo.BatchSave(artifacts, savedCatalogModel.GetID())
+		require.NoError(t, err)
+		require.Len(t, saved, 2)
+		for _, a := range saved {
+			assert.NotNil(t, a.GetID())
+			assert.Equal(t, models.MetricsTypeSecurityMetrics, a.GetAttributes().MetricsType)
+		}
+
+		// Verify retrieval
+		retrieved1, err := repo.GetByID(*saved[0].GetID())
+		require.NoError(t, err)
+		assert.Equal(t, models.MetricsTypeSecurityMetrics, retrieved1.GetAttributes().MetricsType)
+
+		retrieved2, err := repo.GetByID(*saved[1].GetID())
+		require.NoError(t, err)
+		assert.Equal(t, models.MetricsTypeSecurityMetrics, retrieved2.GetAttributes().MetricsType)
+		require.NotNil(t, retrieved2.GetCustomProperties())
+		props := *retrieved2.GetCustomProperties()
+		var foundRate bool
+		for _, p := range props {
+			if p.Name == "attack_success_rate" {
+				foundRate = true
+				assert.Equal(t, 0.15, *p.DoubleValue)
+			}
+		}
+		assert.True(t, foundRate, "attack_success_rate custom property should be present")
 	})
 }

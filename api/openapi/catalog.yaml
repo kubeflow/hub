@@ -851,6 +851,7 @@ components:
               enum:
                 - performance-metrics
                 - accuracy-metrics
+                - security-metrics
             customProperties:
               description: User provided custom properties which are not defined by its type.
               type: object
