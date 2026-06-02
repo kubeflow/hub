@@ -78,7 +78,7 @@ func (r *CatalogMetricsArtifactRepositoryImpl) Save(ma models.CatalogMetricsArti
 	}
 
 	switch attr.MetricsType {
-	case models.MetricsTypeAccuracy, models.MetricsTypePerformance:
+	case models.MetricsTypeAccuracy, models.MetricsTypePerformance, models.MetricsTypeSecurityMetrics:
 		// OK
 	default:
 		return ma, fmt.Errorf("invalid artifact: unknown metrics type: %s", attr.MetricsType)
@@ -112,7 +112,7 @@ func (r *CatalogMetricsArtifactRepositoryImpl) BatchSave(artifacts []models.Cata
 		}
 
 		switch attr.MetricsType {
-		case models.MetricsTypeAccuracy, models.MetricsTypePerformance:
+		case models.MetricsTypeAccuracy, models.MetricsTypePerformance, models.MetricsTypeSecurityMetrics:
 			// OK
 		default:
 			return nil, fmt.Errorf("invalid artifact at index %d: unknown metrics type: %s", i, attr.MetricsType)
