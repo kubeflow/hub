@@ -1,13 +1,7 @@
 import * as React from 'react';
 import { Button } from '@patternfly/react-core';
 import { useNavigate } from 'react-router-dom';
-import {
-  ProjectObjectType,
-  typedEmptyImage,
-  ToolbarFilter,
-  FilterState,
-  FilterConfigMap,
-} from 'mod-arch-shared';
+import { ProjectObjectType, typedEmptyImage, ToolbarFilter, FilterState } from 'mod-arch-shared';
 import { ModelVersion, RegisteredModel } from '~/app/types';
 import { ModelRegistrySelectorContext } from '~/app/context/ModelRegistrySelectorContext';
 import {
@@ -21,6 +15,9 @@ import { filterArchiveModels, filterLiveModels } from '~/app/utils';
 import {
   ModelRegistryFilterDataType,
   ModelRegistryFilterOptions,
+  registeredModelsFilterConfig,
+  registeredModelsVisibleFilterKeys,
+  registeredModelsInitialFilterValues,
 } from '~/app/pages/modelRegistry/screens/const';
 import RegisteredModelTable from './RegisteredModelTable';
 import RegisteredModelsToolbarActions from './RegisteredModelsToolbarActions';
@@ -31,29 +28,6 @@ type RegisteredModelListViewProps = {
   refresh: () => void;
 };
 
-const filterConfig: FilterConfigMap<ModelRegistryFilterOptions> = {
-  [ModelRegistryFilterOptions.keyword]: {
-    type: 'text',
-    label: 'Keyword',
-    placeholder: 'Filter by name, description or label',
-  },
-  [ModelRegistryFilterOptions.owner]: {
-    type: 'text',
-    label: 'Owner',
-    placeholder: 'Filter by owner',
-  },
-};
-
-const visibleFilterKeys = [
-  ModelRegistryFilterOptions.keyword,
-  ModelRegistryFilterOptions.owner,
-] as const;
-
-const initialFilterValues: FilterState<ModelRegistryFilterOptions> = {
-  [ModelRegistryFilterOptions.keyword]: '',
-  [ModelRegistryFilterOptions.owner]: '',
-};
-
 const RegisteredModelListView: React.FC<RegisteredModelListViewProps> = ({
   registeredModels,
   modelVersions,
@@ -61,8 +35,9 @@ const RegisteredModelListView: React.FC<RegisteredModelListViewProps> = ({
 }) => {
   const navigate = useNavigate();
   const { preferredModelRegistry } = React.useContext(ModelRegistrySelectorContext);
-  const [filterValues, setFilterValues] =
-    React.useState<FilterState<ModelRegistryFilterOptions>>(initialFilterValues);
+  const [filterValues, setFilterValues] = React.useState<FilterState<ModelRegistryFilterOptions>>(
+    registeredModelsInitialFilterValues,
+  );
   const unfilteredRegisteredModels = filterLiveModels(registeredModels);
   const archiveRegisteredModels = filterArchiveModels(registeredModels);
 
@@ -72,7 +47,10 @@ const RegisteredModelListView: React.FC<RegisteredModelListViewProps> = ({
     [],
   );
 
-  const onClearAllFilters = React.useCallback(() => setFilterValues(initialFilterValues), []);
+  const onClearAllFilters = React.useCallback(
+    () => setFilterValues(registeredModelsInitialFilterValues),
+    [],
+  );
 
   if (unfilteredRegisteredModels.length === 0) {
     return (
@@ -134,8 +112,8 @@ const RegisteredModelListView: React.FC<RegisteredModelListViewProps> = ({
       modelVersions={modelVersions}
       toolbarContent={
         <ToolbarFilter
-          filterConfig={filterConfig}
-          visibleFilterKeys={visibleFilterKeys}
+          filterConfig={registeredModelsFilterConfig}
+          visibleFilterKeys={registeredModelsVisibleFilterKeys}
           filterValues={filterValues}
           onFilterChange={onFilterChange}
           onClearAllFilters={onClearAllFilters}

@@ -1,12 +1,15 @@
 import * as React from 'react';
 import { SearchIcon } from '@patternfly/react-icons';
-import { ToolbarFilter, FilterState, FilterConfigMap } from 'mod-arch-shared';
+import { ToolbarFilter, FilterState } from 'mod-arch-shared';
 import { ModelVersion } from '~/app/types';
 import { filterModelVersions, getTextValue } from '~/app/pages/modelRegistry/screens/utils';
 import EmptyModelRegistryState from '~/app/pages/modelRegistry/screens/components/EmptyModelRegistryState';
 import {
   ModelRegistryVersionsFilterDataType,
   ModelRegistryVersionsFilterOptions,
+  modelVersionsFilterConfig,
+  modelVersionsVisibleFilterKeys,
+  modelVersionsInitialFilterValues,
 } from '~/app/pages/modelRegistry/screens/const';
 import ModelVersionsArchiveTable from './ModelVersionsArchiveTable';
 
@@ -15,35 +18,12 @@ type ModelVersionsArchiveListViewProps = {
   refresh: () => void;
 };
 
-const filterConfig: FilterConfigMap<ModelRegistryVersionsFilterOptions> = {
-  [ModelRegistryVersionsFilterOptions.keyword]: {
-    type: 'text',
-    label: 'Keyword',
-    placeholder: 'Filter by name, description or label',
-  },
-  [ModelRegistryVersionsFilterOptions.author]: {
-    type: 'text',
-    label: 'Author',
-    placeholder: 'Filter by author',
-  },
-};
-
-const visibleFilterKeys = [
-  ModelRegistryVersionsFilterOptions.keyword,
-  ModelRegistryVersionsFilterOptions.author,
-] as const;
-
-const initialFilterValues: FilterState<ModelRegistryVersionsFilterOptions> = {
-  [ModelRegistryVersionsFilterOptions.keyword]: '',
-  [ModelRegistryVersionsFilterOptions.author]: '',
-};
-
 const ModelVersionsArchiveListView: React.FC<ModelVersionsArchiveListViewProps> = ({
   modelVersions: unfilteredmodelVersions,
   refresh,
 }) => {
   const [filterValues, setFilterValues] =
-    React.useState<FilterState<ModelRegistryVersionsFilterOptions>>(initialFilterValues);
+    React.useState<FilterState<ModelRegistryVersionsFilterOptions>>(modelVersionsInitialFilterValues);
 
   const onFilterChange = React.useCallback(
     (key: ModelRegistryVersionsFilterOptions, value: string | string[]) =>
@@ -51,7 +31,10 @@ const ModelVersionsArchiveListView: React.FC<ModelVersionsArchiveListViewProps> 
     [],
   );
 
-  const onClearAllFilters = React.useCallback(() => setFilterValues(initialFilterValues), []);
+  const onClearAllFilters = React.useCallback(
+    () => setFilterValues(modelVersionsInitialFilterValues),
+    [],
+  );
 
   const filterData: ModelRegistryVersionsFilterDataType = {
     [ModelRegistryVersionsFilterOptions.keyword]: getTextValue(
@@ -82,8 +65,8 @@ const ModelVersionsArchiveListView: React.FC<ModelVersionsArchiveListViewProps> 
       modelVersions={filteredModelVersions}
       toolbarContent={
         <ToolbarFilter
-          filterConfig={filterConfig}
-          visibleFilterKeys={visibleFilterKeys}
+          filterConfig={modelVersionsFilterConfig}
+          visibleFilterKeys={modelVersionsVisibleFilterKeys}
           filterValues={filterValues}
           onFilterChange={onFilterChange}
           onClearAllFilters={onClearAllFilters}

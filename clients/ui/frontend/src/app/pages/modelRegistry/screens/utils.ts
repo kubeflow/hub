@@ -268,7 +268,7 @@ export const filterRegisteredModels = (
 };
 
 export const getTextValue = (v: string | string[]): string | undefined => {
-  const s = typeof v === 'string' ? v : v[0];
+  const s = typeof v === 'string' ? v : v.filter(Boolean).join(' ');
   return s || undefined;
 };
 

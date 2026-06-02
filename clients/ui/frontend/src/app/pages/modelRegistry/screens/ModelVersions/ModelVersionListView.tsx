@@ -11,13 +11,7 @@ import {
 } from '@patternfly/react-core';
 import { EllipsisVIcon } from '@patternfly/react-icons';
 import { useNavigate } from 'react-router-dom';
-import {
-  ProjectObjectType,
-  typedEmptyImage,
-  ToolbarFilter,
-  FilterState,
-  FilterConfigMap,
-} from 'mod-arch-shared';
+import { ProjectObjectType, typedEmptyImage, ToolbarFilter, FilterState } from 'mod-arch-shared';
 import { ModelVersion, RegisteredModel } from '~/app/types';
 import { ModelRegistrySelectorContext } from '~/app/context/ModelRegistrySelectorContext';
 import EmptyModelRegistryState from '~/app/pages/modelRegistry/screens/components/EmptyModelRegistryState';
@@ -35,30 +29,10 @@ import { filterArchiveVersions, filterLiveVersions } from '~/app/utils';
 import {
   ModelRegistryVersionsFilterDataType,
   ModelRegistryVersionsFilterOptions,
+  modelVersionsFilterConfig,
+  modelVersionsVisibleFilterKeys,
+  modelVersionsInitialFilterValues,
 } from '~/app/pages/modelRegistry/screens/const';
-
-const filterConfig: FilterConfigMap<ModelRegistryVersionsFilterOptions> = {
-  [ModelRegistryVersionsFilterOptions.keyword]: {
-    type: 'text',
-    label: 'Keyword',
-    placeholder: 'Filter by name, description or label',
-  },
-  [ModelRegistryVersionsFilterOptions.author]: {
-    type: 'text',
-    label: 'Author',
-    placeholder: 'Filter by author',
-  },
-};
-
-const visibleFilterKeys = [
-  ModelRegistryVersionsFilterOptions.keyword,
-  ModelRegistryVersionsFilterOptions.author,
-] as const;
-
-const initialFilterValues: FilterState<ModelRegistryVersionsFilterOptions> = {
-  [ModelRegistryVersionsFilterOptions.keyword]: '',
-  [ModelRegistryVersionsFilterOptions.author]: '',
-};
 
 type ModelVersionListViewProps = {
   modelVersions: ModelVersion[];
@@ -81,7 +55,7 @@ const ModelVersionListView: React.FC<ModelVersionListViewProps> = ({
   const navigate = useNavigate();
   const { preferredModelRegistry } = React.useContext(ModelRegistrySelectorContext);
   const [filterValues, setFilterValues] =
-    React.useState<FilterState<ModelRegistryVersionsFilterOptions>>(initialFilterValues);
+    React.useState<FilterState<ModelRegistryVersionsFilterOptions>>(modelVersionsInitialFilterValues);
 
   const onFilterChange = React.useCallback(
     (key: ModelRegistryVersionsFilterOptions, value: string | string[]) =>
@@ -89,7 +63,10 @@ const ModelVersionListView: React.FC<ModelVersionListViewProps> = ({
     [],
   );
 
-  const onClearAllFilters = React.useCallback(() => setFilterValues(initialFilterValues), []);
+  const onClearAllFilters = React.useCallback(
+    () => setFilterValues(modelVersionsInitialFilterValues),
+    [],
+  );
 
   const [isArchivedModelVersionKebabOpen, setIsArchivedModelVersionKebabOpen] =
     React.useState(false);
@@ -213,8 +190,8 @@ const ModelVersionListView: React.FC<ModelVersionListViewProps> = ({
         modelVersions={sortModelVersionsByCreateTime(filteredModelVersions)}
         toolbarContent={
           <ToolbarFilter
-            filterConfig={filterConfig}
-            visibleFilterKeys={visibleFilterKeys}
+            filterConfig={modelVersionsFilterConfig}
+            visibleFilterKeys={modelVersionsVisibleFilterKeys}
             filterValues={filterValues}
             onFilterChange={onFilterChange}
             onClearAllFilters={onClearAllFilters}
