@@ -54,8 +54,9 @@ const ModelVersionListView: React.FC<ModelVersionListViewProps> = ({
   const archiveModelVersions = filterArchiveVersions(modelVersions);
   const navigate = useNavigate();
   const { preferredModelRegistry } = React.useContext(ModelRegistrySelectorContext);
-  const [filterValues, setFilterValues] =
-    React.useState<FilterState<ModelRegistryVersionsFilterOptions>>(modelVersionsInitialFilterValues);
+  const [filterValues, setFilterValues] = React.useState<
+    FilterState<ModelRegistryVersionsFilterOptions>
+  >(modelVersionsInitialFilterValues);
 
   const onFilterChange = React.useCallback(
     (key: ModelRegistryVersionsFilterOptions, value: string | string[]) =>

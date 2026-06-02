@@ -22,8 +22,9 @@ const ModelVersionsArchiveListView: React.FC<ModelVersionsArchiveListViewProps> 
   modelVersions: unfilteredmodelVersions,
   refresh,
 }) => {
-  const [filterValues, setFilterValues] =
-    React.useState<FilterState<ModelRegistryVersionsFilterOptions>>(modelVersionsInitialFilterValues);
+  const [filterValues, setFilterValues] = React.useState<
+    FilterState<ModelRegistryVersionsFilterOptions>
+  >(modelVersionsInitialFilterValues);
 
   const onFilterChange = React.useCallback(
     (key: ModelRegistryVersionsFilterOptions, value: string | string[]) =>

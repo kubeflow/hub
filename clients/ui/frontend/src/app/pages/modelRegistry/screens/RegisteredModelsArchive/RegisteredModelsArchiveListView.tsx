@@ -24,8 +24,9 @@ const RegisteredModelsArchiveListView: React.FC<RegisteredModelsArchiveListViewP
   modelVersions,
   refresh,
 }) => {
-  const [filterValues, setFilterValues] =
-    React.useState<FilterState<ModelRegistryFilterOptions>>(registeredModelsInitialFilterValues);
+  const [filterValues, setFilterValues] = React.useState<FilterState<ModelRegistryFilterOptions>>(
+    registeredModelsInitialFilterValues,
+  );
 
   const onFilterChange = React.useCallback(
     (key: ModelRegistryFilterOptions, value: string | string[]) =>
