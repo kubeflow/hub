@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	catalogfilter "github.com/kubeflow/hub/catalog/internal/db/filter"
 	"github.com/kubeflow/hub/catalog/internal/db/models"
 	catpagination "github.com/kubeflow/hub/catalog/internal/db/pagination"
 	"github.com/kubeflow/hub/internal/platform/datastore"
@@ -151,7 +150,7 @@ func (r *CatalogArtifactRepositoryImpl) List(listOptions models.CatalogArtifactL
 
 	// Apply advanced filter query if supported
 	var err error
-	query, err = service.ApplyFilterQuery(query, &listOptions, catalogfilter.NewCatalogEntityMappings())
+	query, err = service.ApplyFilterQuery(query, &listOptions, NewCatalogArtifactEntityMappings())
 	if err != nil {
 		return nil, err
 	}

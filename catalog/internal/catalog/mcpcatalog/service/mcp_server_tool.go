@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/kubeflow/hub/catalog/internal/catalog/mcpcatalog/models"
-	"github.com/kubeflow/hub/catalog/internal/db/filter"
 	dbmodels "github.com/kubeflow/hub/internal/platform/db/entity"
 	"github.com/kubeflow/hub/internal/platform/db/schema"
 	service "github.com/kubeflow/hub/internal/platform/db/repository"
@@ -38,7 +37,7 @@ func NewMCPServerToolRepository(db *gorm.DB, typeID int32) models.MCPServerToolR
 		ApplyListFilters:        applyMCPServerToolListFilters,
 		IsNewEntity:             func(entity models.MCPServerTool) bool { return entity.GetID() == nil },
 		HasCustomProperties:     func(entity models.MCPServerTool) bool { return entity.GetCustomProperties() != nil },
-		EntityMappingFuncs:      filter.NewCatalogEntityMappings(),
+		EntityMappingFuncs:      NewMCPServerToolEntityMappings(),
 		PreserveHistoricalTimes: true,
 	}
 

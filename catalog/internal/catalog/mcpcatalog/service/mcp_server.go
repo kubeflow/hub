@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/kubeflow/hub/catalog/internal/catalog/mcpcatalog/models"
-	"github.com/kubeflow/hub/catalog/internal/db/filter"
 	"github.com/kubeflow/hub/catalog/internal/db/pagination"
 	"github.com/kubeflow/hub/internal/platform/db/dbutil"
 	dbmodels "github.com/kubeflow/hub/internal/platform/db/entity"
@@ -50,7 +49,7 @@ func NewMCPServerRepository(db *gorm.DB, typeID int32) models.MCPServerRepositor
 		ApplyCustomOrdering:     r.applyCustomOrdering,
 		IsNewEntity:             func(entity models.MCPServer) bool { return entity.GetID() == nil },
 		HasCustomProperties:     func(entity models.MCPServer) bool { return entity.GetCustomProperties() != nil },
-		EntityMappingFuncs:      filter.NewCatalogEntityMappings(),
+		EntityMappingFuncs:      NewMCPServerEntityMappings(),
 		PreserveHistoricalTimes: true, // Preserve timestamps from YAML source data
 	})
 

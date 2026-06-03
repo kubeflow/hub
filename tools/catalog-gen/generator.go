@@ -92,6 +92,16 @@ func (g *Generator) generateServices() error {
 		if err := g.renderFile(dir, filename, "entity_service.go.tmpl", data); err != nil {
 			return err
 		}
+
+		mappingsFilename := entity.SnakeName() + "_entity_mappings.go"
+		if err := g.renderFile(dir, mappingsFilename, "entity_mappings.go.tmpl", data); err != nil {
+			return err
+		}
+
+		mappingsTestFilename := entity.SnakeName() + "_entity_mappings_test.go"
+		if err := g.renderFile(dir, mappingsTestFilename, "entity_mappings_test.go.tmpl", data); err != nil {
+			return err
+		}
 	}
 	return nil
 }

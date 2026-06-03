@@ -30,6 +30,12 @@ type EntityTypeDefinition struct {
 
 // CatalogEntityRegistry is a registry-based implementation of filter.EntityMappingFunctions.
 // Entity types are registered declaratively; no hand-coded switch/if chains are needed.
+//
+// Note: the production path uses per-plugin structs in each service package
+// (e.g. modelcatalog/service/entity_mappings.go) since each GenericRepository
+// only ever queries its own entity type. This registry remains available for
+// cases where a single EntityMappingFunctions instance must handle multiple
+// entity types.
 type CatalogEntityRegistry struct {
 	mu          sync.RWMutex
 	definitions map[filter.RestEntityType]EntityTypeDefinition

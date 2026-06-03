@@ -7,7 +7,6 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog/models"
-	"github.com/kubeflow/hub/catalog/internal/db/filter"
 	catpagination "github.com/kubeflow/hub/catalog/internal/db/pagination"
 	"github.com/kubeflow/hub/internal/platform/db/dbutil"
 	dbfilter "github.com/kubeflow/hub/internal/platform/db/filter"
@@ -42,7 +41,7 @@ func NewCatalogModelRepository(db *gorm.DB, typeID int32) models.CatalogModelRep
 		ApplyCustomOrdering:     r.applyCustomOrdering,
 		IsNewEntity:             func(entity models.CatalogModel) bool { return entity.GetID() == nil },
 		HasCustomProperties:     func(entity models.CatalogModel) bool { return entity.GetCustomProperties() != nil },
-		EntityMappingFuncs:      filter.NewCatalogEntityMappings(),
+		EntityMappingFuncs:      NewCatalogModelEntityMappings(),
 		PreserveHistoricalTimes: true, // Catalog preserves timestamps from YAML source data
 	})
 

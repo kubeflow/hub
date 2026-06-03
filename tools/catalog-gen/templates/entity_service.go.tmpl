@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/kubeflow/hub/catalog/internal/catalog/{{.CatalogPkg}}/models"
-	"github.com/kubeflow/hub/catalog/internal/db/filter"
 	"github.com/kubeflow/hub/catalog/internal/db/pagination"
 	"github.com/kubeflow/hub/internal/platform/db/schema"
 	service "github.com/kubeflow/hub/internal/platform/db/repository"
@@ -36,7 +35,7 @@ func New{{.Entity.RepoInterface}}(db *gorm.DB, typeID int32) models.{{.Entity.Re
 		ApplyCustomOrdering:     apply{{.Entity.Name}}CustomOrdering,
 		IsNewEntity:             func(entity models.{{.Entity.Name}}) bool { return entity.GetID() == nil },
 		HasCustomProperties:     func(entity models.{{.Entity.Name}}) bool { return entity.GetCustomProperties() != nil },
-		EntityMappingFuncs:      filter.NewCatalogEntityMappings(),
+		EntityMappingFuncs:      new{{.Entity.Name}}EntityMappings(),
 		PreserveHistoricalTimes: true,
 	})
 

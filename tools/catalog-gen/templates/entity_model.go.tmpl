@@ -14,7 +14,6 @@ type {{.Entity.ListOptions}} struct {
 
 // GetRestEntityType implements the FilterApplier interface.
 func (o *{{.Entity.ListOptions}}) GetRestEntityType() filter.RestEntityType {
-	// TODO: Register the REST entity type in catalog/internal/db/models/rest_entity_type.go
 	return filter.RestEntityType("{{.Entity.SnakeName}}")
 }
 

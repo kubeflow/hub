@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	catalogfilter "github.com/kubeflow/hub/catalog/internal/db/filter"
 	catalogmodels "github.com/kubeflow/hub/catalog/internal/db/models"
+	modelcatalogservice "github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog/service"
 	"github.com/kubeflow/hub/internal/platform/db/filter"
 	"github.com/kubeflow/hub/internal/platform/db/schema"
 	"github.com/stretchr/testify/assert"
@@ -320,7 +320,7 @@ func TestFilterQueryToSQLGeneration(t *testing.T) {
 			// Create a query builder for catalog models (Context entities)
 			queryBuilder := filter.NewQueryBuilderForRestEntity(
 				filter.RestEntityType(catalogmodels.RestEntityCatalogModel),
-				catalogfilter.NewCatalogEntityMappings(), // Use catalog-specific mappings
+				modelcatalogservice.NewCatalogModelEntityMappings(), // Use catalog-specific mappings
 			)
 
 			// Create mock PostgreSQL GORM DB to capture generated SQL
@@ -404,7 +404,7 @@ func TestPostgreSQLSpecificFeatures(t *testing.T) {
 
 			queryBuilder := filter.NewQueryBuilderForRestEntity(
 				filter.RestEntityType(catalogmodels.RestEntityCatalogModel),
-				catalogfilter.NewCatalogEntityMappings(),
+				modelcatalogservice.NewCatalogModelEntityMappings(),
 			)
 
 			mockDB, sqlMock, _ := setupMockGORMWithCapture(t)
@@ -480,7 +480,7 @@ func TestFilterQuerySQLInjectionPrevention(t *testing.T) {
 			// Create query builder
 			queryBuilder := filter.NewQueryBuilderForRestEntity(
 				filter.RestEntityType(catalogmodels.RestEntityCatalogModel),
-				catalogfilter.NewCatalogEntityMappings(),
+				modelcatalogservice.NewCatalogModelEntityMappings(),
 			)
 
 			// Create mock PostgreSQL GORM DB
@@ -575,7 +575,7 @@ func TestComplexFilterQueryGeneration(t *testing.T) {
 			// Create query builder
 			queryBuilder := filter.NewQueryBuilderForRestEntity(
 				filter.RestEntityType(catalogmodels.RestEntityCatalogModel),
-				catalogfilter.NewCatalogEntityMappings(),
+				modelcatalogservice.NewCatalogModelEntityMappings(),
 			)
 
 			// Create mock PostgreSQL GORM DB
@@ -804,7 +804,7 @@ func TestArtifactFilteringCapability(t *testing.T) {
 			// Create a query builder for catalog models (Context entities)
 			queryBuilder := filter.NewQueryBuilderForRestEntity(
 				filter.RestEntityType(catalogmodels.RestEntityCatalogModel),
-				catalogfilter.NewCatalogEntityMappings(),
+				modelcatalogservice.NewCatalogModelEntityMappings(),
 			)
 
 			// Create mock PostgreSQL GORM DB to capture generated SQL
@@ -900,7 +900,7 @@ func TestArtifactFilteringSQLInjectionPrevention(t *testing.T) {
 			// Create query builder
 			queryBuilder := filter.NewQueryBuilderForRestEntity(
 				filter.RestEntityType(catalogmodels.RestEntityCatalogModel),
-				catalogfilter.NewCatalogEntityMappings(),
+				modelcatalogservice.NewCatalogModelEntityMappings(),
 			)
 
 			// Create mock PostgreSQL GORM DB
@@ -1215,7 +1215,7 @@ func TestArtifactFilteringEdgeCases(t *testing.T) {
 			// Create a query builder for catalog models
 			queryBuilder := filter.NewQueryBuilderForRestEntity(
 				filter.RestEntityType(catalogmodels.RestEntityCatalogModel),
-				catalogfilter.NewCatalogEntityMappings(),
+				modelcatalogservice.NewCatalogModelEntityMappings(),
 			)
 
 			// Create mock PostgreSQL GORM DB
