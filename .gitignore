@@ -57,7 +57,8 @@ venv/
 
 # AI agent tool configs (keep local, don't track)
 .cursor/
-.claude/
+.claude/*
+!.claude/skills
 
 **/go.work
 **/go.work.sum
