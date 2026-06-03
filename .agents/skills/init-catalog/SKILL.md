@@ -306,6 +306,25 @@ service "github.com/kubeflow/hub/internal/platform/db/repository"
 
 Remove any unused imports after edits.
 
+### Save override for TypeID
+
+The `GenericRepository.Save` does NOT automatically set `TypeID` on entities. Without this,
+entities saved by the YAML loader get `type_id = 0` and won't be found by List/Get queries.
+
+Add a `Save` override to each entity's repository impl:
+
+```go
+func (r *XxxRepositoryImpl) Save(entity models.Xxx, parentResourceID *int32) (models.Xxx, error) {
+    config := r.GetConfig()
+    if entity.GetTypeID() == nil && config.TypeID > 0 {
+        entity.SetTypeID(config.TypeID)
+    }
+    return r.GenericRepository.Save(entity, parentResourceID)
+}
+```
+
+Reference: `catalog/internal/catalog/modelcatalog/service/catalog_model.go` `Save` method.
+
 ## Phase 4: Generate OpenAPI Stubs
 
 Three make targets must run in order:
@@ -330,48 +349,137 @@ Verify that these files were created or updated:
 - `catalog/internal/server/openapi/api_<name>.go`
 - `catalog/pkg/openapi/model_<entity_snake>.go` (one per entity)
 
-## Phase 5: Create OpenAPI Service Implementation
+## Phase 5: Implement DB Provider
+
+The generated `db_<name>.go` has a TODO stub. Replace it with a working implementation
+that queries the repository and maps results to OpenAPI models.
+
+1. **Export the type**: rename the struct from `db<PascalName>CatalogImpl` to `DB<PascalName>Catalog`
+   so the service implementation can reference it.
+
+2. **Add a `List<PascalName>sParams` struct** with fields: Name, SourceIDs, FilterQuery,
+   OrderBy, SortOrder, NextPageToken, PageSize.
+
+3. **Add `List<Entity>s` method**: build `ListOptions` from params, call repository `.List()`,
+   map each result via a mapping function, return the API list type with pagination.
+   For pointer fields on the list struct (check `catalog/pkg/openapi/model_<entity>_list.go`),
+   use `&variable` or `apiutils.Of()`.
+   The `NextPageToken` from the repository is a plain `string`; only assign to the response
+   if non-empty (the API model field is `*string`).
+
+4. **Add `Get<Entity>` method**: parse ID string to int32, call repository `.GetByID()`,
+   map via the mapping function, return or 404.
+
+5. **Add `FindSources` method**: iterate `sources.AllSources()`, build `CatalogSourceList`.
+
+6. **Implement `mapDB<Entity>ToAPI` mapping function**: map ID (format int64 → string),
+   Name from attributes, then loop over Properties matching by name:
+   - String fields: `res.<Field> = prop.StringValue`
+   - Boolean fields: `res.<Field> = prop.BoolValue`
+   - Array fields: `json.Unmarshal` from `prop.StringValue` into `[]string`
+
+   Reference: `catalog/internal/catalog/modelcatalog/db_catalog.go` function `mapDBModelToAPIModel`.
+
+7. **Remove** the `var _ sharedmodels.CatalogSourceRepository` placeholder and the TODO comments.
+
+## Phase 6: Create OpenAPI Service Implementation
 
 After `gen/openapi-server` runs, an interface `<PascalName>CatalogServiceAPIServicer` exists in
-`catalog/internal/server/openapi/api_<name>.go`. Create a minimal service implementation
-that satisfies this interface and returns empty/stub responses.
+`catalog/internal/server/openapi/api_<name>.go`. Create a service implementation that calls
+through to the DB provider.
 
-1. **Read** `catalog/internal/server/openapi/api_<name>.go` to get the exact interface methods and their signatures.
+1. **Read** `catalog/internal/server/openapi/api_<name>.go` to get the exact interface methods
+   and their signatures.
 
-2. **Read** `catalog/pkg/openapi/model_<primary_entity_snake>.go` and the `_list.go` variant to check whether list struct fields are pointers or values (e.g., `Size *int32` vs `Size int32`). For pointer fields, use `apiutils.Of(int32(0))`.
+2. **Create** `catalog/internal/server/openapi/api_<name>_catalog_service_service.go` with:
+   - A struct holding a `*<pkg>.DB<PascalName>Catalog` provider field
+   - A constructor `New<PascalName>CatalogServiceAPIService(provider)` that takes the provider
+   - Each interface method delegates to the provider:
+     - `Find<Entity>s` → call `provider.List<Entity>s(ctx, params)`, return 200 or error
+     - `Get<Entity>` → call `provider.Get<Entity>(ctx, id)`, return 200 or 404
+     - `GetFilterOptions` → call `provider.GetFilterOptions(ctx)`
+     - `FindSources` → call `provider.FindSources(ctx)`
+   - For errors, use `api.ErrNotFound` / `api.ErrBadRequest` checks from `github.com/kubeflow/hub/pkg/api`
 
-3. **Create** `catalog/internal/server/openapi/api_<name>_catalog_service_service.go` with:
+   Match the exact method signatures from the interface.
+
+## Phase 7: Implement YAML Provider + Wire Loader
+
+Add a YAML provider so the plugin can load data from YAML files at startup.
+
+### 7a: Create the YAML provider
+
+Create `catalog/internal/catalog/<name>catalog/yaml_provider.go` with:
+
+1. A YAML struct matching the data file format (using the primary entity's field names):
+   ```go
+   type yaml<PascalName> struct {
+       Name        string            `yaml:"name"`
+       Description *string           `yaml:"description,omitempty"`
+       // ... string/bool/array fields from the spec
+       CustomProperties map[string]any `yaml:"customProperties,omitempty"`
+   }
+
+   type yaml<PascalName>Catalog struct {
+       Source string           `yaml:"source"`
+       Items  []yaml<PascalName> `yaml:"<entity_plural>"`
+   }
+   ```
+
+2. A provider function that reads a YAML file and converts each entry to a domain entity
+   (using the `models.<Entity>Impl` type with Properties from the YAML fields).
+
+3. Registration via `init()` — but since this is a generic plugin using `PluginSource`,
+   the loader already knows the source type from `source.Type`. The provider should be
+   called when `source.Type == "yaml"`.
+
+### 7b: Wire PerformLeaderOperations in the loader
+
+Update the generated `loader.go` to replace the TODO in `PerformLeaderOperations`:
 
 ```go
-package openapi
+func (l *<PascalName>Loader) PerformLeaderOperations(ctx context.Context, allKnownSourceIDs mapset.Set[string]) error {
+    glog.Infof("%s loader performing leader operations", "<name>")
 
-import (
-    "context"
-    "net/http"
+    ctx, cancel := context.WithCancel(ctx)
+    l.setCloser(cancel)
 
-    model "github.com/kubeflow/hub/catalog/pkg/openapi"
-    "github.com/kubeflow/hub/internal/platform/apiutils"
-)
+    allSources := l.Sources.AllSources()
 
-type <PascalName>CatalogServiceAPIService struct{}
+    for id, source := range allSources {
+        if !source.IsEnabled() {
+            basecatalog.SaveSourceStatus(l.services.CatalogSourceRepository, id, basecatalog.SourceStatusDisabled, "")
+            continue
+        }
 
-func New<PascalName>CatalogServiceAPIService() *<PascalName>CatalogServiceAPIService {
-    return &<PascalName>CatalogServiceAPIService{}
+        if source.Type != "yaml" {
+            glog.Warningf("unknown %s provider type: %s", "<name>", source.Type)
+            basecatalog.SaveSourceStatus(l.services.CatalogSourceRepository, id, basecatalog.SourceStatusError, "unknown provider type: "+source.Type)
+            continue
+        }
+
+        if err := l.loadFromYAML(ctx, id, source); err != nil {
+            glog.Errorf("error loading %s from source %s: %v", "<name>", id, err)
+            basecatalog.SaveSourceStatus(l.services.CatalogSourceRepository, id, basecatalog.SourceStatusError, err.Error())
+            continue
+        }
+
+        basecatalog.SaveSourceStatus(l.services.CatalogSourceRepository, id, basecatalog.SourceStatusAvailable, "")
+    }
+
+    glog.Infof("%s loader leader operations complete", "<name>")
+    return nil
 }
 ```
 
-Then implement each method from the interface:
+The `loadFromYAML` method reads the YAML file from `source.Properties["yamlCatalogPath"]`
+(resolving relative paths via `source.Origin`), parses each entry, converts to a domain entity,
+and saves via `l.services.<Entity>Repository.Save(entity, nil)`.
 
-- **Find<Entity>s** — return an empty list with pagination fields. Use `apiutils.Of()` for pointer fields.
-- **Get<Entity>** — return 404 with `model.Error{Code: "not_found", Message: "<entity> not found"}`.
-- **GetFilterOptions** — return empty `model.FilterOptionsList{Filters: &options}` where `options` is an empty map.
-- **FindSources** — return empty `model.CatalogSourceList{Items: []model.CatalogSource{}}`.
+Reference: `catalog/internal/catalog/mcpcatalog/providers.go` for path resolution and
+`catalog/internal/catalog/mcpcatalog/loader.go` `updateDatabase` for the save pattern.
 
-Match the exact method signatures from the interface — parameter types and counts vary depending on the OpenAPI spec (query params like name, source, orderBy, sortOrder, etc.).
-
-Remove the `apiutils` import if no pointer fields are needed.
-
-## Phase 6: Wire RegisterRoutes
+## Phase 8: Wire RegisterRoutes
 
 Update `catalog/internal/plugins/<name>/plugin.go`:
 
@@ -381,7 +489,8 @@ Update `catalog/internal/plugins/<name>/plugin.go`:
 
 ```go
 func (p *Plugin) RegisterRoutes(router chi.Router) error {
-    svc := openapi.New<PascalName>CatalogServiceAPIService()
+    provider := <pkg>.NewDB<PascalName>Catalog(p.services, p.loader.Sources)
+    svc := openapi.New<PascalName>CatalogServiceAPIService(provider)
     ctrl := openapi.New<PascalName>CatalogServiceAPIController(svc)
 
     for _, route := range ctrl.OrderedRoutes() {
@@ -392,20 +501,21 @@ func (p *Plugin) RegisterRoutes(router chi.Router) error {
 }
 ```
 
-## Phase 7: Verify Compilation
+## Phase 9: Verify Compilation
 
 ```bash
 go build ./catalog/...
 ```
 
-If compilation fails, read the error output, fix the issues (typically unused or missing imports, pointer vs value mismatches on list struct fields), and retry.
+If compilation fails, read the error output, fix the issues (typically unused or missing imports,
+pointer vs value mismatches on list struct fields), and retry.
 
-## Phase 8: Report
+## Phase 10: Report
 
 Print a summary with:
 
 1. **Created** — list all files catalog-gen created
-2. **Modified** — list entity service files where panics were replaced, plugin.go wiring
+2. **Modified** — entity service panics replaced, db_provider wired, loader implemented, plugin.go wired
 3. **Generated** — OpenAPI server stubs + service implementation
 4. **Build** — pass/fail
 
@@ -414,9 +524,8 @@ Then print **Next Steps** the developer must complete manually:
 ```
 Next steps:
   1. Edit the OpenAPI spec (api/openapi/src/plugins/<name>.yaml) to add entity-specific fields
-  2. Re-run: make api/openapi/catalog.yaml && make -C catalog gen/openapi-server && make -C catalog gen/openapi
-  3. Connect the service implementation to the DB provider (replace stub responses with real queries)
+  2. Run /sync-catalog to propagate spec changes
+  3. Run /catalog-sample-data to generate test data
   4. Add list filter logic in apply<Entity>ListFilters if needed
   5. Add entity-specific properties to *_entity_mappings.go
-  6. Implement PerformLeaderOperations in the loader
 ```
