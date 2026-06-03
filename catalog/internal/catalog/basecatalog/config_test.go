@@ -159,7 +159,7 @@ func TestSourceConfig_Validate(t *testing.T) {
 				},
 			},
 			expectErr: true,
-			errMsg:    "duplicate MCP catalog id: dup",
+			errMsg:    "duplicate mcp catalog id: dup",
 		},
 		{
 			name: "missing model catalog ID",
@@ -179,7 +179,7 @@ func TestSourceConfig_Validate(t *testing.T) {
 				},
 			},
 			expectErr: true,
-			errMsg:    "MCP catalog source missing id",
+			errMsg:    "mcp catalog source missing id",
 		},
 		{
 			name: "cross-type ID collision between model and MCP catalogs",
@@ -192,7 +192,7 @@ func TestSourceConfig_Validate(t *testing.T) {
 				},
 			},
 			expectErr: true,
-			errMsg:    `id "shared" used in both model_catalogs and mcp_catalogs`,
+			errMsg:    `id "shared" used in multiple catalog types`,
 		},
 	}
 

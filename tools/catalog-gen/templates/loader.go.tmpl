@@ -1,0 +1,114 @@
+package {{.CatalogPkg}}
+
+import (
+	"context"
+	"fmt"
+	"path/filepath"
+	"sync"
+
+	mapset "github.com/deckarep/golang-set/v2"
+	"github.com/golang/glog"
+	"github.com/kubeflow/hub/catalog/internal/catalog/basecatalog"
+)
+
+// {{.PascalName}}Loader handles loading {{.Name}} data from YAML configuration files.
+type {{.PascalName}}Loader struct {
+	state basecatalog.LoaderState
+
+	Sources  *{{.PascalName}}SourceCollection
+	services Services
+
+	closerMu sync.Mutex
+	closer   func()
+}
+
+func (l *{{.PascalName}}Loader) setCloser(closer func()) {
+	l.closerMu.Lock()
+	defer l.closerMu.Unlock()
+	if l.closer != nil {
+		l.closer()
+	}
+	l.closer = closer
+}
+
+func New{{.PascalName}}Loader(services Services, state basecatalog.LoaderState) *{{.PascalName}}Loader {
+	paths := state.Paths()
+	return &{{.PascalName}}Loader{
+		state:    state,
+		Sources:  New{{.PascalName}}SourceCollection(paths...),
+		services: services,
+	}
+}
+
+func (l *{{.PascalName}}Loader) ParseAllConfigs() error {
+	glog.Infof("Initializing %s loader - parsing configs", "{{.Name}}")
+
+	for _, path := range l.state.Paths() {
+		if err := l.parseAndMerge(path); err != nil {
+			return fmt.Errorf("failed to parse {{.Name}} config %s: %w", path, err)
+		}
+	}
+
+	glog.Infof("%s loader config parsing complete", "{{.Name}}")
+	return nil
+}
+
+func (l *{{.PascalName}}Loader) PerformLeaderOperations(ctx context.Context, allKnownSourceIDs mapset.Set[string]) error {
+	glog.Infof("%s loader performing leader operations", "{{.Name}}")
+
+	ctx, cancel := context.WithCancel(ctx)
+	l.setCloser(cancel)
+
+	allSources := l.Sources.AllSources()
+
+	// TODO: Implement leader write operations for each source.
+	// Pattern: iterate sources, load data from provider, save to DB via services.
+	_ = ctx
+	_ = allSources
+	_ = allKnownSourceIDs
+
+	glog.Infof("%s loader leader operations complete", "{{.Name}}")
+	return nil
+}
+
+func (l *{{.PascalName}}Loader) ReloadParsing() {
+	for _, path := range l.state.Paths() {
+		if err := l.parseAndMerge(path); err != nil {
+			glog.Errorf("unable to reload {{.Name}} sources from %s: %v", path, err)
+		}
+	}
+}
+
+func (l *{{.PascalName}}Loader) parseAndMerge(path string) error {
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path for %s: %v", path, err)
+	}
+
+	config, err := basecatalog.ReadSourceConfig(path)
+	if err != nil {
+		return err
+	}
+
+	return l.updateSources(path, config)
+}
+
+func (l *{{.PascalName}}Loader) updateSources(path string, config *basecatalog.SourceConfig) error {
+	sources := make(map[string]basecatalog.PluginSource, len(config.{{.SourceConfigField}}))
+
+	for _, source := range config.{{.SourceConfigField}} {
+		glog.Infof("reading {{.Name}} catalog config type %s...", source.Type)
+		if source.GetId() == "" {
+			return fmt.Errorf("invalid {{.Name}} source: missing id")
+		}
+		if _, exists := sources[source.GetId()]; exists {
+			return fmt.Errorf("invalid {{.Name}} source: duplicate id %s", source.GetId())
+		}
+
+		source.Origin = path
+		sources[source.GetId()] = source
+		glog.Infof("loaded {{.Name}} source %s of type %s", source.GetId(), source.Type)
+	}
+
+	return l.Sources.Merge(path, sources)
+}

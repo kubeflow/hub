@@ -1,0 +1,98 @@
+package {{.CatalogPkg}}
+
+import (
+	"sync"
+
+	"github.com/kubeflow/hub/catalog/internal/catalog/basecatalog"
+	"github.com/kubeflow/hub/internal/platform/apiutils"
+)
+
+type {{.CamelName}}OriginEntry struct {
+	origin  string
+	sources map[string]basecatalog.PluginSource
+}
+
+// {{.PascalName}}SourceCollection manages {{.Name}} catalog sources from multiple origins with priority-based merging.
+type {{.PascalName}}SourceCollection struct {
+	mu      sync.RWMutex
+	entries []{{.CamelName}}OriginEntry
+}
+
+func New{{.PascalName}}SourceCollection(originOrder ...string) *{{.PascalName}}SourceCollection {
+	entries := make([]{{.CamelName}}OriginEntry, len(originOrder))
+	for i, origin := range originOrder {
+		entries[i] = {{.CamelName}}OriginEntry{origin: origin, sources: nil}
+	}
+	return &{{.PascalName}}SourceCollection{
+		entries: entries,
+	}
+}
+
+func (sc *{{.PascalName}}SourceCollection) Merge(origin string, sources map[string]basecatalog.PluginSource) error {
+	sc.mu.Lock()
+	defer sc.mu.Unlock()
+
+	for i := range sc.entries {
+		if sc.entries[i].origin == origin {
+			sc.entries[i].sources = sources
+			return nil
+		}
+	}
+
+	sc.entries = append(sc.entries, {{.CamelName}}OriginEntry{origin: origin, sources: sources})
+	return nil
+}
+
+func (sc *{{.PascalName}}SourceCollection) merged() map[string]basecatalog.PluginSource {
+	result := map[string]basecatalog.PluginSource{}
+
+	for _, entry := range sc.entries {
+		for id, source := range entry.sources {
+			if existing, ok := result[id]; ok {
+				result[id] = merge{{.PascalName}}Sources(existing, source)
+			} else {
+				result[id] = source
+			}
+		}
+	}
+
+	for id, source := range result {
+		result[id] = apply{{.PascalName}}Defaults(source)
+	}
+
+	return result
+}
+
+func merge{{.PascalName}}Sources(base, override basecatalog.PluginSource) basecatalog.PluginSource {
+	result := base
+
+	common := basecatalog.MergeCommonSourceFields(
+		basecatalog.CommonSourceFields{Name: base.Name, Enabled: base.Enabled, Labels: base.Labels, Type: base.Type, Properties: base.Properties, Origin: base.Origin},
+		basecatalog.CommonSourceFields{Name: override.Name, Enabled: override.Enabled, Labels: override.Labels, Type: override.Type, Properties: override.Properties, Origin: override.Origin},
+	)
+	result.Name = common.Name
+	result.Enabled = common.Enabled
+	result.Labels = common.Labels
+	result.Type = common.Type
+	result.Properties = common.Properties
+	result.Origin = common.Origin
+
+	return result
+}
+
+func apply{{.PascalName}}Defaults(source basecatalog.PluginSource) basecatalog.PluginSource {
+	if source.Enabled == nil {
+		source.Enabled = apiutils.Of(true)
+	}
+	if source.Labels == nil {
+		source.Labels = []string{}
+	}
+	return source
+}
+
+func (sc *{{.PascalName}}SourceCollection) AllSources() map[string]basecatalog.PluginSource {
+	sc.mu.RLock()
+	defer sc.mu.RUnlock()
+
+	return sc.merged()
+}

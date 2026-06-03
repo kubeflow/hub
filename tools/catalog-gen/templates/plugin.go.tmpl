@@ -1,0 +1,80 @@
+package {{.Name}}
+
+import (
+	"context"
+
+	"github.com/go-chi/chi/v5"
+
+	mapset "github.com/deckarep/golang-set/v2"
+
+	"github.com/kubeflow/hub/catalog/internal/catalog/{{.CatalogPkg}}"
+{{- range .Entities}}
+	{{.CamelName}}models "github.com/kubeflow/hub/catalog/internal/catalog/{{$.CatalogPkg}}/models"
+{{- end}}
+	{{.Name}}service "github.com/kubeflow/hub/catalog/internal/catalog/{{.CatalogPkg}}/service"
+	"github.com/kubeflow/hub/catalog/internal/catalog/basecatalog"
+	"github.com/kubeflow/hub/catalog/internal/db/models"
+	"github.com/kubeflow/hub/catalog/internal/plugin"
+	"github.com/kubeflow/hub/internal/platform/datastore"
+)
+
+type Plugin struct {
+	plugin.PluginBase
+	loader   *{{.CatalogPkg}}.{{.PascalName}}Loader
+	services {{.CatalogPkg}}.Services
+}
+
+func (p *Plugin) Name() string                   { return "{{.Name}}" }
+func (p *Plugin) Version() string                { return "v1alpha1" }
+func (p *Plugin) Description() string            { return "{{.Description}}" }
+func (p *Plugin) BasePath() string               { return "{{.BasePath}}" }
+func (p *Plugin) Healthy() bool                  { return true }
+func (p *Plugin) Migrations() []plugin.Migration { return nil }
+
+func (p *Plugin) DatastoreEntries() []plugin.DatastoreEntry {
+	return []plugin.DatastoreEntry{
+{{- range .Entities}}
+		{
+			TypeName: "{{.TypeName}}",
+			Category: "{{.DatastoreType}}",
+			Spec: datastore.NewSpecType({{$.Name}}service.New{{.RepoInterface}}).
+				AddString("source_id"),
+		},
+{{- end}}
+	}
+}
+
+func (p *Plugin) Init(_ context.Context, cfg plugin.Config) error {
+	p.services = {{.CatalogPkg}}.Services{
+{{- range .Entities}}
+		{{.RepoInterface}}: plugin.GetRepo[{{.CamelName}}models.{{.RepoInterface}}](cfg.RepoSet),
+{{- end}}
+		CatalogSourceRepository:   plugin.GetRepo[models.CatalogSourceRepository](cfg.RepoSet),
+		PropertyOptionsRepository: plugin.GetRepo[models.PropertyOptionsRepository](cfg.RepoSet),
+	}
+
+	base := basecatalog.NewBaseLoader(cfg.ConfigPaths)
+	p.loader = {{.CatalogPkg}}.New{{.PascalName}}Loader(p.services, base)
+
+	p.PluginBase = plugin.NewPluginBase(plugin.PluginBaseConfig{
+		Name:        "{{.Name}}",
+		State:       base,
+		Loader:      p.loader,
+		FileWatcher: basecatalog.GetMonitor(),
+		SourceIDs: func() mapset.Set[string] {
+			ids := mapset.NewSet[string]()
+			for id := range p.loader.Sources.AllSources() {
+				ids.Add(id)
+			}
+			return ids
+		},
+	})
+
+	return nil
+}
+
+func (p *Plugin) RegisterRoutes(_ chi.Router) error {
+	// TODO: Wire up OpenAPI service and controller once the spec is finalized
+	// and server stubs are generated via make gen/openapi-server.
+	return nil
+}

@@ -87,6 +87,20 @@ type SourceIDProvider interface {
 	KnownSourceIDs() mapset.Set[string]
 }
 
+// DatastoreSpecProvider is an optional interface that plugins implement
+// to contribute their entity types to the shared DatastoreSpec.
+// This avoids modifying spec.go when adding a new plugin.
+type DatastoreSpecProvider interface {
+	DatastoreEntries() []DatastoreEntry
+}
+
+// DatastoreEntry describes a single entity type contributed by a plugin.
+type DatastoreEntry struct {
+	TypeName string
+	Category string // "context", "artifact", or "execution"
+	Spec     *datastore.SpecType
+}
+
 // CatalogLoader defines the interface for data loading strategies.
 type CatalogLoader interface {
 	Start(ctx context.Context) error

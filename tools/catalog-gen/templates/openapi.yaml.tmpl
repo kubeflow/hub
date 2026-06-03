@@ -1,0 +1,146 @@
+paths:
+{{- range .ContextEntities}}
+  {{$.BasePath}}/{{.SnakeName}}s:
+    description: >-
+      The REST endpoint/path used to list zero or more `{{.Name}}` entities.
+    get:
+      summary: List {{.SnakeName}}s.
+      tags:
+        - {{$.PascalName}}CatalogService
+      parameters:
+        - name: name
+          description: Filter by name using SQL LIKE pattern matching.
+          schema:
+            type: string
+          in: query
+          required: false
+        - name: source
+          description: Filter by source ID.
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+          required: false
+        - $ref: "#/components/parameters/pageSize"
+        - $ref: "#/components/parameters/orderBy"
+        - $ref: "#/components/parameters/sortOrder"
+        - $ref: "#/components/parameters/nextPageToken"
+      responses:
+        "200":
+          $ref: "#/components/responses/{{.Name}}ListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      operationId: find{{.Name}}s
+
+  {{$.BasePath}}/{{.SnakeName}}s/{id}:
+    description: >-
+      The REST endpoint/path used to get a single `{{.Name}}` entity.
+    get:
+      summary: Get a {{.SnakeName}} by ID.
+      tags:
+        - {{$.PascalName}}CatalogService
+      parameters:
+        - name: id
+          description: The unique identifier of the entity.
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        "200":
+          $ref: "#/components/responses/{{.Name}}Response"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      operationId: get{{.Name}}
+{{- end}}
+
+  {{.BasePath}}/sources:
+    description: List configured sources for this catalog.
+    get:
+      summary: List catalog sources.
+      tags:
+        - {{.PascalName}}CatalogService
+      responses:
+        "200":
+          $ref: "#/components/responses/CatalogSourceListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      operationId: find{{.PascalName}}Sources
+
+  {{.BasePath}}/filter_options:
+    description: Lists filter options for this catalog.
+    get:
+      summary: Lists fields and values that can be used for filtering.
+      tags:
+        - {{.PascalName}}CatalogService
+      responses:
+        "200":
+          $ref: "#/components/responses/FilterOptionsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      operationId: get{{.PascalName}}FilterOptions
+
+# Parameters (pageSize, orderBy, etc.) and shared responses (BadRequest, etc.)
+# are provided by lib/common.yaml during spec assembly. Only plugin-specific
+# schemas and responses are defined here.
+components:
+  schemas:
+{{- range .ContextEntities}}
+    {{.Name}}:
+      description: A {{.SnakeName}} entity in the catalog.
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        source_id:
+          type: string
+        description:
+          type: string
+        # TODO: Add entity-specific fields here.
+
+    {{.Name}}List:
+      description: A list of {{.SnakeName}} entities.
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/{{.Name}}"
+        nextPageToken:
+          type: string
+        pageSize:
+          type: integer
+        size:
+          type: integer
+{{- end}}
+
+  responses:
+{{- range .ContextEntities}}
+    {{.Name}}ListResponse:
+      description: A list of {{.SnakeName}} entities.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/{{.Name}}List"
+    {{.Name}}Response:
+      description: A single {{.SnakeName}} entity.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/{{.Name}}"
+{{- end}}

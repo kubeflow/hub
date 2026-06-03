@@ -13,9 +13,12 @@ import (
 	"github.com/kubeflow/hub/catalog/internal/catalog/mcpcatalog"
 	"github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog"
 	modelcatalogmodels "github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog/models"
+	modelcatalogservice "github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog/service"
 	"github.com/kubeflow/hub/catalog/internal/db/models"
+	dbservice "github.com/kubeflow/hub/catalog/internal/db/service"
 	"github.com/kubeflow/hub/catalog/internal/plugin"
 	"github.com/kubeflow/hub/catalog/internal/server/openapi"
+	"github.com/kubeflow/hub/internal/platform/datastore"
 )
 
 // mcpSourceProvider is a local interface satisfied by the MCP plugin.
@@ -36,6 +39,41 @@ func (p *Plugin) Description() string            { return "Model catalog" }
 func (p *Plugin) BasePath() string               { return "/api/model_catalog/v1alpha1" }
 func (p *Plugin) Healthy() bool                  { return true }
 func (p *Plugin) Migrations() []plugin.Migration { return nil }
+
+func (p *Plugin) DatastoreEntries() []plugin.DatastoreEntry {
+	return []plugin.DatastoreEntry{
+		{
+			TypeName: dbservice.CatalogModelTypeName,
+			Category: "context",
+			Spec: datastore.NewSpecType(modelcatalogservice.NewCatalogModelRepository).
+				AddString("source_id").
+				AddString("description").
+				AddString("owner").
+				AddString("state").
+				AddStruct("language").
+				AddString("library_name").
+				AddString("license_link").
+				AddString("license").
+				AddString("logo").
+				AddString("maturity").
+				AddString("provider").
+				AddString("readme").
+				AddStruct("tasks"),
+		},
+		{
+			TypeName: dbservice.CatalogModelArtifactTypeName,
+			Category: "artifact",
+			Spec: datastore.NewSpecType(modelcatalogservice.NewCatalogModelArtifactRepository).
+				AddString("uri"),
+		},
+		{
+			TypeName: dbservice.CatalogMetricsArtifactTypeName,
+			Category: "artifact",
+			Spec: datastore.NewSpecType(modelcatalogservice.NewCatalogMetricsArtifactRepository).
+				AddString("metricsType"),
+		},
+	}
+}
 
 func (p *Plugin) Init(_ context.Context, cfg plugin.Config) error {
 	p.services = modelcatalog.Services{

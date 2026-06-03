@@ -9,6 +9,7 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/kubeflow/hub/catalog/internal/db/service"
+	_ "github.com/kubeflow/hub/catalog/internal/testhelpers"
 	"github.com/kubeflow/hub/catalog/internal/leader"
 	"github.com/kubeflow/hub/internal/testutils"
 	"github.com/stretchr/testify/assert"

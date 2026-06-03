@@ -1,0 +1,40 @@
+package {{.CatalogPkg}}
+
+import (
+	"context"
+
+	sharedmodels "github.com/kubeflow/hub/catalog/internal/db/models"
+	openapi "github.com/kubeflow/hub/catalog/pkg/openapi"
+)
+
+type db{{.PascalName}}CatalogImpl struct {
+	services Services
+	sources  *{{.PascalName}}SourceCollection
+}
+
+func NewDB{{.PascalName}}Catalog(services Services, sources *{{.PascalName}}SourceCollection) *db{{.PascalName}}CatalogImpl {
+	return &db{{.PascalName}}CatalogImpl{
+		services: services,
+		sources:  sources,
+	}
+}
+
+func (d *db{{.PascalName}}CatalogImpl) GetFilterOptions(ctx context.Context) (*openapi.FilterOptionsList, error) {
+	_ = ctx
+	options := make(map[string]openapi.FilterOption)
+	return &openapi.FilterOptionsList{
+		Filters: &options,
+	}, nil
+}
+
+// TODO: Add List and Get methods for each entity.
+// See catalog/internal/catalog/mcpcatalog/db_mcp.go for the full pattern.
+//
+// Example:
+{{- range .ContextEntities}}
+//   func (d *db{{$.PascalName}}CatalogImpl) List{{.Name}}s(ctx context.Context, params ListParams) (openapi.{{.Name}}List, error)
+//   func (d *db{{$.PascalName}}CatalogImpl) Get{{.Name}}(ctx context.Context, id string) (*openapi.{{.Name}}, error)
+{{- end}}
+
+// Ensure sharedmodels import is used (remove this line once you reference it in real code).
+var _ sharedmodels.CatalogSourceRepository

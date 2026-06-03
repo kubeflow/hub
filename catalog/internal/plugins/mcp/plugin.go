@@ -9,9 +9,12 @@ import (
 	"github.com/kubeflow/hub/catalog/internal/catalog/basecatalog"
 	"github.com/kubeflow/hub/catalog/internal/catalog/mcpcatalog"
 	mcpcatalogmodels "github.com/kubeflow/hub/catalog/internal/catalog/mcpcatalog/models"
+	mcpcatalogservice "github.com/kubeflow/hub/catalog/internal/catalog/mcpcatalog/service"
 	"github.com/kubeflow/hub/catalog/internal/db/models"
+	dbservice "github.com/kubeflow/hub/catalog/internal/db/service"
 	"github.com/kubeflow/hub/catalog/internal/plugin"
 	"github.com/kubeflow/hub/catalog/internal/server/openapi"
+	"github.com/kubeflow/hub/internal/platform/datastore"
 )
 
 type Plugin struct {
@@ -30,6 +33,41 @@ func (p *Plugin) Migrations() []plugin.Migration { return nil }
 // MCPSources returns the MCP source collection for cross-plugin access.
 func (p *Plugin) MCPSources() *mcpcatalog.MCPSourceCollection {
 	return p.loader.Sources
+}
+
+func (p *Plugin) DatastoreEntries() []plugin.DatastoreEntry {
+	return []plugin.DatastoreEntry{
+		{
+			TypeName: dbservice.MCPServerTypeName,
+			Category: "context",
+			Spec: datastore.NewSpecType(mcpcatalogservice.NewMCPServerRepository).
+				AddString("source_id").
+				AddString("base_name").
+				AddString("description").
+				AddString("provider").
+				AddString("license").
+				AddString("license_link").
+				AddString("logo").
+				AddString("readme").
+				AddString("version").
+				AddStruct("tags").
+				AddStruct("transports").
+				AddString("deploymentMode").
+				AddBoolean("verifiedSource").
+				AddBoolean("secureEndpoint").
+				AddBoolean("sast").
+				AddBoolean("readOnlyTools"),
+		},
+		{
+			TypeName: dbservice.MCPServerToolTypeName,
+			Category: "execution",
+			Spec: datastore.NewSpecType(mcpcatalogservice.NewMCPServerToolRepository).
+				AddString("accessType").
+				AddString("description").
+				AddString("externalId").
+				AddString("parameters"),
+		},
+	}
 }
 
 func (p *Plugin) Init(_ context.Context, cfg plugin.Config) error {

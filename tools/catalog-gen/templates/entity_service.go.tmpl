@@ -1,0 +1,96 @@
+package service
+
+import (
+	"errors"
+
+	"github.com/kubeflow/hub/catalog/internal/catalog/{{.CatalogPkg}}/models"
+	"github.com/kubeflow/hub/catalog/internal/db/filter"
+	"github.com/kubeflow/hub/catalog/internal/db/pagination"
+	"github.com/kubeflow/hub/internal/platform/db/schema"
+	service "github.com/kubeflow/hub/internal/platform/db/repository"
+	"gorm.io/gorm"
+)
+
+var Err{{.Entity.Name}}NotFound = errors.New("{{.Entity.SnakeName}} not found")
+
+// {{.Entity.RepoImpl}} implements {{.Entity.RepoInterface}} using GORM.
+type {{.Entity.RepoImpl}} struct {
+	*service.GenericRepository[models.{{.Entity.Name}}, {{.Entity.SchemaType}}, {{.Entity.SchemaPropertyType}}, *models.{{.Entity.ListOptions}}]
+}
+
+// New{{.Entity.RepoInterface}} creates a new {{.Entity.RepoInterface}}.
+func New{{.Entity.RepoInterface}}(db *gorm.DB, typeID int32) models.{{.Entity.RepoInterface}} {
+	r := &{{.Entity.RepoImpl}}{}
+
+	r.GenericRepository = service.NewGenericRepository(service.GenericRepositoryConfig[models.{{.Entity.Name}}, {{.Entity.SchemaType}}, {{.Entity.SchemaPropertyType}}, *models.{{.Entity.ListOptions}}]{
+		DB:                      db,
+		TypeID:                  typeID,
+		EntityToSchema:          map{{.Entity.Name}}ToSchema,
+		SchemaToEntity:          mapSchemaTo{{.Entity.Name}},
+		EntityToProperties:      map{{.Entity.Name}}ToProperties,
+		NotFoundError:           Err{{.Entity.Name}}NotFound,
+		EntityName:              "{{.Entity.SnakeName}}",
+		PropertyFieldName:       "{{.Entity.PropertyFieldName}}",
+		ApplyListFilters:        apply{{.Entity.Name}}ListFilters,
+		CreatePaginationToken:   r.create{{.Entity.Name}}PaginationToken,
+		ApplyCustomOrdering:     apply{{.Entity.Name}}CustomOrdering,
+		IsNewEntity:             func(entity models.{{.Entity.Name}}) bool { return entity.GetID() == nil },
+		HasCustomProperties:     func(entity models.{{.Entity.Name}}) bool { return entity.GetCustomProperties() != nil },
+		EntityMappingFuncs:      filter.NewCatalogEntityMappings(),
+		PreserveHistoricalTimes: true,
+	})
+
+	return r
+}
+
+// TODO: Implement these mapping functions.
+// See catalog/internal/catalog/mcpcatalog/service/mcp_server.go for reference.
+
+func map{{.Entity.Name}}ToSchema(_ models.{{.Entity.Name}}) {{.Entity.SchemaType}} {
+	panic("TODO: implement map{{.Entity.Name}}ToSchema")
+}
+
+func mapSchemaTo{{.Entity.Name}}(_ {{.Entity.SchemaType}}, _ []{{.Entity.SchemaPropertyType}}) models.{{.Entity.Name}} {
+	panic("TODO: implement mapSchemaTo{{.Entity.Name}}")
+}
+
+func map{{.Entity.Name}}ToProperties(_ models.{{.Entity.Name}}, _ int32) []{{.Entity.SchemaPropertyType}} {
+	panic("TODO: implement map{{.Entity.Name}}ToProperties")
+}
+
+func apply{{.Entity.Name}}ListFilters(_ *gorm.DB, _ *models.{{.Entity.ListOptions}}) *gorm.DB {
+	panic("TODO: implement apply{{.Entity.Name}}ListFilters")
+}
+
+func (r *{{.Entity.RepoImpl}}) create{{.Entity.Name}}PaginationToken(lastItem {{.Entity.SchemaType}}, listOptions *models.{{.Entity.ListOptions}}) string {
+{{- if eq .Entity.DatastoreType "context"}}
+	if listOptions.GetOrderBy() == "NAME" {
+		return pagination.CreateNamePaginationToken(lastItem.ID, &lastItem.Name)
+	}
+{{- else}}
+	if listOptions.GetOrderBy() == "NAME" {
+		return pagination.CreateNamePaginationToken(lastItem.ID, lastItem.Name)
+	}
+{{- end}}
+	return r.CreateDefaultPaginationToken(lastItem, listOptions)
+}
+
+func apply{{.Entity.Name}}CustomOrdering(_ *gorm.DB, _ *models.{{.Entity.ListOptions}}) *gorm.DB {
+	panic("TODO: implement apply{{.Entity.Name}}CustomOrdering")
+}
+
+func (r *{{.Entity.RepoImpl}}) DeleteBySource(_ string) error {
+	panic("TODO: implement DeleteBySource — see mcp_server.go for reference")
+}
+
+func (r *{{.Entity.RepoImpl}}) DeleteByID(_ int32) error {
+	panic("TODO: implement DeleteByID — see mcp_server.go for reference")
+}
+
+func (r *{{.Entity.RepoImpl}}) GetDistinctSourceIDs() ([]string, error) {
+	panic("TODO: implement GetDistinctSourceIDs — see mcp_server.go for reference")
+}
+
+func (r *{{.Entity.RepoImpl}}) GetTypeID() int32 {
+	return r.GetConfig().TypeID
+}

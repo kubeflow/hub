@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	_ "github.com/kubeflow/hub/catalog/internal/testhelpers"
 	modelcatalogmodels "github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog/models"
 	modelcatalogservice "github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog/service"
 	"github.com/kubeflow/hub/catalog/internal/db/models"

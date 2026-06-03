@@ -104,36 +104,41 @@ func (c *SourceConfig) HasDeprecatedCatalogs() bool {
 	return len(c.Catalogs) > 0
 }
 
+// sourceIdentifiable is satisfied by any source type that has an ID.
+type sourceIdentifiable interface {
+	GetId() string
+}
+
+// validateSourceIDs checks for empty and duplicate IDs within a source section,
+// and cross-section collisions against globalSeen.
+func validateSourceIDs[T sourceIdentifiable](section string, sources []T, globalSeen map[string]bool) error {
+	local := make(map[string]bool, len(sources))
+	for _, s := range sources {
+		id := s.GetId()
+		if id == "" {
+			return fmt.Errorf("%s catalog source missing id", section)
+		}
+		if local[id] {
+			return fmt.Errorf("duplicate %s catalog id: %s", section, id)
+		}
+		if globalSeen[id] {
+			return fmt.Errorf("id %q used in multiple catalog types", id)
+		}
+		local[id] = true
+		globalSeen[id] = true
+	}
+	return nil
+}
+
 // Validate checks the configuration for common errors
 func (c *SourceConfig) Validate() error {
-	// Check for duplicate IDs within model catalogs
 	seen := make(map[string]bool)
 
-	for _, source := range c.GetModelCatalogs() {
-		id := source.GetId()
-		if id == "" {
-			return fmt.Errorf("model catalog source missing id: %+v", source)
-		}
-		if seen[id] {
-			return fmt.Errorf("duplicate model catalog id: %s", id)
-		}
-		seen[id] = true
+	if err := validateSourceIDs("model", c.GetModelCatalogs(), seen); err != nil {
+		return err
 	}
-
-	// Check for duplicate IDs within MCP catalogs, and cross-type collisions with model catalogs
-	mcpSeen := make(map[string]bool)
-	for _, source := range c.MCPCatalogs {
-		id := source.GetId()
-		if id == "" {
-			return fmt.Errorf("MCP catalog source missing id")
-		}
-		if mcpSeen[id] {
-			return fmt.Errorf("duplicate MCP catalog id: %s", id)
-		}
-		if seen[id] {
-			return fmt.Errorf("id %q used in both model_catalogs and mcp_catalogs", id)
-		}
-		mcpSeen[id] = true
+	if err := validateSourceIDs("mcp", c.MCPCatalogs, seen); err != nil {
+		return err
 	}
 
 	if err := ValidateNamedQueries(c.NamedQueries); err != nil {

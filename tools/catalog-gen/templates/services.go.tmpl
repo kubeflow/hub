@@ -1,0 +1,16 @@
+package {{.CatalogPkg}}
+
+import (
+{{- range .Entities}}
+	{{.CamelName}}models "github.com/kubeflow/hub/catalog/internal/catalog/{{$.CatalogPkg}}/models"
+{{- end}}
+	sharedmodels "github.com/kubeflow/hub/catalog/internal/db/models"
+)
+
+type Services struct {
+{{- range .Entities}}
+	{{.RepoInterface}} {{.CamelName}}models.{{.RepoInterface}}
+{{- end}}
+	CatalogSourceRepository   sharedmodels.CatalogSourceRepository
+	PropertyOptionsRepository sharedmodels.PropertyOptionsRepository
+}

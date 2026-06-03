@@ -1,0 +1,55 @@
+package models
+
+import (
+	"github.com/kubeflow/hub/internal/platform/db/filter"
+	dbmodels "github.com/kubeflow/hub/internal/platform/db/entity"
+)
+
+// {{.Entity.ListOptions}} holds the options for listing {{.Entity.Name}} entities.
+type {{.Entity.ListOptions}} struct {
+	dbmodels.Pagination
+	SourceIDs   *[]string
+	FilterQuery *string
+}
+
+// GetRestEntityType implements the FilterApplier interface.
+func (o *{{.Entity.ListOptions}}) GetRestEntityType() filter.RestEntityType {
+	// TODO: Register the REST entity type in catalog/internal/db/models/rest_entity_type.go
+	return filter.RestEntityType("{{.Entity.SnakeName}}")
+}
+
+// GetFilterQuery returns the filter query string for advanced filtering.
+func (o *{{.Entity.ListOptions}}) GetFilterQuery() string {
+	if o.FilterQuery == nil {
+		return ""
+	}
+	return *o.FilterQuery
+}
+
+// {{.Entity.Attributes}} holds the attributes for a {{.Entity.Name}} record.
+type {{.Entity.Attributes}} struct {
+	Name                     *string
+	ExternalID               *string
+	CreateTimeSinceEpoch     *int64
+	LastUpdateTimeSinceEpoch *int64
+}
+
+// {{.Entity.Name}} represents a {{.Entity.Name}} stored in the database.
+type {{.Entity.Name}} interface {
+	dbmodels.Entity[{{.Entity.Attributes}}]
+}
+
+// {{.Entity.Name}}Impl is the concrete implementation of {{.Entity.Name}}.
+type {{.Entity.Name}}Impl = dbmodels.BaseEntity[{{.Entity.Attributes}}]
+
+// {{.Entity.RepoInterface}} defines the interface for {{.Entity.Name}} persistence.
+type {{.Entity.RepoInterface}} interface {
+	GetByID(id int32) ({{.Entity.Name}}, error)
+	GetByName(name string) ({{.Entity.Name}}, error)
+	List(listOptions *{{.Entity.ListOptions}}) (*dbmodels.ListWrapper[{{.Entity.Name}}], error)
+	Save(entity {{.Entity.Name}}, parentResourceID *int32) ({{.Entity.Name}}, error)
+	DeleteBySource(sourceID string) error
+	DeleteByID(id int32) error
+	GetDistinctSourceIDs() ([]string, error)
+	GetTypeID() int32
+}

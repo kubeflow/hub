@@ -82,11 +82,36 @@ func RegisterAllFlags(fs *flag.FlagSet) {
 	}
 }
 
-// Reset clears the global registry. For testing only.
+// Reset clears the global registry and extra datastore entries. For testing only.
 func Reset() {
 	globalRegistry.mu.Lock()
 	defer globalRegistry.mu.Unlock()
 
 	globalRegistry.plugins = make(map[string]CatalogPlugin)
 	globalRegistry.order = nil
+
+	extraEntriesMu.Lock()
+	defer extraEntriesMu.Unlock()
+	extraEntries = nil
+}
+
+var (
+	extraEntriesMu sync.RWMutex
+	extraEntries   []DatastoreEntry
+)
+
+// RegisterDatastoreEntries adds datastore entries that will be collected by
+// DatastoreSpec alongside plugin-contributed entries. This is used by test
+// packages that can't import plugin packages due to circular dependencies.
+func RegisterDatastoreEntries(entries ...DatastoreEntry) {
+	extraEntriesMu.Lock()
+	defer extraEntriesMu.Unlock()
+	extraEntries = append(extraEntries, entries...)
+}
+
+// ExtraDatastoreEntries returns entries registered via RegisterDatastoreEntries.
+func ExtraDatastoreEntries() []DatastoreEntry {
+	extraEntriesMu.RLock()
+	defer extraEntriesMu.RUnlock()
+	return extraEntries
 }
