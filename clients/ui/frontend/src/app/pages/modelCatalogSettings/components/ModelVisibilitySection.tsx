@@ -115,18 +115,18 @@ const ModelVisibilitySection: React.FC<ModelVisibilitySectionProps> = ({
         <ThemeAwareFormGroupWrapper
           label={FORM_LABELS.ALLOWED_MODELS}
           fieldId="allowed-models"
+          descriptionTextNode={allowedModelsDescriptionTxtNode}
           helperTextNode={allowedModelsHelperTxtNode}
         >
-          {allowedModelsDescriptionTxtNode}
           {allowedModelsInput}
         </ThemeAwareFormGroupWrapper>
 
         <ThemeAwareFormGroupWrapper
           label={FORM_LABELS.EXCLUDED_MODELS}
           fieldId="excluded-models"
+          descriptionTextNode={excludedModelsDescriptionTxtNode}
           helperTextNode={excludedModelsHelperTxtNode}
         >
-          {excludedModelsDescriptionTxtNode}
           {excludedModelsInput}
         </ThemeAwareFormGroupWrapper>
       </FormFieldGroupExpandable>

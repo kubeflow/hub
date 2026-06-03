@@ -93,9 +93,9 @@ const CredentialsSection: React.FC<CredentialsSectionProps> = ({
         fieldId="organization"
         isRequired
         hasError={!!organizationHelperTxtNode}
+        descriptionTextNode={organizationDescriptionTxtNode}
         helperTextNode={organizationHelperTxtNode}
       >
-        {organizationDescriptionTxtNode}
         {organizationInput}
       </ThemeAwareFormGroupWrapper>
       <FormHelperText>
@@ -140,9 +140,9 @@ const CredentialsSection: React.FC<CredentialsSectionProps> = ({
       <ThemeAwareFormGroupWrapper
         label={FORM_LABELS.ACCESS_TOKEN}
         fieldId="access-token"
+        descriptionTextNode={accessTokenDescriptionTxtNode}
         helperTextNode={accessTokenHelperTxtNode}
       >
-        {accessTokenDescriptionTxtNode}
         {accessTokenInput}
       </ThemeAwareFormGroupWrapper>
       {validationError && (
