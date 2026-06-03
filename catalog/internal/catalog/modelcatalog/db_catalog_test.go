@@ -31,7 +31,7 @@ func TestMain(m *testing.M) {
 
 func TestDBCatalog(t *testing.T) {
 	// Setup test database
-	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, service.DatastoreSpec())
+	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, testhelpers.MustDatastoreSpec(t))
 	defer cleanup()
 
 	// Get type IDs
@@ -1471,7 +1471,7 @@ func TestDBCatalog(t *testing.T) {
 }
 
 func TestDBCatalog_GetPerformanceArtifactsWithService(t *testing.T) {
-	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, service.DatastoreSpec())
+	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, testhelpers.MustDatastoreSpec(t))
 	defer cleanup()
 
 	// Get type IDs
@@ -1998,7 +1998,7 @@ func TestApplyMinMax(t *testing.T) {
 
 func TestFindModelsWithRecommendedLatency(t *testing.T) {
 	// Setup test database
-	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, service.DatastoreSpec())
+	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, testhelpers.MustDatastoreSpec(t))
 	defer cleanup()
 
 	// Get type IDs
@@ -2152,7 +2152,7 @@ func TestFindModelsWithRecommendedLatency(t *testing.T) {
 // where typeID=0 was passed to propertyOptionsRepository.List(), causing
 // cross-contamination between resource types.
 func TestGetFilterOptions_NoMCPServerContamination(t *testing.T) {
-	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, service.DatastoreSpec())
+	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, testhelpers.MustDatastoreSpec(t))
 	defer cleanup()
 
 	// Get type IDs for both resource types

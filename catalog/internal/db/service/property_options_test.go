@@ -7,6 +7,7 @@ import (
 	modelcatalogservice "github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog/service"
 	"github.com/kubeflow/hub/catalog/internal/db/models"
 	"github.com/kubeflow/hub/catalog/internal/db/service"
+	"github.com/kubeflow/hub/catalog/internal/testhelpers"
 	"github.com/kubeflow/hub/internal/platform/apiutils"
 	dbmodels "github.com/kubeflow/hub/internal/platform/db/entity"
 	"github.com/kubeflow/hub/internal/testutils"
@@ -20,7 +21,7 @@ import (
 // unpopulated materialized views would fail with "has not been populated" error.
 func TestPropertyOptionsRepository_RefreshOnEmptyDatabase(t *testing.T) {
 	// Create a database with migrations
-	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, service.DatastoreSpec())
+	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, testhelpers.MustDatastoreSpec(t))
 	defer cleanup()
 
 	// Clean up all test data to ensure empty database
@@ -73,7 +74,7 @@ func TestPropertyOptionsRepository_RefreshOnEmptyDatabase(t *testing.T) {
 }
 
 func TestPropertyOptionsRepository(t *testing.T) {
-	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, service.DatastoreSpec())
+	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, testhelpers.MustDatastoreSpec(t))
 	defer cleanup()
 
 	repo := service.NewPropertyOptionsRepository(sharedDB)

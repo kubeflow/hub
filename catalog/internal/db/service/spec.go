@@ -1,6 +1,8 @@
 package service
 
 import (
+	"fmt"
+
 	"github.com/kubeflow/hub/catalog/internal/plugin"
 	"github.com/kubeflow/hub/internal/platform/datastore"
 )
@@ -14,7 +16,7 @@ const (
 	MCPServerToolTypeName          = "kf.MCPServerTool"
 )
 
-func DatastoreSpec() *datastore.Spec {
+func DatastoreSpec() (*datastore.Spec, error) {
 	spec := datastore.NewSpec().
 		AddContext(CatalogSourceTypeName, datastore.NewSpecType(NewCatalogSourceRepository).
 			AddString("status").
@@ -23,24 +25,31 @@ func DatastoreSpec() *datastore.Spec {
 		AddOther(NewCatalogArtifactRepository).
 		AddOther(NewPropertyOptionsRepository)
 
-	applyEntries(spec, plugin.All(), plugin.ExtraDatastoreEntries())
-	return spec
+	if err := applyEntries(spec, plugin.All(), plugin.ExtraDatastoreEntries()); err != nil {
+		return nil, err
+	}
+	return spec, nil
 }
 
-func applyEntries(spec *datastore.Spec, plugins []plugin.CatalogPlugin, extra []plugin.DatastoreEntry) {
+func applyEntries(spec *datastore.Spec, plugins []plugin.CatalogPlugin, extra []plugin.DatastoreEntry) error {
 	for _, p := range plugins {
 		if dsp, ok := p.(plugin.DatastoreSpecProvider); ok {
 			for _, e := range dsp.DatastoreEntries() {
-				addEntry(spec, e)
+				if err := addEntry(spec, e); err != nil {
+					return err
+				}
 			}
 		}
 	}
 	for _, e := range extra {
-		addEntry(spec, e)
+		if err := addEntry(spec, e); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func addEntry(spec *datastore.Spec, e plugin.DatastoreEntry) {
+func addEntry(spec *datastore.Spec, e plugin.DatastoreEntry) error {
 	switch e.Category {
 	case "context":
 		spec.AddContext(e.TypeName, e.Spec)
@@ -48,5 +57,8 @@ func addEntry(spec *datastore.Spec, e plugin.DatastoreEntry) {
 		spec.AddArtifact(e.TypeName, e.Spec)
 	case "execution":
 		spec.AddExecution(e.TypeName, e.Spec)
+	default:
+		return fmt.Errorf("unknown datastore entry category %q for type %q", e.Category, e.TypeName)
 	}
+	return nil
 }

@@ -124,13 +124,18 @@ func runCatalogServer(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("error creating leader elector: %w", err)
 	}
+	spec, err := service.DatastoreSpec()
+	if err != nil {
+		return fmt.Errorf("error building datastore spec: %w", err)
+	}
+
 	elector.OnBecomeLeader(func(_ context.Context) {
-		if err := ds.RunMigrations(service.DatastoreSpec()); err != nil {
+		if err := ds.RunMigrations(spec); err != nil {
 			glog.Errorf("unable to run migrations: %v", err)
 		}
 	})
 
-	repoSet, err := ds.Connect(service.DatastoreSpec())
+	repoSet, err := ds.Connect(spec)
 	if err != nil {
 		return fmt.Errorf("error initializing datastore: %v", err)
 	}

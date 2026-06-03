@@ -6,6 +6,7 @@ import (
 
 	"github.com/kubeflow/hub/catalog/internal/db/models"
 	"github.com/kubeflow/hub/catalog/internal/db/service"
+	"github.com/kubeflow/hub/catalog/internal/testhelpers"
 	"github.com/kubeflow/hub/internal/platform/apiutils"
 	dbmodels "github.com/kubeflow/hub/internal/platform/db/entity"
 	"github.com/kubeflow/hub/internal/platform/db/schema"
@@ -16,7 +17,7 @@ import (
 )
 
 func TestCatalogSourceRepository(t *testing.T) {
-	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, service.DatastoreSpec())
+	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, testhelpers.MustDatastoreSpec(t))
 	defer cleanup()
 
 	// Get the CatalogSource type ID

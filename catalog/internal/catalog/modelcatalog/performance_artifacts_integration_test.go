@@ -18,7 +18,7 @@ import (
 // TestIntegration_PreservedRecommendationAlgorithm verifies end-to-end functionality
 // with the exact preserved recommendations algorithm from db_catalog.go
 func TestIntegration_PreservedRecommendationAlgorithm(t *testing.T) {
-	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, service.DatastoreSpec())
+	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, testhelpers.MustDatastoreSpec(t))
 	defer cleanup()
 
 	// Get type IDs
@@ -276,7 +276,7 @@ func TestIntegration_PreservedRecommendationAlgorithm(t *testing.T) {
 
 // TestIntegration_ServiceLayerBehavior tests the service layer implementation
 func TestIntegration_ServiceLayerBehavior(t *testing.T) {
-	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, service.DatastoreSpec())
+	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, testhelpers.MustDatastoreSpec(t))
 	defer cleanup()
 
 	catalogModelTypeID := testhelpers.GetCatalogModelTypeIDForDBTest(t, sharedDB)
@@ -438,7 +438,7 @@ func TestIntegration_ServiceLayerBehavior(t *testing.T) {
 
 // TestIntegration_ConfigurableProperties tests the configurable property parameters
 func TestIntegration_ConfigurableProperties(t *testing.T) {
-	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, service.DatastoreSpec())
+	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, testhelpers.MustDatastoreSpec(t))
 	defer cleanup()
 
 	catalogModelTypeID := testhelpers.GetCatalogModelTypeIDForDBTest(t, sharedDB)

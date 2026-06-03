@@ -137,7 +137,7 @@ func insertTestData(t *testing.T, ctx context.Context, svcs Services, catalogMod
 func BenchmarkRecommendedLatencySorting(b *testing.B) {
 	// Setup test database - convert to testing.T for compatibility
 	t := &testing.T{}
-	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, service.DatastoreSpec())
+	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, testhelpers.MustDatastoreSpec(t))
 	defer cleanup()
 
 	ctx := context.Background()

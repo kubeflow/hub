@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	_ "github.com/kubeflow/hub/catalog/internal/testhelpers"
+	"github.com/kubeflow/hub/catalog/internal/testhelpers"
 	modelcatalogmodels "github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog/models"
 	modelcatalogservice "github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog/service"
 	"github.com/kubeflow/hub/catalog/internal/db/models"
@@ -32,7 +32,7 @@ const (
 )
 
 func TestCatalogArtifactRepository(t *testing.T) {
-	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, service.DatastoreSpec())
+	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, testhelpers.MustDatastoreSpec(t))
 	defer cleanup()
 
 	// Get the catalog artifact type IDs

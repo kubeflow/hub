@@ -4,10 +4,19 @@ import (
 	"testing"
 
 	"github.com/kubeflow/hub/catalog/internal/db/service"
+	"github.com/kubeflow/hub/internal/platform/datastore"
 	"github.com/kubeflow/hub/internal/platform/db/schema"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 )
+
+// MustDatastoreSpec calls service.DatastoreSpec and fails the test on error.
+func MustDatastoreSpec(t *testing.T) *datastore.Spec {
+	t.Helper()
+	spec, err := service.DatastoreSpec()
+	require.NoError(t, err)
+	return spec
+}
 
 // GetCatalogModelTypeIDForDBTest retrieves the CatalogModel type ID for testing
 func GetCatalogModelTypeIDForDBTest(t *testing.T, db *gorm.DB) int32 {

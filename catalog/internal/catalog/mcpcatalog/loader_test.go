@@ -24,7 +24,7 @@ func TestMain(m *testing.M) {
 }
 
 func setupMCPLoaderTest(t *testing.T) (*gorm.DB, Services, func()) {
-	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, service.DatastoreSpec())
+	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, testhelpers.MustDatastoreSpec(t))
 
 	catalogSourceTypeID := testhelpers.GetCatalogSourceTypeIDForDBTest(t, sharedDB)
 	mcpServerTypeID := testhelpers.GetMCPServerTypeIDForDBTest(t, sharedDB)
