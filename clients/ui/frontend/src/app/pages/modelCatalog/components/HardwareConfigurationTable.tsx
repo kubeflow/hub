@@ -129,7 +129,7 @@ const HardwareConfigurationTable: React.FC<HardwareConfigurationTableProps> = ({
               PerformancePropertyKey.HARDWARE_TYPE,
             );
             const matched = hardwareConfigurations?.find(
-              (c) => hwConfig.startsWith(c.hardware_type) || c.hardware_type === hwType,
+              (c) => hwConfig.startsWith(c.gpu_type) || c.gpu_type === hwType,
             );
             return (
               <HardwareConfigurationTableRow

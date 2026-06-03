@@ -270,8 +270,8 @@ export enum CatalogModelCustomPropertyKey {
   ARCHITECTURE = 'architecture',
   MODEL_TYPE = 'model_type',
   MODEL_SIZE = 'model_size',
-  MINIMUM_VRAM = 'minimum_vram',
-  HARDWARE_CONFIGURATIONS = 'hardware_configurations',
+  MINIMUM_VRAM = 'min_vram_gb',
+  HARDWARE_CONFIGURATIONS = 'cold_start_matrix',
 }
 
 export enum ModelType {

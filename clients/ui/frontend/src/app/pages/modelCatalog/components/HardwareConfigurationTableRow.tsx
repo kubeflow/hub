@@ -80,7 +80,7 @@ const HardwareConfigurationTableRow: React.FC<HardwareConfigurationTableRowProps
   const renderModelLevelCell = (field: HardwareConfigColumnField): React.ReactNode => {
     if (field === 'cold_start_load_time') {
       return matchedHardwareConfig
-        ? formatLatency(matchedHardwareConfig.cold_start_load_time_seconds * 1000)
+        ? formatLatency(matchedHardwareConfig.cold_start_time_to_load_seconds * 1000)
         : EMPTY_CUSTOM_PROPERTY_VALUE;
     }
     if (field === 'runtime_command') {

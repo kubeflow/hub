@@ -44,10 +44,9 @@ const findMatchedColdStart = (
 ): number | undefined => {
   const configs = getHardwareConfigurationsFromCustomProperties(customProperties);
   const match = configs.find(
-    (c: HardwareConfiguration) =>
-      hwConfig.startsWith(c.hardware_type) || c.hardware_type === hwType,
+    (c: HardwareConfiguration) => hwConfig.startsWith(c.gpu_type) || c.gpu_type === hwType,
   );
-  return match?.cold_start_load_time_seconds;
+  return match?.cold_start_time_to_load_seconds;
 };
 
 type ModelCatalogCardBodyProps = {

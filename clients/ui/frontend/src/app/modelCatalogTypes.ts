@@ -29,8 +29,9 @@ import {
 } from './mcpServerCatalogTypes';
 
 export type HardwareConfiguration = {
-  hardware_type: string;
-  cold_start_load_time_seconds: number;
+  gpu_type: string;
+  gpu_count: number;
+  cold_start_time_to_load_seconds: number;
   runtime_command: string;
 };
 
