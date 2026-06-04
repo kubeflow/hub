@@ -116,6 +116,15 @@ git tag pkg/openapi/$VVERSION
 git push upstream pkg/openapi/$VVERSION
 ```
 
+- add a Tag for the pkg/inferenceservice-controller
+
+```
+git checkout release/$VVERSION
+git pull upstream release/$VVERSION
+git tag pkg/inferenceservice-controller/$VVERSION
+git push upstream pkg/inferenceservice-controller/$VVERSION
+```
+
 At this point, a release as been created, both the container images and the Python client on pypi.
 
 ## KF/manifests
