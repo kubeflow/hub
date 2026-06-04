@@ -32,7 +32,7 @@ ARG BFF_SOURCE_CODE
 ARG TARGETOS
 ARG TARGETARCH
 
-COPY ../../pkg/openapi /usr/src/app/pkg/openapi
+COPY pkg/openapi /usr/src/app/pkg/openapi
 
 WORKDIR /usr/src/app/clients/ui/bff
 

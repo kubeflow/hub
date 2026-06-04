@@ -76,12 +76,15 @@ jobs:
       id: build-push
       uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7
       with:
-        context: ./clients/ui
+        context: .
+        file: ./clients/ui/Dockerfile
         platforms: ${{ env.PLATFORMS }}
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
         build-args: |
+          UI_SOURCE_CODE=clients/ui/frontend
+          BFF_SOURCE_CODE=clients/ui/bff
           DEPLOYMENT_MODE=kubeflow
           STYLE_THEME=mui-theme
         cache-from: type=gha
