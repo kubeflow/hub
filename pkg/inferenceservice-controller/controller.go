@@ -124,6 +124,39 @@ func (r *InferenceServiceController) Reconcile(ctx context.Context, req ctrl.Req
 		mrNamespace = mrNSFromISVC
 	}
 
+	// Check if the InferenceService instance is marked to be deleted, which is
+	// indicated by the deletion timestamp being set.
+	isMarkedToBeDeleted := isvc.GetDeletionTimestamp() != nil
+
+	if isMarkedToBeDeleted {
+		if controllerutil.ContainsFinalizer(isvc, r.modelRegistryFinalizer) {
+			// Best-effort: try to update MR InferenceService state before removing the finalizer.
+			// If the MR service is unavailable (e.g., deleted before the ISVC), we still
+			// must remove the finalizer to avoid blocking deletion indefinitely.
+			mrApi, err := r.initModelRegistryService(ctx, log, mrName, mrNamespace, mrUrl)
+			if err != nil {
+				log.Info("Model Registry service unavailable during deletion, skipping state update", "error", err)
+			} else if mrIsvcId, ok := isvc.Labels[r.inferenceServiceIDLabel]; ok {
+				mrIs, _, getErr := mrApi.ModelRegistryServiceAPI.GetInferenceService(mrApiCtx, mrIsvcId).Execute()
+				if getErr != nil {
+					log.Info("Unable to fetch InferenceService from Model Registry during deletion", "mrIsvcId", mrIsvcId, "error", getErr)
+				} else if err := r.onDeletion(mrApiCtx, mrApi, log, mrIs); err != nil {
+					log.Error(err, "Failed to update DesiredState to UNDEPLOYED, proceeding with finalizer removal")
+				}
+			}
+
+			log.Info("Removing Finalizer for modelRegistry")
+			if ok := controllerutil.RemoveFinalizer(isvc, r.modelRegistryFinalizer); !ok {
+				return ctrl.Result{}, fmt.Errorf("failed to remove modelRegistry finalizer for InferenceService")
+			}
+
+			if err := r.client.Update(ctx, isvc); IgnoreDeletingErrors(err) != nil {
+				return ctrl.Result{}, fmt.Errorf("failed to remove modelRegistry finalizer for InferenceService: %w", err)
+			}
+		}
+		return ctrl.Result{}, nil
+	}
+
 	log.Info("Creating model registry service..")
 	mrApi, err := r.initModelRegistryService(ctx, log, mrName, mrNamespace, mrUrl)
 	if err != nil {
@@ -131,14 +164,10 @@ func (r *InferenceServiceController) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	// Check if the InferenceService instance is marked to be deleted, which is
-	// indicated by the deletion timestamp being set.
-	isMarkedToBeDeleted := isvc.GetDeletionTimestamp() != nil
-
 	// Let's add a finalizer. Then, we can define some operations which should
-	// occurs before the custom resource to be deleted.
+	// occur before the custom resource is deleted.
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers
-	if !isMarkedToBeDeleted && !controllerutil.ContainsFinalizer(isvc, r.modelRegistryFinalizer) {
+	if !controllerutil.ContainsFinalizer(isvc, r.modelRegistryFinalizer) {
 		log.Info("Adding Finalizer for ModelRegistry")
 
 		if ok := controllerutil.AddFinalizer(isvc, r.modelRegistryFinalizer); !ok {
@@ -195,25 +224,6 @@ func (r *InferenceServiceController) Reconcile(ctx context.Context, req ctrl.Req
 	if mrIs == nil {
 		// This should NOT happen
 		return ctrl.Result{}, fmt.Errorf("unexpected nil model registry InferenceService")
-	}
-
-	if isMarkedToBeDeleted {
-		err := r.onDeletion(mrApiCtx, mrApi, log, mrIs)
-		if err != nil {
-			return ctrl.Result{}, fmt.Errorf("failed to update DesiredState to UNDEPLOYED: %w", err)
-		}
-
-		if controllerutil.ContainsFinalizer(isvc, r.modelRegistryFinalizer) {
-			log.Info("Removing Finalizer for modelRegistry after successfully perform the operations")
-			if ok := controllerutil.RemoveFinalizer(isvc, r.modelRegistryFinalizer); !ok {
-				return ctrl.Result{}, fmt.Errorf("failed to remove modelRegistry finalizer for InferenceService: %w", err)
-			}
-
-			if err = r.client.Update(ctx, isvc); IgnoreDeletingErrors(err) != nil {
-				return ctrl.Result{}, fmt.Errorf("failed to remove modelRegistry finalizer for InferenceService: %w", err)
-			}
-		}
-		return ctrl.Result{}, nil
 	}
 
 	// No need to update the ISVC, the IS id is already set
