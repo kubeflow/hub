@@ -61,7 +61,7 @@ pytest-asyncio = "^1.1.0"
 requests = "^2.32.2"
 types-python-dateutil = "^2.9.0.20240906"
 pytest-html = "^4.1.1"
-schemathesis = ">=4.0.3,<=4.16.1"
+schemathesis = ">=4.0.3,<=4.21.0"
 
 [tool.coverage.run]
 branch = true
