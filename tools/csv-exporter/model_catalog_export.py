@@ -34,8 +34,6 @@ FIXED_COLUMNS = [
     "validatedTasks",
 ]
 
-EXCLUDED_FIELDS = {"readme", "logo", "servingConfig", "customProperties"}
-
 API_PATH = "/api/model_catalog/v1alpha1/models"
 SOURCES_API_PATH = "/api/model_catalog/v1alpha1/sources"
 
@@ -60,9 +58,6 @@ def fetch_page(base_url, page_size, next_page_token=None, sources=None, headers=
         req.add_header(key, value)
     try:
         with urllib.request.urlopen(req) as resp:
-            if resp.status != 200:
-                msg = f"Error: API returned HTTP {resp.status} for {url}"
-                raise SystemExit(msg)
             return json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         body = ""
@@ -173,9 +168,11 @@ def fetch_sources(base_url, headers=None):
         body = ""
         with contextlib.suppress(Exception):
             body = e.read().decode("utf-8", errors="replace")[:500]
-        raise SystemExit(f"Error: HTTP {e.code} from {url}\n{body}") from None
+        msg = f"Error: HTTP {e.code} from {url}\n{body}"
+        raise SystemExit(msg) from None
     except urllib.error.URLError as e:
-        raise SystemExit(f"Error: cannot connect to {url}: {e.reason}") from None
+        msg = f"Error: cannot connect to {url}: {e.reason}"
+        raise SystemExit(msg) from None
     return data.get("items") or []
 
 
@@ -183,8 +180,8 @@ def print_sources(sources):
     if not sources:
         print("No sources found.", file=sys.stderr)
         return
-    id_width = max(len(s.get("id", "")) for s in sources)
-    name_width = max(len(s.get("name", "")) for s in sources)
+    id_width = max(len("ID"), max(len(s.get("id", "")) for s in sources))
+    name_width = max(len("NAME"), max(len(s.get("name", "")) for s in sources))
     print(f"{'ID':<{id_width}}  {'NAME':<{name_width}}  STATUS", file=sys.stderr)
     for s in sources:
         print(
@@ -222,19 +219,19 @@ def parse_args(argv=None):
         "--source",
         action="append",
         default=None,
-        help="Filter by source name (repeatable)",
+        help="Filter by source ID (repeatable)",
     )
     parser.add_argument(
         "--limit",
         type=int,
         default=None,
-        help="Maximum number of models to export",
+        help="Maximum number of models to export (must be >= 1)",
     )
     parser.add_argument(
         "--page-size",
         type=int,
         default=100,
-        help="Number of models per API page (default: 100)",
+        help="Number of models per API page (default: 100, must be >= 1)",
     )
     parser.add_argument(
         "--header",
@@ -253,8 +250,21 @@ def parse_args(argv=None):
     return parser.parse_args(argv)
 
 
+def validate_url_scheme(url):
+    if not url.startswith(("http://", "https://")):
+        msg = "Error: --url must use http:// or https:// scheme"
+        raise SystemExit(msg)
+
+
 def main(argv=None):
     args = parse_args(argv)
+    validate_url_scheme(args.url)
+    if args.limit is not None and args.limit < 1:
+        msg = "Error: --limit must be >= 1"
+        raise SystemExit(msg)
+    if args.page_size < 1:
+        msg = "Error: --page-size must be >= 1"
+        raise SystemExit(msg)
     headers = dict(args.headers) if args.headers else None
 
     if args.list_sources:

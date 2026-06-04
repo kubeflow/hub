@@ -1,3 +1,4 @@
+import argparse
 import csv
 import io
 import json
@@ -16,11 +17,15 @@ from model_catalog_export import (
     build_url,
     collect_models_and_keys,
     extract_custom_property_value,
+    fetch_sources,
     format_field,
     main,
     model_to_row,
     paginate_models,
     parse_args,
+    parse_header,
+    print_sources,
+    validate_url_scheme,
     write_csv,
 )
 
@@ -377,3 +382,156 @@ class TestMainIntegration:
             ])
             req = mock_open.call_args[0][0]
             assert req.get_header("Authorization") == "Bearer mytoken"
+
+
+class TestParseHeader:
+    def test_valid_header(self):
+        key, val = parse_header("Authorization: Bearer tok123")
+        assert key == "Authorization"
+        assert val == "Bearer tok123"
+
+    def test_header_with_multiple_colons(self):
+        key, val = parse_header("X-Custom: value:with:colons")
+        assert key == "X-Custom"
+        assert val == "value:with:colons"
+
+    def test_invalid_header_raises(self):
+        with pytest.raises(argparse.ArgumentTypeError, match="Invalid header"):
+            parse_header("no-colon-here")
+
+
+class TestValidateUrlScheme:
+    def test_http_allowed(self):
+        validate_url_scheme("http://localhost:8080")
+
+    def test_https_allowed(self):
+        validate_url_scheme("https://catalog.example.com")
+
+    def test_file_rejected(self):
+        with pytest.raises(SystemExit, match="http:// or https://"):
+            validate_url_scheme("file:///etc/passwd")
+
+    def test_ftp_rejected(self):
+        with pytest.raises(SystemExit, match="http:// or https://"):
+            validate_url_scheme("ftp://server/file")
+
+    def test_no_scheme_rejected(self):
+        with pytest.raises(SystemExit, match="http:// or https://"):
+            validate_url_scheme("localhost:8080")
+
+
+class TestFetchSources:
+    @mock.patch("model_catalog_export.urllib.request.urlopen")
+    def test_returns_items(self, mock_open):
+        sources_resp = {
+            "items": [
+                {"id": "src1", "name": "Source One", "status": "available"},
+                {"id": "src2", "name": "Source Two", "status": "available"},
+            ],
+            "nextPageToken": "",
+            "pageSize": 10,
+            "size": 2,
+        }
+        mock_open.side_effect = mock_urlopen([sources_resp])
+        result = fetch_sources("http://localhost:8080")
+        assert len(result) == 2
+        assert result[0]["id"] == "src1"
+
+    @mock.patch("model_catalog_export.urllib.request.urlopen")
+    def test_empty_sources(self, mock_open):
+        mock_open.side_effect = mock_urlopen([{"items": [], "nextPageToken": "", "pageSize": 10, "size": 0}])
+        result = fetch_sources("http://localhost:8080")
+        assert result == []
+
+    @mock.patch("model_catalog_export.urllib.request.urlopen")
+    def test_http_error(self, mock_open):
+        mock_open.side_effect = urllib.error.HTTPError(
+            "http://localhost:8080", 403, "Forbidden", {}, io.BytesIO(b"")
+        )
+        with pytest.raises(SystemExit, match="403"):
+            fetch_sources("http://localhost:8080")
+
+    @mock.patch("model_catalog_export.urllib.request.urlopen")
+    def test_connection_error(self, mock_open):
+        mock_open.side_effect = urllib.error.URLError("Connection refused")
+        with pytest.raises(SystemExit, match="cannot connect"):
+            fetch_sources("http://localhost:8080")
+
+    @mock.patch("model_catalog_export.urllib.request.urlopen")
+    def test_passes_headers(self, mock_open):
+        mock_open.side_effect = mock_urlopen([{"items": [], "nextPageToken": "", "pageSize": 10, "size": 0}])
+        fetch_sources("http://localhost:8080", headers={"Authorization": "Bearer tok"})
+        req = mock_open.call_args[0][0]
+        assert req.get_header("Authorization") == "Bearer tok"
+
+
+class TestPrintSources:
+    def test_formats_table(self, capsys):
+        sources = [
+            {"id": "src1", "name": "Source One", "status": "available"},
+            {"id": "long_source_id", "name": "S", "status": "disabled"},
+        ]
+        print_sources(sources)
+        captured = capsys.readouterr().err
+        assert "ID" in captured
+        assert "NAME" in captured
+        assert "STATUS" in captured
+        assert "src1" in captured
+        assert "long_source_id" in captured
+
+    def test_empty_sources(self, capsys):
+        print_sources([])
+        captured = capsys.readouterr().err
+        assert "No sources found" in captured
+
+    def test_min_column_width(self, capsys):
+        sources = [{"id": "x", "name": "y", "status": "ok"}]
+        print_sources(sources)
+        captured = capsys.readouterr().err
+        lines = captured.strip().split("\n")
+        header = lines[0]
+        assert "ID" in header
+        assert "NAME" in header
+
+
+class TestListSourcesIntegration:
+    @mock.patch("model_catalog_export.urllib.request.urlopen")
+    def test_list_sources_flag(self, mock_open, capsys):
+        sources_resp = {
+            "items": [{"id": "s1", "name": "Source", "status": "available"}],
+            "nextPageToken": "",
+            "pageSize": 10,
+            "size": 1,
+        }
+        mock_open.side_effect = mock_urlopen([sources_resp])
+        main(["--url", "http://localhost:8080", "--list-sources"])
+        captured = capsys.readouterr().err
+        assert "s1" in captured
+        assert "Source" in captured
+
+    def test_missing_output_without_list_sources(self):
+        with pytest.raises(SystemExit) as exc_info:
+            main(["--url", "http://localhost:8080"])
+        assert exc_info.value.code == 2
+
+
+class TestInputValidation:
+    def test_limit_zero_rejected(self):
+        with pytest.raises(SystemExit, match="--limit must be >= 1"):
+            main(["--url", "http://localhost:8080", "--output", "out.csv", "--limit", "0"])
+
+    def test_limit_negative_rejected(self):
+        with pytest.raises(SystemExit, match="--limit must be >= 1"):
+            main(["--url", "http://localhost:8080", "--output", "out.csv", "--limit", "-1"])
+
+    def test_page_size_zero_rejected(self):
+        with pytest.raises(SystemExit, match="--page-size must be >= 1"):
+            main(["--url", "http://localhost:8080", "--output", "out.csv", "--page-size", "0"])
+
+    def test_page_size_negative_rejected(self):
+        with pytest.raises(SystemExit, match="--page-size must be >= 1"):
+            main(["--url", "http://localhost:8080", "--output", "out.csv", "--page-size", "-1"])
+
+    def test_file_url_rejected(self):
+        with pytest.raises(SystemExit, match="http:// or https://"):
+            main(["--url", "file:///etc/passwd", "--output", "out.csv"])

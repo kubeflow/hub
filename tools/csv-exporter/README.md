@@ -141,15 +141,13 @@ spec:
           containers:
           - name: export
             image: python:3.12-slim
-            command:
-            - python
-            - /scripts/model_catalog_export.py
-            - --url
-            - http://model-catalog:8080
-            - --output
-            - /exports/models.csv
-            - --header
-            - "Authorization: Bearer $(cat /var/run/secrets/token)"
+            command: ["sh", "-c"]
+            args:
+            - |
+              python /scripts/model_catalog_export.py \
+                --url http://model-catalog:8080 \
+                --output /exports/models.csv \
+                --header "Authorization: Bearer $(cat /var/run/secrets/token)"
             volumeMounts:
             - name: scripts
               mountPath: /scripts
