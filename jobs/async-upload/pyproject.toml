@@ -23,6 +23,9 @@ aiohttp = "^3.13.5"
 kubernetes = "^33.1.0"
 pytest-html = "^4.2.0"
 
+[tool.poetry.requires-plugins]
+poetry-plugin-export = ">=1.8"
+
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
