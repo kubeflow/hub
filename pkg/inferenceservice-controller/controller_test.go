@@ -649,4 +649,102 @@ var _ = Describe("InferenceService Controller", func() {
 			}, 20*time.Second, 1*time.Second).Should(Succeed())
 		})
 	})
+
+	When("Deleting an InferenceService after the ModelRegistry service has been removed", func() {
+		It("Should remove the finalizer and allow deletion even if the ModelRegistry service no longer exists", func() {
+			const CorrectInferenceServicePath = "./testdata/inferenceservices/inference-service-correct.yaml"
+			const ModelRegistrySVCPath = "./testdata/deploy/model-registry-svc.yaml"
+			const namespace = "mr-deleted-before-isvc"
+
+			ns := &corev1.Namespace{}
+
+			ns.SetName(namespace)
+
+			if err := cli.Create(ctx, ns); err != nil && !errors.IsAlreadyExists(err) {
+				Fail(err.Error())
+			}
+
+			mrSvc := &corev1.Service{}
+			Expect(ConvertFileToStructuredResource(ModelRegistrySVCPath, mrSvc)).To(Succeed())
+
+			mrSvc.SetNamespace(namespace)
+
+			if err := cli.Create(ctx, mrSvc); err != nil && !errors.IsAlreadyExists(err) {
+				Fail(err.Error())
+			}
+
+			inferenceService := &kservev1beta1.InferenceService{}
+			Expect(ConvertFileToStructuredResource(CorrectInferenceServicePath, inferenceService)).To(Succeed())
+
+			inferenceService.SetNamespace(namespace)
+
+			inferenceService.Labels[namespaceLabel] = namespace
+
+			if err := cli.Create(ctx, inferenceService); err != nil && !errors.IsAlreadyExists(err) {
+				Fail(err.Error())
+			}
+
+			// Wait for the controller to reconcile: IS ID label should be set and finalizer added
+			Eventually(func() error {
+				isvc := &kservev1beta1.InferenceService{}
+				err := cli.Get(ctx, types.NamespacedName{
+					Name:      inferenceService.Name,
+					Namespace: inferenceService.Namespace,
+				}, isvc)
+				if err != nil {
+					return err
+				}
+
+				if isvc.Labels[inferenceServiceIDLabel] == "" {
+					return fmt.Errorf("Label for InferenceServiceID is not set")
+				}
+
+				hasFinalizer := false
+				for _, f := range isvc.Finalizers {
+					if f == finalizerLabel {
+						hasFinalizer = true
+						break
+					}
+				}
+				if !hasFinalizer {
+					return fmt.Errorf("Finalizer %s not added to InferenceService", finalizerLabel)
+				}
+
+				return nil
+			}, 10*time.Second, 1*time.Second).Should(Succeed())
+
+			// Delete the ModelRegistry Service BEFORE deleting the InferenceService
+			Expect(cli.Delete(ctx, mrSvc)).To(Succeed())
+
+			// Verify the MR Service is actually gone
+			Eventually(func() bool {
+				svc := &corev1.Service{}
+				err := cli.Get(ctx, types.NamespacedName{
+					Name:      mrSvc.Name,
+					Namespace: mrSvc.Namespace,
+				}, svc)
+				return errors.IsNotFound(err)
+			}, 5*time.Second, 500*time.Millisecond).Should(BeTrue())
+
+			// Now delete the InferenceService
+			err := cli.Get(ctx, types.NamespacedName{
+				Name:      inferenceService.Name,
+				Namespace: inferenceService.Namespace,
+			}, inferenceService)
+			Expect(err).To(BeNil())
+
+			Expect(cli.Delete(ctx, inferenceService)).To(Succeed())
+
+			// The InferenceService should be fully deleted (finalizer removed)
+			// despite the ModelRegistry service being gone
+			Eventually(func() bool {
+				isvc := &kservev1beta1.InferenceService{}
+				err := cli.Get(ctx, types.NamespacedName{
+					Name:      inferenceService.Name,
+					Namespace: inferenceService.Namespace,
+				}, isvc)
+				return errors.IsNotFound(err)
+			}, 15*time.Second, 1*time.Second).Should(BeTrue())
+		})
+	})
 })
