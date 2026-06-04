@@ -1,0 +1,26 @@
+[project]
+name = "model-catalog-export"
+version = "0.1.0"
+description = "Export Model Catalog metadata to CSV"
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 119
+
+[tool.ruff.lint]
+select = ["F", "W", "E", "C90", "B", "S", "C4", "EM", "I", "PT", "Q", "RET", "SIM", "UP"]
+ignore = ["S310"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S", "EM"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = false
+check_untyped_defs = true

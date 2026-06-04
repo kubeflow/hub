@@ -1,0 +1,299 @@
+#!/usr/bin/env python3
+"""Export Model Catalog metadata to CSV.
+
+Standalone script — requires only Python 3.10+ standard library.
+Run: python model_catalog_export.py --url <base-url> --output models.csv
+"""
+
+import argparse
+import contextlib
+import csv
+import json
+import os
+import sys
+import tempfile
+import urllib.error
+import urllib.parse
+import urllib.request
+
+FIXED_COLUMNS = [
+    "id",
+    "name",
+    "description",
+    "provider",
+    "maturity",
+    "license",
+    "licenseLink",
+    "libraryName",
+    "source_id",
+    "externalId",
+    "createTimeSinceEpoch",
+    "lastUpdateTimeSinceEpoch",
+    "language",
+    "tasks",
+    "validatedTasks",
+]
+
+EXCLUDED_FIELDS = {"readme", "logo", "servingConfig", "customProperties"}
+
+API_PATH = "/api/model_catalog/v1alpha1/models"
+SOURCES_API_PATH = "/api/model_catalog/v1alpha1/sources"
+
+UTF8_BOM = "﻿"
+
+
+def build_url(base_url, page_size, next_page_token=None, sources=None):
+    url = base_url.rstrip("/") + API_PATH
+    params = {"pageSize": str(page_size)}
+    if next_page_token:
+        params["nextPageToken"] = next_page_token
+    if sources:
+        params["source"] = sources
+    return f"{url}?{urllib.parse.urlencode(params, doseq=True)}"
+
+
+def fetch_page(base_url, page_size, next_page_token=None, sources=None, headers=None):
+    url = build_url(base_url, page_size, next_page_token, sources)
+    req = urllib.request.Request(url)
+    req.add_header("Accept", "application/json")
+    for key, value in (headers or {}).items():
+        req.add_header(key, value)
+    try:
+        with urllib.request.urlopen(req) as resp:
+            if resp.status != 200:
+                msg = f"Error: API returned HTTP {resp.status} for {url}"
+                raise SystemExit(msg)
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        body = ""
+        with contextlib.suppress(Exception):
+            body = e.read().decode("utf-8", errors="replace")[:500]
+        msg = f"Error: HTTP {e.code} from {url}\n{body}"
+        raise SystemExit(msg) from None
+    except urllib.error.URLError as e:
+        msg = f"Error: cannot connect to {url}: {e.reason}"
+        raise SystemExit(msg) from None
+
+
+def paginate_models(base_url, page_size, sources=None, limit=None, headers=None):
+    next_page_token = None
+    count = 0
+    while True:
+        data = fetch_page(base_url, page_size, next_page_token, sources, headers)
+        items = data.get("items") or []
+        for model in items:
+            yield model
+            count += 1
+            if limit and count >= limit:
+                return
+        next_page_token = data.get("nextPageToken", "")
+        if not next_page_token:
+            return
+
+
+def extract_custom_property_value(metadata_value):
+    if not isinstance(metadata_value, dict):
+        return str(metadata_value)
+    meta_type = metadata_value.get("metadataType", "")
+    if meta_type == "MetadataStringValue":
+        return metadata_value.get("string_value", "")
+    if meta_type == "MetadataDoubleValue":
+        return metadata_value.get("double_value", "")
+    if meta_type == "MetadataIntValue":
+        return metadata_value.get("int_value", "")
+    if meta_type == "MetadataBoolValue":
+        return metadata_value.get("bool_value", "")
+    return json.dumps(metadata_value, ensure_ascii=False)
+
+
+def format_field(value):
+    if value is None:
+        return ""
+    if isinstance(value, list):
+        return json.dumps(value, ensure_ascii=False)
+    if isinstance(value, dict):
+        return json.dumps(value, ensure_ascii=False)
+    if isinstance(value, bool):
+        return str(value).lower()
+    return str(value)
+
+
+def collect_models_and_keys(base_url, page_size, sources, limit, headers):
+    models = []
+    custom_keys: set[str] = set()
+    for model in paginate_models(base_url, page_size, sources, limit, headers):
+        models.append(model)
+        props = model.get("customProperties") or {}
+        custom_keys.update(props.keys())
+    return models, sorted(custom_keys)
+
+
+def model_to_row(model, custom_keys):
+    row = []
+    for col in FIXED_COLUMNS:
+        row.append(format_field(model.get(col)))
+    props = model.get("customProperties") or {}
+    for key in custom_keys:
+        if key in props:
+            row.append(format_field(extract_custom_property_value(props[key])))
+        else:
+            row.append("")
+    return row
+
+
+def write_csv(models, custom_keys, output_path):
+    output_dir = os.path.dirname(os.path.abspath(output_path))
+    os.makedirs(output_dir, exist_ok=True)
+    tmp_fd, tmp_path = tempfile.mkstemp(suffix=".csv", dir=output_dir)
+    try:
+        with os.fdopen(tmp_fd, "w", newline="", encoding="utf-8") as f:
+            f.write(UTF8_BOM)
+            writer = csv.writer(f)
+            header = list(FIXED_COLUMNS) + custom_keys
+            writer.writerow(header)
+            for model in models:
+                writer.writerow(model_to_row(model, custom_keys))
+        os.replace(tmp_path, os.path.abspath(output_path))
+    except BaseException:
+        with contextlib.suppress(OSError):
+            os.unlink(tmp_path)
+        raise
+
+
+def fetch_sources(base_url, headers=None):
+    url = base_url.rstrip("/") + SOURCES_API_PATH
+    req = urllib.request.Request(url)
+    req.add_header("Accept", "application/json")
+    for key, value in (headers or {}).items():
+        req.add_header(key, value)
+    try:
+        with urllib.request.urlopen(req) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        body = ""
+        with contextlib.suppress(Exception):
+            body = e.read().decode("utf-8", errors="replace")[:500]
+        raise SystemExit(f"Error: HTTP {e.code} from {url}\n{body}") from None
+    except urllib.error.URLError as e:
+        raise SystemExit(f"Error: cannot connect to {url}: {e.reason}") from None
+    return data.get("items") or []
+
+
+def print_sources(sources):
+    if not sources:
+        print("No sources found.", file=sys.stderr)
+        return
+    id_width = max(len(s.get("id", "")) for s in sources)
+    name_width = max(len(s.get("name", "")) for s in sources)
+    print(f"{'ID':<{id_width}}  {'NAME':<{name_width}}  STATUS", file=sys.stderr)
+    for s in sources:
+        print(
+            f"{s.get('id', ''):<{id_width}}  "
+            f"{s.get('name', ''):<{name_width}}  "
+            f"{s.get('status', '')}",
+            file=sys.stderr,
+        )
+
+
+def parse_header(value):
+    if ":" not in value:
+        msg = f"Invalid header format: '{value}'. Expected 'Name: Value'."
+        raise argparse.ArgumentTypeError(msg)
+    key, _, val = value.partition(":")
+    return key.strip(), val.strip()
+
+
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser(
+        prog="model-catalog-export",
+        description="Export Model Catalog metadata to CSV.",
+    )
+    parser.add_argument(
+        "--url",
+        required=True,
+        help="Catalog API base URL (e.g., http://localhost:8080)",
+    )
+    parser.add_argument(
+        "--output",
+        default=None,
+        help="Output CSV file path",
+    )
+    parser.add_argument(
+        "--source",
+        action="append",
+        default=None,
+        help="Filter by source name (repeatable)",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Maximum number of models to export",
+    )
+    parser.add_argument(
+        "--page-size",
+        type=int,
+        default=100,
+        help="Number of models per API page (default: 100)",
+    )
+    parser.add_argument(
+        "--header",
+        action="append",
+        type=parse_header,
+        default=None,
+        dest="headers",
+        help='HTTP header as "Name: Value" (repeatable)',
+    )
+    parser.add_argument(
+        "--list-sources",
+        action="store_true",
+        default=False,
+        help="List available sources and exit",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv=None):
+    args = parse_args(argv)
+    headers = dict(args.headers) if args.headers else None
+
+    if args.list_sources:
+        try:
+            sources = fetch_sources(args.url, headers)
+        except SystemExit:
+            raise
+        except Exception as e:
+            print(f"Error: {e}", file=sys.stderr)
+            raise SystemExit(1) from None
+        print_sources(sources)
+        return
+
+    if not args.output:
+        print("Error: --output is required (unless using --list-sources)", file=sys.stderr)
+        raise SystemExit(2)
+
+    try:
+        models, custom_keys = collect_models_and_keys(
+            base_url=args.url,
+            page_size=args.page_size,
+            sources=args.source,
+            limit=args.limit,
+            headers=headers,
+        )
+        write_csv(models, custom_keys, args.output)
+    except SystemExit:
+        raise
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        raise SystemExit(1) from None
+
+    print(
+        f"Exported {len(models)} models "
+        f"({len(FIXED_COLUMNS) + len(custom_keys)} columns) "
+        f"to {args.output}",
+        file=sys.stderr,
+    )
+
+
+if __name__ == "__main__":
+    main()
