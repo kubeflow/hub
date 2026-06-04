@@ -17,7 +17,8 @@ import {
 import { mockCatalogPerformanceMetricsArtifactList } from '~/__mocks__/mockCatalogModelArtifactList';
 import { mockCatalogFilterOptionsList } from '~/__mocks__/mockCatalogFilterOptionsList';
 import { mockModelRegistry } from '~/__mocks__/mockModelRegistry';
-import type { CatalogLabelList, CatalogModel, CatalogSource } from '~/app/modelCatalogTypes';
+import type { CatalogLabelList, CatalogSource } from '~/app/shared/types/catalogTypes';
+import type { CatalogModel } from '~/app/modelCatalogTypes';
 import type { ModelRegistryCustomProperties } from '~/app/types';
 import { ModelRegistryMetadataType } from '~/app/types';
 import { MODEL_CATALOG_API_VERSION } from '~/__tests__/cypress/cypress/support/commands/api';

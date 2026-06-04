@@ -11,8 +11,9 @@ import { mcpFiltersToFilterQuery } from '~/app/pages/mcpCatalog/utils/mcpCatalog
 import {
   getLabelDisplayName,
   getLabelDescription,
-} from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
-import { CatalogGalleryLayout, EmptyCatalogState } from '~/app/shared/components/catalog';
+  CatalogGalleryLayout,
+  EmptyCatalogState,
+} from '~/app/shared/components/catalog';
 import McpCatalogCard from '~/app/pages/mcpCatalog/components/McpCatalogCard';
 
 const PAGE_SIZE = 10;

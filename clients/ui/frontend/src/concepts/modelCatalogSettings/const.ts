@@ -22,13 +22,6 @@ export enum CatalogSourceStatus {
   DISABLED = 'disabled',
 }
 
-/**
- * Checks whether a catalog source status indicates that models are available.
- * Sources with 'available' or 'partially-available' status have discoverable models.
- */
-export const isSourceStatusWithModels = (status: string | undefined): boolean =>
-  status === CatalogSourceStatus.AVAILABLE || status === CatalogSourceStatus.PARTIALLY_AVAILABLE;
-
 // Type guard for Hugging Face sources
 export const isHuggingFaceSource = (
   config: CatalogSourceConfig,

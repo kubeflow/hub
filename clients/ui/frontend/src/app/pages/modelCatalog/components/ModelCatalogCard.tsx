@@ -14,7 +14,8 @@ import {
 } from '@patternfly/react-core';
 import { CheckCircleIcon } from '@patternfly/react-icons';
 import { Link } from 'react-router-dom';
-import { CatalogModel, CatalogSource } from '~/app/modelCatalogTypes';
+import type { CatalogSource } from '~/app/shared/types/catalogTypes';
+import type { CatalogModel } from '~/app/modelCatalogTypes';
 import { catalogModelDetailsFromModel } from '~/app/routes/modelCatalog/catalogModel';
 import { getLabels } from '~/app/pages/modelRegistry/screens/utils';
 import { isModelValidated, getModelName } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import type { CatalogLabelList, CatalogSourceList } from '~/app/modelCatalogTypes';
+import type { CatalogLabelList, CatalogSourceList } from '~/app/shared/types/catalogTypes';
 
 export type CatalogCommonData<TFilterOptions> = {
   catalogSources: CatalogSourceList | null;

@@ -11,8 +11,7 @@ import {
 import { useThemeContext } from 'mod-arch-kubeflow';
 import { Outlet } from 'react-router-dom';
 import { McpCatalogContext } from '~/app/context/mcpCatalog/McpCatalogContext';
-import { EmptyCatalogState } from '~/app/shared/components/catalog';
-import { hasSourcesWithModels } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
+import { EmptyCatalogState, hasSourcesWithModels } from '~/app/shared/components/catalog';
 import { MCP_CATALOG_TITLE, MCP_CATALOG_DESCRIPTION } from '~/app/pages/mcpCatalog/const';
 
 const McpCatalogCoreLoader: React.FC = () => {

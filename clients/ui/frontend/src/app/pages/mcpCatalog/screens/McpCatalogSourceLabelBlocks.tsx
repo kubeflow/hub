@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { McpCatalogContext } from '~/app/context/mcpCatalog/McpCatalogContext';
-import { CatalogSourceLabelToggle } from '~/app/shared/components/catalog';
-import { getLabelDisplayName } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
+import { CatalogSourceLabelToggle, getLabelDisplayName } from '~/app/shared/components/catalog';
 import { OTHER_MCP_SERVERS_DISPLAY_NAME } from '~/app/pages/mcpCatalog/const';
 
 const ALL_SERVERS_LABEL = 'All MCP servers';

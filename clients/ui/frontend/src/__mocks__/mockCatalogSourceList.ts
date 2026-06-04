@@ -1,4 +1,4 @@
-import { CatalogSource, CatalogSourceList } from '~/app/modelCatalogTypes';
+import { CatalogSource, CatalogSourceList } from '~/app/shared/types/catalogTypes';
 
 export const mockCatalogSource = (partial?: Partial<CatalogSource>): CatalogSource => ({
   id: 'sample-source',

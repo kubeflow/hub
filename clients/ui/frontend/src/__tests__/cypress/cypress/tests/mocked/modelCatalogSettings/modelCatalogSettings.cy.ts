@@ -11,11 +11,8 @@ import {
   mockCatalogSource,
   mockCatalogSourceList,
 } from '~/__mocks__';
-import {
-  CatalogSourceType,
-  type CatalogSource,
-  type CatalogSourceConfigList,
-} from '~/app/modelCatalogTypes';
+import type { CatalogSource } from '~/app/shared/types/catalogTypes';
+import { CatalogSourceType, type CatalogSourceConfigList } from '~/app/modelCatalogTypes';
 import { EMPTY_CUSTOM_PROPERTY_VALUE } from '~/concepts/modelCatalog/const';
 
 const NAMESPACE = 'kubeflow';

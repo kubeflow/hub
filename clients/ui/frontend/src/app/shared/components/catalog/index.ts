@@ -25,3 +25,16 @@ export { default as CatalogGalleryLayout } from './CatalogGalleryLayout';
 export { default as CatalogAllItemsView } from './CatalogAllItemsView';
 export { default as CatalogSourceLabelToggle } from './CatalogSourceLabelToggle';
 export { default as CatalogPageLayout } from './CatalogPageLayout';
+export {
+  isSourceStatusActive,
+  filterEnabledCatalogSources,
+  getUniqueSourceLabels,
+  hasSourcesWithoutLabels,
+  orderLabelsByPriority,
+  findLabelData,
+  getLabelDisplayName,
+  getLabelDescription,
+  getActiveSourceLabels,
+  hasSourcesWithModels,
+  filterSourcesWithModels,
+} from './utils/catalogSourceUtils';

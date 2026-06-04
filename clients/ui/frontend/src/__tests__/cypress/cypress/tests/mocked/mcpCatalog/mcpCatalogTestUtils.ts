@@ -9,7 +9,7 @@ import {
   mockMcpToolList,
 } from '~/__mocks__';
 import type { McpToolList } from '~/app/mcpServerCatalogTypes';
-import type { CatalogSource } from '~/app/modelCatalogTypes';
+import type { CatalogSource } from '~/app/shared/types/catalogTypes';
 import { MODEL_CATALOG_API_VERSION } from '~/__tests__/cypress/cypress/support/commands/api';
 
 export { mockMcpCatalogFilterOptions, mockMcpToolWithServer, mockMcpToolList };

@@ -11,8 +11,7 @@ import {
 import * as React from 'react';
 import { Outlet } from 'react-router-dom';
 import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
-import { EmptyCatalogState } from '~/app/shared/components/catalog';
-import { hasSourcesWithModels } from './utils/modelCatalogUtils';
+import { EmptyCatalogState, hasSourcesWithModels } from '~/app/shared/components/catalog';
 
 const ModelCatalogCoreLoader: React.FC = () => {
   const { catalogSources, catalogSourcesLoaded, catalogSourcesLoadError } =

@@ -20,10 +20,8 @@ import ModelCatalogActiveFilters from '~/app/pages/modelCatalog/components/Model
 import HardwareConfigurationFilterToolbar from '~/app/pages/modelCatalog/components/HardwareConfigurationFilterToolbar';
 import ThemeAwareSearchInput from '~/app/pages/modelRegistry/screens/components/ThemeAwareSearchInput';
 import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
-import {
-  hasFiltersApplied,
-  getActiveSourceLabels,
-} from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
+import { getActiveSourceLabels } from '~/app/shared/components/catalog';
+import { hasFiltersApplied } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
 import ModelCatalogSortDropdown from '~/app/pages/modelCatalog/components/ModelCatalogSortDropdown';
 import ModelCatalogSourceLabelBlocks from './ModelCatalogSourceLabelBlocks';
 

@@ -3,8 +3,8 @@ import { useMcpServersBySourceLabelWithAPI } from '~/app/hooks/mcpServerCatalog/
 import {
   getLabelDescription,
   getLabelDisplayName,
-} from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
-import { CatalogCategorySection } from '~/app/shared/components/catalog';
+  CatalogCategorySection,
+} from '~/app/shared/components/catalog';
 import { McpCatalogContext } from '~/app/context/mcpCatalog/McpCatalogContext';
 import {
   MCP_CATALOG_GRID_SPAN,

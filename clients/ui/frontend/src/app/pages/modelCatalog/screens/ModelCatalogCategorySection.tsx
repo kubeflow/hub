@@ -1,12 +1,12 @@
 import React from 'react';
-import { CatalogSourceList } from '~/app/modelCatalogTypes';
+import { CatalogSourceList } from '~/app/shared/types/catalogTypes';
 import { useCatalogModelsBySources } from '~/app/hooks/modelCatalog/useCatalogModelsBySource';
-import { CatalogCategorySection } from '~/app/shared/components/catalog';
 import {
+  CatalogCategorySection,
   getLabelDescription,
   getLabelDisplayName,
-  getSourceFromSourceId,
-} from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
+} from '~/app/shared/components/catalog';
+import { getSourceFromSourceId } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
 import ModelCatalogCard from '~/app/pages/modelCatalog/components/ModelCatalogCard';
 import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
 

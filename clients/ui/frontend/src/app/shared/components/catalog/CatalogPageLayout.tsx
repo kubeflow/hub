@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { PageSection, Sidebar, SidebarContent, SidebarPanel, Stack } from '@patternfly/react-core';
-import type { CatalogLabelList, CatalogSourceList } from '~/app/modelCatalogTypes';
-import { getActiveSourceLabels } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
+import type { CatalogLabelList, CatalogSourceList } from '~/app/shared/types/catalogTypes';
 import ScrollViewOnMount from '~/app/shared/components/ScrollViewOnMount';
+import { getActiveSourceLabels } from './utils/catalogSourceUtils';
 
 type CatalogPageLayoutProps = {
   catalogSources: CatalogSourceList | null;

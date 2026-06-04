@@ -1,13 +1,13 @@
 import React from 'react';
 import { Stack } from '@patternfly/react-core';
-import type { CatalogLabelList, CatalogSourceList } from '~/app/modelCatalogTypes';
-import { SourceLabel } from '~/app/modelCatalogTypes';
+import type { CatalogLabelList, CatalogSourceList } from '~/app/shared/types/catalogTypes';
+import { SourceLabel } from '~/app/shared/types/catalogTypes';
 import {
   filterEnabledCatalogSources,
   getUniqueSourceLabels,
   hasSourcesWithoutLabels,
   orderLabelsByPriority,
-} from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
+} from './utils/catalogSourceUtils';
 
 type CatalogAllItemsViewProps = {
   searchTerm: string;

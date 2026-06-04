@@ -3,21 +3,25 @@ import { ChartBarIcon, SearchIcon } from '@patternfly/react-icons';
 import React from 'react';
 import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
 import { useCatalogModelsBySources } from '~/app/hooks/modelCatalog/useCatalogModelsBySource';
-import { CatalogModel, CategoryName, SourceLabel } from '~/app/modelCatalogTypes';
+import { SourceLabel } from '~/app/shared/types/catalogTypes';
+import { CategoryName, type CatalogModel } from '~/app/modelCatalogTypes';
 import ModelCatalogCard from '~/app/pages/modelCatalog/components/ModelCatalogCard';
+import {
+  getLabelDisplayName,
+  getLabelDescription,
+  CatalogGalleryLayout,
+  EmptyCatalogState,
+} from '~/app/shared/components/catalog';
 import {
   getSourceFromSourceId,
   getBasicFiltersOnly,
   getActiveLatencyFieldName,
   getSortParams,
   generateCategoryName,
-  getLabelDisplayName,
-  getLabelDescription,
   hasFiltersApplied,
   isValueDifferentFromDefault,
 } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
 import ModelCatalogSortDropdown from '~/app/pages/modelCatalog/components/ModelCatalogSortDropdown';
-import { CatalogGalleryLayout, EmptyCatalogState } from '~/app/shared/components/catalog';
 import {
   ModelCatalogNumberFilterKey,
   ModelCatalogStringFilterKey,

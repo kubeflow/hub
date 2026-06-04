@@ -12,12 +12,12 @@ import type {
   RegisteredModel,
   RegisteredModelList,
 } from '~/app/types';
+import type { CatalogSourceList, CatalogLabelList } from '~/app/shared/types/catalogTypes';
 import type {
   CatalogFilterOptionsList,
   CatalogArtifactList,
   CatalogModel,
   CatalogModelList,
-  CatalogSourceList,
 } from '~/app/modelCatalogTypes';
 import type { McpServerList } from '~/app/mcpServerCatalogTypes';
 
@@ -159,6 +159,11 @@ declare global {
           type: 'GET /api/:apiVersion/model_catalog/sources',
           options: { path: { apiVersion: string }; query?: { assetType?: string } },
           response: ApiResponse<CatalogSourceList>,
+        ) => Cypress.Chainable<null>) &
+        ((
+          type: 'GET /api/:apiVersion/model_catalog/labels',
+          options: { path: { apiVersion: string }; query?: { assetType?: string } },
+          response: ApiResponse<CatalogLabelList>,
         ) => Cypress.Chainable<null>) &
         ((
           type: 'GET /api/:apiVersion/model_catalog/sources/:sourceId/models/:modelName',

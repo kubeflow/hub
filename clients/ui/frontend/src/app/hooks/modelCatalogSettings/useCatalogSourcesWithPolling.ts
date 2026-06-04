@@ -1,6 +1,6 @@
 import { FetchState, FetchStateCallbackPromise, useFetchState, POLL_INTERVAL } from 'mod-arch-core';
 import React from 'react';
-import { CatalogSourceList } from '~/app/modelCatalogTypes';
+import { CatalogSourceList } from '~/app/shared/types/catalogTypes';
 import { ModelCatalogAPIState } from '~/app/hooks/modelCatalog/useModelCatalogAPIState';
 
 export const useCatalogSourcesWithPolling = (

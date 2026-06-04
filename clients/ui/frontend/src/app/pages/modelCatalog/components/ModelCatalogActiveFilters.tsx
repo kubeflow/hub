@@ -23,8 +23,8 @@ import {
   parseLatencyFilterKey,
   isLatencyFilterKey,
   LatencyFilterKey,
+  ModelCatalogFilterKey,
 } from '~/concepts/modelCatalog/const';
-import { ModelCatalogFilterKey } from '~/app/modelCatalogTypes';
 import {
   isUseCaseOptionValue,
   getUseCaseDisplayLabel,

@@ -1,27 +1,23 @@
 import { capitalize } from '@patternfly/react-core';
+import { CatalogSource, CatalogSourceList } from '~/app/shared/types/catalogTypes';
 import {
   CatalogArtifacts,
   CatalogArtifactType,
   CatalogFilterOptions,
   CatalogFilterOptionsList,
-  CatalogLabel,
-  CatalogLabelList,
   CatalogModel,
   CatalogModelArtifact,
   CatalogModelDetailsParams,
-  CatalogSource,
-  CatalogSourceList,
   HardwareConfiguration,
   ModelCatalogFilterStates,
   MetricsType,
-  ModelCatalogFilterKey,
-  SourceLabel,
   ToolCallingConfig,
 } from '~/app/modelCatalogTypes';
 import { getLabels, getCustomPropString } from '~/app/pages/modelRegistry/screens/utils';
 import {
   ModelCatalogStringFilterKey,
   ModelCatalogNumberFilterKey,
+  ModelCatalogFilterKey,
   ALL_LATENCY_FILTER_KEYS,
   LatencyMetricFieldName,
   DEFAULT_PERFORMANCE_FILTERS_QUERY_NAME,
@@ -35,7 +31,6 @@ import {
   ModelCatalogTask,
   MATCH_ALL_FILTER_KEYS,
 } from '~/concepts/modelCatalog/const';
-import { isSourceStatusWithModels } from '~/concepts/modelCatalogSettings/const';
 import { ModelRegistryCustomProperties, ModelRegistryMetadataType } from '~/app/types';
 import {
   buildCustomPropertiesWithModelType,
@@ -78,25 +73,6 @@ export const encodeParams = (params: CatalogModelDetailsParams): CatalogModelDet
       encodeURIComponent(value).replace(/\./g, '%252E'),
     ]),
   );
-
-export const filterEnabledCatalogSources = (
-  catalogSources: CatalogSourceList | null,
-): CatalogSourceList | null => {
-  if (!catalogSources) {
-    return null;
-  }
-
-  // Filter sources that are enabled AND have available models (including partially-available)
-  const filteredItems = catalogSources.items?.filter(
-    (source) => source.enabled !== false && isSourceStatusWithModels(source.status),
-  );
-
-  return {
-    ...catalogSources,
-    items: filteredItems || [],
-    size: filteredItems?.length || 0,
-  };
-};
 
 export const getModelArtifactUri = (artifacts: CatalogArtifacts[]): string => {
   const modelArtifact = findModelArtifact(artifacts);
@@ -484,42 +460,6 @@ export const getBasicFiltersOnly = (
   return result;
 };
 
-export const getUniqueSourceLabels = (catalogSources: CatalogSourceList | null): string[] => {
-  if (!catalogSources || !catalogSources.items) {
-    return [];
-  }
-
-  const allLabels = new Set<string>();
-
-  catalogSources.items.forEach((source) => {
-    // Only include labels from sources that are enabled AND have models (available or partially-available)
-    if (source.enabled && isSourceStatusWithModels(source.status) && source.labels.length > 0) {
-      source.labels.forEach((label) => {
-        if (label.trim()) {
-          allLabels.add(label.trim());
-        }
-      });
-    }
-  });
-
-  return Array.from(allLabels);
-};
-
-export const hasSourcesWithoutLabels = (catalogSources: CatalogSourceList | null): boolean => {
-  if (!catalogSources || !catalogSources.items) {
-    return false;
-  }
-
-  return catalogSources.items.some((source) => {
-    // Only consider sources that are enabled AND have models (available or partially-available)
-    if (source.enabled !== false && isSourceStatusWithModels(source.status)) {
-      // Check if source has no labels or only empty/whitespace labels
-      return source.labels.length === 0 || source.labels.every((label) => !label.trim());
-    }
-    return false;
-  });
-};
-
 export const getSourceFromSourceId = (
   sourceId: string,
   catalogSources: CatalogSourceList | null,
@@ -589,168 +529,8 @@ export const isValueDifferentFromDefault = (
   return currentValue !== defaultValue;
 };
 
-/**
- * Filters catalog sources to only include those with discoverable models.
- * A source has models if its status is AVAILABLE or PARTIALLY_AVAILABLE.
- * This is used to filter out disabled sources or sources with errors from the switcher.
- */
-export const filterSourcesWithModels = (
-  catalogSources: CatalogSourceList | null,
-): CatalogSourceList | null => {
-  if (!catalogSources) {
-    return null;
-  }
-
-  const filteredItems = catalogSources.items?.filter((source) =>
-    isSourceStatusWithModels(source.status),
-  );
-
-  return {
-    ...catalogSources,
-    items: filteredItems || [],
-    size: filteredItems?.length || 0,
-  };
-};
-
-/**
- * Checks if there are any catalog sources that have models available.
- * Returns true if at least one source has status AVAILABLE or PARTIALLY_AVAILABLE.
- */
-export const hasSourcesWithModels = (catalogSources: CatalogSourceList | null): boolean => {
-  if (!catalogSources?.items) {
-    return false;
-  }
-
-  return catalogSources.items.some((source) => isSourceStatusWithModels(source.status));
-};
-
 export const generateCategoryName = (name: string): string =>
   name.toLowerCase().endsWith('models') ? name : `${name} models`;
-
-/**
- * Finds a label from the catalog labels list that matches the given source label name.
- * Handles the special case where sourceLabel is 'null' (other/unlabeled sources).
- * @param sourceLabel The label string from a source (or SourceLabel.other for unlabeled sources)
- * @param catalogLabels The list of catalog labels from the API
- * @returns The matching CatalogLabel or undefined if not found
- */
-export const findLabelData = (
-  sourceLabel: string | undefined,
-  catalogLabels: CatalogLabelList | null,
-): CatalogLabel | undefined => {
-  if (!catalogLabels?.items || !sourceLabel) {
-    return undefined;
-  }
-
-  // Special case: sourceLabel is 'null' (SourceLabel.other) - look for label with name: null
-  if (sourceLabel === SourceLabel.other) {
-    return catalogLabels.items.find((label) => label.name === null);
-  }
-
-  // Normal case: find label with matching name
-  return catalogLabels.items.find((label) => label.name === sourceLabel);
-};
-
-/**
- * Gets the display name for a source label, using the catalog labels data if available.
- * Falls back to the raw label name with the given suffix appended if no display name is found.
- * @param sourceLabel The label string from a source (or SourceLabel.other for unlabeled sources)
- * @param catalogLabels The list of catalog labels from the API
- * @param otherFallback Display name for sources without labels (default: 'Other models')
- * @param categorySuffix Suffix appended to the label name when no display name exists (default: 'models')
- * @returns The display name to show in the UI
- */
-export const getLabelDisplayName = (
-  sourceLabel: string | undefined,
-  catalogLabels: CatalogLabelList | null,
-  otherFallback = 'Other models',
-  categorySuffix = 'models',
-): string => {
-  if (!sourceLabel) {
-    return '';
-  }
-
-  const labelData = findLabelData(sourceLabel, catalogLabels);
-
-  if (labelData?.displayName) {
-    return labelData.displayName;
-  }
-
-  if (sourceLabel === SourceLabel.other) {
-    return otherFallback;
-  }
-
-  return sourceLabel.toLowerCase().endsWith(categorySuffix)
-    ? sourceLabel
-    : `${sourceLabel} ${categorySuffix}`;
-};
-
-/**
- * Gets the description for a source label from the catalog labels data.
- * @param sourceLabel The label string from a source (or SourceLabel.other for unlabeled sources)
- * @param catalogLabels The list of catalog labels from the API
- * @returns The description text or undefined if not found
- */
-export const getLabelDescription = (
-  sourceLabel: string | undefined,
-  catalogLabels: CatalogLabelList | null,
-): string | undefined => {
-  const labelData = findLabelData(sourceLabel, catalogLabels);
-  return labelData?.description;
-};
-
-/**
- * Orders source labels according to the order in the catalog labels list.
- * Labels that appear in catalogLabels are ordered first (in the order they appear in the API),
- * followed by any labels found on sources that don't appear in catalogLabels.
- * @param sourceLabels Array of unique source labels from the sources
- * @param catalogLabels The list of catalog labels from the API
- * @returns Ordered array of source labels
- */
-export const orderLabelsByPriority = (
-  sourceLabels: string[],
-  catalogLabels: CatalogLabelList | null,
-): string[] => {
-  if (!catalogLabels?.items) {
-    return sourceLabels;
-  }
-
-  const orderedLabels: string[] = [];
-  const remainingLabels = new Set(sourceLabels);
-
-  // First, add labels in the order they appear in catalogLabels
-  catalogLabels.items.forEach((catalogLabel) => {
-    // Skip the null entry (it's handled separately as "other models")
-    if (catalogLabel.name === null) {
-      return;
-    }
-
-    if (remainingLabels.has(catalogLabel.name)) {
-      orderedLabels.push(catalogLabel.name);
-      remainingLabels.delete(catalogLabel.name);
-    }
-  });
-
-  // Then add any remaining labels that weren't in catalogLabels
-  orderedLabels.push(...Array.from(remainingLabels));
-
-  return orderedLabels;
-};
-
-export const getActiveSourceLabels = (
-  catalogSources: CatalogSourceList | null,
-  catalogLabels: CatalogLabelList | null,
-): string[] => {
-  const enabledSources = filterEnabledCatalogSources(catalogSources);
-  const uniqueLabels = getUniqueSourceLabels(enabledSources);
-  const orderedLabels = orderLabelsByPriority(uniqueLabels, catalogLabels);
-
-  if (hasSourcesWithoutLabels(enabledSources)) {
-    return [...orderedLabels, SourceLabel.other];
-  }
-
-  return orderedLabels;
-};
 
 /**
  * Formats model type value for display in the UI.

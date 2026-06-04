@@ -8,13 +8,19 @@ import {
   LatencyMetricFieldName,
   LatencyPropertyKey,
   UseCaseOptionValue,
-  ModelCatalogFilterKey,
   ModelCatalogTensorType,
 } from '~/concepts/modelCatalog/const';
 import type {
   CatalogFilterStringOption,
   CatalogFilterNumberOption,
 } from '~/app/shared/components/catalog';
+import type {
+  CatalogLabelList,
+  CatalogLabelListParams,
+  CatalogSourceList,
+  CatalogSourceListParams,
+  PaginationParams,
+} from '~/app/shared/types/catalogTypes';
 import {
   ModelRegistryCustomProperties,
   ModelRegistryCustomPropertyString,
@@ -34,17 +40,6 @@ export type HardwareConfiguration = {
   cold_start_time_to_load_seconds: number;
   runtime_command: string;
 };
-
-export type CatalogSource = {
-  id: string;
-  name: string;
-  labels: string[];
-  enabled?: boolean;
-  status?: 'available' | 'partially-available' | 'error' | 'disabled';
-  error?: string;
-};
-
-export type CatalogSourceList = PaginationParams & { items?: CatalogSource[] };
 
 export type ToolCallingConfig = {
   toolCallParser?: string;
@@ -77,18 +72,6 @@ export type CatalogModel = {
   servingConfig?: ServingConfig;
 };
 
-export type PaginationParams = {
-  size: number;
-  pageSize: number;
-  nextPageToken: string;
-};
-
-export type CatalogAssetType = 'models' | 'mcp_servers';
-
-export type CatalogSourceListParams = {
-  assetType?: CatalogAssetType;
-};
-
 export type CatalogModelList = PaginationParams & { items: CatalogModel[] };
 
 export enum CatalogArtifactType {
@@ -105,18 +88,6 @@ export enum CategoryName {
   allModels = 'All models',
   otherModels = 'Other models',
 }
-
-export enum SourceLabel {
-  other = 'null',
-}
-
-export type CatalogLabel = {
-  name: string | null;
-  displayName?: string;
-  description?: string;
-};
-
-export type CatalogLabelList = PaginationParams & { items: CatalogLabel[] };
 
 export enum CatalogSourceType {
   YAML = 'yaml',
@@ -192,8 +163,6 @@ export type CatalogPerformanceArtifactList = PaginationParams & {
   items: CatalogPerformanceMetricsArtifact[];
 };
 
-export type { CatalogFilterStringOption, CatalogFilterNumberOption };
-
 export type GetCatalogModelsBySource = (
   opts: APIOptions,
   sourceId?: string,
@@ -250,10 +219,6 @@ export type GetArtifactFilterOptions = (
 
 export type GetCatalogFilterOptionList = (opts: APIOptions) => Promise<CatalogFilterOptionsList>;
 
-export type CatalogLabelListParams = {
-  assetType?: CatalogAssetType;
-};
-
 export type GetCatalogLabels = (
   opts: APIOptions,
   listParams?: CatalogLabelListParams,
@@ -270,26 +235,32 @@ export type GetMcpServer = (opts: APIOptions, serverId: string) => Promise<McpSe
 
 export type GetMcpServerToolList = (opts: APIOptions, serverId: string) => Promise<McpToolList>;
 
-export type ModelCatalogAPIs = {
-  getCatalogModelsBySource: GetCatalogModelsBySource;
+export type CatalogBaseAPIs = {
   getListSources: GetListSources;
+  getCatalogLabels: GetCatalogLabels;
+};
+
+export type ModelCatalogSpecificAPIs = {
+  getCatalogModelsBySource: GetCatalogModelsBySource;
   getCatalogModel: GetCatalogModel;
   getListCatalogModelArtifacts: GetListCatalogModelArtifacts;
   getCatalogFilterOptionList: GetCatalogFilterOptionList;
   getPerformanceArtifacts: GetPerformanceArtifacts;
-  getCatalogLabels: GetCatalogLabels;
+};
+
+export type McpCatalogSpecificAPIs = {
   getMcpServerList: GetMcpServerList;
   getMcpServerFilterOptionList: GetMcpServerFilterOptionList;
   getMcpServer: GetMcpServer;
   getMcpServerToolList: GetMcpServerToolList;
 };
 
+export type ModelCatalogAPIs = CatalogBaseAPIs & ModelCatalogSpecificAPIs & McpCatalogSpecificAPIs;
+
 export type CatalogModelDetailsParams = {
   sourceId?: string;
   modelName?: string;
 };
-
-export type { ModelCatalogFilterKey };
 
 // Not used for a run time value, just for mapping other types
 export type ModelCatalogStringFilterValueType = {

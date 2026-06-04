@@ -1,4 +1,4 @@
-import { PaginationParams } from './modelCatalogTypes';
+import { PaginationParams } from '~/app/shared/types/catalogTypes';
 
 export type McpDeploymentMode = 'local' | 'remote';
 

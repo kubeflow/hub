@@ -14,9 +14,9 @@ import { useCatalogSources } from '~/app/hooks/modelCatalog/useCatalogSources';
 import useModelCatalogAPIState, {
   ModelCatalogAPIState,
 } from '~/app/hooks/modelCatalog/useModelCatalogAPIState';
+import type { CatalogSource } from '~/app/shared/types/catalogTypes';
 import {
   CatalogFilterOptionsList,
-  CatalogSource,
   CategoryName,
   ModelCatalogFilterStates,
   NamedQuery,
@@ -145,7 +145,7 @@ function useModelCatalogSetup(providerState: CatalogProviderState) {
   }, [filterOptions?.namedQueries, applyNamedQueryDefaults, baseSetFilterData, isOnDetailsPage]);
 
   /**
-   * Clears basic filters (Task, Provider, License, Language, Tensor Type) to empty.
+   * Clears basic filters (Task, Provider, License, Language, Tensor Type, Validated Configuration) to empty.
    * Note: BASIC_FILTER_KEYS in const.ts should be updated if basic filters change.
    */
   const clearBasicFilters = React.useCallback(() => {

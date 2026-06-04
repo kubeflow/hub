@@ -3,8 +3,8 @@ import {
   getLabelDisplayName,
   getLabelDescription,
   orderLabelsByPriority,
-} from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
-import { CatalogLabelList, SourceLabel } from '~/app/modelCatalogTypes';
+} from '~/app/shared/components/catalog';
+import { CatalogLabelList, SourceLabel } from '~/app/shared/types/catalogTypes';
 import { OTHER_MCP_SERVERS_DISPLAY_NAME } from '~/app/pages/mcpCatalog/const';
 
 const mockCatalogLabels: CatalogLabelList = {

@@ -1,11 +1,13 @@
 // Disabling camelcase for this file because the inherent property names are not camelcase
 /* eslint-disable camelcase */
 import {
-  CatalogFilterOptionsList,
   CatalogLabel,
   CatalogLabelList,
   CatalogSource,
   CatalogSourceList,
+} from '~/app/shared/types/catalogTypes';
+import {
+  CatalogFilterOptionsList,
   ModelCatalogFilterStates,
   CatalogArtifactType,
   CatalogArtifacts,
@@ -22,22 +24,22 @@ import {
   CatalogModelCustomPropertyKey,
   ModelType,
 } from '~/concepts/modelCatalog/const';
+import { CatalogSourceStatus } from '~/concepts/modelCatalogSettings/const';
 import {
-  CatalogSourceStatus,
-  isSourceStatusWithModels,
-} from '~/concepts/modelCatalogSettings/const';
-import {
-  filtersToFilterQuery,
+  isSourceStatusActive,
   filterEnabledCatalogSources,
   filterSourcesWithModels,
   hasSourcesWithModels,
   getUniqueSourceLabels,
   hasSourcesWithoutLabels,
+  getActiveSourceLabels,
+} from '~/app/shared/components/catalog';
+import {
+  filtersToFilterQuery,
   hasFiltersApplied,
   getArchitecturesFromArtifacts,
   getModelName,
   getCatalogModelTypePropertyForRegistration,
-  getActiveSourceLabels,
   hasValidatedToolCalling,
   getToolCallingArgs,
 } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
@@ -815,21 +817,21 @@ describe('catalog source filtering utilities', () => {
   });
 });
 
-describe('isSourceStatusWithModels', () => {
+describe('isSourceStatusActive', () => {
   it('returns true for available status', () => {
-    expect(isSourceStatusWithModels(CatalogSourceStatus.AVAILABLE)).toBe(true);
+    expect(isSourceStatusActive(CatalogSourceStatus.AVAILABLE)).toBe(true);
   });
 
   it('returns true for partially-available status', () => {
-    expect(isSourceStatusWithModels(CatalogSourceStatus.PARTIALLY_AVAILABLE)).toBe(true);
+    expect(isSourceStatusActive(CatalogSourceStatus.PARTIALLY_AVAILABLE)).toBe(true);
   });
 
   it('returns false for error status', () => {
-    expect(isSourceStatusWithModels(CatalogSourceStatus.ERROR)).toBe(false);
+    expect(isSourceStatusActive(CatalogSourceStatus.ERROR)).toBe(false);
   });
 
   it('returns false for disabled status', () => {
-    expect(isSourceStatusWithModels(CatalogSourceStatus.DISABLED)).toBe(false);
+    expect(isSourceStatusActive(CatalogSourceStatus.DISABLED)).toBe(false);
   });
 });
 

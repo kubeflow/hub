@@ -5,10 +5,10 @@ import {
   mockCatalogSource,
   mockCatalogSourceList,
 } from '~/__mocks__';
-import type { CatalogSource } from '~/app/modelCatalogTypes';
+import type { CatalogSource } from '~/app/shared/types/catalogTypes';
 import { MODEL_CATALOG_API_VERSION } from '~/__tests__/cypress/cypress/support/commands/api';
 import { mockCatalogFilterOptionsList } from '~/__mocks__/mockCatalogFilterOptionsList';
-import { SourceLabel } from '~/app/modelCatalogTypes';
+import { SourceLabel } from '~/app/shared/types/catalogTypes';
 
 type HandlersProps = {
   sources?: CatalogSource[];

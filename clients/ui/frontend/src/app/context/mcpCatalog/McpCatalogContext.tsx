@@ -11,20 +11,17 @@ import { useCatalogSources } from '~/app/hooks/modelCatalog/useCatalogSources';
 import { useCatalogLabels } from '~/app/hooks/modelCatalog/useCatalogLabels';
 import { useMcpServerFilterOptionListWithAPI } from '~/app/hooks/mcpServerCatalog/useMcpServerFilterOptionList';
 import type {
-  McpCatalogExtension,
-  McpCatalogPaginationState,
-} from '~/app/pages/mcpCatalog/types/mcpCatalogContext';
-import type {
   McpCatalogFiltersState,
   McpCatalogFilterOptionsList,
 } from '~/app/pages/mcpCatalog/types/mcpCatalogFilterOptions';
 import { useMcpUrlSync } from '~/app/pages/mcpCatalog/hooks/useMcpUrlSync';
+import type { McpCatalogExtension, McpCatalogPaginationState } from './types';
 
 export type {
   McpCatalogContextType,
   McpCatalogExtension,
   McpCatalogPaginationState,
-} from '~/app/pages/mcpCatalog/types/mcpCatalogContext';
+} from './types';
 export type { McpCatalogFiltersState } from '~/app/pages/mcpCatalog/types/mcpCatalogFilterOptions';
 
 const MODEL_CATALOG_PATH = `${URL_PREFIX}/api/${BFF_API_VERSION}/model_catalog`;

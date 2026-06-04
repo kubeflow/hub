@@ -1,4 +1,4 @@
-import { CatalogLabel, CatalogLabelList } from '~/app/modelCatalogTypes';
+import { CatalogLabel, CatalogLabelList } from '~/app/shared/types/catalogTypes';
 
 export const mockCatalogLabel = (partial?: Partial<CatalogLabel>): CatalogLabel => ({
   name: 'Sample category 1',
