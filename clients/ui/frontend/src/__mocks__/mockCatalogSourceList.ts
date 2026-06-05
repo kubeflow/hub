@@ -1,11 +1,12 @@
 import { CatalogSource, CatalogSourceList } from '~/app/shared/types/catalogTypes';
+import { CatalogSourceStatus } from '~/concepts/modelCatalogSettings/const';
 
 export const mockCatalogSource = (partial?: Partial<CatalogSource>): CatalogSource => ({
   id: 'sample-source',
   name: 'sample source',
   enabled: true,
   labels: ['Sample category 1', 'Sample category 2', 'Community'],
-  status: 'available',
+  status: CatalogSourceStatus.AVAILABLE,
   ...partial,
 });
 
@@ -24,7 +25,7 @@ export const mockCatalogSourceFailedCredential = (): CatalogSource => ({
   name: 'Failed Credential Source',
   enabled: true,
   labels: ['Enterprise'],
-  status: 'error',
+  status: CatalogSourceStatus.ERROR,
   error: 'The provided API key is invalid or has expired. Please update your credentials.',
 });
 
@@ -34,7 +35,7 @@ export const mockCatalogSourceFailedOrg = (): CatalogSource => ({
   name: 'Failed Organization Source',
   enabled: true,
   labels: ['Enterprise'],
-  status: 'error',
+  status: CatalogSourceStatus.ERROR,
   error: "The specified organization 'invalid-org' does not exist or you don't have access to it.",
 });
 
@@ -44,7 +45,7 @@ export const mockCatalogSourceDisabled = (): CatalogSource => ({
   name: 'Disabled Source',
   enabled: false,
   labels: ['Community'],
-  status: 'disabled',
+  status: CatalogSourceStatus.DISABLED,
 });
 
 // Mock source with available status
@@ -53,7 +54,7 @@ export const mockCatalogSourceActive = (): CatalogSource => ({
   name: 'Active Source',
   enabled: true,
   labels: ['Community', 'Enterprise'],
-  status: 'available',
+  status: CatalogSourceStatus.AVAILABLE,
 });
 
 export const mockTwoProviderSources = (): CatalogSource[] => [

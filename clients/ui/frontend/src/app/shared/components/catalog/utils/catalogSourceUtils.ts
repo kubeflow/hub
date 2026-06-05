@@ -4,13 +4,14 @@ import type {
   CatalogLabel,
 } from '~/app/shared/types/catalogTypes';
 import { SourceLabel } from '~/app/shared/types/catalogTypes';
+import { CatalogSourceStatus } from '~/concepts/modelCatalogSettings/const';
 
 /**
  * Checks whether a catalog source status indicates that items are available.
  * Sources with 'available' or 'partially-available' status have discoverable items.
  */
 export const isSourceStatusActive = (status: string | undefined): boolean =>
-  status === 'available' || status === 'partially-available';
+  status === CatalogSourceStatus.AVAILABLE || status === CatalogSourceStatus.PARTIALLY_AVAILABLE;
 
 export const filterEnabledCatalogSources = (
   catalogSources: CatalogSourceList | null,

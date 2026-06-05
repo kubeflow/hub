@@ -1,9 +1,15 @@
+import { CatalogSourceStatus } from '~/concepts/modelCatalogSettings/const';
+
 export type CatalogSource = {
   id: string;
   name: string;
   labels: string[];
   enabled?: boolean;
-  status?: 'available' | 'partially-available' | 'error' | 'disabled';
+  status?:
+    | CatalogSourceStatus.AVAILABLE
+    | CatalogSourceStatus.PARTIALLY_AVAILABLE
+    | CatalogSourceStatus.ERROR
+    | CatalogSourceStatus.DISABLED;
   error?: string;
 };
 

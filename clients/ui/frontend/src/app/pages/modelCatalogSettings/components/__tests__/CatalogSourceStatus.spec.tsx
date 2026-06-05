@@ -7,6 +7,7 @@ import {
 } from '~/app/context/modelCatalogSettings/ModelCatalogSettingsContext';
 import { CatalogSourceConfig, CatalogSourceType } from '~/app/modelCatalogTypes';
 import CatalogSourceStatus from '~/app/pages/modelCatalogSettings/components/CatalogSourceStatus';
+import { CatalogSourceStatus as CatalogSourceStatusEnum } from '~/concepts/modelCatalogSettings/const';
 
 const mockConfig: CatalogSourceConfig = {
   id: 'test-source',
@@ -50,7 +51,14 @@ describe('CatalogSourceStatus', () => {
     renderWithContext(mockConfig, {
       catalogSources: {
         ...defaultPagination,
-        items: [{ id: 'test-source', name: 'Test', labels: [], status: 'available' }],
+        items: [
+          {
+            id: 'test-source',
+            name: 'Test',
+            labels: [],
+            status: CatalogSourceStatusEnum.AVAILABLE,
+          },
+        ],
       },
       catalogSourcesLoaded: true,
     });
@@ -70,7 +78,7 @@ describe('CatalogSourceStatus', () => {
             id: 'test-source',
             name: 'Test',
             labels: [],
-            status: 'error',
+            status: CatalogSourceStatusEnum.ERROR,
             error: 'Connection refused',
           },
         ],
