@@ -209,12 +209,82 @@ func applyXxxListFilters(query *gorm.DB, _ *models.XxxListOptions) *gorm.DB {
 
 ### Panic 5: `applyCustomOrdering`
 
-No-op — return query unchanged. Falls back to GenericRepository standard pagination.
+This requires **three pieces** — all methods on the repository impl, not standalone functions.
+`GenericRepository.List` treats a non-nil `ApplyCustomOrdering` callback as a *replacement*
+for its built-in `ApplyStandardPagination`. If the callback doesn't apply pagination,
+no LIMIT is applied and all rows are returned regardless of `pageSize`.
+
+**5a. OrderByColumns map** — defines which `orderBy` values the API accepts:
 
 ```go
-func applyXxxCustomOrdering(query *gorm.DB, _ *models.XxxListOptions) *gorm.DB {
-    return query
+var XxxOrderByColumns = map[string]string{
+    "ID":               "id",
+    "CREATE_TIME":      "create_time_since_epoch",
+    "LAST_UPDATE_TIME": "last_update_time_since_epoch",
+    "NAME":             "name",
+    "id":               "id",
 }
+```
+
+**5b. `applyCustomOrdering`** — handle NAME ordering explicitly (it uses a special
+helper for cursor-based pagination on the name column), fall back to standard for
+everything else:
+
+```go
+func (r *XxxRepositoryImpl) applyXxxCustomOrdering(query *gorm.DB, listOptions *models.XxxListOptions) *gorm.DB {
+    db := r.GetConfig().DB
+    TABLE := utils.GetTableName(db, &SCHEMA_TYPE{})
+    orderBy := listOptions.GetOrderBy()
+
+    if orderBy == "NAME" {
+        return pagination.ApplyNameOrdering(query, TABLE, listOptions.GetSortOrder(), listOptions.GetNextPageToken(), listOptions.GetPageSize(), false)
+    }
+
+    return r.ApplyStandardPagination(query, listOptions, []models.Xxx{})
+}
+```
+
+Replace TABLE lookup with the correct schema type from the reference table
+(e.g., `&schema.Context{}` for context entities).
+
+Add these imports if not already present:
+```go
+"github.com/kubeflow/hub/catalog/internal/db/pagination"
+"github.com/kubeflow/hub/internal/platform/db/utils"
+```
+
+**5c. `ApplyStandardPagination` override** — passes the OrderByColumns map to the
+GORM pagination scope:
+
+```go
+func (r *XxxRepositoryImpl) ApplyStandardPagination(query *gorm.DB, listOptions *models.XxxListOptions, entities any) *gorm.DB {
+    pageSize := listOptions.GetPageSize()
+    orderBy := listOptions.GetOrderBy()
+    sortOrder := listOptions.GetSortOrder()
+    nextPageToken := listOptions.GetNextPageToken()
+
+    pag := &dbmodels.Pagination{
+        PageSize:      &pageSize,
+        OrderBy:       &orderBy,
+        SortOrder:     &sortOrder,
+        NextPageToken: &nextPageToken,
+    }
+
+    return query.Scopes(scopes.PaginateWithOptions(entities, pag, r.GetConfig().DB, "TABLE", XxxOrderByColumns))
+}
+```
+
+Replace `"TABLE"` with the GORM table name: `"Context"` for context,
+`"Artifact"` for artifact, `"Execution"` for execution.
+
+Add this import if not already present:
+```go
+"github.com/kubeflow/hub/internal/platform/db/scopes"
+```
+
+**Update the constructor** to use the method receiver:
+```go
+ApplyCustomOrdering: r.applyXxxCustomOrdering,
 ```
 
 ### Panic 6: `DeleteBySource`
@@ -411,18 +481,24 @@ Add a YAML provider so the plugin can load data from YAML files at startup.
 
 Create `catalog/internal/catalog/<name>catalog/yaml_provider.go` with:
 
-1. A YAML struct matching the data file format (using the primary entity's field names):
+1. A YAML struct matching the data file format (using the primary entity's field names).
+   **CRITICAL: Every field MUST have both `yaml` and `json` struct tags.**
+   The `k8s.io/apimachinery/pkg/util/yaml.Unmarshal` used to read YAML data files converts
+   YAML→JSON internally, then uses `encoding/json` to populate the struct. Without `json`
+   tags, fields with underscores or camelCase names silently fail to parse (Go's JSON
+   decoder only falls back to case-insensitive matching, which doesn't handle underscores).
+
    ```go
    type yaml<PascalName> struct {
-       Name        string            `yaml:"name"`
-       Description *string           `yaml:"description,omitempty"`
+       Name        string            `yaml:"name" json:"name"`
+       Description *string           `yaml:"description,omitempty" json:"description,omitempty"`
        // ... string/bool/array fields from the spec
-       CustomProperties map[string]any `yaml:"customProperties,omitempty"`
+       CustomProperties map[string]any `yaml:"customProperties,omitempty" json:"customProperties,omitempty"`
    }
 
    type yaml<PascalName>Catalog struct {
-       Source string           `yaml:"source"`
-       Items  []yaml<PascalName> `yaml:"<entity_plural>"`
+       Source string           `yaml:"source" json:"source"`
+       Items  []yaml<PascalName> `yaml:"<entity_plural>" json:"<entity_plural>"`
    }
    ```
 
@@ -523,7 +599,28 @@ Then print **Next Steps** the developer must complete manually:
 
 ```
 Next steps:
-  1. Edit the OpenAPI spec (api/openapi/src/plugins/<name>.yaml) to add entity-specific fields
+  1. Edit the OpenAPI spec (api/openapi/src/plugins/<name>.yaml) to add entity-specific fields.
+     IMPORTANT: The generated spec uses a flat `type: object` schema. For consistency with
+     model and MCP plugins, update it to use `allOf` with `$ref: BaseResource` so the entity
+     inherits customProperties, externalId, and timestamp fields:
+
+       CatalogXxx:
+         description: ...
+         allOf:
+           - $ref: "#/components/schemas/BaseResource"
+           - type: object
+             properties:
+               name:
+                 type: string
+               # ... entity-specific fields ...
+
+     BaseResource is defined in api/openapi/src/lib/common.yaml and provides:
+       customProperties, description, externalId, createTimeSinceEpoch, lastUpdateTimeSinceEpoch
+
+     For URL fields use `format: uri`. Follow MCP's camelCase naming for new fields
+     (e.g., repositoryUrl, not repository_url) — exception: source_id stays snake_case
+     because it's a cross-plugin convention.
+
   2. Run /sync-catalog to propagate spec changes
   3. Run /catalog-sample-data to generate test data
   4. Add list filter logic in apply<Entity>ListFilters if needed
