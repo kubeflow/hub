@@ -187,6 +187,7 @@ describe('Model Registry core', () => {
     modelRegistry.navigate();
     // Navigate to the unavailable registry (app would redirect to first registry; we go there directly)
     cy.visit(`/model-registry/${unavailableRegistryName}`);
+    modelRegistry.waitForPageLoaded();
 
     modelRegistry.findUnavailableModelRegistryState().should('exist');
     cy.contains('Model registry unavailable').should('be.visible');
@@ -389,8 +390,7 @@ describe('Model Registry selector persistence', () => {
       },
     });
 
-    cy.findByTestId('app-page-title').should('exist');
-    cy.findByTestId('app-page-title').contains('Model Registry');
+    modelRegistry.waitForPageLoaded();
 
     modelRegistry.findModelRegistry().should('contain.text', 'modelregistry-sample-2');
     verifyRelativeURL('/model-registry/modelregistry-sample-2');
@@ -406,8 +406,7 @@ describe('Model Registry selector persistence', () => {
       },
     });
 
-    cy.findByTestId('app-page-title').should('exist');
-    cy.findByTestId('app-page-title').contains('Model Registry');
+    modelRegistry.waitForPageLoaded();
 
     modelRegistry.findModelRegistry().should('contain.text', 'Model Registry Sample');
     verifyRelativeURL('/model-registry/modelregistry-sample');

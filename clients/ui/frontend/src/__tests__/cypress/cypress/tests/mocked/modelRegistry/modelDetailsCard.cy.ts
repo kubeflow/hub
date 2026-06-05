@@ -7,6 +7,7 @@ import { mockModelVersion } from '~/__mocks__/mockModelVersion';
 import { ModelRegistryMetadataType, ModelState, type ModelRegistry } from '~/app/types';
 import { MODEL_REGISTRY_API_VERSION } from '~/__tests__/cypress/cypress/support/commands/api';
 import { modelDetailsCard } from '~/__tests__/cypress/cypress/pages/modelRegistryView/modelDetailsCard';
+import { appChrome } from '~/__tests__/cypress/cypress/pages/appChrome';
 
 const mockRegisteredModelWithData = mockRegisteredModel({
   id: '1',
@@ -105,6 +106,7 @@ describe('Model Details Card', () => {
 
   it('displays model details correctly', () => {
     cy.visit('/model-registry/modelregistry-sample/registered-models/1/overview');
+    appChrome.waitForA11y();
 
     cy.contains('Model details').should('be.visible');
 

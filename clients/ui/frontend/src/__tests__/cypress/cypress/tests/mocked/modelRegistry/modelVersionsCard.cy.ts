@@ -7,6 +7,7 @@ import { mockModelVersion } from '~/__mocks__/mockModelVersion';
 import { ModelRegistryMetadataType, ModelState, type ModelRegistry } from '~/app/types';
 import { MODEL_REGISTRY_API_VERSION } from '~/__tests__/cypress/cypress/support/commands/api';
 import { modelVersionsCard } from '~/__tests__/cypress/cypress/pages/modelRegistryView/modelVersionsCard';
+import { appChrome } from '~/__tests__/cypress/cypress/pages/appChrome';
 
 const mockRegisteredModelWithData = mockRegisteredModel({
   id: '1',
@@ -271,6 +272,7 @@ describe('Model Versions Card', () => {
 
   it('does not display model versions list if there are no live model versions', () => {
     cy.visit('/model-registry/modelregistry-sample/registered-models/1/overview');
+    appChrome.waitForA11y();
     cy.interceptApi(
       `GET /api/:apiVersion/model_registry/:modelRegistryName/registered_models/:registeredModelId/versions`,
       {

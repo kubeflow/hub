@@ -27,6 +27,7 @@ class ModelTransferJobsPage {
   private wait() {
     cy.findByTestId('app-page-title').should('exist');
     cy.findByTestId('app-page-title').contains('Model transfer jobs');
+    cy.testA11y();
   }
 
   findTable() {

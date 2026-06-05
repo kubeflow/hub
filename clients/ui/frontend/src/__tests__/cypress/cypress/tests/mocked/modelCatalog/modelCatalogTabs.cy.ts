@@ -5,6 +5,7 @@ import {
   mockFilteredPerformanceArtifactsByWorkloadType,
 } from '~/__mocks__/mockCatalogModelArtifactList';
 import { modelCatalog } from '~/__tests__/cypress/cypress/pages/modelCatalog';
+import { appChrome } from '~/__tests__/cypress/cypress/pages/appChrome';
 import { mockModelRegistry } from '~/__mocks__/mockModelRegistry';
 import { MODEL_CATALOG_API_VERSION } from '~/__tests__/cypress/cypress/support/commands/api';
 import { UseCaseOptionValue } from '~/concepts/modelCatalog/const';
@@ -65,6 +66,7 @@ describe('Model Catalog Details Tabs', () => {
       it('should display tabs on model details page', () => {
         modelCatalog.findLoadingState().should('not.exist');
         modelCatalog.findModelCatalogDetailLink().first().click();
+        appChrome.waitForA11y();
 
         // Verify tabs are present
         modelCatalog.findModelDetailsTabs().should('be.visible');
@@ -121,9 +123,9 @@ describe('Model Catalog Details Tabs', () => {
 
         // Switch to Performance Insights tab
         modelCatalog.clickPerformanceInsightsTab();
+        modelCatalog.waitForPerformanceInsightsTab();
 
         // Verify Hardware Configuration content is displayed
-        modelCatalog.findPerformanceInsightsTabContent().should('be.visible');
         modelCatalog.findHardwareConfigurationTitle().should('be.visible');
         modelCatalog.findHardwareConfigurationDescription().should('be.visible');
         modelCatalog.findHardwareConfigurationTable().should('be.visible');
@@ -256,6 +258,7 @@ describe('Model Catalog Details Tabs', () => {
     it('should not display tabs for validated models without performance artifacts', () => {
       modelCatalog.findLoadingState().should('not.exist');
       modelCatalog.findModelCatalogDetailLink().first().click();
+      appChrome.waitForA11y();
       modelCatalog.findModelDetailsTabs().should('not.exist');
       modelCatalog.findOverviewTab().should('not.exist');
       modelCatalog.findPerformanceInsightsTab().should('not.exist');
@@ -279,6 +282,7 @@ describe('Model Catalog Details Tabs', () => {
     it('should not display tabs for non-validated models', () => {
       modelCatalog.findLoadingState().should('not.exist');
       modelCatalog.findModelCatalogDetailLink().first().click();
+      appChrome.waitForA11y();
 
       // Tabs should not be present
       modelCatalog.findModelDetailsTabs().should('not.exist');

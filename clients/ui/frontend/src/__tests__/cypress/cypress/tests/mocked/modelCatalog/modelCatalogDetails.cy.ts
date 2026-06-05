@@ -1,6 +1,7 @@
 /* eslint-disable camelcase */
 import { mockModArchResponse } from 'mod-arch-core';
 import { modelCatalog } from '~/__tests__/cypress/cypress/pages/modelCatalog';
+import { appChrome } from '~/__tests__/cypress/cypress/pages/appChrome';
 import { mockModelRegistry } from '~/__mocks__/mockModelRegistry';
 import {
   setupModelCatalogIntercepts,
@@ -31,6 +32,7 @@ describe('Model Catalog Details Page', () => {
   it('navigates to details and shows header, breadcrumb and description', () => {
     modelCatalog.findLoadingState().should('not.exist');
     modelCatalog.findModelCatalogDetailLink().first().click();
+    appChrome.waitForA11y();
     modelCatalog.findBreadcrumb().should('exist');
     modelCatalog.findDetailsProviderText().should('be.visible');
     modelCatalog.findDetailsDescription().should('exist');
@@ -82,7 +84,7 @@ describe('Model Catalog Details Page - Architecture Field', () => {
     modelCatalog.visit();
     modelCatalog.findLoadingState().should('not.exist');
     modelCatalog.findModelCatalogDetailLink().first().click();
-    modelCatalog.findBreadcrumb().should('exist');
+    appChrome.waitForA11y();
 
     // Architecture field should exist and show correct values
     modelCatalog.findModelArchitecture().should('be.visible');
@@ -353,7 +355,7 @@ describe('Model Catalog Details Page - Validated Configurations Card', () => {
       modelCatalog.visit();
       modelCatalog.findLoadingState().should('not.exist');
       modelCatalog.findModelCatalogDetailLink().first().click();
-      modelCatalog.findBreadcrumb().should('exist');
+      appChrome.waitForA11y();
     });
 
     it('should display the validated configurations card with tool calling content', () => {

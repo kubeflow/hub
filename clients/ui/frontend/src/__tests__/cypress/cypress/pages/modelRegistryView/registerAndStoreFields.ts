@@ -1,3 +1,4 @@
+import { appChrome } from '~/__tests__/cypress/cypress/pages/appChrome';
 import { FormFieldSelector } from './registerModelPage';
 
 class RegisterAndStoreFields {
@@ -5,6 +6,7 @@ class RegisterAndStoreFields {
     const preferredModelRegistry = 'modelregistry-sample';
     const query = registryNamespace ? `?namespace=${encodeURIComponent(registryNamespace)}` : '';
     cy.visit(`/model-registry/${preferredModelRegistry}/register/model${query}`);
+    appChrome.waitForA11y();
   }
 
   findNamespaceFormGroup() {

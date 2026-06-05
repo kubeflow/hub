@@ -1,4 +1,5 @@
 import { modelCatalog } from '~/__tests__/cypress/cypress/pages/modelCatalog';
+import { appChrome } from '~/__tests__/cypress/cypress/pages/appChrome';
 import {
   setupModelCatalogIntercepts,
   interceptPerformanceArtifactsWithFilterCheck,
@@ -103,6 +104,7 @@ describe('ModelCatalogCard Component', () => {
           modelCatalog.findValidatedModelBenchmarkLink().click();
         });
         cy.url().should('include', 'performance-insights');
+        appChrome.waitForA11y();
       });
     });
 

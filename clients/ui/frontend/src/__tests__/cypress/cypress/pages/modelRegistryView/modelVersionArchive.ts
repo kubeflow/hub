@@ -70,6 +70,7 @@ class ModelVersionArchive {
     cy.visit(
       `/model-registry/${preferredModelRegistry}/registered-models/${rmId}/versions/archive/${mvId}`,
     );
+    this.wait();
   }
 
   visitModelVersionList() {
