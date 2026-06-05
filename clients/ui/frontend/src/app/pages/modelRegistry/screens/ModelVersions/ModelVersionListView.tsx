@@ -174,6 +174,7 @@ const ModelVersionListView: React.FC<ModelVersionListViewProps> = ({
         <Alert
           variant="warning"
           isInline
+          className="mr-warning-alert--accessible-title"
           title={`All the versions have been archived along with the model on ${
             date
               ? `${date.toLocaleString('en-US', {
