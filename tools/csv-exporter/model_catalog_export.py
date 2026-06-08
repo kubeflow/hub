@@ -39,7 +39,7 @@ COLUMN_ORDER = [
 API_PATH = "/api/model_catalog/v1alpha1/models"
 SOURCES_API_PATH = "/api/model_catalog/v1alpha1/sources"
 
-UTF8_BOM = "﻿"
+UTF8_BOM = "\ufeff"
 
 
 def build_url(base_url, page_size, next_page_token=None, sources=None):

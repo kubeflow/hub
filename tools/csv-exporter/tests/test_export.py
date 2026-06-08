@@ -14,7 +14,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from model_catalog_export import (
     COLUMN_ORDER,
-    EXCLUDED_FIELDS,
     build_url,
     collect_models_and_keys,
     discover_columns,
