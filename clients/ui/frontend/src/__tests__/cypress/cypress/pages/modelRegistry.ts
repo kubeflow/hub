@@ -232,10 +232,6 @@ class ModelRegistry {
   findRegisterModelButton() {
     return cy.findByRole('button', { name: 'Register model' });
   }
-
-  findRegisteredModelsTableToolbar() {
-    return cy.findByTestId('registered-models-table-toolbar');
-  }
 }
 
 export const modelRegistry = new ModelRegistry();
