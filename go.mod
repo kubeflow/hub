@@ -12,7 +12,7 @@ require (
 	github.com/go-sql-driver/mysql v1.10.0
 	github.com/golang-migrate/migrate/v4 v4.19.1
 	github.com/golang/glog v1.2.5
-	github.com/jackc/pgx/v5 v5.9.2
+	github.com/jackc/pgx/v5 v5.10.0
 	github.com/kubeflow/hub/catalog/pkg/openapi v0.0.0-00010101000000-000000000000
 	github.com/kubeflow/hub/pkg/openapi v0.0.0
 	github.com/lib/pq v1.12.3
