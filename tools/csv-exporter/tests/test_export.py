@@ -13,9 +13,11 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from model_catalog_export import (
-    FIXED_COLUMNS,
+    COLUMN_ORDER,
+    EXCLUDED_FIELDS,
     build_url,
     collect_models_and_keys,
+    discover_columns,
     extract_custom_property_value,
     fetch_sources,
     format_field,
@@ -210,16 +212,18 @@ class TestCollectModelsAndKeys:
         m1 = make_model("m1", {"framework": {"metadataType": "MetadataStringValue", "string_value": "pt"}})
         m2 = make_model("m2", {"accuracy": {"metadataType": "MetadataDoubleValue", "double_value": 0.9}})
         mock_open.side_effect = mock_urlopen([make_api_response([m1, m2])])
-        models, keys = collect_models_and_keys("http://localhost:8080", 100, None, None, None)
+        models, columns, keys = collect_models_and_keys("http://localhost:8080", 100, None, None, None)
         assert len(models) == 2
         assert keys == ["accuracy", "framework"]
+        assert columns == list(COLUMN_ORDER)
 
 
 class TestModelToRow:
     def test_fixed_columns(self):
         model = make_model("test")
-        row = model_to_row(model, [])
-        assert len(row) == len(FIXED_COLUMNS)
+        columns = discover_columns([model])
+        row = model_to_row(model, columns, [])
+        assert len(row) == len(columns)
         assert row[0] == "id-test"
         assert row[1] == "test"
 
@@ -229,28 +233,31 @@ class TestModelToRow:
             "accuracy": {"metadataType": "MetadataDoubleValue", "double_value": 0.95},
         }
         model = make_model("test", custom_props=props)
-        row = model_to_row(model, ["accuracy", "framework"])
-        assert row[len(FIXED_COLUMNS)] == "0.95"
-        assert row[len(FIXED_COLUMNS) + 1] == "pytorch"
+        columns = discover_columns([model])
+        row = model_to_row(model, columns, ["accuracy", "framework"])
+        assert row[len(columns)] == "0.95"
+        assert row[len(columns) + 1] == "pytorch"
 
     def test_missing_custom_key(self):
         model = make_model("test", {"a": {"metadataType": "MetadataStringValue", "string_value": "x"}})
-        row = model_to_row(model, ["a", "b"])
-        assert row[len(FIXED_COLUMNS)] == "x"
-        assert row[len(FIXED_COLUMNS) + 1] == ""
+        columns = discover_columns([model])
+        row = model_to_row(model, columns, ["a", "b"])
+        assert row[len(columns)] == "x"
+        assert row[len(columns) + 1] == ""
 
 
 class TestWriteCsv:
     def test_creates_file(self):
+        models = [make_model("m1")]
         with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, "out.csv")
-            write_csv([make_model("m1")], [], path)
+            write_csv(models, discover_columns(models), [], path)
             assert os.path.exists(path)
 
     def test_header_only_for_empty(self):
         with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, "out.csv")
-            write_csv([], [], path)
+            write_csv([], COLUMN_ORDER, [], path)
             with open(path, encoding="utf-8-sig") as f:
                 lines = f.readlines()
             assert len(lines) == 1
@@ -258,7 +265,7 @@ class TestWriteCsv:
     def test_bom_present(self):
         with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, "out.csv")
-            write_csv([], [], path)
+            write_csv([], COLUMN_ORDER, [], path)
             with open(path, "rb") as f:
                 assert f.read(3) == b"\xef\xbb\xbf"
 
@@ -266,7 +273,7 @@ class TestWriteCsv:
         models = [make_model(f"m{i}") for i in range(5)]
         with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, "out.csv")
-            write_csv(models, [], path)
+            write_csv(models, discover_columns(models), [], path)
             with open(path, encoding="utf-8-sig") as f:
                 reader = csv.reader(f)
                 rows = list(reader)
@@ -281,13 +288,14 @@ class TestWriteCsv:
                     raise RuntimeError("disk full")
 
             with pytest.raises(RuntimeError):
-                write_csv([BrokenModel()], [], path)
+                write_csv([BrokenModel()], COLUMN_ORDER, [], path)
             assert not os.path.exists(path)
 
     def test_creates_output_directory(self):
+        models = [make_model("m1")]
         with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, "subdir", "nested", "out.csv")
-            write_csv([make_model("m1")], [], path)
+            write_csv(models, discover_columns(models), [], path)
             assert os.path.exists(path)
 
 

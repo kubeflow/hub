@@ -172,18 +172,15 @@ spec:
 
 The output is RFC 4180-compliant CSV with UTF-8 BOM (for Excel compatibility).
 
-### Fixed Columns
+### Model Columns
 
-Always present in this order:
+All top-level model fields are included automatically, in a stable default order.
+New fields added to the API will appear in the CSV without code changes.
 
-`id`, `name`, `description`, `provider`, `maturity`, `license`, `licenseLink`,
-`libraryName`, `source_id`, `externalId`, `createTimeSinceEpoch`,
-`lastUpdateTimeSinceEpoch`, `language`, `tasks`, `validatedTasks`
-
-### Dynamic Columns
+### Custom Property Columns
 
 Each custom property key found across all exported models becomes its own column,
-appended after the fixed columns in alphabetical order. Models that lack a particular
+appended after the model columns in alphabetical order. Models that lack a particular
 custom property have an empty cell for that column.
 
 ### Value Handling
@@ -196,9 +193,13 @@ custom property have an empty cell for that column.
 
 ### Excluded Fields
 
-- `readme` — can exceed 32K characters, not useful in tabular form
-- `logo` — can contain large data URLs, not useful in tabular form
-- `servingConfig` — internal serving configuration
+The following fields are excluded because they are too large or not useful in
+tabular form:
+
+- `readme` — can exceed 32K characters
+- `logo` — can contain large data URLs
+- `servingConfig` — nested serving configuration object
+- `customProperties` — handled separately as dynamic columns (see above)
 
 ## Troubleshooting
 

@@ -16,7 +16,9 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-FIXED_COLUMNS = [
+EXCLUDED_FIELDS = {"readme", "logo", "servingConfig", "customProperties"}
+
+COLUMN_ORDER = [
     "id",
     "name",
     "description",
@@ -113,6 +115,17 @@ def format_field(value):
     return str(value)
 
 
+def discover_columns(models):
+    if not models:
+        return list(COLUMN_ORDER)
+    seen: set[str] = set()
+    for model in models:
+        seen.update(k for k in model if k not in EXCLUDED_FIELDS)
+    ordered = [k for k in COLUMN_ORDER if k in seen]
+    ordered += sorted(seen - set(COLUMN_ORDER))
+    return ordered
+
+
 def collect_models_and_keys(base_url, page_size, sources, limit, headers):
     models = []
     custom_keys: set[str] = set()
@@ -120,12 +133,12 @@ def collect_models_and_keys(base_url, page_size, sources, limit, headers):
         models.append(model)
         props = model.get("customProperties") or {}
         custom_keys.update(props.keys())
-    return models, sorted(custom_keys)
+    return models, discover_columns(models), sorted(custom_keys)
 
 
-def model_to_row(model, custom_keys):
+def model_to_row(model, columns, custom_keys):
     row = []
-    for col in FIXED_COLUMNS:
+    for col in columns:
         row.append(format_field(model.get(col)))
     props = model.get("customProperties") or {}
     for key in custom_keys:
@@ -136,7 +149,7 @@ def model_to_row(model, custom_keys):
     return row
 
 
-def write_csv(models, custom_keys, output_path):
+def write_csv(models, columns, custom_keys, output_path):
     output_dir = os.path.dirname(os.path.abspath(output_path))
     os.makedirs(output_dir, exist_ok=True)
     tmp_fd, tmp_path = tempfile.mkstemp(suffix=".csv", dir=output_dir)
@@ -144,10 +157,10 @@ def write_csv(models, custom_keys, output_path):
         with os.fdopen(tmp_fd, "w", newline="", encoding="utf-8") as f:
             f.write(UTF8_BOM)
             writer = csv.writer(f)
-            header = list(FIXED_COLUMNS) + custom_keys
+            header = list(columns) + custom_keys
             writer.writerow(header)
             for model in models:
-                writer.writerow(model_to_row(model, custom_keys))
+                writer.writerow(model_to_row(model, columns, custom_keys))
         os.replace(tmp_path, os.path.abspath(output_path))
     except BaseException:
         with contextlib.suppress(OSError):
@@ -283,14 +296,14 @@ def main(argv=None):
         raise SystemExit(2)
 
     try:
-        models, custom_keys = collect_models_and_keys(
+        models, columns, custom_keys = collect_models_and_keys(
             base_url=args.url,
             page_size=args.page_size,
             sources=args.source,
             limit=args.limit,
             headers=headers,
         )
-        write_csv(models, custom_keys, args.output)
+        write_csv(models, columns, custom_keys, args.output)
     except SystemExit:
         raise
     except Exception as e:
@@ -299,7 +312,7 @@ def main(argv=None):
 
     print(
         f"Exported {len(models)} models "
-        f"({len(FIXED_COLUMNS) + len(custom_keys)} columns) "
+        f"({len(columns) + len(custom_keys)} columns) "
         f"to {args.output}",
         file=sys.stderr,
     )
