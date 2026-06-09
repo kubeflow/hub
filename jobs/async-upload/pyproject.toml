@@ -9,10 +9,12 @@ packages = [{include = "job"}]
 [tool.poetry.dependencies]
 python = ">=3.11,<4.0"
 configargparse = ">=1.7.1,<2.0.0"
-model-registry = { version = ">=0.3.7,<0.4.0", extras = ["boto3", "olot", "signing"] }
+model-registry = { version = ">=0.3.7,<0.4.0", extras = ["boto3", "olot"] }
+platformdirs = "^4.0.0"
 pydantic = ">=2.13.0,<3.0.0"
 huggingface-hub = "^1.16.4"
 requests = "^2.34.2"
+rh-model-signing = ">=1.0.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=8.3.5,<10.0.0"

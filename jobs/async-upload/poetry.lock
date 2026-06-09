@@ -1498,10 +1498,8 @@ aiohttp-retry = ">=2.8.3,<3.0.0"
 boto3 = {version = ">=1.37.34,<2.0.0", optional = true, markers = "extra == \"boto3\""}
 nest-asyncio2 = ">=1.7.1,<2.0.0"
 olot = {version = ">=0.1.17,<0.2.0", optional = true, markers = "extra == \"olot\""}
-platformdirs = {version = ">=4.0.0,<5.0.0", optional = true, markers = "extra == \"signing\""}
 pydantic = ">=2.7.4,<3.0.0"
 python-dateutil = ">=2.9.0.post0,<3.0.0"
-rh-model-signing = {version = "1.0.1", optional = true, markers = "extra == \"signing\""}
 typing-extensions = ">=4.8,<5.0"
 
 [package.extras]
@@ -2461,23 +2459,24 @@ test = ["coverage", "pytest", "pytest-cov"]
 
 [[package]]
 name = "rh-model-signing"
-version = "1.0.1"
+version = "1.0.3"
 description = "A tool for signing and verifying ML models (Red Hat Tech Preview)"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "rh_model_signing-1.0.1-py3-none-any.whl", hash = "sha256:669148d50897aa356cfe9cdc894f35b3d0f02e67c3aa934d6077b9f465f3e22a"},
-    {file = "rh_model_signing-1.0.1.tar.gz", hash = "sha256:2914ac502298a7a2bef973f089ae059157619908c1d9c88d7a51d64648013257"},
+    {file = "rh_model_signing-1.0.3-py3-none-any.whl", hash = "sha256:32ff8df65f4f7c82c5b8a2d9451a6756e3e7f2f1430c651e41d29d8e4a2bf74c"},
+    {file = "rh_model_signing-1.0.3.tar.gz", hash = "sha256:f5088ec6cd1f1ae12eec6a9f1e2be3a640d0a3b4a4d792cc6791ac9f08610bb2"},
 ]
 
 [package.dependencies]
 asn1crypto = "*"
 blake3 = "*"
 click = "*"
-cryptography = "*"
+cryptography = ">=46.0.7"
 in-toto-attestation = "*"
 oras = ">=0.2.30"
+pyasn1 = ">=0.6.2"
 sigstore = ">=4.2"
 sigstore-models = ">=0.0.5"
 typing-extensions = "*"
@@ -3006,4 +3005,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "bf70d7e24a0abb0fca72534a6cb8610e896f11a4550d9415f7e91272dd83cb5b"
+content-hash = "eb5baf4cdc35f3e1fd3ac95e678b7a7d3e612ff7e4d56c2475f25429f5f598a7"
