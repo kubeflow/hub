@@ -31,6 +31,8 @@ make -C catalog gen/openapi
 
 Report what was regenerated. Check `go build ./catalog/...` — if it fails, proceed to Phase 4 (service sync) first since interface mismatches are the most common cause.
 
+**Note:** `catalog/internal/server/openapi/type_asserts_overrides.go` is a hand-maintained file that overrides auto-generated assert functions for polymorphic types (e.g., `AssertCatalogArtifactRequired`, `AssertFilterOptionRequired`). If `gen/openapi-server` regenerates `type_asserts.go` and the build fails with undefined assert function errors, check whether this overrides file needs updating for the new types.
+
 ## Phase 3: Sync Datastore Entries + Entity Mappings
 
 ### 3a: Detect new fields
@@ -68,7 +70,7 @@ For each confirmed field, update three files:
 - Find the entity's `DatastoreEntry` block
 - Add the new `.Add*("<field_name>")` call before the closing comma
 
-**2. Entity mappings** in `catalog/internal/catalog/<name>catalog/service/<entity>_entity_mappings.go`:
+**2. Entity mappings** in `catalog/internal/catalog/<name>catalog/service/entity_mappings_<entity>.go`:
 - Add entry to the properties map variable:
   ```go
   "<field_name>": {Location: filter.PropertyTable, ValueType: filter.<ValueType>, Column: "<field_name>"},
@@ -78,7 +80,7 @@ For each confirmed field, update three files:
   - `BoolValueType` for boolean
   - `ArrayValueType` for array
 
-**3. Entity mappings test** in `catalog/internal/catalog/<name>catalog/service/<entity>_entity_mappings_test.go`:
+**3. Entity mappings test** in `catalog/internal/catalog/<name>catalog/service/entity_mappings_<entity>_test.go`:
 - Add entry to the expected properties map with the same definition
 
 ### 3d: Ask about filterability
@@ -102,10 +104,10 @@ Read the current service implementation from `catalog/internal/server/openapi/ap
 Compare method signatures:
 
 - **Changed signatures**: Update the implementation method to match the new interface signature. Keep the existing body logic, just fix the parameters.
-- **New methods**: Add a stub implementation returning an empty/not-found response (same pattern as init-catalog Phase 5).
+- **New methods**: Add a stub implementation returning an empty/not-found response (same pattern as init-catalog Phase 6).
 - **Removed methods**: Delete the implementation method.
 
-If the service implementation file doesn't exist yet (e.g., it was deleted during a regen), recreate it following the init-catalog Phase 5 pattern.
+If the service implementation file doesn't exist yet (e.g., it was deleted during a regen), recreate it following the init-catalog Phase 6 pattern.
 
 ## Phase 5: Sync DB Provider + Property-to-API Mapping
 

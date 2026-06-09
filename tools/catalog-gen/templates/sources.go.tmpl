@@ -4,7 +4,6 @@ import (
 	"sync"
 
 	"github.com/kubeflow/hub/catalog/internal/catalog/basecatalog"
-	"github.com/kubeflow/hub/internal/platform/apiutils"
 )
 
 type {{.CamelName}}OriginEntry struct {
@@ -82,7 +81,7 @@ func merge{{.PascalName}}Sources(base, override basecatalog.PluginSource) baseca
 
 func apply{{.PascalName}}Defaults(source basecatalog.PluginSource) basecatalog.PluginSource {
 	if source.Enabled == nil {
-		source.Enabled = apiutils.Of(true)
+		source.Enabled = new(true)
 	}
 	if source.Labels == nil {
 		source.Labels = []string{}

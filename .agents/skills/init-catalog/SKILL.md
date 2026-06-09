@@ -106,7 +106,7 @@ that queries the repository and maps results to OpenAPI models.
 3. **Add `List<Entity>s` method**: build `ListOptions` from params, call repository `.List()`,
    map each result via a mapping function, return the API list type with pagination.
    For pointer fields on the list struct (check `catalog/pkg/openapi/model_<entity>_list.go`),
-   use `&variable` or `apiutils.Of()`.
+   use `&variable` or `new(value)` (Go 1.26 builtin).
    The `NextPageToken` from the repository is a plain `string`; only assign to the response
    if non-empty (the API model field is `*string`).
 
@@ -223,7 +223,9 @@ func (l *<PascalName>Loader) PerformLeaderOperations(ctx context.Context, allKno
 
 The `loadFromYAML` method reads the YAML file from `source.Properties["yamlCatalogPath"]`
 (resolving relative paths via `source.Origin`), parses each entry, converts to a domain entity,
-and saves via `l.services.<Entity>Repository.Save(entity, nil)`.
+and saves via the repository. The Save call signature depends on datastore type:
+- Context entities: `l.services.<Entity>Repository.Save(entity)` (1 param)
+- Artifact/execution entities: `l.services.<Entity>Repository.Save(entity, parentID)` (2 params)
 
 Reference: `catalog/internal/catalog/mcpcatalog/providers.go` for path resolution and
 `catalog/internal/catalog/mcpcatalog/loader.go` `updateDatabase` for the save pattern.

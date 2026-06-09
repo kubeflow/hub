@@ -93,12 +93,12 @@ func (g *Generator) generateServices() error {
 			return err
 		}
 
-		mappingsFilename := entity.SnakeName() + "_entity_mappings.go"
+		mappingsFilename := "entity_mappings_" + entity.SnakeName() + ".go"
 		if err := g.renderFile(dir, mappingsFilename, "entity_mappings.go.tmpl", data); err != nil {
 			return err
 		}
 
-		mappingsTestFilename := entity.SnakeName() + "_entity_mappings_test.go"
+		mappingsTestFilename := "entity_mappings_" + entity.SnakeName() + "_test.go"
 		if err := g.renderFile(dir, mappingsTestFilename, "entity_mappings_test.go.tmpl", data); err != nil {
 			return err
 		}

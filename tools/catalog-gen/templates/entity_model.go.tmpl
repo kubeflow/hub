@@ -46,7 +46,11 @@ type {{.Entity.RepoInterface}} interface {
 	GetByID(id int32) ({{.Entity.Name}}, error)
 	GetByName(name string) ({{.Entity.Name}}, error)
 	List(listOptions *{{.Entity.ListOptions}}) (*dbmodels.ListWrapper[{{.Entity.Name}}], error)
+{{- if eq .Entity.DatastoreType "context"}}
+	Save(entity {{.Entity.Name}}) ({{.Entity.Name}}, error)
+{{- else}}
 	Save(entity {{.Entity.Name}}, parentResourceID *int32) ({{.Entity.Name}}, error)
+{{- end}}
 	DeleteBySource(sourceID string) error
 	DeleteByID(id int32) error
 	GetDistinctSourceIDs() ([]string, error)

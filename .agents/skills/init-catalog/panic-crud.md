@@ -5,24 +5,30 @@ Use the **Type Reference Table** in SKILL.md to select the correct table names a
 
 ## Panic 6: `DeleteBySource`
 
-Delete all entities of this type from a given source. Use a transaction with a subquery joining the property table.
+Delete all entities of this type from a given source. Use a GORM fluent builder with
+`utils.GetTableName()` for database-portable table names.
 
 ```go
 func (r *XxxRepositoryImpl) DeleteBySource(sourceID string) error {
     config := r.GetConfig()
-    return config.DB.Transaction(func(tx *gorm.DB) error {
-        query := `DELETE FROM "TABLE" WHERE id IN (
-            SELECT "TABLE".id FROM "TABLE"
-            INNER JOIN "PROPERTY_TABLE" ON "TABLE".id="PROPERTY_TABLE".JOIN_FIELD
-            AND "PROPERTY_TABLE".name='source_id'
-            WHERE "PROPERTY_TABLE".string_value=? AND "TABLE".type_id=?
-        )`
-        return tx.Exec(query, sourceID, config.TypeID).Error
-    })
+    tableName := utils.GetTableName(config.DB, &SCHEMA_TYPE{})
+    propTableName := utils.GetTableName(config.DB, &SCHEMA_PROPERTY_TYPE{})
+
+    subQuery := config.DB.Table(tableName).
+        Select(tableName + ".id").
+        Joins("INNER JOIN " + propTableName + " ON " +
+            tableName + ".id = " + propTableName + ".JOIN_FIELD").
+        Where(propTableName + ".name = ? AND " +
+            propTableName + ".string_value = ? AND " +
+            tableName + ".type_id = ?",
+            "source_id", sourceID, config.TypeID)
+
+    return config.DB.Where("id IN (?)", subQuery).Delete(&SCHEMA_TYPE{}).Error
 }
 ```
 
-Replace TABLE, PROPERTY_TABLE, and JOIN_FIELD from the reference table.
+Replace SCHEMA_TYPE, SCHEMA_PROPERTY_TYPE, and JOIN_FIELD from the reference table.
+Reference: `catalog/internal/catalog/mcpcatalog/service/mcp_server.go` `DeleteBySource`.
 
 ## Panic 7: `DeleteByID`
 
@@ -46,32 +52,33 @@ Replace SCHEMA_TYPE with the schema type from the reference table (e.g., `schema
 
 ## Panic 8: `GetDistinctSourceIDs`
 
-Query all unique source_id values for this entity type.
+Query all unique source_id values for this entity type. Use the GORM fluent API with
+`utils.GetTableName()` for database-portable table names.
 
 ```go
 func (r *XxxRepositoryImpl) GetDistinctSourceIDs() ([]string, error) {
     config := r.GetConfig()
     var sourceIDs []string
-    query := `SELECT DISTINCT "PROPERTY_TABLE".string_value FROM "PROPERTY_TABLE"
-        INNER JOIN "TABLE" ON "PROPERTY_TABLE".JOIN_FIELD = "TABLE".id
-        WHERE "PROPERTY_TABLE".name='source_id' AND "TABLE".type_id=?`
-    rows, err := config.DB.Raw(query, config.TypeID).Rows()
+
+    propTableName := utils.GetTableName(config.DB, &SCHEMA_PROPERTY_TYPE{})
+    tableName := utils.GetTableName(config.DB, &SCHEMA_TYPE{})
+
+    err := config.DB.Table(propTableName + " cp").
+        Select("DISTINCT cp.string_value").
+        Joins("INNER JOIN " + tableName + " c ON cp.JOIN_FIELD = c.id").
+        Where("cp.name = ? AND c.type_id = ?", "source_id", config.TypeID).
+        Pluck("string_value", &sourceIDs).Error
+
     if err != nil {
-        return nil, fmt.Errorf("error querying distinct source IDs: %w", dbutil.SanitizeDatabaseError(err))
+        err = dbutil.SanitizeDatabaseError(err)
+        return nil, fmt.Errorf("error querying distinct source IDs: %w", err)
     }
-    defer rows.Close()
-    for rows.Next() {
-        var id string
-        if err := rows.Scan(&id); err != nil {
-            return nil, fmt.Errorf("error scanning source ID: %w", dbutil.SanitizeDatabaseError(err))
-        }
-        sourceIDs = append(sourceIDs, id)
-    }
-    return sourceIDs, rows.Err()
+    return sourceIDs, nil
 }
 ```
 
-Replace TABLE, PROPERTY_TABLE, and JOIN_FIELD from the reference table.
+Replace SCHEMA_TYPE, SCHEMA_PROPERTY_TYPE, and JOIN_FIELD from the reference table.
+Reference: `catalog/internal/catalog/mcpcatalog/service/mcp_server.go` `GetDistinctSourceIDs`.
 
 ## Imports to add
 
@@ -81,6 +88,7 @@ After replacing panics, ensure these imports are present in each modified file:
 "fmt"
 dbmodels "github.com/kubeflow/hub/internal/platform/db/entity"
 "github.com/kubeflow/hub/internal/platform/db/dbutil"
+"github.com/kubeflow/hub/internal/platform/db/utils"
 ```
 
 The following should already be present from the template:
@@ -97,7 +105,24 @@ Remove any unused imports after edits.
 The `GenericRepository.Save` does NOT automatically set `TypeID` on entities. Without this,
 entities saved by the YAML loader get `type_id = 0` and won't be found by List/Get queries.
 
-Add a `Save` override to each entity's repository impl:
+Add a `Save` override to each entity's repository impl. The signature differs by datastore type:
+
+### Context entities (1-param Save)
+
+```go
+func (r *XxxRepositoryImpl) Save(entity models.Xxx) (models.Xxx, error) {
+    config := r.GetConfig()
+    if entity.GetTypeID() == nil && config.TypeID > 0 {
+        entity.SetTypeID(config.TypeID)
+    }
+    return r.GenericRepository.Save(entity, nil)
+}
+```
+
+Reference: `catalog/internal/catalog/modelcatalog/service/catalog_model.go` `Save` method,
+`catalog/internal/catalog/mcpcatalog/service/mcp_server.go` `Save` method.
+
+### Artifact and execution entities (2-param Save)
 
 ```go
 func (r *XxxRepositoryImpl) Save(entity models.Xxx, parentResourceID *int32) (models.Xxx, error) {
@@ -109,4 +134,5 @@ func (r *XxxRepositoryImpl) Save(entity models.Xxx, parentResourceID *int32) (mo
 }
 ```
 
-Reference: `catalog/internal/catalog/modelcatalog/service/catalog_model.go` `Save` method.
+Reference: `catalog/internal/catalog/modelcatalog/service/catalog_model_artifact.go` `Save` method,
+`catalog/internal/catalog/mcpcatalog/service/mcp_server_tool.go` `Save` method.
