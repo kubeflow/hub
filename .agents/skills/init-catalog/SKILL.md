@@ -64,9 +64,9 @@ Before writing code, read these files for the exact patterns:
 
 Each group of panics is documented in a separate file. **Read the file** for each group before implementing.
 
-- **Panics 1–3** (entity ↔ schema mapping): Read `.claude/skills/init-catalog/panic-mapping.md`
-- **Panics 4–5** (filtering & ordering): Read `.claude/skills/init-catalog/panic-ordering.md`
-- **Panics 6–8** (delete/query ops, imports, Save override): Read `.claude/skills/init-catalog/panic-crud.md`
+- **Panics 1–3** (entity ↔ schema mapping): Read `.agents/skills/init-catalog/panic-mapping.md`
+- **Panics 4–5** (filtering & ordering): Read `.agents/skills/init-catalog/panic-ordering.md`
+- **Panics 6–8** (delete/query ops, imports, Save override): Read `.agents/skills/init-catalog/panic-crud.md`
 
 ## Phase 4: Generate OpenAPI Stubs
 
