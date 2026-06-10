@@ -2060,12 +2060,12 @@ func GetFilterOptionMocks() map[string]models.FilterOption {
 		},
 	}
 
-	// Cold-start load time in milliseconds
-	filterOptions["artifacts.cold_start_load_time_seconds.double_value"] = models.FilterOption{
+	// Cold-start load time in seconds
+	filterOptions["artifacts.cold_start_time_to_load_seconds.double_value"] = models.FilterOption{
 		Type: FilterOptionTypeNumber,
 		Range: &models.FilterRange{
-			Min: float32Ptr(45000),
-			Max: float32Ptr(200000),
+			Min: float32Ptr(47.2),
+			Max: float32Ptr(145.7),
 		},
 	}
 
@@ -2288,7 +2288,7 @@ func GetNamedQueriesMocks() map[string]map[string]models.FieldFilter {
 			Operator: "<=",
 			Value:    float64(892.6553726196289),
 		},
-		"artifacts.cold_start_load_time_seconds.double_value": {
+		"artifacts.cold_start_time_to_load_seconds.double_value": {
 			Operator: "<=",
 			Value:    "max",
 		},

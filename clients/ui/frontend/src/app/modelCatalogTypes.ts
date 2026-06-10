@@ -82,6 +82,7 @@ export enum CatalogArtifactType {
 export enum MetricsType {
   accuracyMetrics = 'accuracy-metrics',
   performanceMetrics = 'performance-metrics',
+  coldStartMetrics = 'cold-start-metrics',
 }
 
 export enum CategoryName {
@@ -151,9 +152,23 @@ export type CatalogAccuracyMetricsArtifact = Omit<CatalogArtifactBase, 'customPr
   customProperties?: AccuracyMetricsCustomProperties;
 };
 
+export type ColdStartMetricsCustomProperties = {
+  gpu_type?: ModelRegistryCustomPropertyString;
+  gpu_count?: ModelRegistryCustomPropertyInt;
+  cold_start_time_to_load_seconds?: ModelRegistryCustomPropertyDouble;
+  runtime_command?: ModelRegistryCustomPropertyString;
+};
+
+export type CatalogColdStartMetricsArtifact = Omit<CatalogArtifactBase, 'customProperties'> & {
+  artifactType: CatalogArtifactType.metricsArtifact;
+  metricsType: MetricsType.coldStartMetrics;
+  customProperties?: ColdStartMetricsCustomProperties;
+};
+
 export type CatalogMetricsArtifact =
   | CatalogPerformanceMetricsArtifact
-  | CatalogAccuracyMetricsArtifact;
+  | CatalogAccuracyMetricsArtifact
+  | CatalogColdStartMetricsArtifact;
 
 export type CatalogArtifacts = CatalogModelArtifact | CatalogMetricsArtifact;
 

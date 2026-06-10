@@ -50,6 +50,8 @@ const INITIAL_FILTERS: ModelCatalogFilterStates = {
   [ModelCatalogStringFilterKey.USE_CASE]: [],
   [ModelCatalogNumberFilterKey.MAX_RPS]: undefined,
   [ModelCatalogNumberFilterKey.COLD_START_LATENCY]: undefined,
+  [ModelCatalogNumberFilterKey.MIN_VRAM]: undefined,
+  [ModelCatalogNumberFilterKey.IMAGE_SIZE]: undefined,
   [ModelCatalogStringFilterKey.TENSOR_TYPE]: [],
   [ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION]: [],
 };

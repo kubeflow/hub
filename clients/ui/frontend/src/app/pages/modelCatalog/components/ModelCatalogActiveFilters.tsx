@@ -137,14 +137,18 @@ const ModelCatalogActiveFilters: React.FC<ModelCatalogActiveFiltersProps> = ({
         case ModelCatalogNumberFilterKey.MAX_RPS:
           return `${MODEL_CATALOG_FILTER_CHIP_PREFIXES.MAX_RPS} ${value}`;
         case ModelCatalogNumberFilterKey.COLD_START_LATENCY:
-          return `${MODEL_CATALOG_FILTER_CHIP_PREFIXES.COLD_START_LATENCY} ${value} ms`;
+          return `${MODEL_CATALOG_FILTER_CHIP_PREFIXES.COLD_START_LATENCY} ${value} s`;
+        case ModelCatalogNumberFilterKey.MIN_VRAM:
+          return `${MODEL_CATALOG_FILTER_CHIP_PREFIXES.MIN_VRAM} ${value} GB`;
+        case ModelCatalogNumberFilterKey.IMAGE_SIZE:
+          return `${MODEL_CATALOG_FILTER_CHIP_PREFIXES.IMAGE_SIZE} ${value} GB`;
         default:
           return String(value);
       }
     }
 
     const parsed = parseLatencyFilterKey(filterKey);
-    const formattedValue = typeof value === 'number' ? formatLatency(value) : `${value}ms`;
+    const formattedValue = typeof value === 'number' ? formatLatency(value) : `${value}s`;
     return `${parsed.metric} | ${parsed.percentile} | ${formattedValue}`;
   };
 
@@ -237,7 +241,9 @@ const ModelCatalogActiveFilters: React.FC<ModelCatalogActiveFiltersProps> = ({
         const isSingleValuePerformanceFilter =
           filterKey === ModelCatalogStringFilterKey.USE_CASE ||
           filterKey === ModelCatalogNumberFilterKey.MAX_RPS ||
-          filterKey === ModelCatalogNumberFilterKey.COLD_START_LATENCY;
+          filterKey === ModelCatalogNumberFilterKey.COLD_START_LATENCY ||
+          filterKey === ModelCatalogNumberFilterKey.MIN_VRAM ||
+          filterKey === ModelCatalogNumberFilterKey.IMAGE_SIZE;
 
         let labels: ToolbarLabel[] = [];
 

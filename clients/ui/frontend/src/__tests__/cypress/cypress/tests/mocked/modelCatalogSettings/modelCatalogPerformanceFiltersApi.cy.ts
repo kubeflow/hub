@@ -75,7 +75,7 @@ describe('Model Catalog Performance Filters API Behavior', () => {
         expect(url).to.not.include('artifacts.e2e');
         expect(url).to.not.include('artifacts.itl');
         expect(url).to.not.include('artifacts.requests_per_second');
-        expect(url).to.not.include('cold_start_load_time_seconds');
+        expect(url).to.not.include('cold_start_time_to_load_seconds');
         expect(url).to.not.include('targetRPS');
         expect(url).to.not.include('latencyProperty');
 
@@ -158,7 +158,7 @@ describe('Model Catalog Performance Filters API Behavior', () => {
 
         expect(url).to.not.include('artifacts.use_case');
         expect(url).to.not.include('artifacts.ttft');
-        expect(url).to.not.include('cold_start_load_time_seconds');
+        expect(url).to.not.include('cold_start_time_to_load_seconds');
         expect(url).to.not.include('targetRPS');
       });
 
@@ -301,7 +301,7 @@ describe('Model Catalog Performance Filters API Behavior', () => {
   });
 
   describe('Cold start load time filter API behavior', () => {
-    it('should include cold_start_load_time_seconds in filterQuery when applied with toggle ON', () => {
+    it('should include cold_start_time_to_load_seconds in filterQuery when applied with toggle ON', () => {
       visitWithPerformanceToggle(true);
 
       modelCatalog.openColdStartLatencyFilter();
@@ -313,11 +313,11 @@ describe('Model Catalog Performance Filters API Behavior', () => {
 
       cy.wait('@getModelsWithColdStart').then((interception) => {
         const decodedUrl = decodeURIComponent(interception.request.url);
-        expect(decodedUrl).to.include('cold_start_load_time_seconds');
+        expect(decodedUrl).to.include('cold_start_time_to_load_seconds');
       });
     });
 
-    it('should NOT include cold_start_load_time_seconds after toggle is turned OFF', () => {
+    it('should NOT include cold_start_time_to_load_seconds after toggle is turned OFF', () => {
       visitWithPerformanceToggle(true);
 
       modelCatalog.openColdStartLatencyFilter();
@@ -332,11 +332,11 @@ describe('Model Catalog Performance Filters API Behavior', () => {
 
       cy.wait('@getModelsWithoutColdStart').then((interception) => {
         const decodedUrl = decodeURIComponent(interception.request.url);
-        expect(decodedUrl).to.not.include('cold_start_load_time_seconds');
+        expect(decodedUrl).to.not.include('cold_start_time_to_load_seconds');
       });
     });
 
-    it('should pass cold_start_load_time_seconds as orderBy when cold start sort is selected', () => {
+    it('should pass cold_start_time_to_load_seconds as orderBy when cold start sort is selected', () => {
       visitWithPerformanceToggle(true);
 
       modelCatalog.selectSortOption('sort-option-lowest-cold-start');
@@ -347,7 +347,7 @@ describe('Model Catalog Performance Filters API Behavior', () => {
 
       cy.wait('@getModelsSortedColdStart').then((interception) => {
         const decodedUrl = decodeURIComponent(interception.request.url);
-        expect(decodedUrl).to.include('cold_start_load_time_seconds');
+        expect(decodedUrl).to.include('cold_start_time_to_load_seconds');
         expect(decodedUrl).to.include('sortOrder=ASC');
       });
     });

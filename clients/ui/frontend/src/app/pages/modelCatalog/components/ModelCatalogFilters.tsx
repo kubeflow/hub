@@ -1,7 +1,8 @@
 import * as React from 'react';
-import { Content, ContentVariants } from '@patternfly/react-core';
+import { Content, ContentVariants, Divider } from '@patternfly/react-core';
 import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
 import {
+  ModelCatalogNumberFilterKey,
   ModelCatalogStringFilterKey,
   MODEL_CATALOG_FILTER_CATEGORY_NAMES,
   MODEL_CATALOG_TASK_NAME_MAPPING,
@@ -18,6 +19,7 @@ import {
   type FilterPanelItem,
 } from '~/app/shared/components/catalog';
 import ModelPerformanceViewToggleCard from './ModelPerformanceViewToggleCard';
+import SidebarSliderFilter from './SidebarSliderFilter';
 
 const BASIC_STRING_FILTER_KEYS: ModelCatalogStringFilterKey[] = [
   ModelCatalogStringFilterKey.TASK,
@@ -73,6 +75,29 @@ const ModelCatalogFilters: React.FC = () => {
     labelMappings: LABEL_MAPPINGS,
   });
 
+  const sliderContent = React.useMemo(
+    () => (
+      <>
+        <Divider className="pf-v6-u-my-md" />
+        <SidebarSliderFilter
+          filterKey={ModelCatalogNumberFilterKey.MIN_VRAM}
+          label="Minimum vRAM"
+          suffix="GB"
+          fallbackMin={4}
+          fallbackMax={480}
+        />
+        <SidebarSliderFilter
+          filterKey={ModelCatalogNumberFilterKey.IMAGE_SIZE}
+          label="Container size"
+          suffix="GB"
+          fallbackMin={4}
+          fallbackMax={500}
+        />
+      </>
+    ),
+    [],
+  );
+
   const filterPanelItems = React.useMemo((): FilterPanelItem[] => {
     const validatedConfigKey = ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION;
     return baseFilterItems.map((item) => {
@@ -86,17 +111,21 @@ const ModelCatalogFilters: React.FC = () => {
         const hasSelection = item.selectedValues.length > 0;
         return {
           ...itemWithTestIds,
-          footer:
-            hasMultiple && hasSelection ? (
-              <Content component={ContentVariants.small} className="pf-v6-u-mt-sm">
-                Showing models with all selected configurations
-              </Content>
-            ) : undefined,
+          footer: (
+            <>
+              {hasMultiple && hasSelection && (
+                <Content component={ContentVariants.small} className="pf-v6-u-mt-sm">
+                  Showing models with all selected configurations
+                </Content>
+              )}
+              {sliderContent}
+            </>
+          ),
         };
       }
       return itemWithTestIds;
     });
-  }, [baseFilterItems]);
+  }, [baseFilterItems, sliderContent]);
 
   return (
     <CatalogFilterPanel
