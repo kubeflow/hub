@@ -353,32 +353,34 @@ describe('Model Catalog Performance Filters API Behavior', () => {
     });
   });
 
-  describe('Min vRAM and Image size filter API behavior', () => {
-    it('should include min_vram_gb and modelcar_image_size in filterQuery when applied', () => {
+  describe('Min vRAM and Container size filter API behavior', () => {
+    it('should include min_vram_gb in filterQuery when vRAM filter is applied', () => {
       visitWithPerformanceToggle(true);
 
+      cy.findByTestId('minimum-vram-apply-filter').scrollIntoView();
       cy.findByTestId('minimum-vram-apply-filter').should('be.visible').click();
 
-      cy.intercept('GET', '**/model_catalog/models*').as('getModelsWithVram');
+      cy.intercept('GET', '**/model_catalog/models*').as('getModelsWithVramFilter');
 
       triggerFilterRefresh();
 
-      cy.wait('@getModelsWithVram').then((interception) => {
+      cy.wait('@getModelsWithVramFilter').then((interception) => {
         const decodedUrl = decodeURIComponent(interception.request.url);
         expect(decodedUrl).to.include('min_vram_gb.double_value');
       });
     });
 
-    it('should include modelcar_image_size in filterQuery when image size filter is applied', () => {
+    it('should include modelcar_image_size in filterQuery when container size filter is applied', () => {
       visitWithPerformanceToggle(true);
 
-      cy.findByTestId('image-size-apply-filter').should('be.visible').click();
+      cy.findByTestId('container-size-apply-filter').scrollIntoView();
+      cy.findByTestId('container-size-apply-filter').should('be.visible').click();
 
-      cy.intercept('GET', '**/model_catalog/models*').as('getModelsWithImageSize');
+      cy.intercept('GET', '**/model_catalog/models*').as('getModelsWithContainerSizeFilter');
 
       triggerFilterRefresh();
 
-      cy.wait('@getModelsWithImageSize').then((interception) => {
+      cy.wait('@getModelsWithContainerSizeFilter').then((interception) => {
         const decodedUrl = decodeURIComponent(interception.request.url);
         expect(decodedUrl).to.include('modelcar_image_size.double_value');
       });
