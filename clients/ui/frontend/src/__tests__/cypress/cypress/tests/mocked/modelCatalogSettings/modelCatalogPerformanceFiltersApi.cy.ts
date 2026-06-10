@@ -353,6 +353,38 @@ describe('Model Catalog Performance Filters API Behavior', () => {
     });
   });
 
+  describe('Min vRAM and Image size filter API behavior', () => {
+    it('should include min_vram_gb and modelcar_image_size in filterQuery when applied', () => {
+      visitWithPerformanceToggle(true);
+
+      cy.findByTestId('minimum-vram-apply-filter').should('be.visible').click();
+
+      cy.intercept('GET', '**/model_catalog/models*').as('getModelsWithVram');
+
+      triggerFilterRefresh();
+
+      cy.wait('@getModelsWithVram').then((interception) => {
+        const decodedUrl = decodeURIComponent(interception.request.url);
+        expect(decodedUrl).to.include('min_vram_gb.double_value');
+      });
+    });
+
+    it('should include modelcar_image_size in filterQuery when image size filter is applied', () => {
+      visitWithPerformanceToggle(true);
+
+      cy.findByTestId('image-size-apply-filter').should('be.visible').click();
+
+      cy.intercept('GET', '**/model_catalog/models*').as('getModelsWithImageSize');
+
+      triggerFilterRefresh();
+
+      cy.wait('@getModelsWithImageSize').then((interception) => {
+        const decodedUrl = decodeURIComponent(interception.request.url);
+        expect(decodedUrl).to.include('modelcar_image_size.double_value');
+      });
+    });
+  });
+
   /**
    * NOTE: Filter synchronization tests between catalog and details pages
    * are covered in modelCatalogDetails.cy.ts under 'Filter State Management'.

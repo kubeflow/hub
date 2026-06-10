@@ -2069,6 +2069,22 @@ func GetFilterOptionMocks() map[string]models.FilterOption {
 		},
 	}
 
+	filterOptions["min_vram_gb.double_value"] = models.FilterOption{
+		Type: FilterOptionTypeNumber,
+		Range: &models.FilterRange{
+			Min: float32Ptr(8),
+			Max: float32Ptr(140),
+		},
+	}
+
+	filterOptions["modelcar_image_size.double_value"] = models.FilterOption{
+		Type: FilterOptionTypeNumber,
+		Range: &models.FilterRange{
+			Min: float32Ptr(4),
+			Max: float32Ptr(230),
+		},
+	}
+
 	filterOptions["artifacts.hardware_count.int_value"] = models.FilterOption{
 		Type: FilterOptionTypeNumber,
 		Range: &models.FilterRange{

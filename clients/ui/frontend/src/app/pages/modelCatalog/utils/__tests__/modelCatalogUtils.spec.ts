@@ -60,6 +60,9 @@ describe('filtersToFilterQuery', () => {
     validatedTasks = [],
     rps_mean = undefined,
     ttft_mean = undefined,
+    cold_start_latency = undefined,
+    min_vram = undefined,
+    image_size = undefined,
   }: {
     tasks?: ModelCatalogTask[];
     license?: string[];
@@ -72,6 +75,9 @@ describe('filtersToFilterQuery', () => {
     tensor_type?: ModelCatalogTensorType[];
     validatedTasks?: string[];
     ttft_mean?: number;
+    cold_start_latency?: number;
+    min_vram?: number;
+    image_size?: number;
   }): ModelCatalogFilterStates => ({
     [ModelCatalogStringFilterKey.TASK]: tasks,
     [ModelCatalogStringFilterKey.PROVIDER]: provider,
@@ -81,9 +87,9 @@ describe('filtersToFilterQuery', () => {
     [ModelCatalogStringFilterKey.HARDWARE_CONFIGURATION]: hardware_configuration,
     [ModelCatalogStringFilterKey.USE_CASE]: use_case,
     [ModelCatalogNumberFilterKey.MAX_RPS]: rps_mean,
-    [ModelCatalogNumberFilterKey.COLD_START_LATENCY]: undefined,
-    [ModelCatalogNumberFilterKey.MIN_VRAM]: undefined,
-    [ModelCatalogNumberFilterKey.IMAGE_SIZE]: undefined,
+    [ModelCatalogNumberFilterKey.COLD_START_LATENCY]: cold_start_latency,
+    [ModelCatalogNumberFilterKey.MIN_VRAM]: min_vram,
+    [ModelCatalogNumberFilterKey.IMAGE_SIZE]: image_size,
     [ModelCatalogStringFilterKey.TENSOR_TYPE]: tensor_type,
     [ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION]: validatedTasks,
     'artifacts.ttft_mean.double_value': ttft_mean,
@@ -202,6 +208,27 @@ describe('filtersToFilterQuery', () => {
         range: {
           min: 0,
           max: 300,
+        },
+      },
+      [ModelCatalogNumberFilterKey.COLD_START_LATENCY]: {
+        type: 'number',
+        range: {
+          min: 45000,
+          max: 200000,
+        },
+      },
+      [ModelCatalogNumberFilterKey.MIN_VRAM]: {
+        type: 'number',
+        range: {
+          min: 2,
+          max: 80,
+        },
+      },
+      [ModelCatalogNumberFilterKey.IMAGE_SIZE]: {
+        type: 'number',
+        range: {
+          min: 1,
+          max: 50,
         },
       },
       'artifacts.ttft_mean.double_value': {
@@ -431,6 +458,31 @@ describe('filtersToFilterQuery', () => {
   //       );
   //     });
   //   });
+
+  describe('numeric filter target behavior', () => {
+    it('includes cold-start and model-level filters for models target, excludes cold-start for artifacts target', () => {
+      const data = mockFormData({ cold_start_latency: 50, min_vram: 24, image_size: 15 });
+
+      const modelsQuery = filtersToFilterQuery(data, mockFilterOptions, 'models');
+      expect(modelsQuery).toContain('cold_start_time_to_load_seconds');
+      expect(modelsQuery).toContain('min_vram_gb.double_value');
+      expect(modelsQuery).toContain('modelcar_image_size.double_value');
+
+      const artifactsQuery = filtersToFilterQuery(data, mockFilterOptions, 'artifacts');
+      expect(artifactsQuery).not.toContain('cold_start_time_to_load_seconds');
+      expect(artifactsQuery).not.toContain('min_vram_gb');
+      expect(artifactsQuery).not.toContain('modelcar_image_size');
+    });
+
+    it('serializes min_vram and image_size with <= operator', () => {
+      const query = filtersToFilterQuery(
+        mockFormData({ min_vram: 24, image_size: 10 }),
+        mockFilterOptions,
+      );
+      expect(query).toContain('min_vram_gb.double_value <= 24');
+      expect(query).toContain('modelcar_image_size.double_value <= 10');
+    });
+  });
 });
 
 describe('catalog source filtering utilities', () => {

@@ -27,7 +27,11 @@ const ColdStartLatencyFilter: React.FC = () => {
       if (min != null && max != null) {
         const roundedMin = Math.floor(min);
         const roundedMax = Math.ceil(max);
-        return { minValue: roundedMin, maxValue: roundedMax, isSliderDisabled: roundedMin === roundedMax };
+        return {
+          minValue: roundedMin,
+          maxValue: roundedMax,
+          isSliderDisabled: roundedMin === roundedMax,
+        };
       }
     }
     return COLD_START_LATENCY_RANGE;
