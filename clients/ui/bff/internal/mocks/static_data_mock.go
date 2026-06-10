@@ -1715,6 +1715,130 @@ func GetCatalogAccuracyMetricsArtifactMock() []models.CatalogArtifact {
 		},
 	}
 }
+
+func securityMetricsCustomProperties(id, benchmark, description, evaluation, providerID, resultMetric, modelID string, pass bool, result, threshold float64) *map[string]openapi.MetadataValue {
+	resultMap := map[string]openapi.MetadataValue{
+		"id": {
+			MetadataStringValue: &openapi.MetadataStringValue{
+				StringValue:  id,
+				MetadataType: "MetadataStringValue",
+			},
+		},
+		"benchmark": {
+			MetadataStringValue: &openapi.MetadataStringValue{
+				StringValue:  benchmark,
+				MetadataType: "MetadataStringValue",
+			},
+		},
+		"category": {
+			MetadataStringValue: &openapi.MetadataStringValue{
+				StringValue:  "security",
+				MetadataType: "MetadataStringValue",
+			},
+		},
+		"description": {
+			MetadataStringValue: &openapi.MetadataStringValue{
+				StringValue:  description,
+				MetadataType: "MetadataStringValue",
+			},
+		},
+		"evaluation": {
+			MetadataStringValue: &openapi.MetadataStringValue{
+				StringValue:  evaluation,
+				MetadataType: "MetadataStringValue",
+			},
+		},
+		"model_id": {
+			MetadataStringValue: &openapi.MetadataStringValue{
+				StringValue:  modelID,
+				MetadataType: "MetadataStringValue",
+			},
+		},
+		"provider_id": {
+			MetadataStringValue: &openapi.MetadataStringValue{
+				StringValue:  providerID,
+				MetadataType: "MetadataStringValue",
+			},
+		},
+		"result_metric": {
+			MetadataStringValue: &openapi.MetadataStringValue{
+				StringValue:  resultMetric,
+				MetadataType: "MetadataStringValue",
+			},
+		},
+		"pass": {
+			MetadataBoolValue: &openapi.MetadataBoolValue{
+				BoolValue:    pass,
+				MetadataType: "MetadataBoolValue",
+			},
+		},
+		"lower_is_better": {
+			MetadataBoolValue: &openapi.MetadataBoolValue{
+				BoolValue:    true,
+				MetadataType: "MetadataBoolValue",
+			},
+		},
+		"result": {
+			MetadataDoubleValue: &openapi.MetadataDoubleValue{
+				DoubleValue:  result,
+				MetadataType: "MetadataDoubleValue",
+			},
+		},
+		"threshold": {
+			MetadataDoubleValue: &openapi.MetadataDoubleValue{
+				DoubleValue:  threshold,
+				MetadataType: "MetadataDoubleValue",
+			},
+		},
+	}
+	return &resultMap
+}
+
+func GetCatalogSecurityMetricsArtifactMock() []models.CatalogArtifact {
+	return []models.CatalogArtifact{
+		{
+			ArtifactType:             *stringToPointer("metrics-artifact"),
+			MetricsType:              stringToPointer("security-metrics"),
+			CreateTimeSinceEpoch:     stringToPointer("1693526400000"),
+			LastUpdateTimeSinceEpoch: stringToPointer("1704067200000"),
+			CustomProperties:         securityMetricsCustomProperties("a1b2c3d4-1001-4000-a000-000000000001", "intents", "Risk assessment with a context-aware custom intent typology and probes of increasing complexity. Runs as an AI Pipeline and requires a Data Science Pipelines setup.", "Context-aware vulnerability scan (Pipeline)", "garak-kfp", "attack_success_rate", "repo1/granite-8b-code-instruct", true, 0.12, 0.3),
+		},
+		{
+			ArtifactType:             *stringToPointer("metrics-artifact"),
+			MetricsType:              stringToPointer("security-metrics"),
+			CreateTimeSinceEpoch:     stringToPointer("1693526400000"),
+			LastUpdateTimeSinceEpoch: stringToPointer("1704067200000"),
+			CustomProperties:         securityMetricsCustomProperties("a1b2c3d4-1001-4000-a000-000000000002", "intents", "Risk assessment with a context-aware custom intent typology and probes of increasing complexity. Standalone execution without pipeline dependencies.", "Context-aware vulnerability scan (Standalone)", "garak-standalone", "attack_success_rate", "repo1/granite-8b-code-instruct", false, 0.65, 0.3),
+		},
+		{
+			ArtifactType:             *stringToPointer("metrics-artifact"),
+			MetricsType:              stringToPointer("security-metrics"),
+			CreateTimeSinceEpoch:     stringToPointer("1695200000000"),
+			LastUpdateTimeSinceEpoch: stringToPointer("1706000000000"),
+			CustomProperties:         securityMetricsCustomProperties("a1b2c3d4-1001-4000-a000-000000000003", "prompt-injection", "Evaluates model robustness against prompt injection attacks using adversarial input patterns.", "Prompt injection robustness test", "garak-standalone", "injection_success_rate", "repo1/granite-8b-code-instruct", true, 0.05, 0.1),
+		},
+		{
+			ArtifactType:             *stringToPointer("metrics-artifact"),
+			MetricsType:              stringToPointer("security-metrics"),
+			CreateTimeSinceEpoch:     stringToPointer("1696300000000"),
+			LastUpdateTimeSinceEpoch: stringToPointer("1707100000000"),
+			CustomProperties:         securityMetricsCustomProperties("a1b2c3d4-1001-4000-a000-000000000004", "toxicity", "Scans model outputs for toxic, harmful, or offensive content across domain-specific scenarios.", "Domain-specific toxicity scan", "garak-kfp", "toxicity_rate", "repo1/granite-8b-code-instruct", true, 0.02, 0.05),
+		},
+		{
+			ArtifactType:             *stringToPointer("metrics-artifact"),
+			MetricsType:              stringToPointer("security-metrics"),
+			CreateTimeSinceEpoch:     stringToPointer("1697400000000"),
+			LastUpdateTimeSinceEpoch: stringToPointer("1708200000000"),
+			CustomProperties:         securityMetricsCustomProperties("a1b2c3d4-1001-4000-a000-000000000005", "hallucination", "Detects factual hallucinations and unsupported claims in model responses. Runs as an AI Pipeline.", "Hallucination detection scan (Pipeline)", "garak-kfp", "hallucination_rate", "repo1/granite-8b-code-instruct", false, 0.42, 0.2),
+		},
+	}
+}
+
+func GetCatalogSecurityMetricsArtifactListMock() models.CatalogModelArtifactList {
+	allArtifactMock := GetCatalogSecurityMetricsArtifactMock()
+	return GetModelArtifactListMockWithItems(allArtifactMock, 10)
+}
+
 func GetModelArtifactListMockWithItems(items []models.CatalogArtifact, pageSize int32) models.CatalogModelArtifactList {
 	return models.CatalogModelArtifactList{
 		Items:         items,

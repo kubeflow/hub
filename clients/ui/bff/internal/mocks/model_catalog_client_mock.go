@@ -216,8 +216,10 @@ func (m *ModelCatalogClientMock) GetCatalogSourceModelArtifacts(client httpclien
 	if sourceId == "sample-source" && (modelName == "repo1%2Fgranite-8b-code-instruct" || modelName == "repo1%2Fgranite-8b-code-instruct-quantized.w4a16") {
 		performanceArtifacts := GetCatalogPerformanceMetricsArtifactListMock(4)
 		accuracyArtifacts := GetCatalogAccuracyMetricsArtifactListMock()
+		securityArtifacts := GetCatalogSecurityMetricsArtifactListMock()
 		modelArtifacts := GetCatalogModelArtifactListMock()
 		combinedItems := append(performanceArtifacts.Items, accuracyArtifacts.Items...)
+		combinedItems = append(combinedItems, securityArtifacts.Items...)
 		combinedItems = append(combinedItems, modelArtifacts.Items...)
 		allMockModelArtifacts = models.CatalogModelArtifactList{
 			Items:         combinedItems,
@@ -227,8 +229,10 @@ func (m *ModelCatalogClientMock) GetCatalogSourceModelArtifacts(client httpclien
 		}
 	} else if sourceId == "sample-source" && modelName == "repo1%2Fgranite-7b-instruct" {
 		accuracyArtifacts := GetCatalogAccuracyMetricsArtifactListMock()
+		securityArtifacts := GetCatalogSecurityMetricsArtifactListMock()
 		modelArtifacts := GetCatalogModelArtifactListMock()
-		combinedItems := append(accuracyArtifacts.Items, modelArtifacts.Items...)
+		combinedItems := append(accuracyArtifacts.Items, securityArtifacts.Items...)
+		combinedItems = append(combinedItems, modelArtifacts.Items...)
 		allMockModelArtifacts = models.CatalogModelArtifactList{
 			Items:         combinedItems,
 			Size:          int32(len(combinedItems)),
@@ -241,7 +245,46 @@ func (m *ModelCatalogClientMock) GetCatalogSourceModelArtifacts(client httpclien
 		allMockModelArtifacts = GetCatalogModelArtifactListMock()
 	}
 
+	if filterQuery := pageValues.Get("filterQuery"); filterQuery != "" {
+		allMockModelArtifacts = filterArtifactsByQuery(allMockModelArtifacts, filterQuery)
+	}
+
 	return &allMockModelArtifacts, nil
+}
+
+func filterArtifactsByQuery(list models.CatalogModelArtifactList, filterQuery string) models.CatalogModelArtifactList {
+	metricsTypeFilter := extractMetricsTypeFilter(filterQuery)
+	if metricsTypeFilter == "" {
+		return list
+	}
+
+	var filtered []models.CatalogArtifact
+	for _, item := range list.Items {
+		if item.MetricsType != nil && *item.MetricsType == metricsTypeFilter {
+			filtered = append(filtered, item)
+		}
+	}
+
+	return models.CatalogModelArtifactList{
+		Items:         filtered,
+		Size:          int32(len(filtered)),
+		PageSize:      list.PageSize,
+		NextPageToken: "",
+	}
+}
+
+func extractMetricsTypeFilter(filterQuery string) string {
+	prefix := "metricsType.string_value="
+	idx := strings.Index(filterQuery, prefix)
+	if idx == -1 {
+		return ""
+	}
+	value := filterQuery[idx+len(prefix):]
+	value = strings.Trim(value, "\"")
+	if sepIdx := strings.IndexAny(value, "&, "); sepIdx != -1 {
+		value = value[:sepIdx]
+	}
+	return value
 }
 
 func (m *ModelCatalogClientMock) GetCatalogModelPerformanceArtifacts(client httpclient.HTTPClientInterface, sourceId string, modelName string, pageValues url.Values) (*models.CatalogModelArtifactList, error) {

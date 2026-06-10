@@ -26,6 +26,7 @@ import {
   ModelRegistryCustomPropertyString,
   ModelRegistryCustomPropertyInt,
   ModelRegistryCustomPropertyDouble,
+  ModelRegistryCustomPropertyBool,
 } from './types';
 import {
   McpServer,
@@ -83,6 +84,7 @@ export enum MetricsType {
   accuracyMetrics = 'accuracy-metrics',
   performanceMetrics = 'performance-metrics',
   coldStartMetrics = 'cold-start-metrics',
+  securityMetrics = 'security-metrics',
 }
 
 export enum CategoryName {
@@ -140,6 +142,21 @@ export type AccuracyMetricsCustomProperties = {
   arc_v1?: ModelRegistryCustomPropertyDouble;
 } & Record<string, ModelRegistryCustomPropertyDouble>;
 
+export type SecurityMetricsCustomProperties = {
+  id?: ModelRegistryCustomPropertyString;
+  benchmark?: ModelRegistryCustomPropertyString;
+  category?: ModelRegistryCustomPropertyString;
+  description?: ModelRegistryCustomPropertyString;
+  evaluation?: ModelRegistryCustomPropertyString;
+  model_id?: ModelRegistryCustomPropertyString;
+  provider_id?: ModelRegistryCustomPropertyString;
+  result_metric?: ModelRegistryCustomPropertyString;
+  pass?: ModelRegistryCustomPropertyBool;
+  lower_is_better?: ModelRegistryCustomPropertyBool;
+  result?: ModelRegistryCustomPropertyDouble;
+  threshold?: ModelRegistryCustomPropertyDouble;
+};
+
 export type CatalogPerformanceMetricsArtifact = Omit<CatalogArtifactBase, 'customProperties'> & {
   artifactType: CatalogArtifactType.metricsArtifact;
   metricsType: MetricsType.performanceMetrics;
@@ -165,10 +182,17 @@ export type CatalogColdStartMetricsArtifact = Omit<CatalogArtifactBase, 'customP
   customProperties?: ColdStartMetricsCustomProperties;
 };
 
+export type CatalogSecurityMetricsArtifact = Omit<CatalogArtifactBase, 'customProperties'> & {
+  artifactType: CatalogArtifactType.metricsArtifact;
+  metricsType: MetricsType.securityMetrics;
+  customProperties?: SecurityMetricsCustomProperties;
+};
+
 export type CatalogMetricsArtifact =
   | CatalogPerformanceMetricsArtifact
   | CatalogAccuracyMetricsArtifact
-  | CatalogColdStartMetricsArtifact;
+  | CatalogColdStartMetricsArtifact
+  | CatalogSecurityMetricsArtifact;
 
 export type CatalogArtifacts = CatalogModelArtifact | CatalogMetricsArtifact;
 
