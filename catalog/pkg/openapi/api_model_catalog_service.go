@@ -240,7 +240,8 @@ type ApiFindModelsRequest struct {
 	nextPageToken         *string
 }
 
-// Sort models by lowest recommended latency using Pareto filtering
+// Deprecated: use &#x60;orderBy&#x3D;RECOMMENDED&#x60; instead. Sort models by lowest recommended latency using Pareto filtering.
+// Deprecated
 func (r ApiFindModelsRequest) Recommendations(recommendations bool) ApiFindModelsRequest {
 	r.recommendations = &recommendations
 	return r
@@ -306,7 +307,7 @@ func (r ApiFindModelsRequest) PageSize(pageSize string) ApiFindModelsRequest {
 	return r
 }
 
-// Specifies the order by criteria for listing entities.  Supported values are: - CREATE_TIME - LAST_UPDATE_TIME - ID - NAME - ACCURACY  Defaults to &#x60;NAME&#x60;.  The &#x60;ACCURACY&#x60; sort will sort by the &#x60;overall_average&#x60; property in any linked metrics artifact.  In addition, models can be sorted by properties. For example: - &#x60;provider.string_value&#x60; sorts by provider name - &#x60;artifacts.ifeval.double_value&#x60; sorts by the min/max value a property called ifeval across all associated artifacts
+// Specifies the order by criteria for listing entities.  Supported values are: - CREATE_TIME - LAST_UPDATE_TIME - ID - NAME - ACCURACY - RECOMMENDED  Defaults to &#x60;NAME&#x60;.  The &#x60;ACCURACY&#x60; sort will sort by the &#x60;overall_average&#x60; property in any linked metrics artifact.  The &#x60;RECOMMENDED&#x60; sort applies Pareto filtering and ranks models by recommended latency. The Pareto-related parameters (&#x60;targetRPS&#x60;, &#x60;latencyProperty&#x60;, &#x60;rpsProperty&#x60;, &#x60;hardwareCountProperty&#x60;, &#x60;hardwareTypeProperty&#x60;) are applied the same way as with the deprecated &#x60;recommendations&#x60; parameter. With the default &#x60;sortOrder&#x3D;ASC&#x60;, the most recommended models (lowest latency) appear first. Use &#x60;sortOrder&#x3D;DESC&#x60; to show the least recommended configurations first.  In addition, models can be sorted by properties. For example: - &#x60;provider.string_value&#x60; sorts by provider name - &#x60;artifacts.ifeval.double_value&#x60; sorts by the min/max value a property called ifeval across all associated artifacts
 func (r ApiFindModelsRequest) OrderBy(orderBy OrderByField) ApiFindModelsRequest {
 	r.orderBy = &orderBy
 	return r

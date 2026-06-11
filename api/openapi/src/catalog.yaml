@@ -481,6 +481,7 @@ components:
         - LAST_UPDATE_TIME
         - ID
         - NAME
+        - RECOMMENDED
       type: string
 
   responses:

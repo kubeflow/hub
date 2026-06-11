@@ -56,7 +56,8 @@ type APIProvider interface {
 	// Models without computable latency appear at the end of results.
 	// If sourceIDs is provided, filter models by source IDs.
 	// If query is provided, filter models by text search.
-	FindModelsWithRecommendedLatency(ctx context.Context, pagination mrmodels.Pagination, paretoParams ParetoFilteringParams, sourceIDs []string, query string) (*model.CatalogModelList, error)
+	// sortOrder controls direction: "ASC" (default) puts lowest latency first; "DESC" puts highest first.
+	FindModelsWithRecommendedLatency(ctx context.Context, pagination mrmodels.Pagination, paretoParams ParetoFilteringParams, sourceIDs []string, query string, sortOrder string) (*model.CatalogModelList, error)
 
 	// GetArtifacts returns all artifacts for a particular model. If no
 	// model is found with that name, it returns nil. If the model is

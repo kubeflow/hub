@@ -606,6 +606,7 @@ func (d *dbCatalogImpl) FindModelsWithRecommendedLatency(
 	paretoParams ParetoFilteringParams,
 	sourceIDs []string,
 	query string,
+	sortOrder string,
 ) (*apimodels.CatalogModelList, error) {
 	// Get all models first (without pagination)
 	var sourceIDsPtr *[]string
@@ -684,20 +685,25 @@ func (d *dbCatalogImpl) FindModelsWithRecommendedLatency(
 		})
 	}
 
-	// Sort: models with latency first (ascending), then models without latency
+	// Sort: models with latency first (ascending), then models without latency.
+	// ASC (default) = lowest latency first (most recommended); DESC = highest latency first.
+	descending := strings.EqualFold(sortOrder, "DESC")
 	sort.Slice(modelsWithLatency, func(i, j int) bool {
 		latencyI, latencyJ := modelsWithLatency[i].Latency, modelsWithLatency[j].Latency
 
 		if latencyI == nil && latencyJ == nil {
-			return false // Maintain original order for models without latency
+			return false
 		}
 		if latencyI == nil {
-			return false // Models without latency go last
+			return false // Models without latency always last
 		}
 		if latencyJ == nil {
-			return true // Models with latency go first
+			return true // Models with latency always first
 		}
-		return *latencyI < *latencyJ // Sort by latency ascending
+		if descending {
+			return *latencyI > *latencyJ
+		}
+		return *latencyI < *latencyJ
 	})
 
 	// Apply pagination to sorted results

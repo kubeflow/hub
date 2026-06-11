@@ -222,7 +222,7 @@ func (m *ModelCatalogServiceAPIService) FindModels(ctx context.Context, recommen
 	// validated inside parsePaginationParams.
 	var pageSizeInt int32
 	var err error
-	if recommended {
+	if recommended || orderBy == model.ORDERBYFIELD_RECOMMENDED {
 		pageSizeInt, err = parsePageSize(pageSize)
 		if err != nil {
 			return ErrorResponse(http.StatusBadRequest, err), err
@@ -264,8 +264,8 @@ func (m *ModelCatalogServiceAPIService) FindModels(ctx context.Context, recommen
 		}
 	}
 
-	// Handle recommended latency sorting
-	if recommended {
+	// Handle recommended latency sorting (triggered by recommendations=true or orderBy=RECOMMENDED)
+	if recommended || orderBy == model.ORDERBYFIELD_RECOMMENDED {
 		// Build Pareto filtering parameters with defaults
 		var targetRPSPtr *int32
 		if targetRPS != 0 {
@@ -306,8 +306,8 @@ func (m *ModelCatalogServiceAPIService) FindModels(ctx context.Context, recommen
 			FilterQuery:   &filterQuery,
 		}
 
-		// Use recommended latency sorting (ignores orderBy)
-		models, err := m.provider.FindModelsWithRecommendedLatency(ctx, pagination, paretoParams, sourceIDs, q)
+		// Use recommended latency sorting
+		models, err := m.provider.FindModelsWithRecommendedLatency(ctx, pagination, paretoParams, sourceIDs, q, string(sortOrder))
 		if err != nil {
 			return ErrorResponse(api.ErrToStatus(err), fmt.Errorf("failed to find models with recommended latency: %w", err)), err
 		}

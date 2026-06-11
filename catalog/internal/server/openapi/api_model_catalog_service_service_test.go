@@ -1224,8 +1224,9 @@ func TestFindLabels(t *testing.T) {
 
 // Define a mock model provider
 type mockModelProvider struct {
-	models    map[string]*model.CatalogModel
-	artifacts map[string][]model.CatalogArtifact
+	models              map[string]*model.CatalogModel
+	artifacts           map[string][]model.CatalogArtifact
+	lastRecommendedSort string // records sortOrder passed to FindModelsWithRecommendedLatency
 }
 
 // Mock provider that fails when recommended is used (for testing implementation)
@@ -1262,7 +1263,7 @@ func (m *mockProviderThatFailsOnRecommended) GetFilterOptions(ctx context.Contex
 	return m.mockModelProvider.GetFilterOptions(ctx)
 }
 
-func (m *mockProviderThatFailsOnRecommended) FindModelsWithRecommendedLatency(ctx context.Context, pagination mrmodels.Pagination, paretoParams modelcatalog.ParetoFilteringParams, sourceIDs []string, query string) (*model.CatalogModelList, error) {
+func (m *mockProviderThatFailsOnRecommended) FindModelsWithRecommendedLatency(ctx context.Context, pagination mrmodels.Pagination, paretoParams modelcatalog.ParetoFilteringParams, sourceIDs []string, query string, sortOrder string) (*model.CatalogModelList, error) {
 	return nil, fmt.Errorf("recommended sorting not implemented")
 }
 
@@ -1352,7 +1353,8 @@ func (m *mockModelProvider) GetFilterOptions(ctx context.Context) (*model.Filter
 	return &model.FilterOptionsList{Filters: &emptyFilters}, nil
 }
 
-func (m *mockModelProvider) FindModelsWithRecommendedLatency(ctx context.Context, pagination mrmodels.Pagination, paretoParams modelcatalog.ParetoFilteringParams, sourceIDs []string, query string) (*model.CatalogModelList, error) {
+func (m *mockModelProvider) FindModelsWithRecommendedLatency(ctx context.Context, pagination mrmodels.Pagination, paretoParams modelcatalog.ParetoFilteringParams, sourceIDs []string, query string, sortOrder string) (*model.CatalogModelList, error) {
+	m.lastRecommendedSort = sortOrder
 	// Basic mock implementation - just return models sorted by name
 	var allModels []*model.CatalogModel
 	for _, mdl := range m.models {
@@ -2265,4 +2267,137 @@ func TestGetAllModelPerformanceArtifactsWithConfigurableProperties(t *testing.T)
 			assert.Equal(t, tc.expectedStatus, resp.Code)
 		})
 	}
+}
+
+func TestFindModelsOrderByRecommended(t *testing.T) {
+	sources := catalog.NewSourceCollection()
+	sources.Merge("",
+		map[string]catalog.ModelSource{
+			"source1": {CatalogSource: model.CatalogSource{Id: "source1", Name: "Test Source 1"}},
+		},
+	)
+
+	provider := &mockModelProvider{
+		models: map[string]*model.CatalogModel{
+			"modelA": {Name: "Model A"},
+			"modelB": {Name: "Model B"},
+		},
+	}
+
+	service := NewModelCatalogServiceAPIService(provider, sources, nil, catalog.NewLabelCollection(), nil)
+
+	// orderBy=RECOMMENDED with recommendations=false should still use the recommendation path
+	resp, err := service.FindModels(
+		context.Background(),
+		false, // recommendations=false
+		0,     // targetRPS
+		"",    // latencyProperty
+		"",    // rpsProperty
+		"",    // hardwareCountProperty
+		"",    // hardwareTypeProperty
+		[]string{"source1"},
+		"",
+		[]string{""},
+		"",
+		"10",
+		model.OrderByField("RECOMMENDED"),
+		model.SORTORDER_ASC,
+		"",
+	)
+
+	assert.Equal(t, http.StatusOK, resp.Code)
+	require.NoError(t, err)
+
+	require.NotNil(t, resp.Body)
+	response, ok := resp.Body.(model.CatalogModelList)
+	require.True(t, ok)
+	require.True(t, len(response.Items) > 0)
+
+	// Verify the recommendation path was taken (mock records it)
+	assert.Equal(t, "ASC", provider.lastRecommendedSort)
+}
+
+func TestFindModelsOrderByRecommendedDesc(t *testing.T) {
+	sources := catalog.NewSourceCollection()
+	sources.Merge("",
+		map[string]catalog.ModelSource{
+			"source1": {CatalogSource: model.CatalogSource{Id: "source1", Name: "Test Source 1"}},
+		},
+	)
+
+	provider := &mockModelProvider{
+		models: map[string]*model.CatalogModel{
+			"modelA": {Name: "Model A"},
+			"modelB": {Name: "Model B"},
+		},
+	}
+
+	service := NewModelCatalogServiceAPIService(provider, sources, nil, catalog.NewLabelCollection(), nil)
+
+	// orderBy=RECOMMENDED with sortOrder=DESC
+	resp, err := service.FindModels(
+		context.Background(),
+		false, // recommendations=false
+		0,     // targetRPS
+		"",    // latencyProperty
+		"",    // rpsProperty
+		"",    // hardwareCountProperty
+		"",    // hardwareTypeProperty
+		[]string{"source1"},
+		"",
+		[]string{""},
+		"",
+		"10",
+		model.OrderByField("RECOMMENDED"),
+		model.SORTORDER_DESC,
+		"",
+	)
+
+	assert.Equal(t, http.StatusOK, resp.Code)
+	require.NoError(t, err)
+
+	require.NotNil(t, resp.Body)
+	_, ok := resp.Body.(model.CatalogModelList)
+	require.True(t, ok)
+
+	// Verify DESC was passed to the recommendation path
+	assert.Equal(t, "DESC", provider.lastRecommendedSort)
+}
+
+// TestFindModelsOrderByRecommendedPagination is a regression test for the case where
+// recommendations=false and orderBy=RECOMMENDED: the numeric nextPageToken must not
+// be rejected by the base64-cursor validator used by the non-recommended path.
+func TestFindModelsOrderByRecommendedPagination(t *testing.T) {
+	sources := catalog.NewSourceCollection()
+	sources.Merge("",
+		map[string]catalog.ModelSource{
+			"source1": {CatalogSource: model.CatalogSource{Id: "source1", Name: "Test Source 1"}},
+		},
+	)
+
+	provider := &mockModelProvider{
+		models: map[string]*model.CatalogModel{
+			"modelA": {Name: "Model A"},
+		},
+	}
+
+	service := NewModelCatalogServiceAPIService(provider, sources, nil, catalog.NewLabelCollection(), nil)
+
+	// Pass a numeric nextPageToken (the format produced by the recommended path).
+	// Before the fix, this was rejected with 400 because parsePaginationParams tried
+	// to base64-decode it as a DB cursor.
+	resp, err := service.FindModels(
+		context.Background(),
+		false, // recommendations=false — using orderBy instead
+		0, "", "", "", "",
+		[]string{"source1"},
+		"", []string{""}, "",
+		"10",
+		model.OrderByField("RECOMMENDED"),
+		model.SORTORDER_ASC,
+		"2", // numeric offset token from a prior recommended-path response
+	)
+
+	assert.Equal(t, http.StatusOK, resp.Code, "numeric nextPageToken must be accepted for orderBy=RECOMMENDED")
+	require.NoError(t, err)
 }

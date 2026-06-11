@@ -2123,6 +2123,7 @@ func TestFindModelsWithRecommendedLatency(t *testing.T) {
 		paretoParams,
 		[]string{"latency-test-source"}, // Filter by this test's source ID
 		"",                              // No query filter
+		"",                              // Default sort order (ASC)
 	)
 
 	require.NoError(t, err)
@@ -2140,6 +2141,145 @@ func TestFindModelsWithRecommendedLatency(t *testing.T) {
 		assert.NotEmpty(t, model.Name, "Model %d should have a name", i)
 		// Custom properties may or may not be set depending on performance data availability
 	}
+}
+
+func TestFindModelsWithRecommendedLatencyDescending(t *testing.T) {
+	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, testhelpers.MustDatastoreSpec(t))
+	defer cleanup()
+
+	catalogModelTypeID := testhelpers.GetCatalogModelTypeIDForDBTest(t, sharedDB)
+	modelArtifactTypeID := testhelpers.GetCatalogModelArtifactTypeIDForDBTest(t, sharedDB)
+	metricsArtifactTypeID := testhelpers.GetCatalogMetricsArtifactTypeIDForDBTest(t, sharedDB)
+	catalogSourceTypeID := testhelpers.GetCatalogSourceTypeIDForDBTest(t, sharedDB)
+
+	catalogModelRepo := modelservice.NewCatalogModelRepository(sharedDB, catalogModelTypeID)
+	catalogArtifactRepo := service.NewCatalogArtifactRepository(sharedDB, map[string]int32{
+		service.CatalogModelArtifactTypeName:   modelArtifactTypeID,
+		service.CatalogMetricsArtifactTypeName: metricsArtifactTypeID,
+	})
+	modelArtifactRepo := modelservice.NewCatalogModelArtifactRepository(sharedDB, modelArtifactTypeID)
+	metricsArtifactRepo := modelservice.NewCatalogMetricsArtifactRepository(sharedDB, metricsArtifactTypeID)
+	catalogSourceRepo := service.NewCatalogSourceRepository(sharedDB, catalogSourceTypeID)
+
+	svcs := Services{
+		CatalogModelRepository:           catalogModelRepo,
+		CatalogArtifactRepository:        catalogArtifactRepo,
+		CatalogModelArtifactRepository:   modelArtifactRepo,
+		CatalogMetricsArtifactRepository: metricsArtifactRepo,
+		CatalogSourceRepository:          catalogSourceRepo,
+		PropertyOptionsRepository:        service.NewPropertyOptionsRepository(sharedDB),
+	}
+
+	dbCatalog := NewDBCatalog(svcs, nil)
+	ctx := context.Background()
+
+	// modelLow has latency=50 (fastest / most recommended)
+	modelLow := &models.CatalogModelImpl{
+		TypeID: new(int32(catalogModelTypeID)),
+		Attributes: &models.CatalogModelAttributes{
+			Name:       new("desc-test-source:desc-model-low"),
+			ExternalID: new("desc-model-low-ext"),
+		},
+		Properties: &[]mr_models.Properties{
+			{Name: "source_id", StringValue: new("desc-test-source")},
+		},
+	}
+	// modelHigh has latency=200 (slowest / least recommended)
+	modelHigh := &models.CatalogModelImpl{
+		TypeID: new(int32(catalogModelTypeID)),
+		Attributes: &models.CatalogModelAttributes{
+			Name:       new("desc-test-source:desc-model-high"),
+			ExternalID: new("desc-model-high-ext"),
+		},
+		Properties: &[]mr_models.Properties{
+			{Name: "source_id", StringValue: new("desc-test-source")},
+		},
+	}
+	// modelNone has no performance artifacts
+	modelNone := &models.CatalogModelImpl{
+		TypeID: new(int32(catalogModelTypeID)),
+		Attributes: &models.CatalogModelAttributes{
+			Name:       new("desc-test-source:desc-model-none"),
+			ExternalID: new("desc-model-none-ext"),
+		},
+		Properties: &[]mr_models.Properties{
+			{Name: "source_id", StringValue: new("desc-test-source")},
+		},
+	}
+
+	savedModelLow, err := catalogModelRepo.Save(modelLow)
+	require.NoError(t, err)
+	savedModelHigh, err := catalogModelRepo.Save(modelHigh)
+	require.NoError(t, err)
+	_, err = catalogModelRepo.Save(modelNone)
+	require.NoError(t, err)
+
+	perfLow := &models.CatalogMetricsArtifactImpl{
+		TypeID: new(int32(metricsArtifactTypeID)),
+		Attributes: &models.CatalogMetricsArtifactAttributes{
+			Name:        new("desc-perf-low"),
+			ExternalID:  new("desc-perf-low-ext"),
+			MetricsType: models.MetricsTypePerformance,
+		},
+		Properties: &[]mr_models.Properties{},
+		CustomProperties: &[]mr_models.Properties{
+			{Name: "ttft_p90", DoubleValue: new(float64(50.0))},
+			{Name: "requests_per_second", DoubleValue: new(float64(100.0))},
+			{Name: "hardware_count", IntValue: new(int32(1))},
+			{Name: "hardware_type", StringValue: new("gpu")},
+		},
+	}
+	perfHigh := &models.CatalogMetricsArtifactImpl{
+		TypeID: new(int32(metricsArtifactTypeID)),
+		Attributes: &models.CatalogMetricsArtifactAttributes{
+			Name:        new("desc-perf-high"),
+			ExternalID:  new("desc-perf-high-ext"),
+			MetricsType: models.MetricsTypePerformance,
+		},
+		Properties: &[]mr_models.Properties{},
+		CustomProperties: &[]mr_models.Properties{
+			{Name: "ttft_p90", DoubleValue: new(float64(200.0))},
+			{Name: "requests_per_second", DoubleValue: new(float64(30.0))},
+			{Name: "hardware_count", IntValue: new(int32(1))},
+			{Name: "hardware_type", StringValue: new("gpu")},
+		},
+	}
+
+	_, err = metricsArtifactRepo.Save(perfLow, savedModelLow.GetID())
+	require.NoError(t, err)
+	_, err = metricsArtifactRepo.Save(perfHigh, savedModelHigh.GetID())
+	require.NoError(t, err)
+
+	pagination := mr_models.Pagination{PageSize: new(int32(10))}
+	paretoParams := ParetoFilteringParams{
+		LatencyProperty:       "ttft_p90",
+		RpsProperty:           "requests_per_second",
+		HardwareCountProperty: "hardware_count",
+		HardwareTypeProperty:  "hardware_type",
+	}
+
+	// ASC should put lowest latency first
+	ascResult, err := dbCatalog.(*dbCatalogImpl).FindModelsWithRecommendedLatency(
+		ctx, pagination, paretoParams, []string{"desc-test-source"}, "", "ASC",
+	)
+	require.NoError(t, err)
+	require.NotNil(t, ascResult)
+	require.Len(t, ascResult.Items, 3)
+	// First two have latency data; last has none. With ASC, low-latency model comes before high-latency.
+	assert.Equal(t, "desc-model-low", ascResult.Items[0].Name)
+	assert.Equal(t, "desc-model-high", ascResult.Items[1].Name)
+	assert.Equal(t, "desc-model-none", ascResult.Items[2].Name)
+
+	// DESC should put highest latency first; models without latency still last
+	descResult, err := dbCatalog.(*dbCatalogImpl).FindModelsWithRecommendedLatency(
+		ctx, pagination, paretoParams, []string{"desc-test-source"}, "", "DESC",
+	)
+	require.NoError(t, err)
+	require.NotNil(t, descResult)
+	require.Len(t, descResult.Items, 3)
+	assert.Equal(t, "desc-model-high", descResult.Items[0].Name)
+	assert.Equal(t, "desc-model-low", descResult.Items[1].Name)
+	assert.Equal(t, "desc-model-none", descResult.Items[2].Name)
 }
 
 // TestGetFilterOptions_NoMCPServerContamination verifies that the model catalog's

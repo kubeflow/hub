@@ -199,7 +199,9 @@ paths:
       parameters:
         - name: recommendations
           in: query
-          description: Sort models by lowest recommended latency using Pareto filtering
+          deprecated: true
+          description: >-
+            Deprecated: use `orderBy=RECOMMENDED` instead. Sort models by lowest recommended latency using Pareto filtering.
           required: false
           schema:
             type: boolean
@@ -288,10 +290,18 @@ paths:
             - ID
             - NAME
             - ACCURACY
+            - RECOMMENDED
 
             Defaults to `NAME`.
 
             The `ACCURACY` sort will sort by the `overall_average` property in any linked metrics artifact.
+
+            The `RECOMMENDED` sort applies Pareto filtering and ranks models by recommended latency.
+            The Pareto-related parameters (`targetRPS`, `latencyProperty`, `rpsProperty`,
+            `hardwareCountProperty`, `hardwareTypeProperty`) are applied the same way as with the
+            deprecated `recommendations` parameter. With the default `sortOrder=ASC`, the most
+            recommended models (lowest latency) appear first. Use `sortOrder=DESC` to show the least
+            recommended configurations first.
 
             In addition, models can be sorted by properties. For example:
             - `provider.string_value` sorts by provider name
@@ -1863,6 +1873,7 @@ components:
         - LAST_UPDATE_TIME
         - ID
         - NAME
+        - RECOMMENDED
       type: string
     ServingConfig:
       description: >-
