@@ -1,9 +1,14 @@
 approvers:
-  - alexcreasy
   - ederign
-  - Griffin-Sullivan
   - lucferbux
-  - mturley
   - manaswinidas
   - ppadti
+
+reviewers:
+  - Philip-Carneiro
+
+emeritus_approvers:
+  - alexcreasy
+  - Griffin-Sullivan
+  - mturley
   - YuliaKrimerman
