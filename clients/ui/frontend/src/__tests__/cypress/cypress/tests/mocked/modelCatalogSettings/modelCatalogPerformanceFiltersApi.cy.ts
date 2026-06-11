@@ -357,7 +357,8 @@ describe('Model Catalog Performance Filters API Behavior', () => {
     it('should include min_vram_gb in filterQuery when vRAM filter is applied', () => {
       visitWithPerformanceToggle(true);
 
-      cy.findByTestId('minimum-vram-apply-filter').scrollIntoView();
+      cy.findByTestId('minimum-vram-filter').scrollIntoView();
+      cy.findByTestId('minimum-vram-filter').click();
       cy.findByTestId('minimum-vram-apply-filter').should('be.visible').click();
 
       cy.intercept('GET', '**/model_catalog/models*').as('getModelsWithVramFilter');
@@ -373,7 +374,8 @@ describe('Model Catalog Performance Filters API Behavior', () => {
     it('should include modelcar_image_size in filterQuery when container size filter is applied', () => {
       visitWithPerformanceToggle(true);
 
-      cy.findByTestId('container-size-apply-filter').scrollIntoView();
+      cy.findByTestId('container-size-filter').scrollIntoView();
+      cy.findByTestId('container-size-filter').click();
       cy.findByTestId('container-size-apply-filter').should('be.visible').click();
 
       cy.intercept('GET', '**/model_catalog/models*').as('getModelsWithContainerSizeFilter');
