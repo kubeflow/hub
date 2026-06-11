@@ -200,7 +200,7 @@ const isArrayOfSelections = (
 const KNOWN_NUMERIC_FILTER_IDS: string[] = [
   ...ALL_LATENCY_FILTER_KEYS,
   ModelCatalogNumberFilterKey.MAX_RPS,
-  ModelCatalogNumberFilterKey.COLD_START_LATENCY,
+  ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME,
   ModelCatalogNumberFilterKey.MIN_VRAM,
   ModelCatalogNumberFilterKey.IMAGE_SIZE,
 ];
@@ -289,7 +289,7 @@ export const getSortParams = (
 
   if (effectiveSortBy === ModelCatalogSortOption.LOWEST_COLD_START) {
     return {
-      orderBy: ModelCatalogNumberFilterKey.COLD_START_LATENCY,
+      orderBy: ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME,
       sortOrder: SortOrder.ASC,
     };
   }
@@ -347,7 +347,7 @@ const shouldIncludeFilter = (filterId: string, target: FilterQueryTarget): boole
 
   // Cold-start filter is excluded from the performance artifacts endpoint
   // (performance-metrics artifacts don't have this field — it's on cold-start-metrics artifacts).
-  if (filterId === ModelCatalogNumberFilterKey.COLD_START_LATENCY && target === 'artifacts') {
+  if (filterId === ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME && target === 'artifacts') {
     return false;
   }
 
@@ -599,7 +599,7 @@ export const getMinimumVramFromCustomProperties = (
   }
   const doubleVal = getDoubleValue(customProperties, CatalogModelCustomPropertyKey.MINIMUM_VRAM);
   if (doubleVal > 0) {
-    return `${doubleVal} GB`;
+    return `${doubleVal.toFixed(2)} GB`;
   }
   return getCustomPropString(customProperties, CatalogModelCustomPropertyKey.MINIMUM_VRAM);
 };

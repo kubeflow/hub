@@ -18,7 +18,7 @@ export {
 } from './utils/catalogFilterUtils';
 export { useStringFilterState } from './hooks/useStringFilterState';
 export { useCatalogFilterConfigs } from './hooks/useCatalogFilterConfigs';
-export type { FilterPanelItem } from './hooks/useCatalogFilterConfigs';
+export type { FilterPanelItem, StringFilterPanelItem, CustomFilterPanelItem } from './hooks/useCatalogFilterConfigs';
 export { default as EmptyCatalogState } from './EmptyCatalogState';
 export { default as CatalogCategorySection } from './CatalogCategorySection';
 export { default as CatalogGalleryLayout } from './CatalogGalleryLayout';

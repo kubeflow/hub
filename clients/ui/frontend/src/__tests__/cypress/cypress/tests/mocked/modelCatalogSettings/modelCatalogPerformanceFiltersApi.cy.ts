@@ -32,7 +32,7 @@ const assertPerformanceFiltersVisible = (shouldExist: boolean): void => {
   cy.findByTestId(PERFORMANCE_FILTER_TEST_IDS.workloadType).should(assertion);
   cy.findByTestId(PERFORMANCE_FILTER_TEST_IDS.latency).should(assertion);
   cy.findByTestId(PERFORMANCE_FILTER_TEST_IDS.maxRps).should(assertion);
-  cy.findByTestId(PERFORMANCE_FILTER_TEST_IDS.coldStartLatency).should(assertion);
+  cy.findByTestId(PERFORMANCE_FILTER_TEST_IDS.coldStartLoadTime).should(assertion);
 };
 
 const visitWithPerformanceToggle = (toggleOn: boolean): void => {

@@ -16,9 +16,9 @@ export const PERFORMANCE_FILTER_TEST_IDS = {
   latencyReset: 'latency-reset-filter',
   maxRps: 'max-rps-filter',
   maxRpsApply: 'max-rps-apply-filter',
-  coldStartLatency: 'cold-start-latency-filter',
-  coldStartLatencyApply: 'cold-start-latency-apply-filter',
-  coldStartLatencyReset: 'cold-start-latency-reset-filter',
+  coldStartLoadTime: 'cold-start-load-time-filter',
+  coldStartLoadTimeApply: 'cold-start-load-time-apply-filter',
+  coldStartLoadTimeReset: 'cold-start-load-time-reset-filter',
   hardwareTable: 'hardware-configuration-table',
   clearAllFilters: 'clear-all-filters-button',
 } as const;

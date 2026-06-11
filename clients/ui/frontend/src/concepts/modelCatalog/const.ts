@@ -14,7 +14,7 @@ export enum ModelCatalogStringFilterKey {
 export enum ModelCatalogNumberFilterKey {
   // Performance filter key uses backend format
   MAX_RPS = 'artifacts.requests_per_second.double_value',
-  COLD_START_LATENCY = 'artifacts.cold_start_time_to_load_seconds.double_value',
+  COLD_START_LOAD_TIME = 'artifacts.cold_start_time_to_load_seconds.double_value',
   MIN_VRAM = 'min_vram_gb.double_value',
   IMAGE_SIZE = 'modelcar_image_size.double_value',
 }
@@ -498,7 +498,9 @@ export const DEPLOYMENT_RESOURCE_PREFIXES = ['vllm'];
 export const PERFORMANCE_FILTER_KEYS: ModelCatalogFilterKey[] = [
   ModelCatalogStringFilterKey.USE_CASE,
   ModelCatalogNumberFilterKey.MAX_RPS,
-  ModelCatalogNumberFilterKey.COLD_START_LATENCY,
+  ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME,
+  ModelCatalogNumberFilterKey.MIN_VRAM,
+  ModelCatalogNumberFilterKey.IMAGE_SIZE,
   ...ALL_LATENCY_FILTER_KEYS,
 ];
 
@@ -523,7 +525,9 @@ export const PERFORMANCE_STRING_FILTER_KEYS: ModelCatalogStringFilterKey[] = [
  */
 export const PERFORMANCE_NUMBER_FILTER_KEYS: ModelCatalogNumberFilterKey[] = [
   ModelCatalogNumberFilterKey.MAX_RPS,
-  ModelCatalogNumberFilterKey.COLD_START_LATENCY,
+  ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME,
+  ModelCatalogNumberFilterKey.MIN_VRAM,
+  ModelCatalogNumberFilterKey.IMAGE_SIZE,
 ];
 
 /**
@@ -598,7 +602,7 @@ export const MODEL_CATALOG_FILTER_CATEGORY_NAMES: Record<ModelCatalogFilterKey, 
   [ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION]: 'Validated arguments',
   // Number filter keys
   [ModelCatalogNumberFilterKey.MAX_RPS]: 'Max RPS',
-  [ModelCatalogNumberFilterKey.COLD_START_LATENCY]: 'Cold start load time',
+  [ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME]: 'Cold start load time',
   [ModelCatalogNumberFilterKey.MIN_VRAM]: 'Minimum vRAM',
   [ModelCatalogNumberFilterKey.IMAGE_SIZE]: 'Container size',
   // Latency field names - all use "Latency" as category name
@@ -612,9 +616,9 @@ export const MODEL_CATALOG_FILTER_CATEGORY_NAMES: Record<ModelCatalogFilterKey, 
 export const MODEL_CATALOG_FILTER_CHIP_PREFIXES = {
   WORKLOAD_TYPE: 'Workload type:',
   MAX_RPS: 'Max RPS:',
-  COLD_START_LATENCY: 'Cold start load time: ≤',
-  MIN_VRAM: 'Minimum vRAM <=',
-  IMAGE_SIZE: 'Container size <=',
+  COLD_START_LOAD_TIME: 'Cold start load time: ≤',
+  MIN_VRAM: 'Minimum vRAM: ≤',
+  IMAGE_SIZE: 'Container size: ≤',
   LATENCY_METRIC: 'Metric:',
   LATENCY_PERCENTILE: 'Percentile:',
   LATENCY_THRESHOLD: 'Under',

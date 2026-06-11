@@ -87,7 +87,7 @@ describe('filtersToFilterQuery', () => {
     [ModelCatalogStringFilterKey.HARDWARE_CONFIGURATION]: hardware_configuration,
     [ModelCatalogStringFilterKey.USE_CASE]: use_case,
     [ModelCatalogNumberFilterKey.MAX_RPS]: rps_mean,
-    [ModelCatalogNumberFilterKey.COLD_START_LATENCY]: cold_start_latency,
+    [ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME]: cold_start_latency,
     [ModelCatalogNumberFilterKey.MIN_VRAM]: min_vram,
     [ModelCatalogNumberFilterKey.IMAGE_SIZE]: image_size,
     [ModelCatalogStringFilterKey.TENSOR_TYPE]: tensor_type,
@@ -210,7 +210,7 @@ describe('filtersToFilterQuery', () => {
           max: 300,
         },
       },
-      [ModelCatalogNumberFilterKey.COLD_START_LATENCY]: {
+      [ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME]: {
         type: 'number',
         range: {
           min: 45000,
@@ -923,7 +923,7 @@ describe('hasFiltersApplied', () => {
     [ModelCatalogStringFilterKey.HARDWARE_CONFIGURATION]: hardware_configuration,
     [ModelCatalogStringFilterKey.USE_CASE]: use_case,
     [ModelCatalogNumberFilterKey.MAX_RPS]: rps_mean,
-    [ModelCatalogNumberFilterKey.COLD_START_LATENCY]: undefined,
+    [ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME]: undefined,
     [ModelCatalogNumberFilterKey.MIN_VRAM]: undefined,
     [ModelCatalogNumberFilterKey.IMAGE_SIZE]: undefined,
     [ModelCatalogStringFilterKey.TENSOR_TYPE]: tensor_type,

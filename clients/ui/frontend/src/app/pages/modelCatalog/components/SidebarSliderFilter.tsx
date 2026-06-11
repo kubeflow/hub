@@ -1,5 +1,12 @@
 import * as React from 'react';
-import { Button, Flex, FlexItem, Title } from '@patternfly/react-core';
+import {
+  Button,
+  Dropdown,
+  Flex,
+  FlexItem,
+  MenuToggle,
+  MenuToggleElement,
+} from '@patternfly/react-core';
 import { ModelCatalogNumberFilterKey } from '~/concepts/modelCatalog/const';
 import { useCatalogNumberFilterState } from '~/app/pages/modelCatalog/hooks/useCatalogFilterState';
 import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
@@ -23,11 +30,15 @@ const SidebarSliderFilter: React.FC<SidebarSliderFilterProps> = ({
   const { filterOptions, filterOptionsLoaded, performanceViewEnabled } =
     React.useContext(ModelCatalogContext);
   const { value: filterValue, setValue: setFilterValue } = useCatalogNumberFilterState(filterKey);
+  const [isOpen, setIsOpen] = React.useState(false);
 
   const range = React.useMemo(() => {
     const option = filterOptions?.filters?.[filterKey];
-    if (option?.range?.min != null && option.range.max != null) {
-      return { min: option.range.min, max: option.range.max };
+    if (option && option.range) {
+      const { min, max } = option.range;
+      if (min != null && max != null) {
+        return { min, max };
+      }
     }
     return { min: fallbackMin, max: fallbackMax };
   }, [filterOptions, filterKey, fallbackMin, fallbackMax]);
@@ -37,75 +48,101 @@ const SidebarSliderFilter: React.FC<SidebarSliderFilterProps> = ({
   const [localValue, setLocalValue] = React.useState<number>(() => filterValue ?? range.max);
 
   React.useEffect(() => {
-    setLocalValue(filterValue ?? range.max);
-  }, [filterValue, range.max]);
-
-  const hasActiveFilter = filterValue !== undefined;
+    if (isOpen) {
+      setLocalValue(filterValue ?? range.max);
+    }
+  }, [isOpen, filterValue, range.max]);
 
   if (!performanceViewEnabled || !filterOptionsLoaded || !filterOptions?.filters?.[filterKey]) {
     return null;
   }
 
+  const hasActiveFilter = filterValue !== undefined;
+
+  const getDisplayText = (): React.ReactNode => {
+    if (hasActiveFilter) {
+      return (
+        <>
+          <strong>{label}:</strong> ≤ {filterValue} {suffix}
+        </>
+      );
+    }
+    return label;
+  };
+
   const handleApply = () => {
     setFilterValue(localValue);
+    setIsOpen(false);
   };
 
   const handleReset = () => {
-    setFilterValue(undefined);
-    setLocalValue(range.max);
+    setLocalValue(filterValue ?? range.max);
   };
 
-  return (
-    <Flex
-      direction={{ default: 'column' }}
-      gap={{ default: 'gapSm' }}
-      style={{ padding: '0 16px 16px' }}
+  const clampedValue = Math.min(Math.max(localValue, range.min), range.max);
+
+  const toggle = (toggleRef: React.Ref<MenuToggleElement>) => (
+    <MenuToggle
+      ref={toggleRef}
+      data-testid={`${label.toLowerCase().replace(/\s+/g, '-')}-filter`}
+      onClick={() => setIsOpen(!isOpen)}
+      isExpanded={isOpen}
+      isFullWidth
     >
-      <FlexItem>
-        <Title headingLevel="h5" size="md">
-          {label}
-        </Title>
-      </FlexItem>
-      <FlexItem>
-        <SliderWithInput
-          value={Math.min(Math.max(localValue, range.min), range.max)}
-          min={range.min}
-          max={range.max}
-          isDisabled={isDisabled}
-          onChange={setLocalValue}
-          suffix={suffix}
-          ariaLabel={`${label} filter value`}
-          showBoundaries
-        />
-      </FlexItem>
-      <FlexItem>
-        <Flex gap={{ default: 'gapSm' }}>
-          <FlexItem>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleApply}
-              isDisabled={isDisabled}
-              data-testid={`${label.toLowerCase().replace(/\s+/g, '-')}-apply-filter`}
-            >
-              Apply
-            </Button>
-          </FlexItem>
-          {hasActiveFilter && (
+      {getDisplayText()}
+    </MenuToggle>
+  );
+
+  return (
+    <Dropdown
+      isOpen={isOpen}
+      onOpenChange={setIsOpen}
+      toggle={toggle}
+      shouldFocusToggleOnSelect={false}
+    >
+      <Flex
+        direction={{ default: 'column' }}
+        spaceItems={{ default: 'spaceItemsSm' }}
+        style={{ minWidth: '400px', padding: '16px' }}
+      >
+        <FlexItem>{label}</FlexItem>
+        <FlexItem>
+          <SliderWithInput
+            value={clampedValue}
+            min={range.min}
+            max={range.max}
+            isDisabled={isDisabled}
+            onChange={setLocalValue}
+            suffix={suffix}
+            ariaLabel={`${label} filter value`}
+            showBoundaries
+          />
+        </FlexItem>
+        <FlexItem>
+          <Flex spaceItems={{ default: 'spaceItemsSm' }}>
+            <FlexItem>
+              <Button
+                variant="primary"
+                onClick={handleApply}
+                isDisabled={isDisabled}
+                data-testid={`${label.toLowerCase().replace(/\s+/g, '-')}-apply-filter`}
+              >
+                Apply
+              </Button>
+            </FlexItem>
             <FlexItem>
               <Button
                 variant="link"
-                size="sm"
                 onClick={handleReset}
                 data-testid={`${label.toLowerCase().replace(/\s+/g, '-')}-reset-filter`}
               >
                 Reset
               </Button>
             </FlexItem>
-          )}
-        </Flex>
-      </FlexItem>
-    </Flex>
+          </Flex>
+        </FlexItem>
+      </Flex>
+    </Dropdown>
   );
 };
 

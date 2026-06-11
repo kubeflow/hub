@@ -89,8 +89,12 @@ export const applyFilterValue = (
     const numberValue = extractNumberValue(value);
     if (filterKey === ModelCatalogNumberFilterKey.MAX_RPS) {
       setFilterData(ModelCatalogNumberFilterKey.MAX_RPS, numberValue);
+    } else if (filterKey === ModelCatalogNumberFilterKey.MIN_VRAM) {
+      setFilterData(ModelCatalogNumberFilterKey.MIN_VRAM, numberValue);
+    } else if (filterKey === ModelCatalogNumberFilterKey.IMAGE_SIZE) {
+      setFilterData(ModelCatalogNumberFilterKey.IMAGE_SIZE, numberValue);
     } else {
-      setFilterData(ModelCatalogNumberFilterKey.COLD_START_LATENCY, numberValue);
+      setFilterData(ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME, numberValue);
     }
     return;
   }
@@ -196,7 +200,7 @@ export const getDefaultFiltersFromNamedQuery = (
         if (fieldName === ModelCatalogNumberFilterKey.MAX_RPS) {
           result[ModelCatalogNumberFilterKey.MAX_RPS] = resolvedValue;
         } else {
-          result[ModelCatalogNumberFilterKey.COLD_START_LATENCY] = resolvedValue;
+          result[ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME] = resolvedValue;
         }
       }
       return;

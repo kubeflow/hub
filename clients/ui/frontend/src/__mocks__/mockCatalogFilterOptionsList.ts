@@ -28,7 +28,7 @@ export const mockNamedQueries: Record<string, NamedQuery> = {
       operator: FilterOperator.LESS_THAN_OR_EQUAL,
       value: 'max', // 'max' means use the max value from the range in filters (300 in mock)
     },
-    [ModelCatalogNumberFilterKey.COLD_START_LATENCY]: {
+    [ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME]: {
       operator: FilterOperator.LESS_THAN_OR_EQUAL,
       value: 'max',
     },
@@ -140,7 +140,7 @@ export const mockCatalogFilterOptionsList = (
         max: 300,
       },
     },
-    [ModelCatalogNumberFilterKey.COLD_START_LATENCY]: {
+    [ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME]: {
       type: 'number',
       range: {
         min: 32,

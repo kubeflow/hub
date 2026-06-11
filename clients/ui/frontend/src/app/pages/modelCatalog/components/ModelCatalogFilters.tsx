@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Content, ContentVariants, Divider } from '@patternfly/react-core';
+import { Content, ContentVariants, Flex } from '@patternfly/react-core';
 import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
 import {
   ModelCatalogNumberFilterKey,
@@ -17,6 +17,7 @@ import {
   CatalogFilterPanel,
   useCatalogFilterConfigs,
   type FilterPanelItem,
+  type StringFilterPanelItem,
 } from '~/app/shared/components/catalog';
 import ModelPerformanceViewToggleCard from './ModelPerformanceViewToggleCard';
 import SidebarSliderFilter from './SidebarSliderFilter';
@@ -46,8 +47,14 @@ const LABEL_MAPPINGS: Record<string, Record<string, string>> = {
 };
 
 const ModelCatalogFilters: React.FC = () => {
-  const { filterOptions, filterOptionsLoaded, filterOptionsLoadError, filters, setFilters } =
-    React.useContext(ModelCatalogContext);
+  const {
+    filterOptions,
+    filterOptionsLoaded,
+    filterOptionsLoadError,
+    filters,
+    setFilters,
+    performanceViewEnabled,
+  } = React.useContext(ModelCatalogContext);
   const onFilterChange = React.useCallback(
     (key: string, values: string[]) => {
       const match = BASIC_STRING_FILTER_KEYS.find((k) => k === key);
@@ -75,33 +82,10 @@ const ModelCatalogFilters: React.FC = () => {
     labelMappings: LABEL_MAPPINGS,
   });
 
-  const sliderContent = React.useMemo(
-    () => (
-      <>
-        <Divider className="pf-v6-u-my-md" />
-        <SidebarSliderFilter
-          filterKey={ModelCatalogNumberFilterKey.MIN_VRAM}
-          label="Minimum vRAM"
-          suffix="GB"
-          fallbackMin={4}
-          fallbackMax={480}
-        />
-        <SidebarSliderFilter
-          filterKey={ModelCatalogNumberFilterKey.IMAGE_SIZE}
-          label="Container size"
-          suffix="GB"
-          fallbackMin={4}
-          fallbackMax={500}
-        />
-      </>
-    ),
-    [],
-  );
-
   const filterPanelItems = React.useMemo((): FilterPanelItem[] => {
     const validatedConfigKey = ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION;
-    return baseFilterItems.map((item) => {
-      const itemWithTestIds: FilterPanelItem = {
+    const items: FilterPanelItem[] = baseFilterItems.map((item) => {
+      const itemWithTestIds: StringFilterPanelItem = {
         ...item,
         testIdBase: `${item.title}-filter`,
         getCheckboxTestId: (value: string) => `${item.title}-${value}-checkbox`,
@@ -111,21 +95,50 @@ const ModelCatalogFilters: React.FC = () => {
         const hasSelection = item.selectedValues.length > 0;
         return {
           ...itemWithTestIds,
-          footer: (
-            <>
-              {hasMultiple && hasSelection && (
-                <Content component={ContentVariants.small} className="pf-v6-u-mt-sm">
-                  Showing models with all selected configurations
-                </Content>
-              )}
-              {sliderContent}
-            </>
-          ),
+          footer:
+            hasMultiple && hasSelection ? (
+              <Content component={ContentVariants.small} className="pf-v6-u-mt-sm">
+                Showing models with all selected configurations
+              </Content>
+            ) : undefined,
         };
       }
       return itemWithTestIds;
     });
-  }, [baseFilterItems, sliderContent]);
+
+    // Insert slider filters as independent panel items after "Validated arguments"
+    const validatedIndex = items.findIndex((item) => item.key === validatedConfigKey);
+    const insertIndex = validatedIndex >= 0 ? validatedIndex + 1 : items.length;
+
+    const sliderItems: FilterPanelItem[] = [
+      {
+        key: 'hardware-slider-filters',
+        title: 'Hardware filters',
+        visible: performanceViewEnabled,
+        customContent: (
+          <Flex direction={{ default: 'column' }} gap={{ default: 'gapSm' }}>
+            <SidebarSliderFilter
+              filterKey={ModelCatalogNumberFilterKey.MIN_VRAM}
+              label="Minimum vRAM"
+              suffix="GB"
+              fallbackMin={4}
+              fallbackMax={480}
+            />
+            <SidebarSliderFilter
+              filterKey={ModelCatalogNumberFilterKey.IMAGE_SIZE}
+              label="Container size"
+              suffix="GB"
+              fallbackMin={4}
+              fallbackMax={500}
+            />
+          </Flex>
+        ),
+      },
+    ];
+
+    items.splice(insertIndex, 0, ...sliderItems);
+    return items;
+  }, [baseFilterItems, performanceViewEnabled]);
 
   return (
     <CatalogFilterPanel

@@ -9,11 +9,11 @@ import {
 } from '@patternfly/react-core';
 import { ModelCatalogNumberFilterKey } from '~/concepts/modelCatalog/const';
 import { useCatalogNumberFilterState } from '~/app/pages/modelCatalog/hooks/useCatalogFilterState';
-import { COLD_START_LATENCY_RANGE } from '~/app/pages/modelCatalog/utils/performanceMetricsUtils';
+import { COLD_START_LOAD_TIME_RANGE } from '~/app/pages/modelCatalog/utils/performanceMetricsUtils';
 import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
 import SliderWithInput from './SliderWithInput';
 
-const filterKey = ModelCatalogNumberFilterKey.COLD_START_LATENCY;
+const filterKey = ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME;
 
 const ColdStartLatencyFilter: React.FC = () => {
   const { filterOptions } = React.useContext(ModelCatalogContext);
@@ -34,7 +34,7 @@ const ColdStartLatencyFilter: React.FC = () => {
         };
       }
     }
-    return COLD_START_LATENCY_RANGE;
+    return COLD_START_LOAD_TIME_RANGE;
   }, [filterOptions]);
 
   const [localValue, setLocalValue] = React.useState<number>(() => filterValue ?? maxValue);
@@ -75,7 +75,7 @@ const ColdStartLatencyFilter: React.FC = () => {
   const toggle = (toggleRef: React.Ref<MenuToggleElement>) => (
     <MenuToggle
       ref={toggleRef}
-      data-testid="cold-start-latency-filter"
+      data-testid="cold-start-load-time-filter"
       onClick={() => setIsOpen(!isOpen)}
       isExpanded={isOpen}
       isFullHeight
@@ -112,7 +112,7 @@ const ColdStartLatencyFilter: React.FC = () => {
               variant="primary"
               onClick={handleApplyFilter}
               isDisabled={isSliderDisabled}
-              data-testid="cold-start-latency-apply-filter"
+              data-testid="cold-start-load-time-apply-filter"
             >
               Apply filter
             </Button>
@@ -121,7 +121,7 @@ const ColdStartLatencyFilter: React.FC = () => {
             <Button
               variant="link"
               onClick={handleReset}
-              data-testid="cold-start-latency-reset-filter"
+              data-testid="cold-start-load-time-reset-filter"
             >
               Reset
             </Button>

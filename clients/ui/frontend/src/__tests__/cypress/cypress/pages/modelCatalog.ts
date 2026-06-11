@@ -366,7 +366,7 @@ class ModelCatalog {
 
   // Cold start latency filter helpers
   findColdStartLatencyFilter() {
-    return cy.findByTestId('cold-start-latency-filter');
+    return cy.findByTestId('cold-start-load-time-filter');
   }
 
   openColdStartLatencyFilter() {
@@ -375,12 +375,12 @@ class ModelCatalog {
   }
 
   applyColdStartLatencyFilter() {
-    cy.findByTestId('cold-start-latency-apply-filter').click();
+    cy.findByTestId('cold-start-load-time-apply-filter').click();
     return this;
   }
 
   resetColdStartLatencyFilter() {
-    cy.findByTestId('cold-start-latency-reset-filter').click();
+    cy.findByTestId('cold-start-load-time-reset-filter').click();
     return this;
   }
 

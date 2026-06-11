@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Alert, Divider, Spinner, Stack, StackItem } from '@patternfly/react-core';
 import CatalogStringFilter from './CatalogStringFilter';
-import type { FilterPanelItem } from './hooks/useCatalogFilterConfigs';
+import { isCustomFilterItem, type FilterPanelItem } from './hooks/useCatalogFilterConfigs';
 
 type CatalogFilterPanelProps = {
   loaded: boolean;
@@ -38,16 +38,22 @@ const CatalogFilterPanel: React.FC<CatalogFilterPanelProps> = ({
       {visibleFilters.map((item, index) => (
         <React.Fragment key={item.key}>
           <StackItem>
-            <CatalogStringFilter
-              title={item.title}
-              filterValues={item.filterValues}
-              selectedValues={item.selectedValues}
-              onToggle={item.onToggle}
-              getLabel={item.getLabel}
-              testIdBase={item.testIdBase ?? `${testIdPrefix}-${item.key}`}
-              getCheckboxTestId={item.getCheckboxTestId}
-            />
-            {item.footer}
+            {isCustomFilterItem(item) ? (
+              item.customContent
+            ) : (
+              <>
+                <CatalogStringFilter
+                  title={item.title}
+                  filterValues={item.filterValues}
+                  selectedValues={item.selectedValues}
+                  onToggle={item.onToggle}
+                  getLabel={item.getLabel}
+                  testIdBase={item.testIdBase ?? `${testIdPrefix}-${item.key}`}
+                  getCheckboxTestId={item.getCheckboxTestId}
+                />
+                {item.footer}
+              </>
+            )}
           </StackItem>
           {index < visibleFilters.length - 1 && <Divider />}
         </React.Fragment>
