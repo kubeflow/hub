@@ -468,8 +468,6 @@ export const BASIC_FILTER_KEYS: ModelCatalogFilterKey[] = [
   ModelCatalogStringFilterKey.LANGUAGE,
   ModelCatalogStringFilterKey.TENSOR_TYPE,
   ModelCatalogStringFilterKey.VALIDATED_CONFIGURATION,
-  ModelCatalogNumberFilterKey.MIN_VRAM,
-  ModelCatalogNumberFilterKey.IMAGE_SIZE,
 ];
 
 /**

@@ -76,6 +76,8 @@ describe('Model Catalog Performance Filters API Behavior', () => {
         expect(url).to.not.include('artifacts.itl');
         expect(url).to.not.include('artifacts.requests_per_second');
         expect(url).to.not.include('cold_start_time_to_load_seconds');
+        expect(url).to.not.include('min_vram_gb');
+        expect(url).to.not.include('modelcar_image_size');
         expect(url).to.not.include('targetRPS');
         expect(url).to.not.include('latencyProperty');
 
@@ -159,6 +161,8 @@ describe('Model Catalog Performance Filters API Behavior', () => {
         expect(url).to.not.include('artifacts.use_case');
         expect(url).to.not.include('artifacts.ttft');
         expect(url).to.not.include('cold_start_time_to_load_seconds');
+        expect(url).to.not.include('min_vram_gb');
+        expect(url).to.not.include('modelcar_image_size');
         expect(url).to.not.include('targetRPS');
       });
 
@@ -385,6 +389,46 @@ describe('Model Catalog Performance Filters API Behavior', () => {
       cy.wait('@getModelsWithContainerSizeFilter').then((interception) => {
         const decodedUrl = decodeURIComponent(interception.request.url);
         expect(decodedUrl).to.include('modelcar_image_size.double_value');
+      });
+    });
+
+    it('should NOT include min_vram_gb after toggle is turned OFF', () => {
+      visitWithPerformanceToggle(true);
+
+      cy.findByTestId('minimum-vram-filter').scrollIntoView();
+      cy.findByTestId('minimum-vram-filter').click();
+      cy.findByTestId('minimum-vram-apply-filter').should('be.visible').click();
+
+      modelCatalog.togglePerformanceView();
+      modelCatalog.findLoadingState().should('not.exist');
+
+      cy.intercept('GET', '**/model_catalog/models*').as('getModelsWithoutVram');
+
+      triggerFilterRefresh();
+
+      cy.wait('@getModelsWithoutVram').then((interception) => {
+        const decodedUrl = decodeURIComponent(interception.request.url);
+        expect(decodedUrl).to.not.include('min_vram_gb');
+      });
+    });
+
+    it('should NOT include modelcar_image_size after toggle is turned OFF', () => {
+      visitWithPerformanceToggle(true);
+
+      cy.findByTestId('container-size-filter').scrollIntoView();
+      cy.findByTestId('container-size-filter').click();
+      cy.findByTestId('container-size-apply-filter').should('be.visible').click();
+
+      modelCatalog.togglePerformanceView();
+      modelCatalog.findLoadingState().should('not.exist');
+
+      cy.intercept('GET', '**/model_catalog/models*').as('getModelsWithoutContainerSize');
+
+      triggerFilterRefresh();
+
+      cy.wait('@getModelsWithoutContainerSize').then((interception) => {
+        const decodedUrl = decodeURIComponent(interception.request.url);
+        expect(decodedUrl).to.not.include('modelcar_image_size');
       });
     });
   });

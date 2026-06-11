@@ -134,6 +134,8 @@ function useModelCatalogSetup(providerState: CatalogProviderState) {
       baseSetFilterData(latencyKey, undefined);
     });
     baseSetFilterData(ModelCatalogStringFilterKey.HARDWARE_CONFIGURATION, []);
+    baseSetFilterData(ModelCatalogNumberFilterKey.MIN_VRAM, undefined);
+    baseSetFilterData(ModelCatalogNumberFilterKey.IMAGE_SIZE, undefined);
 
     // Then apply all defaults from namedQueries
     const defaultQuery = filterOptions?.namedQueries?.[DEFAULT_PERFORMANCE_FILTERS_QUERY_NAME];
