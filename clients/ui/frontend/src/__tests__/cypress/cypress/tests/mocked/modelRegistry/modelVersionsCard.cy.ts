@@ -291,8 +291,6 @@ describe('Model Versions Card', () => {
   });
 
   it('does not display model versions list if there are no archived model versions', () => {
-    cy.visit('/model-registry/modelregistry-sample/registered-models/archive/2/overview');
-    appChrome.waitForA11y();
     cy.interceptApi(
       `GET /api/:apiVersion/model_registry/:modelRegistryName/registered_models/:registeredModelId/versions`,
       {
@@ -306,6 +304,8 @@ describe('Model Versions Card', () => {
         items: [],
       }),
     );
+    cy.visit('/model-registry/modelregistry-sample/registered-models/archive/2/overview');
+    appChrome.waitForA11y();
 
     modelVersionsCard.findNoVersionsText().should('be.visible');
   });
