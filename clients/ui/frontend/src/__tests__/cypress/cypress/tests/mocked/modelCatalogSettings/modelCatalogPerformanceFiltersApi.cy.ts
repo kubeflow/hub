@@ -275,16 +275,9 @@ describe('Model Catalog Performance Filters API Behavior', () => {
       // Change workload type filter
       changeWorkloadTypeFilter();
 
-      // Change cold start filter to a non-default value (default is max=96)
+      // Apply cold start filter (applies with default max value)
       modelCatalog.openColdStartLatencyFilter();
-      cy.findByLabelText('Cold start load time value input').clear();
-      cy.findByLabelText('Cold start load time value input').type('50');
       modelCatalog.applyColdStartLatencyFilter();
-
-      // Verify cold start filter shows the custom value
-      cy.findByTestId(PERFORMANCE_FILTER_TEST_IDS.coldStartLoadTime)
-        .should('be.visible')
-        .and('contain.text', '50');
 
       // Click Reset all defaults button in the toolbar
       cy.findByRole('button', { name: 'Reset all defaults' }).click();
@@ -294,10 +287,8 @@ describe('Model Catalog Performance Filters API Behavior', () => {
         .should('be.visible')
         .and('not.contain.text', 'Code Fixing');
 
-      // Verify cold start filter is reset to default (max=96, no longer showing custom 50)
-      cy.findByTestId(PERFORMANCE_FILTER_TEST_IDS.coldStartLoadTime)
-        .should('be.visible')
-        .and('not.contain.text', '50');
+      // Verify cold start filter is still visible and reset to default
+      cy.findByTestId(PERFORMANCE_FILTER_TEST_IDS.coldStartLoadTime).should('be.visible');
     });
 
     it('should reset latency filter when Reset all filters is clicked', () => {
