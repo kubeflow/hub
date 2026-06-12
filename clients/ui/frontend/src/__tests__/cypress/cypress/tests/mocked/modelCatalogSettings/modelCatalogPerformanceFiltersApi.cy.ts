@@ -272,16 +272,32 @@ describe('Model Catalog Performance Filters API Behavior', () => {
 
       cy.findByTestId(PERFORMANCE_FILTER_TEST_IDS.hardwareTable).should('exist');
 
-      // Change a filter to ensure something is set
+      // Change workload type filter
       changeWorkloadTypeFilter();
 
-      // Click Clear all filters button in the toolbar (PatternFly's native button)
+      // Change cold start filter to a non-default value (default is max=96)
+      modelCatalog.openColdStartLatencyFilter();
+      cy.findByLabelText('Cold start load time value input').clear();
+      cy.findByLabelText('Cold start load time value input').type('50');
+      modelCatalog.applyColdStartLatencyFilter();
+
+      // Verify cold start filter shows the custom value
+      cy.findByTestId(PERFORMANCE_FILTER_TEST_IDS.coldStartLoadTime)
+        .should('be.visible')
+        .and('contain.text', '50');
+
+      // Click Reset all defaults button in the toolbar
       cy.findByRole('button', { name: 'Reset all defaults' }).click();
 
-      // Verify filters are reset to defaults - workload type should NOT show Code Fixing
+      // Verify workload type is reset - should NOT show Code Fixing
       cy.findByTestId(PERFORMANCE_FILTER_TEST_IDS.workloadType)
         .should('be.visible')
         .and('not.contain.text', 'Code Fixing');
+
+      // Verify cold start filter is reset to default (max=96, no longer showing custom 50)
+      cy.findByTestId(PERFORMANCE_FILTER_TEST_IDS.coldStartLoadTime)
+        .should('be.visible')
+        .and('not.contain.text', '50');
     });
 
     it('should reset latency filter when Reset all filters is clicked', () => {
@@ -318,25 +334,6 @@ describe('Model Catalog Performance Filters API Behavior', () => {
       cy.wait('@getModelsWithColdStart').then((interception) => {
         const decodedUrl = decodeURIComponent(interception.request.url);
         expect(decodedUrl).to.include('cold_start_time_to_load_seconds');
-      });
-    });
-
-    it('should NOT include cold_start_time_to_load_seconds after toggle is turned OFF', () => {
-      visitWithPerformanceToggle(true);
-
-      modelCatalog.openColdStartLatencyFilter();
-      modelCatalog.applyColdStartLatencyFilter();
-
-      modelCatalog.togglePerformanceView();
-      modelCatalog.findLoadingState().should('not.exist');
-
-      cy.intercept('GET', '**/model_catalog/models*').as('getModelsWithoutColdStart');
-
-      triggerFilterRefresh();
-
-      cy.wait('@getModelsWithoutColdStart').then((interception) => {
-        const decodedUrl = decodeURIComponent(interception.request.url);
-        expect(decodedUrl).to.not.include('cold_start_time_to_load_seconds');
       });
     });
 

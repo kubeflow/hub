@@ -37,7 +37,7 @@ const SidebarSliderFilter: React.FC<SidebarSliderFilterProps> = ({
     if (option && option.range) {
       const { min, max } = option.range;
       if (min != null && max != null) {
-        return { min, max };
+        return { min: Math.floor(min), max: Math.ceil(max) };
       }
     }
     return { min: fallbackMin, max: fallbackMax };
@@ -116,6 +116,7 @@ const SidebarSliderFilter: React.FC<SidebarSliderFilterProps> = ({
             suffix={suffix}
             ariaLabel={`${label} filter value`}
             showBoundaries
+            shouldRound
           />
         </FlexItem>
         <FlexItem>

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Content, ContentVariants, Flex } from '@patternfly/react-core';
+import { Content, ContentVariants, Divider, Flex } from '@patternfly/react-core';
 import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
 import {
   ModelCatalogNumberFilterKey,
@@ -124,6 +124,7 @@ const ModelCatalogFilters: React.FC = () => {
               fallbackMin={4}
               fallbackMax={480}
             />
+            <Divider />
             <SidebarSliderFilter
               filterKey={ModelCatalogNumberFilterKey.IMAGE_SIZE}
               label="Container size"

@@ -134,6 +134,8 @@ function useModelCatalogSetup(providerState: CatalogProviderState) {
       baseSetFilterData(latencyKey, undefined);
     });
     baseSetFilterData(ModelCatalogStringFilterKey.HARDWARE_CONFIGURATION, []);
+    baseSetFilterData(ModelCatalogNumberFilterKey.MAX_RPS, undefined);
+    baseSetFilterData(ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME, undefined);
     baseSetFilterData(ModelCatalogNumberFilterKey.MIN_VRAM, undefined);
     baseSetFilterData(ModelCatalogNumberFilterKey.IMAGE_SIZE, undefined);
 

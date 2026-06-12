@@ -199,8 +199,12 @@ export const getDefaultFiltersFromNamedQuery = (
       if (resolvedValue !== undefined) {
         if (fieldName === ModelCatalogNumberFilterKey.MAX_RPS) {
           result[ModelCatalogNumberFilterKey.MAX_RPS] = resolvedValue;
-        } else {
+        } else if (fieldName === ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME) {
           result[ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME] = resolvedValue;
+        } else if (fieldName === ModelCatalogNumberFilterKey.MIN_VRAM) {
+          result[ModelCatalogNumberFilterKey.MIN_VRAM] = resolvedValue;
+        } else {
+          result[ModelCatalogNumberFilterKey.IMAGE_SIZE] = resolvedValue;
         }
       }
       return;
