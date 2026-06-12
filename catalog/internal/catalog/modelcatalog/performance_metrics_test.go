@@ -1547,6 +1547,68 @@ func TestEnrichCatalogModelFromMetadata_NewFields(t *testing.T) {
 	} else if v != 80.0 {
 		t.Errorf("min_vram_gb = %v, want %v", v, 80.0)
 	}
+
+	// Verify cold_start_matrix is set as a JSON string custom property
+	stringPropMap := make(map[string]string)
+	for _, p := range *props {
+		if p.StringValue != nil {
+			stringPropMap[p.Name] = *p.StringValue
+		}
+	}
+	csJSON, ok := stringPropMap["cold_start_matrix"]
+	if !ok {
+		t.Fatal("expected custom property 'cold_start_matrix' to be set")
+	}
+	var csMatrix []coldStartEntry
+	if err := json.Unmarshal([]byte(csJSON), &csMatrix); err != nil {
+		t.Fatalf("cold_start_matrix is not valid JSON: %v", err)
+	}
+	if len(csMatrix) != 2 {
+		t.Fatalf("cold_start_matrix length = %d, want 2", len(csMatrix))
+	}
+	if csMatrix[0].GPUType != "A100" || csMatrix[0].GPUCount != 2 || csMatrix[0].ColdStartTimeToLoadSeconds != 127.3 {
+		t.Errorf("cold_start_matrix[0] = %+v, want {A100, 2, 127.3}", csMatrix[0])
+	}
+	if csMatrix[1].GPUType != "H100" || csMatrix[1].GPUCount != 1 || csMatrix[1].ColdStartTimeToLoadSeconds != 68.9 {
+		t.Errorf("cold_start_matrix[1] = %+v, want {H100, 1, 68.9}", csMatrix[1])
+	}
+}
+
+func TestEnrichCatalogModelFromMetadata_EmptyColdStartMatrix(t *testing.T) {
+	modelName := "test-vendor/test-model"
+	modelID := int32(2)
+
+	existingModel := &models.CatalogModelImpl{
+		ID: &modelID,
+		Attributes: &models.CatalogModelAttributes{
+			Name: &modelName,
+		},
+	}
+
+	size := "8B params"
+	metadata := metadataJSON{
+		ID:              modelName,
+		Size:            &size,
+		ColdStartMatrix: []coldStartEntry{},
+	}
+
+	mockRepo := &mockPerfModelRepo{}
+
+	err := enrichCatalogModelFromMetadata(existingModel, metadata, mockRepo)
+	if err != nil {
+		t.Fatalf("enrichCatalogModelFromMetadata() error = %v", err)
+	}
+
+	props := existingModel.GetCustomProperties()
+	if props == nil {
+		t.Fatal("expected custom properties to be set, got nil")
+	}
+
+	for _, p := range *props {
+		if p.Name == "cold_start_matrix" {
+			t.Error("cold_start_matrix should not be set when matrix is empty")
+		}
+	}
 }
 
 func TestCreateColdStartArtifact(t *testing.T) {

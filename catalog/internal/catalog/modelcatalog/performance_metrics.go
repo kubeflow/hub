@@ -782,6 +782,20 @@ func enrichCatalogModelFromMetadata(existingModel dbmodels.CatalogModel, metadat
 		})
 	}
 
+	if len(metadata.ColdStartMatrix) > 0 {
+		csJSON, err := json.Marshal(metadata.ColdStartMatrix)
+		if err != nil {
+			glog.Warningf("Failed to marshal cold_start_matrix for model: %v", err)
+		} else {
+			csStr := string(csJSON)
+			customProperties = append(customProperties, models.Properties{
+				Name:             "cold_start_matrix",
+				StringValue:      &csStr,
+				IsCustomProperty: true,
+			})
+		}
+	}
+
 	if len(customProperties) == 0 {
 		return nil // Nothing to update
 	}
