@@ -4390,4 +4390,4 @@ signing = ["platformdirs", "rh-model-signing"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.10, < 4.0"
-content-hash = "30b1371aedcc56ac29819a5c73c54dbd78862500cae39e8ba114d2919f83d929"
+content-hash = "6e7f0f487781cbce0da72dafc08ecba2db3919e14d9eef3cc5a437fc6efbc8e2"
