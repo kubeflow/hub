@@ -76,6 +76,7 @@ describe('Model Catalog Details Tabs', () => {
 
       it('should show Overview tab as active by default', () => {
         modelCatalog.findModelCatalogDetailLink().first().click();
+        appChrome.waitForA11y();
 
         // Overview tab should be active and content should be visible
         modelCatalog.findOverviewTab().should('have.attr', 'aria-selected', 'true');
@@ -86,6 +87,7 @@ describe('Model Catalog Details Tabs', () => {
 
       it('should switch to Performance Insights tab when clicked', () => {
         modelCatalog.findModelCatalogDetailLink().first().click();
+        appChrome.waitForA11y();
 
         cy.url().should('include', '/model-catalog/source-2/validated-model/overview');
 
@@ -101,6 +103,7 @@ describe('Model Catalog Details Tabs', () => {
 
       it('should switch back to Overview tab when clicked', () => {
         modelCatalog.findModelCatalogDetailLink().first().click();
+        appChrome.waitForA11y();
 
         cy.url().should('include', '/model-catalog/source-2/validated-model/overview');
 
@@ -120,6 +123,7 @@ describe('Model Catalog Details Tabs', () => {
     describe('Tab Content', () => {
       it('should display Hardware Configuration content in Performance Insights tab', () => {
         modelCatalog.findModelCatalogDetailLink().first().click();
+        appChrome.waitForA11y();
 
         // Switch to Performance Insights tab
         modelCatalog.clickPerformanceInsightsTab();
@@ -133,6 +137,7 @@ describe('Model Catalog Details Tabs', () => {
 
       it('should display Workload type column as the second column in hardware configuration table', () => {
         modelCatalog.findModelCatalogDetailLink().first().click();
+        appChrome.waitForA11y();
         modelCatalog.clickPerformanceInsightsTab();
 
         modelCatalog
@@ -151,6 +156,7 @@ describe('Model Catalog Details Tabs', () => {
     describe('Workload Type Filter', () => {
       it('should display workload type filter in the toolbar', () => {
         modelCatalog.findModelCatalogDetailLink().first().click();
+        appChrome.waitForA11y();
         modelCatalog.clickPerformanceInsightsTab();
 
         modelCatalog
@@ -161,6 +167,7 @@ describe('Model Catalog Details Tabs', () => {
 
       it('should show workload type options when clicked', () => {
         modelCatalog.findModelCatalogDetailLink().first().click();
+        appChrome.waitForA11y();
         modelCatalog.clickPerformanceInsightsTab();
         modelCatalog.findWorkloadTypeFilter().click();
         modelCatalog.findWorkloadTypeOption('chatbot').should('be.visible');
@@ -173,6 +180,7 @@ describe('Model Catalog Details Tabs', () => {
         // Note: This test verifies UI behavior after server-side filter is applied.
         // Server-side filtering is verified by the 'Server-Side Filtering' tests below.
         modelCatalog.findModelCatalogDetailLink().first().click();
+        appChrome.waitForA11y();
         modelCatalog.clickPerformanceInsightsTab();
         modelCatalog.findHardwareConfigurationTableRows().should('have.length.at.least', 1);
         modelCatalog.findWorkloadTypeFilter().click();
@@ -188,6 +196,7 @@ describe('Model Catalog Details Tabs', () => {
 
       it('should change workload type selection when clicking a different option', () => {
         modelCatalog.findModelCatalogDetailLink().first().click();
+        appChrome.waitForA11y();
         modelCatalog.clickPerformanceInsightsTab();
         modelCatalog.findWorkloadTypeFilter().click();
         modelCatalog.selectWorkloadType('code_fixing');
@@ -209,6 +218,7 @@ describe('Model Catalog Details Tabs', () => {
     describe('Accessibility', () => {
       it('should have proper ARIA attributes for tabs', () => {
         modelCatalog.findModelCatalogDetailLink().first().click();
+        appChrome.waitForA11y();
 
         // Check tab container has proper role
         modelCatalog.findModelDetailsTabs().should('have.attr', 'role', 'region');
@@ -227,6 +237,7 @@ describe('Model Catalog Details Tabs', () => {
     describe('Tab State Management', () => {
       it('should maintain tab state when switching between tabs', () => {
         modelCatalog.findModelCatalogDetailLink().first().click();
+        appChrome.waitForA11y();
 
         cy.url().should('include', '/model-catalog/source-2/validated-model/overview');
 
@@ -313,6 +324,7 @@ describe('Model Catalog Details Tabs', () => {
         // toggle is ON and user navigates to Performance Insights tab
 
         modelCatalog.findModelCatalogDetailLink().first().click();
+        appChrome.waitForA11y();
         modelCatalog.clickPerformanceInsightsTab();
 
         // TTFT P90 column should be visible (from default filter)
@@ -330,6 +342,7 @@ describe('Model Catalog Details Tabs', () => {
     describe('With Latency Filter Applied', () => {
       it('should show only the selected latency column and matching TPS column when TTFT P90 filter is applied', () => {
         modelCatalog.findModelCatalogDetailLink().first().click();
+        appChrome.waitForA11y();
         modelCatalog.clickPerformanceInsightsTab();
 
         // Open latency filter dropdown
@@ -355,6 +368,7 @@ describe('Model Catalog Details Tabs', () => {
 
       it('should show only E2E mean column and TPS mean column when E2E mean filter is applied', () => {
         modelCatalog.findModelCatalogDetailLink().first().click();
+        appChrome.waitForA11y();
         modelCatalog.clickPerformanceInsightsTab();
 
         // Open latency filter dropdown
@@ -386,6 +400,7 @@ describe('Model Catalog Details Tabs', () => {
 
       it('should reset to applied values when changes were made in the dropdown', () => {
         modelCatalog.findModelCatalogDetailLink().first().click();
+        appChrome.waitForA11y();
         modelCatalog.clickPerformanceInsightsTab();
 
         // Apply a non-default filter first (E2E Mean)
@@ -416,6 +431,7 @@ describe('Model Catalog Details Tabs', () => {
 
       it('should keep non-latency columns visible when latency filter is applied', () => {
         modelCatalog.findModelCatalogDetailLink().first().click();
+        appChrome.waitForA11y();
         modelCatalog.clickPerformanceInsightsTab();
 
         // Apply a latency filter
@@ -466,6 +482,7 @@ describe('Server-Side Filtering', () => {
       // Enable performance toggle to apply filters to API requests
       modelCatalog.togglePerformanceView();
       modelCatalog.findModelCatalogDetailLink().first().click();
+      appChrome.waitForA11y();
       modelCatalog.clickPerformanceInsightsTab();
 
       cy.wait('@getDefaultFilteredArtifacts');
@@ -523,6 +540,7 @@ describe('Server-Side Filtering', () => {
       modelCatalog.findWorkloadTypeFilter().click();
       modelCatalog.selectWorkloadType('code_fixing');
       modelCatalog.findModelCatalogDetailLink().first().click();
+      appChrome.waitForA11y();
       modelCatalog.clickPerformanceInsightsTab();
 
       cy.wait('@getCodeFixingArtifacts');
@@ -571,6 +589,7 @@ describe('Server-Side Filtering', () => {
       // Enable performance toggle
       modelCatalog.togglePerformanceView();
       modelCatalog.findModelCatalogDetailLink().first().click();
+      appChrome.waitForA11y();
       modelCatalog.clickPerformanceInsightsTab();
 
       cy.wait('@getDefaultFilteredArtifacts');
@@ -693,6 +712,7 @@ describe('Performance Insights Pagination', () => {
     modelCatalog.findLoadingState().should('not.exist');
     modelCatalog.togglePerformanceView();
     modelCatalog.findModelCatalogDetailLink().first().click();
+    appChrome.waitForA11y();
     modelCatalog.clickPerformanceInsightsTab();
 
     cy.wait('@getPaginatedPerformanceArtifacts');

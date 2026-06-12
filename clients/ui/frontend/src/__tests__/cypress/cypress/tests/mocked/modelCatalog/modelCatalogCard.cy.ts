@@ -153,6 +153,7 @@ describe('ModelCatalogCard Component', () => {
           modelCatalog.findValidatedModelBenchmarkLink().click();
         });
         cy.url().should('include', 'performance-insights');
+        appChrome.waitForA11y();
       });
 
       it('should navigate through benchmarks correctly', () => {

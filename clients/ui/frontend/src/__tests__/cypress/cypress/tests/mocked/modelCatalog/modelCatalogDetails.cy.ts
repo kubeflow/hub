@@ -41,6 +41,7 @@ describe('Model Catalog Details Page', () => {
   it('shows formatted model type in details', () => {
     modelCatalog.findLoadingState().should('not.exist');
     modelCatalog.findModelCatalogDetailLink().first().click();
+    appChrome.waitForA11y();
     modelCatalog.findModelType().should('be.visible');
     modelCatalog.findModelType().should('contain.text', 'Generative AI model (Example, LLM)');
   });
@@ -48,7 +49,7 @@ describe('Model Catalog Details Page', () => {
   it('does not show architecture field when no architectures are available', () => {
     modelCatalog.findLoadingState().should('not.exist');
     modelCatalog.findModelCatalogDetailLink().first().click();
-    // Architecture field should not exist when no valid architectures
+    appChrome.waitForA11y();
     modelCatalog.findModelArchitecture().should('not.exist');
   });
 });
@@ -112,6 +113,7 @@ describe('Model Catalog Details Page - Architecture Field', () => {
     modelCatalog.visit();
     modelCatalog.findLoadingState().should('not.exist');
     modelCatalog.findModelCatalogDetailLink().first().click();
+    appChrome.waitForA11y();
 
     // Architecture should be normalized to lowercase
     modelCatalog.findModelArchitecture().should('be.visible');
@@ -139,6 +141,7 @@ describe('Model Catalog Details Page - Architecture Field', () => {
     modelCatalog.visit();
     modelCatalog.findLoadingState().should('not.exist');
     modelCatalog.findModelCatalogDetailLink().first().click();
+    appChrome.waitForA11y();
 
     // Architecture field should display all architecture values without validation
     modelCatalog.findModelArchitecture().should('be.visible');
@@ -171,6 +174,7 @@ describe('Model Catalog Details Page - Filter State Management', () => {
     modelCatalog.findLoadingState().should('not.exist');
 
     modelCatalog.findModelCatalogDetailLink().first().click();
+    appChrome.waitForA11y();
     modelCatalog.clickPerformanceInsightsTab();
 
     // Change a filter
@@ -195,6 +199,7 @@ describe('Model Catalog Details Page - Filter State Management', () => {
     modelCatalog.findLoadingState().should('not.exist');
 
     modelCatalog.findModelCatalogDetailLink().first().click();
+    appChrome.waitForA11y();
     modelCatalog.clickPerformanceInsightsTab();
 
     // Change a filter on details page
@@ -228,6 +233,7 @@ describe('Model Catalog Details Page - Edge Cases', () => {
     modelCatalog.visit();
     modelCatalog.findLoadingState().should('not.exist');
     modelCatalog.findModelCatalogDetailLink().first().click();
+    appChrome.waitForA11y();
     modelCatalog.findBreadcrumb().should('exist');
 
     modelCatalog.findDetailsDescription().should('contain.text', 'No description');
@@ -238,6 +244,7 @@ describe('Model Catalog Details Page - Edge Cases', () => {
     modelCatalog.visit();
     modelCatalog.findLoadingState().should('not.exist');
     modelCatalog.findModelCatalogDetailLink().first().click();
+    appChrome.waitForA11y();
     modelCatalog.findBreadcrumb().should('exist');
 
     modelCatalog.findModelCardMarkdown().should('exist');
@@ -253,6 +260,7 @@ describe('Model Catalog Details Page - Edge Cases', () => {
     modelCatalog.visit();
     modelCatalog.findLoadingState().should('not.exist');
     modelCatalog.findModelCatalogDetailLink().first().click();
+    appChrome.waitForA11y();
     modelCatalog.findBreadcrumb().should('exist');
 
     cy.contains('No model card').should('be.visible');
@@ -268,6 +276,7 @@ describe('Model Catalog Details Page - Edge Cases', () => {
     modelCatalog.visit();
     modelCatalog.findLoadingState().should('not.exist');
     modelCatalog.findModelCatalogDetailLink().first().click();
+    appChrome.waitForA11y();
     modelCatalog.findBreadcrumb().should('exist');
 
     cy.findAllByText('N/A').should('have.length.at.least', 1);
@@ -309,6 +318,7 @@ describe('Model Catalog Details Page - Edge Cases', () => {
     modelCatalog.visit();
     modelCatalog.findLoadingState().should('not.exist');
     modelCatalog.findModelCatalogDetailLink().first().click();
+    appChrome.waitForA11y();
     modelCatalog.findBreadcrumb().should('exist');
 
     cy.wait('@getArtifactsError');
@@ -335,6 +345,7 @@ describe('Model Catalog Details Page - Edge Cases', () => {
     modelCatalog.visit();
     modelCatalog.findLoadingState().should('not.exist');
     modelCatalog.findModelCatalogDetailLink().first().click();
+    appChrome.waitForA11y();
     modelCatalog.findBreadcrumb().should('exist');
 
     cy.findByRole('progressbar').should('exist');
@@ -392,6 +403,7 @@ describe('Model Catalog Details Page - Validated Configurations Card', () => {
       modelCatalog.visit();
       modelCatalog.findLoadingState().should('not.exist');
       modelCatalog.findModelCatalogDetailLink().first().click();
+      appChrome.waitForA11y();
       modelCatalog.findBreadcrumb().should('exist');
       modelCatalog.findValidatedConfigurationsCard().should('not.exist');
     });
@@ -422,9 +434,11 @@ describe('Model Catalog Registration - Model Type Field', () => {
     modelCatalog.visit();
     modelCatalog.findLoadingState().should('not.exist');
     modelCatalog.findModelCatalogDetailLink().first().click();
+    appChrome.waitForA11y();
     modelCatalog.findBreadcrumb().should('exist');
     modelCatalog.findRegisterModelButton().click();
     cy.findByTestId('app-page-title').should('contain.text', 'Register');
+    appChrome.waitForA11y();
   };
 
   const interceptModelRegistries = () => {
