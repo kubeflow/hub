@@ -2416,6 +2416,7 @@ components:
               default: metrics-artifact
             metricsType:
               type: string
+              description: The category of metrics contained in this metrics artifact.
               enum:
                 - performance-metrics
                 - accuracy-metrics
