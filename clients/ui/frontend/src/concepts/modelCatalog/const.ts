@@ -488,8 +488,9 @@ export const MATCH_ALL_FILTER_KEYS: ModelCatalogStringFilterKey[] = [
 export const DEPLOYMENT_RESOURCE_PREFIXES = ['vllm'];
 
 /**
- * Performance filter keys that are shown when performance view is enabled.
+ * Performance filter keys that are shown as chips in the performance toolbar.
  * These filters should reset to default values (from namedQueries) instead of clearing.
+ * Note: MIN_VRAM and IMAGE_SIZE are sidebar-only filters (not shown as chips on the details page).
  * Note: HARDWARE_CONFIGURATION is NOT included here because it should clear normally
  * like basic filters, not reset to defaults.
  */
@@ -497,8 +498,6 @@ export const PERFORMANCE_FILTER_KEYS: ModelCatalogFilterKey[] = [
   ModelCatalogStringFilterKey.USE_CASE,
   ModelCatalogNumberFilterKey.MAX_RPS,
   ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME,
-  ModelCatalogNumberFilterKey.MIN_VRAM,
-  ModelCatalogNumberFilterKey.IMAGE_SIZE,
   ...ALL_LATENCY_FILTER_KEYS,
 ];
 
@@ -573,10 +572,13 @@ export const getAllFiltersToShow = (
   const activeLatencyKeys = ALL_LATENCY_FILTER_KEYS.filter((key) => filterData[key] !== undefined);
   // Use Set to deduplicate since PERFORMANCE_FILTER_KEYS already includes latency fields
   // Include HARDWARE_CONFIGURATION which shows in performance toolbar but clears normally
+  // Include MIN_VRAM and IMAGE_SIZE which are sidebar-only filters shown on the landing page
   return [
     ...new Set([
       ...BASIC_FILTER_KEYS,
       ...PERFORMANCE_FILTER_KEYS,
+      ModelCatalogNumberFilterKey.MIN_VRAM,
+      ModelCatalogNumberFilterKey.IMAGE_SIZE,
       ModelCatalogStringFilterKey.HARDWARE_CONFIGURATION,
       ...activeLatencyKeys,
     ]),
