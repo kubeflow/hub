@@ -460,7 +460,7 @@ describe('filtersToFilterQuery', () => {
   //   });
 
   describe('numeric filter target behavior', () => {
-    it('includes cold-start and model-level filters for models target, excludes cold-start for artifacts target', () => {
+    it('includes cold-start and model-level filters for models target, includes cold-start but excludes model-level filters for artifacts target', () => {
       const data = mockFormData({ cold_start_latency: 50, min_vram: 24, image_size: 15 });
 
       const modelsQuery = filtersToFilterQuery(data, mockFilterOptions, 'models');
@@ -469,7 +469,7 @@ describe('filtersToFilterQuery', () => {
       expect(modelsQuery).toContain('modelcar_image_size.double_value');
 
       const artifactsQuery = filtersToFilterQuery(data, mockFilterOptions, 'artifacts');
-      expect(artifactsQuery).not.toContain('cold_start_time_to_load_seconds');
+      expect(artifactsQuery).toContain('cold_start_time_to_load_seconds');
       expect(artifactsQuery).not.toContain('min_vram_gb');
       expect(artifactsQuery).not.toContain('modelcar_image_size');
     });

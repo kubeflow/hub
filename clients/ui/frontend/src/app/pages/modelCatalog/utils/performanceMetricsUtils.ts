@@ -1,10 +1,11 @@
 import { asEnumMember } from 'mod-arch-core';
 import { CatalogPerformanceMetricsArtifact } from '~/app/modelCatalogTypes';
-import { getStringValue } from '~/app/utils';
+import { getStringValue, getIntValue } from '~/app/utils';
 import {
   UseCaseOptionValue,
   PerformancePropertyKey,
   EMPTY_CUSTOM_PROPERTY_VALUE,
+  COLD_START_SUB_TYPE,
 } from '~/concepts/modelCatalog/const';
 import { getUseCaseOption } from './workloadTypeUtils';
 
@@ -63,6 +64,60 @@ export const getWorkloadType = (artifact: CatalogPerformanceMetricsArtifact): st
     return EMPTY_CUSTOM_PROPERTY_VALUE;
   }
   return getUseCaseOption(useCaseEnum)?.label || EMPTY_CUSTOM_PROPERTY_VALUE;
+};
+
+export const isColdStartArtifact = (artifact: CatalogPerformanceMetricsArtifact): boolean =>
+  getStringValue(artifact.customProperties, PerformancePropertyKey.PERFORMANCE_SUB_TYPE) ===
+  COLD_START_SUB_TYPE;
+
+export const separatePerformanceArtifacts = (
+  artifacts: CatalogPerformanceMetricsArtifact[],
+): {
+  throughputArtifacts: CatalogPerformanceMetricsArtifact[];
+  coldStartArtifacts: CatalogPerformanceMetricsArtifact[];
+} => {
+  const throughputArtifacts: CatalogPerformanceMetricsArtifact[] = [];
+  const coldStartArtifacts: CatalogPerformanceMetricsArtifact[] = [];
+  artifacts.forEach((artifact) => {
+    if (isColdStartArtifact(artifact)) {
+      coldStartArtifacts.push(artifact);
+    } else {
+      throughputArtifacts.push(artifact);
+    }
+  });
+  return { throughputArtifacts, coldStartArtifacts };
+};
+
+/**
+ * Finds a matching cold-start artifact for a throughput artifact by GPU type.
+ * Matches on gpu_type from cold-start artifact against hardware_type or hardware_configuration
+ * from the throughput artifact.
+ */
+export const findMatchingColdStartArtifact = (
+  throughputArtifact: CatalogPerformanceMetricsArtifact,
+  coldStartArtifacts: CatalogPerformanceMetricsArtifact[],
+): CatalogPerformanceMetricsArtifact | undefined => {
+  const hwConfig = getStringValue(
+    throughputArtifact.customProperties,
+    PerformancePropertyKey.HARDWARE_CONFIGURATION,
+  );
+  const hwType = getStringValue(
+    throughputArtifact.customProperties,
+    PerformancePropertyKey.HARDWARE_TYPE,
+  );
+  const hwCount = getIntValue(
+    throughputArtifact.customProperties,
+    PerformancePropertyKey.HARDWARE_COUNT,
+  );
+
+  return coldStartArtifacts.find((cs) => {
+    const csGpuType = getStringValue(cs.customProperties, PerformancePropertyKey.GPU_TYPE);
+    const csGpuCount = getIntValue(cs.customProperties, PerformancePropertyKey.GPU_COUNT);
+
+    const typeMatches = hwConfig.includes(csGpuType) || csGpuType === hwType;
+    const countMatches = csGpuCount === 0 || hwCount === 0 || csGpuCount === hwCount;
+    return typeMatches && countMatches;
+  });
 };
 
 export const getSliderRange = ({

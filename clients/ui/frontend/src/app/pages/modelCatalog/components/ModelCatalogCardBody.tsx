@@ -13,7 +13,7 @@ import { Link } from 'react-router-dom';
 import { HelpIcon, AngleLeftIcon, AngleRightIcon, ArrowRightIcon } from '@patternfly/react-icons';
 import { TruncatedText } from 'mod-arch-shared';
 import type { CatalogSource } from '~/app/shared/types/catalogTypes';
-import type { CatalogModel, HardwareConfiguration } from '~/app/modelCatalogTypes';
+import type { CatalogModel } from '~/app/modelCatalogTypes';
 import {
   extractValidatedModelMetrics,
   getLatencyValue,
@@ -27,28 +27,21 @@ import {
   latencyMetricDescriptions,
   parseLatencyFilterKey,
   SortOrder,
+  PerformancePropertyKey,
 } from '~/concepts/modelCatalog/const';
 import { useCatalogPerformanceArtifacts } from '~/app/hooks/modelCatalog/useCatalogPerformanceArtifacts';
 import {
   getActiveLatencyFieldName,
   stripArtifactsPrefix,
-  getHardwareConfigurationsFromCustomProperties,
 } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
-import { formatLatency } from '~/app/pages/modelCatalog/utils/performanceMetricsUtils';
+import {
+  formatLatency,
+  separatePerformanceArtifacts,
+  findMatchingColdStartArtifact,
+} from '~/app/pages/modelCatalog/utils/performanceMetricsUtils';
 import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
 import { useNotification } from '~/app/hooks/useNotification';
-
-const findMatchedColdStart = (
-  customProperties: CatalogModel['customProperties'],
-  hwConfig: string,
-  hwType: string,
-): number | undefined => {
-  const configs = getHardwareConfigurationsFromCustomProperties(customProperties);
-  const match = configs.find(
-    (c: HardwareConfiguration) => hwConfig.startsWith(c.gpu_type) || c.gpu_type === hwType,
-  );
-  return match?.cold_start_time_to_load_seconds;
-};
+import { getDoubleValue } from '~/app/utils';
 
 type ModelCatalogCardBodyProps = {
   model: CatalogModel;
@@ -109,8 +102,13 @@ const ModelCatalogCardBody: React.FC<ModelCatalogCardBodyProps> = ({
       isValidated, // Only fetch if validated
     );
 
-  // Performance artifacts are already filtered by the server endpoint
-  const performanceMetrics = performanceArtifactsList.items;
+  // Separate throughput artifacts from cold-start artifacts
+  const { throughputArtifacts, coldStartArtifacts } = React.useMemo(
+    () => separatePerformanceArtifacts(performanceArtifactsList.items),
+    [performanceArtifactsList.items],
+  );
+
+  const performanceMetrics = throughputArtifacts;
 
   // NOTE: Accuracy metrics are not currently returned by the /performance_artifacts endpoint.
   // This is kept as a placeholder for when accuracy metrics support is restored.
@@ -215,11 +213,15 @@ const ModelCatalogCardBody: React.FC<ModelCatalogCardBodyProps> = ({
       ? parseLatencyFilterKey(activeLatencyField).metric
       : LatencyMetric.TTFT;
 
-    const matchedColdStart = findMatchedColdStart(
-      model.customProperties,
-      metrics.hardwareConfiguration,
-      metrics.hardwareType,
-    );
+    const currentArtifact = performanceMetrics[currentPerformanceIndex];
+    const matchingColdStart = findMatchingColdStartArtifact(currentArtifact, coldStartArtifacts);
+    const coldStartValue = matchingColdStart
+      ? getDoubleValue(
+          matchingColdStart.customProperties,
+          PerformancePropertyKey.COLD_START_TIME_TO_LOAD_SECONDS,
+        )
+      : 0;
+    const matchedColdStart = coldStartValue > 0 ? coldStartValue : undefined;
 
     return (
       <Stack hasGutter>

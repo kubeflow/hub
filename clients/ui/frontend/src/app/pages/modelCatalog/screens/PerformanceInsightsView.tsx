@@ -29,8 +29,8 @@ import {
 import {
   decodeParams,
   getActiveLatencyFieldName,
-  getHardwareConfigurationsFromCustomProperties,
 } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
+import { separatePerformanceArtifacts } from '~/app/pages/modelCatalog/utils/performanceMetricsUtils';
 import { getDefaultFiltersFromNamedQuery } from '~/app/pages/modelCatalog/utils/performanceFilterUtils';
 import TensorTypeComparisonCard from './TensorTypeComparisonCard';
 
@@ -130,9 +130,9 @@ const PerformanceInsightsView: React.FC<PerformanceInsightsViewProps> = ({ model
     model.name,
   ]);
 
-  const hardwareConfigurations = React.useMemo(
-    () => getHardwareConfigurationsFromCustomProperties(model.customProperties),
-    [model.customProperties],
+  const { throughputArtifacts, coldStartArtifacts } = React.useMemo(
+    () => separatePerformanceArtifacts(performanceArtifacts.items),
+    [performanceArtifacts.items],
   );
 
   if (performanceArtifactsError) {
@@ -168,8 +168,8 @@ const PerformanceInsightsView: React.FC<PerformanceInsightsViewProps> = ({ model
               </FlexItem>
               <FlexItem>
                 <HardwareConfigurationTable
-                  performanceArtifacts={performanceArtifacts.items}
-                  hardwareConfigurations={hardwareConfigurations}
+                  performanceArtifacts={throughputArtifacts}
+                  coldStartArtifacts={coldStartArtifacts}
                   isLoading={!performanceArtifactsLoaded && performanceArtifacts.items.length === 0}
                   onSortChange={setTableSort}
                 />

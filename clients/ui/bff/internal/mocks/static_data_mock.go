@@ -358,7 +358,7 @@ func GenerateMockArtifact() openapi.Artifact {
 	return mockData
 }
 
-func withColdStartData(props *map[string]openapi.MetadataValue, modelSize string, minVram string, hwConfigs string) *map[string]openapi.MetadataValue {
+func withColdStartData(props *map[string]openapi.MetadataValue, modelSize string, minVram string, _ string) *map[string]openapi.MetadataValue {
 	if props == nil {
 		return props
 	}
@@ -371,12 +371,6 @@ func withColdStartData(props *map[string]openapi.MetadataValue, modelSize string
 	(*props)["min_vram_gb"] = openapi.MetadataValue{
 		MetadataStringValue: &openapi.MetadataStringValue{
 			StringValue:  minVram,
-			MetadataType: "MetadataStringValue",
-		},
-	}
-	(*props)["cold_start_matrix"] = openapi.MetadataValue{
-		MetadataStringValue: &openapi.MetadataStringValue{
-			StringValue:  hwConfigs,
 			MetadataType: "MetadataStringValue",
 		},
 	}
@@ -1252,6 +1246,12 @@ func performanceMetricsCustomProperties(customProperties map[string]openapi.Meta
 				MetadataType: "MetadataIntValue",
 			},
 		},
+		"hardware_configuration": {
+			MetadataStringValue: &openapi.MetadataStringValue{
+				StringValue:  "2 x H100",
+				MetadataType: "MetadataStringValue",
+			},
+		},
 		"framework": {
 			MetadataStringValue: &openapi.MetadataStringValue{
 				StringValue:  "vllm",
@@ -1375,6 +1375,12 @@ func GetCatalogPerformanceMetricsArtifactMock(itemCount int32) []models.CatalogA
 						MetadataType: "MetadataIntValue",
 					},
 				},
+				"hardware_configuration": {
+					MetadataStringValue: &openapi.MetadataStringValue{
+						StringValue:  "4 x RTX 4090",
+						MetadataType: "MetadataStringValue",
+					},
+				},
 				"requests_per_second": {
 					MetadataDoubleValue: &openapi.MetadataDoubleValue{
 						DoubleValue:  10,
@@ -1483,6 +1489,12 @@ func GetCatalogPerformanceMetricsArtifactMock(itemCount int32) []models.CatalogA
 					MetadataIntValue: &openapi.MetadataIntValue{
 						IntValue:     "8",
 						MetadataType: "MetadataIntValue",
+					},
+				},
+				"hardware_configuration": {
+					MetadataStringValue: &openapi.MetadataStringValue{
+						StringValue:  "8 x A100",
+						MetadataType: "MetadataStringValue",
 					},
 				},
 				"requests_per_second": {
@@ -1595,6 +1607,12 @@ func GetCatalogPerformanceMetricsArtifactMock(itemCount int32) []models.CatalogA
 						MetadataType: "MetadataIntValue",
 					},
 				},
+				"hardware_configuration": {
+					MetadataStringValue: &openapi.MetadataStringValue{
+						StringValue:  "2 x A100-80",
+						MetadataType: "MetadataStringValue",
+					},
+				},
 				"requests_per_second": {
 					MetadataDoubleValue: &openapi.MetadataDoubleValue{
 						DoubleValue:  25,
@@ -1682,7 +1700,165 @@ func GetCatalogPerformanceMetricsArtifactMock(itemCount int32) []models.CatalogA
 			}),
 		},
 	}
+
+	// Add separate cold-start artifacts (matched to throughput artifacts by gpu_type)
+	coldStartArtifacts := []models.CatalogArtifact{
+		{
+			ArtifactType:             *stringToPointer("metrics-artifact"),
+			MetricsType:              stringToPointer("performance-metrics"),
+			CreateTimeSinceEpoch:     stringToPointer("1693526400000"),
+			LastUpdateTimeSinceEpoch: stringToPointer("1704067200000"),
+			CustomProperties: &map[string]openapi.MetadataValue{
+				"performance_sub_type": {
+					MetadataStringValue: &openapi.MetadataStringValue{
+						StringValue:  "cold-start",
+						MetadataType: "MetadataStringValue",
+					},
+				},
+				"gpu_type": {
+					MetadataStringValue: &openapi.MetadataStringValue{
+						StringValue:  "H100",
+						MetadataType: "MetadataStringValue",
+					},
+				},
+				"gpu_count": {
+					MetadataIntValue: &openapi.MetadataIntValue{
+						IntValue:     "2",
+						MetadataType: "MetadataIntValue",
+					},
+				},
+				"cold_start_time_to_load_seconds": {
+					MetadataDoubleValue: &openapi.MetadataDoubleValue{
+						DoubleValue:  52.1,
+						MetadataType: "MetadataDoubleValue",
+					},
+				},
+				"runtime_command": {
+					MetadataStringValue: &openapi.MetadataStringValue{
+						StringValue:  "vllm serve model --tensor-parallel-size 2 --dtype float16",
+						MetadataType: "MetadataStringValue",
+					},
+				},
+			},
+		},
+		{
+			ArtifactType:             *stringToPointer("metrics-artifact"),
+			MetricsType:              stringToPointer("performance-metrics"),
+			CreateTimeSinceEpoch:     stringToPointer("1693526400000"),
+			LastUpdateTimeSinceEpoch: stringToPointer("1704067200000"),
+			CustomProperties: &map[string]openapi.MetadataValue{
+				"performance_sub_type": {
+					MetadataStringValue: &openapi.MetadataStringValue{
+						StringValue:  "cold-start",
+						MetadataType: "MetadataStringValue",
+					},
+				},
+				"gpu_type": {
+					MetadataStringValue: &openapi.MetadataStringValue{
+						StringValue:  "RTX 4090",
+						MetadataType: "MetadataStringValue",
+					},
+				},
+				"gpu_count": {
+					MetadataIntValue: &openapi.MetadataIntValue{
+						IntValue:     "4",
+						MetadataType: "MetadataIntValue",
+					},
+				},
+				"cold_start_time_to_load_seconds": {
+					MetadataDoubleValue: &openapi.MetadataDoubleValue{
+						DoubleValue:  78.4,
+						MetadataType: "MetadataDoubleValue",
+					},
+				},
+				"runtime_command": {
+					MetadataStringValue: &openapi.MetadataStringValue{
+						StringValue:  "vllm serve model --tensor-parallel-size 4 --dtype float16 --max-model-len 4096",
+						MetadataType: "MetadataStringValue",
+					},
+				},
+			},
+		},
+		{
+			ArtifactType:             *stringToPointer("metrics-artifact"),
+			MetricsType:              stringToPointer("performance-metrics"),
+			CreateTimeSinceEpoch:     stringToPointer("1693526400000"),
+			LastUpdateTimeSinceEpoch: stringToPointer("1704067200000"),
+			CustomProperties: &map[string]openapi.MetadataValue{
+				"performance_sub_type": {
+					MetadataStringValue: &openapi.MetadataStringValue{
+						StringValue:  "cold-start",
+						MetadataType: "MetadataStringValue",
+					},
+				},
+				"gpu_type": {
+					MetadataStringValue: &openapi.MetadataStringValue{
+						StringValue:  "A100",
+						MetadataType: "MetadataStringValue",
+					},
+				},
+				"gpu_count": {
+					MetadataIntValue: &openapi.MetadataIntValue{
+						IntValue:     "8",
+						MetadataType: "MetadataIntValue",
+					},
+				},
+				"cold_start_time_to_load_seconds": {
+					MetadataDoubleValue: &openapi.MetadataDoubleValue{
+						DoubleValue:  95.3,
+						MetadataType: "MetadataDoubleValue",
+					},
+				},
+				"runtime_command": {
+					MetadataStringValue: &openapi.MetadataStringValue{
+						StringValue:  "vllm serve model --tensor-parallel-size 8 --dtype auto --gpu-memory-utilization 0.95",
+						MetadataType: "MetadataStringValue",
+					},
+				},
+			},
+		},
+		{
+			ArtifactType:             *stringToPointer("metrics-artifact"),
+			MetricsType:              stringToPointer("performance-metrics"),
+			CreateTimeSinceEpoch:     stringToPointer("1693526400000"),
+			LastUpdateTimeSinceEpoch: stringToPointer("1704067200000"),
+			CustomProperties: &map[string]openapi.MetadataValue{
+				"performance_sub_type": {
+					MetadataStringValue: &openapi.MetadataStringValue{
+						StringValue:  "cold-start",
+						MetadataType: "MetadataStringValue",
+					},
+				},
+				"gpu_type": {
+					MetadataStringValue: &openapi.MetadataStringValue{
+						StringValue:  "A100-80",
+						MetadataType: "MetadataStringValue",
+					},
+				},
+				"gpu_count": {
+					MetadataIntValue: &openapi.MetadataIntValue{
+						IntValue:     "2",
+						MetadataType: "MetadataIntValue",
+					},
+				},
+				"cold_start_time_to_load_seconds": {
+					MetadataDoubleValue: &openapi.MetadataDoubleValue{
+						DoubleValue:  63.7,
+						MetadataType: "MetadataDoubleValue",
+					},
+				},
+				"runtime_command": {
+					MetadataStringValue: &openapi.MetadataStringValue{
+						StringValue:  "vllm serve model --tensor-parallel-size 2 --dtype auto --max-model-len 8192",
+						MetadataType: "MetadataStringValue",
+					},
+				},
+			},
+		},
+	}
+
 	artifacts = artifacts[:itemCount]
+	artifacts = append(artifacts, coldStartArtifacts...)
 	return artifacts
 }
 

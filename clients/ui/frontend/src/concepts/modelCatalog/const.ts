@@ -26,9 +26,17 @@ export enum ModelCatalogNumberFilterKey {
 export const PerformancePropertyKey = {
   HARDWARE_TYPE: 'hardware_type',
   HARDWARE_CONFIGURATION: 'hardware_configuration',
+  HARDWARE_COUNT: 'hardware_count',
   USE_CASE: 'use_case',
   REQUESTS_PER_SECOND: 'requests_per_second',
+  COLD_START_TIME_TO_LOAD_SECONDS: 'cold_start_time_to_load_seconds',
+  RUNTIME_COMMAND: 'runtime_command',
+  PERFORMANCE_SUB_TYPE: 'performance_sub_type',
+  GPU_TYPE: 'gpu_type',
+  GPU_COUNT: 'gpu_count',
 } as const;
+
+export const COLD_START_SUB_TYPE = 'cold-start';
 
 export type PerformancePropertyKeyType =
   (typeof PerformancePropertyKey)[keyof typeof PerformancePropertyKey];
@@ -273,7 +281,6 @@ export enum CatalogModelCustomPropertyKey {
   MODEL_TYPE = 'model_type',
   MODEL_SIZE = 'model_size',
   MINIMUM_VRAM = 'min_vram_gb',
-  HARDWARE_CONFIGURATIONS = 'cold_start_matrix',
   HARDWARE_TAG = 'hardware_tag',
 }
 

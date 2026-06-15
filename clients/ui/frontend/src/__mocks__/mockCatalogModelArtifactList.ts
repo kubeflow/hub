@@ -100,6 +100,40 @@ export const mockCatalogPerformanceMetricsArtifact = (
   ...partial,
 });
 
+export const mockColdStartArtifact = (
+  gpuType: string,
+  gpuCount: number,
+  coldStartSeconds: number,
+  runtimeCommand: string,
+): CatalogPerformanceMetricsArtifact => ({
+  artifactType: CatalogArtifactType.metricsArtifact,
+  metricsType: MetricsType.performanceMetrics,
+  createTimeSinceEpoch: '1739210683000',
+  lastUpdateTimeSinceEpoch: '1739210683000',
+  customProperties: {
+    performance_sub_type: {
+      metadataType: ModelRegistryMetadataType.STRING,
+      string_value: 'cold-start',
+    },
+    gpu_type: {
+      metadataType: ModelRegistryMetadataType.STRING,
+      string_value: gpuType,
+    },
+    gpu_count: {
+      metadataType: ModelRegistryMetadataType.INT,
+      int_value: String(gpuCount),
+    },
+    cold_start_time_to_load_seconds: {
+      metadataType: ModelRegistryMetadataType.DOUBLE,
+      double_value: coldStartSeconds,
+    },
+    runtime_command: {
+      metadataType: ModelRegistryMetadataType.STRING,
+      string_value: runtimeCommand,
+    },
+  },
+});
+
 export const mockCatalogModelArtifactList = (
   partial?: Partial<CatalogModelArtifact>,
 ): CatalogArtifactList => ({
@@ -123,6 +157,10 @@ export const mockCatalogPerformanceMetricsArtifactList = (
         },
         hardware_count: { metadataType: ModelRegistryMetadataType.INT, int_value: '2' },
         hardware_type: { metadataType: ModelRegistryMetadataType.STRING, string_value: 'H100-80' },
+        hardware_configuration: {
+          metadataType: ModelRegistryMetadataType.STRING,
+          string_value: '2 x H100-80',
+        },
         requests_per_second: { metadataType: ModelRegistryMetadataType.DOUBLE, double_value: 7 },
         ttft_mean: { metadataType: ModelRegistryMetadataType.DOUBLE, double_value: 35.48 },
         ttft_p90: { metadataType: ModelRegistryMetadataType.DOUBLE, double_value: 51.56 },
@@ -148,6 +186,10 @@ export const mockCatalogPerformanceMetricsArtifactList = (
         },
         hardware_count: { metadataType: ModelRegistryMetadataType.INT, int_value: '4' },
         hardware_type: { metadataType: ModelRegistryMetadataType.STRING, string_value: 'RTX 4090' },
+        hardware_configuration: {
+          metadataType: ModelRegistryMetadataType.STRING,
+          string_value: '4 x RTX 4090',
+        },
         requests_per_second: { metadataType: ModelRegistryMetadataType.DOUBLE, double_value: 10 },
         ttft_mean: { metadataType: ModelRegistryMetadataType.DOUBLE, double_value: 67.15 },
         ttft_p90: { metadataType: ModelRegistryMetadataType.DOUBLE, double_value: 82.34 },
@@ -172,6 +214,10 @@ export const mockCatalogPerformanceMetricsArtifactList = (
         },
         hardware_count: { metadataType: ModelRegistryMetadataType.INT, int_value: '8' },
         hardware_type: { metadataType: ModelRegistryMetadataType.STRING, string_value: 'A100' },
+        hardware_configuration: {
+          metadataType: ModelRegistryMetadataType.STRING,
+          string_value: '8 x A100',
+        },
         requests_per_second: { metadataType: ModelRegistryMetadataType.DOUBLE, double_value: 15 },
         ttft_mean: { metadataType: ModelRegistryMetadataType.DOUBLE, double_value: 42.12 },
         ttft_p90: { metadataType: ModelRegistryMetadataType.DOUBLE, double_value: 58.45 },
@@ -187,9 +233,28 @@ export const mockCatalogPerformanceMetricsArtifactList = (
         },
       },
     }),
+    // Cold-start artifacts (separate from throughput, matched by gpu_type)
+    mockColdStartArtifact(
+      'H100-80',
+      2,
+      45.3,
+      'vllm serve model --tensor-parallel-size 2 --dtype float16',
+    ),
+    mockColdStartArtifact(
+      'RTX 4090',
+      4,
+      62.1,
+      'vllm serve model --tensor-parallel-size 4 --dtype float16 --max-model-len 4096',
+    ),
+    mockColdStartArtifact(
+      'A100',
+      8,
+      38.7,
+      'vllm serve model --tensor-parallel-size 8 --dtype auto --gpu-memory-utilization 0.95',
+    ),
   ],
   pageSize: 10,
-  size: 3,
+  size: 6,
   nextPageToken: '',
 });
 

@@ -366,7 +366,12 @@ export const hardwareConfigColumns: HardwareConfigColumn[] = [
         position: 'left',
       },
     },
-    sortable: false,
+    sortable: (
+      a: CatalogPerformanceMetricsArtifact,
+      b: CatalogPerformanceMetricsArtifact,
+    ): number =>
+      getDoubleValue(a.customProperties, PerformancePropertyKey.COLD_START_TIME_TO_LOAD_SECONDS) -
+      getDoubleValue(b.customProperties, PerformancePropertyKey.COLD_START_TIME_TO_LOAD_SECONDS),
     width: 20,
   },
   {

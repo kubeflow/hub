@@ -1,13 +1,14 @@
 import * as React from 'react';
 import { Button, Popover } from '@patternfly/react-core';
 import { Td, Tr } from '@patternfly/react-table';
-import { CatalogPerformanceMetricsArtifact, HardwareConfiguration } from '~/app/modelCatalogTypes';
+import { CatalogPerformanceMetricsArtifact } from '~/app/modelCatalogTypes';
 import CodeBlockComponent from '~/app/shared/markdown/components/CodeBlockComponent';
 import {
   formatLatency,
   formatTps,
   formatTokenValue,
   getWorkloadType,
+  findMatchingColdStartArtifact,
 } from '~/app/pages/modelCatalog/utils/performanceMetricsUtils';
 import { getDoubleValue, getIntValue, getStringValue } from '~/app/utils';
 import { PerformancePropertyKey, EMPTY_CUSTOM_PROPERTY_VALUE } from '~/concepts/modelCatalog/const';
@@ -18,14 +19,14 @@ import {
 
 type HardwareConfigurationTableRowProps = {
   performanceArtifact: CatalogPerformanceMetricsArtifact;
+  coldStartArtifacts: CatalogPerformanceMetricsArtifact[];
   columns: HardwareConfigColumn[];
-  matchedHardwareConfig?: HardwareConfiguration;
 };
 
 const HardwareConfigurationTableRow: React.FC<HardwareConfigurationTableRowProps> = ({
   performanceArtifact,
+  coldStartArtifacts,
   columns,
-  matchedHardwareConfig,
 }) => {
   const getCellValue = (field: HardwareConfigColumnField): string | number => {
     const { customProperties } = performanceArtifact;
@@ -37,8 +38,8 @@ const HardwareConfigurationTableRow: React.FC<HardwareConfigurationTableRowProps
         return getStringValue(customProperties, field);
       case PerformancePropertyKey.USE_CASE:
         return getWorkloadType(performanceArtifact);
-      case 'hardware_count':
-        return getIntValue(customProperties, 'hardware_count');
+      case PerformancePropertyKey.HARDWARE_COUNT:
+        return getIntValue(customProperties, PerformancePropertyKey.HARDWARE_COUNT);
       case PerformancePropertyKey.REQUESTS_PER_SECOND:
         return getDoubleValue(customProperties, PerformancePropertyKey.REQUESTS_PER_SECOND);
       case 'replicas': {
@@ -77,18 +78,28 @@ const HardwareConfigurationTableRow: React.FC<HardwareConfigurationTableRowProps
     }
   };
 
-  const renderModelLevelCell = (field: HardwareConfigColumnField): React.ReactNode => {
+  const matchedColdStart = React.useMemo(
+    () => findMatchingColdStartArtifact(performanceArtifact, coldStartArtifacts),
+    [performanceArtifact, coldStartArtifacts],
+  );
+
+  const renderCell = (field: HardwareConfigColumnField): React.ReactNode => {
     if (field === 'cold_start_load_time') {
-      return matchedHardwareConfig
-        ? `${matchedHardwareConfig.cold_start_time_to_load_seconds.toFixed(2)} s`
-        : EMPTY_CUSTOM_PROPERTY_VALUE;
+      const coldStartValue = matchedColdStart
+        ? getDoubleValue(
+            matchedColdStart.customProperties,
+            PerformancePropertyKey.COLD_START_TIME_TO_LOAD_SECONDS,
+          )
+        : 0;
+      return coldStartValue > 0 ? `${coldStartValue.toFixed(2)} s` : EMPTY_CUSTOM_PROPERTY_VALUE;
     }
     if (field === 'runtime_command') {
-      return matchedHardwareConfig?.runtime_command ? (
+      const command = matchedColdStart
+        ? getStringValue(matchedColdStart.customProperties, PerformancePropertyKey.RUNTIME_COMMAND)
+        : '';
+      return command ? (
         <Popover
-          bodyContent={
-            <CodeBlockComponent>{matchedHardwareConfig.runtime_command}</CodeBlockComponent>
-          }
+          bodyContent={<CodeBlockComponent>{command}</CodeBlockComponent>}
           position="left"
           maxWidth="450px"
         >
@@ -115,7 +126,7 @@ const HardwareConfigurationTableRow: React.FC<HardwareConfigurationTableRowProps
           hasRightBorder={column.hasRightBorder}
           modifier="fitContent"
         >
-          {renderModelLevelCell(column.field)}
+          {renderCell(column.field)}
         </Td>
       ))}
     </Tr>

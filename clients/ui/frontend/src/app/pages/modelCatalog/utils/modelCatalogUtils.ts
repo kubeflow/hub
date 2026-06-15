@@ -8,7 +8,6 @@ import {
   CatalogModel,
   CatalogModelArtifact,
   CatalogModelDetailsParams,
-  HardwareConfiguration,
   MetricsType,
   ModelCatalogFilterStates,
   ToolCallingConfig,
@@ -345,12 +344,6 @@ const shouldIncludeFilter = (filterId: string, target: FilterQueryTarget): boole
     return false;
   }
 
-  // Cold-start filter is excluded from the performance artifacts endpoint
-  // (performance-metrics artifacts don't have this field — it's on cold-start-metrics artifacts).
-  if (filterId === ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME && target === 'artifacts') {
-    return false;
-  }
-
   if (target === 'models') {
     // For models, include all filters (except RPS and cold-start which are already excluded)
     return true;
@@ -602,25 +595,4 @@ export const getMinimumVramFromCustomProperties = (
     return `${doubleVal.toFixed(2)} GB`;
   }
   return getCustomPropString(customProperties, CatalogModelCustomPropertyKey.MINIMUM_VRAM);
-};
-
-export const getHardwareConfigurationsFromCustomProperties = (
-  customProperties?: ModelRegistryCustomProperties,
-): HardwareConfiguration[] => {
-  if (!customProperties) {
-    return [];
-  }
-  const hwConfigStr = getCustomPropString(
-    customProperties,
-    CatalogModelCustomPropertyKey.HARDWARE_CONFIGURATIONS,
-  );
-  if (!hwConfigStr) {
-    return [];
-  }
-  try {
-    const parsed = JSON.parse(hwConfigStr);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
 };

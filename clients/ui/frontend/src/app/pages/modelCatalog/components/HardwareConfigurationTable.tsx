@@ -3,11 +3,10 @@ import { DashboardEmptyTableView, Table, ManageColumnsModal } from 'mod-arch-sha
 import { Button, Spinner } from '@patternfly/react-core';
 import { ColumnsIcon } from '@patternfly/react-icons';
 import { OuterScrollContainer } from '@patternfly/react-table';
-import { CatalogPerformanceMetricsArtifact, HardwareConfiguration } from '~/app/modelCatalogTypes';
+import { CatalogPerformanceMetricsArtifact } from '~/app/modelCatalogTypes';
 import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
 import { getActiveLatencyFieldName } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
-import { getStringValue } from '~/app/utils';
-import { SortOrder, PerformancePropertyKey } from '~/concepts/modelCatalog/const';
+import { SortOrder } from '~/concepts/modelCatalog/const';
 import {
   useHardwareConfigColumns,
   ControlledTableSortProps,
@@ -17,14 +16,14 @@ import HardwareConfigurationFilterToolbar from './HardwareConfigurationFilterToo
 
 type HardwareConfigurationTableProps = {
   performanceArtifacts: CatalogPerformanceMetricsArtifact[];
-  hardwareConfigurations?: HardwareConfiguration[];
+  coldStartArtifacts: CatalogPerformanceMetricsArtifact[];
   isLoading?: boolean;
   onSortChange?: (sort: { orderBy?: string; sortOrder?: string }) => void;
 };
 
 const HardwareConfigurationTable: React.FC<HardwareConfigurationTableProps> = ({
   performanceArtifacts,
-  hardwareConfigurations,
+  coldStartArtifacts,
   isLoading = false,
   onSortChange,
 }) => {
@@ -119,27 +118,14 @@ const HardwareConfigurationTable: React.FC<HardwareConfigurationTableProps> = ({
           {...(hasActiveSort ? { defaultSortColumn: sortIndex } : {})}
           {...controlledSortProps}
           emptyTableView={<DashboardEmptyTableView onClearFilters={handleClearFilters} />}
-          rowRenderer={(artifact: CatalogPerformanceMetricsArtifact) => {
-            const hwConfig = getStringValue(
-              artifact.customProperties,
-              PerformancePropertyKey.HARDWARE_CONFIGURATION,
-            );
-            const hwType = getStringValue(
-              artifact.customProperties,
-              PerformancePropertyKey.HARDWARE_TYPE,
-            );
-            const matched = hardwareConfigurations?.find(
-              (c) => hwConfig.startsWith(c.gpu_type) || c.gpu_type === hwType,
-            );
-            return (
-              <HardwareConfigurationTableRow
-                key={artifact.customProperties?.config_id?.string_value}
-                performanceArtifact={artifact}
-                columns={columns}
-                matchedHardwareConfig={matched}
-              />
-            );
-          }}
+          rowRenderer={(artifact: CatalogPerformanceMetricsArtifact) => (
+            <HardwareConfigurationTableRow
+              key={artifact.customProperties?.config_id?.string_value}
+              performanceArtifact={artifact}
+              coldStartArtifacts={coldStartArtifacts}
+              columns={columns}
+            />
+          )}
         />
       </OuterScrollContainer>
       <ManageColumnsModal
