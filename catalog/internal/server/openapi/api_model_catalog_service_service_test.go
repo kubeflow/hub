@@ -2034,6 +2034,91 @@ func TestFindModelsRecommendedIgnoresOrderBy(t *testing.T) {
 	require.True(t, len(response.Items) > 0)
 }
 
+func TestFindModelsRecommendedWithNumericNextPageToken(t *testing.T) {
+	// Regression test: when recommended=true, FindModelsWithRecommendedLatency uses
+	// numeric offset tokens (e.g. "10") for pagination. The service must NOT validate
+	// these tokens as base64 cursors, which is the format used by DB-backed pagination.
+	sources := catalog.NewSourceCollection()
+	sources.Merge("",
+		map[string]catalog.ModelSource{
+			"source1": {CatalogSource: model.CatalogSource{Id: "source1", Name: "Test Source 1"}},
+		},
+	)
+
+	sourceLabels := catalog.NewLabelCollection()
+
+	provider := &mockModelProvider{
+		models: map[string]*model.CatalogModel{
+			"modelA": {Name: "Model A"},
+			"modelB": {Name: "Model B"},
+		},
+	}
+
+	service := NewModelCatalogServiceAPIService(provider, sources, nil, sourceLabels, nil)
+
+	resp, err := service.FindModels(
+		context.Background(),
+		true, // recommended
+		1,    // targetRPS
+		"ttft_p90",
+		"",
+		"",
+		"",
+		[]string{"source1"},
+		"",
+		[]string{""},
+		"",
+		"10",
+		model.ORDERBYFIELD_NAME,
+		model.SORTORDER_ASC,
+		"10", // numeric nextPageToken from FindModelsWithRecommendedLatency
+	)
+
+	assert.Equal(t, http.StatusOK, resp.Code)
+	require.NoError(t, err)
+}
+
+func TestFindModelsNonRecommendedRejectsInvalidToken(t *testing.T) {
+	// When recommended=false, invalid nextPageToken should be rejected
+	sources := catalog.NewSourceCollection()
+	sources.Merge("",
+		map[string]catalog.ModelSource{
+			"source1": {CatalogSource: model.CatalogSource{Id: "source1", Name: "Test Source 1"}},
+		},
+	)
+
+	sourceLabels := catalog.NewLabelCollection()
+
+	provider := &mockModelProvider{
+		models: map[string]*model.CatalogModel{
+			"modelA": {Name: "Model A"},
+		},
+	}
+
+	service := NewModelCatalogServiceAPIService(provider, sources, nil, sourceLabels, nil)
+
+	resp, err := service.FindModels(
+		context.Background(),
+		false, // NOT recommended
+		0,
+		"",
+		"",
+		"",
+		"",
+		[]string{"source1"},
+		"",
+		[]string{""},
+		"",
+		"10",
+		model.ORDERBYFIELD_NAME,
+		model.SORTORDER_ASC,
+		"10", // invalid non-base64 token, it should be rejected
+	)
+
+	assert.Equal(t, http.StatusBadRequest, resp.Code)
+	assert.Error(t, err)
+}
+
 func TestGetAllModelPerformanceArtifactsWithConfigurableProperties(t *testing.T) {
 	artifact1Name := "performance-artifact-1"
 	artifact1 := model.CatalogArtifact{

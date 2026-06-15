@@ -32,6 +32,23 @@ func parsePaginationParams(pageSize string, nextPageToken string) (int32, error)
 	return pageSizeInt, nil
 }
 
+// parsePageSize validates and parses only the pageSize parameter, without validating nextPageToken.
+// Used by endpoints that handle their own pagination token format (e.g., in-memory offset-based pagination).
+func parsePageSize(pageSize string) (int32, error) {
+	pageSizeInt := int32(10)
+	if pageSize != "" {
+		parsed, err := strconv.ParseInt(pageSize, 10, 32)
+		if err != nil {
+			return 0, fmt.Errorf("invalid pageSize: %w", err)
+		}
+		if parsed < 1 {
+			return 0, fmt.Errorf("pageSize must be at least 1, got %d", parsed)
+		}
+		pageSizeInt = int32(parsed)
+	}
+	return pageSizeInt, nil
+}
+
 type paginator[T model.Sortable] struct {
 	PageSize  int32
 	OrderBy   model.OrderByField
