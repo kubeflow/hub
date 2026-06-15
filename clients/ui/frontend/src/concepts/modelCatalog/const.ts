@@ -260,7 +260,7 @@ export enum ModelCatalogTensorType {
 
 export const MODEL_CATALOG_POPOVER_MESSAGES = {
   VALIDATED:
-    'Validated models are benchmarked for performance and quality using leading open source evaluation datasets. Some of these include tested runtime arguments for enabling additional capabilities.',
+    'Validated models undergo comprehensive benchmarking to ensure reliable performance and compatibility. Some of these include validated runtime arguments for enabling additional capabilities.',
 } as const;
 
 export enum CatalogModelCustomPropertyKey {

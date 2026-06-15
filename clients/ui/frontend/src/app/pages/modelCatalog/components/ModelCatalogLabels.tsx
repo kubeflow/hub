@@ -24,21 +24,23 @@ const ModelCatalogLabels: React.FC<ModelCatalogLabelsProps> = ({
   labels = [],
   numLabels,
 }) => {
+  const validatedSet = React.useMemo(() => new Set(validatedTasks ?? []), [validatedTasks]);
+
   const sortedTasks = React.useMemo(() => {
-    if (!validatedTasks?.length) {
+    if (!validatedSet.size) {
       return tasks;
     }
     return tasks.toSorted((a, b) => {
-      const aValidated = validatedTasks.includes(a) ? 0 : 1;
-      const bValidated = validatedTasks.includes(b) ? 0 : 1;
+      const aValidated = validatedSet.has(a) ? 0 : 1;
+      const bValidated = validatedSet.has(b) ? 0 : 1;
       return aValidated - bValidated;
     });
-  }, [tasks, validatedTasks]);
+  }, [tasks, validatedSet]);
 
   return (
     <LabelGroup numLabels={numLabels} isCompact>
       {sortedTasks.map((task) => {
-        const isValidatedTask = validatedTasks?.includes(task);
+        const isValidatedTask = validatedSet.has(task);
         return (
           <Label
             data-testid="model-catalog-label"
