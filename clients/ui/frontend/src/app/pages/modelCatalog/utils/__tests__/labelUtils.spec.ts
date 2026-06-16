@@ -16,7 +16,7 @@ const mockCatalogLabels: CatalogLabelList = {
     },
     {
       name: 'Red Hat AI Validated',
-      displayName: 'Red Hat AI - Validated models',
+      displayName: 'Red Hat AI - validated models',
       description: 'Benchmarked and validated models',
     },
     {

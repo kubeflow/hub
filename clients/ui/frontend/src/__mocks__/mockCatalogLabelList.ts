@@ -17,7 +17,7 @@ export const mockCatalogLabelList = (partial?: Partial<CatalogLabelList>): Catal
     }),
     mockCatalogLabel({
       name: 'Red Hat AI Validated',
-      displayName: 'Red Hat AI - Validated models',
+      displayName: 'Red Hat AI - validated models',
       description:
         'Third-party models verified by Red Hat to ensure reliable performance and compatibility. Some of these include validated runtime arguments for enabling additional capabilities.',
     }),
