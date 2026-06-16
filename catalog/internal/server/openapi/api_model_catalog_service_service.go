@@ -217,12 +217,24 @@ func (m *ModelCatalogServiceAPIService) FindLabels(ctx context.Context, assetTyp
 }
 
 func (m *ModelCatalogServiceAPIService) FindModels(ctx context.Context, recommended bool, targetRPS int32, latencyProperty string, rpsProperty string, hardwareCountProperty string, hardwareTypeProperty string, sourceIDs []string, q string, sourceLabels []string, filterQuery string, pageSize string, orderBy model.OrderByField, sortOrder model.SortOrder, nextPageToken string) (ImplResponse, error) {
-	// Parse pageSize first, valid for both recommended and non-recommended paths.
-	// nextPageToken validation is deferred because the recommended path uses numeric
-	// offset tokens while the non-recommended path uses base64-encoded cursors.
-	pageSizeInt, err := parsePageSize(pageSize)
-	if err != nil {
-		return ErrorResponse(http.StatusBadRequest, err), err
+	// Validate pageSize and nextPageToken up-front. The recommended path uses numeric
+	// offset tokens; the non-recommended path uses base64-encoded DB cursors
+	// validated inside parsePaginationParams.
+	var pageSizeInt int32
+	var err error
+	if recommended {
+		pageSizeInt, err = parsePageSize(pageSize)
+		if err != nil {
+			return ErrorResponse(http.StatusBadRequest, err), err
+		}
+		if tokenErr := validateRecommendedNextPageToken(nextPageToken); tokenErr != nil {
+			return ErrorResponse(http.StatusBadRequest, tokenErr), tokenErr
+		}
+	} else {
+		pageSizeInt, err = parsePaginationParams(pageSize, nextPageToken)
+		if err != nil {
+			return ErrorResponse(http.StatusBadRequest, err), err
+		}
 	}
 
 	if len(sourceIDs) == 1 && sourceIDs[0] == "" {
@@ -301,13 +313,6 @@ func (m *ModelCatalogServiceAPIService) FindModels(ctx context.Context, recommen
 		}
 
 		return Response(http.StatusOK, *models), nil
-	}
-
-	// Non-recommended path: validate nextPageToken as a base64-encoded cursor
-	if nextPageToken != "" {
-		if _, err := parsePaginationParams(pageSize, nextPageToken); err != nil {
-			return ErrorResponse(http.StatusBadRequest, err), err
-		}
 	}
 
 	// Existing logic for non-recommended sorting

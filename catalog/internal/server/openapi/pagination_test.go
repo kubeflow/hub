@@ -1,11 +1,14 @@
 package openapi
 
 import (
+	"fmt"
+	"math"
 	"strconv"
 	"testing"
 
 	model "github.com/kubeflow/hub/catalog/pkg/openapi"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func createCatalogSource(id int) model.CatalogSource {
@@ -262,6 +265,84 @@ func TestParsePaginationParams(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tc.expectedSize, size)
+			}
+		})
+	}
+}
+
+func TestValidateRecommendedNextPageToken(t *testing.T) {
+	testCases := []struct {
+		name        string
+		token       string
+		expectError bool
+		errContains string
+	}{
+		{
+			name:        "empty token is valid",
+			token:       "",
+			expectError: false,
+		},
+		{
+			name:        "zero is valid",
+			token:       "0",
+			expectError: false,
+		},
+		{
+			name:        "positive integer is valid",
+			token:       "42",
+			expectError: false,
+		},
+		{
+			name:        "MaxInt32 is valid",
+			token:       strconv.Itoa(math.MaxInt32),
+			expectError: false,
+		},
+		{
+			name:        "non-numeric token is rejected",
+			token:       "abc",
+			expectError: true,
+			errContains: "invalid nextPageToken",
+		},
+		{
+			name:        "overflow token is rejected",
+			token:       "9999999999999",
+			expectError: true,
+			errContains: "invalid nextPageToken",
+		},
+		{
+			name:        "MaxInt32+1 is rejected",
+			token:       strconv.FormatInt(math.MaxInt32+1, 10),
+			expectError: true,
+			errContains: "invalid nextPageToken",
+		},
+		{
+			name:        "negative number is rejected",
+			token:       "-1",
+			expectError: true,
+			errContains: "invalid nextPageToken",
+		},
+		{
+			name:        "special characters are rejected",
+			token:       "!!!not-numeric",
+			expectError: true,
+			errContains: "invalid nextPageToken",
+		},
+		{
+			name:        "error message includes allowed range",
+			token:       "abc",
+			expectError: true,
+			errContains: fmt.Sprintf("0..%d", math.MaxInt32),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateRecommendedNextPageToken(tc.token)
+			if tc.expectError {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errContains)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}

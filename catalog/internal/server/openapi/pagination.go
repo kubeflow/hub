@@ -3,6 +3,7 @@ package openapi
 import (
 	"encoding/base64"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 
@@ -10,19 +11,30 @@ import (
 	"github.com/kubeflow/hub/internal/platform/db/scopes"
 )
 
+// parsePageSize validates and parses the pageSize parameter, returning the
+// page size as int32 (defaulting to 10 when empty). This is the single source
+// of truth for pageSize validation, used by both parsePaginationParams and the
+// recommended path in FindModels.
+func parsePageSize(pageSize string) (int32, error) {
+	if pageSize == "" {
+		return 10, nil
+	}
+	parsed, err := strconv.ParseInt(pageSize, 10, 32)
+	if err != nil {
+		return 0, fmt.Errorf("invalid pageSize: %w", err)
+	}
+	if parsed < 1 {
+		return 0, fmt.Errorf("pageSize must be at least 1, got %d", parsed)
+	}
+	return int32(parsed), nil
+}
+
 // parsePaginationParams validates and parses pageSize and nextPageToken for DB-backed endpoints.
 // It returns the page size as int32, or an error if either parameter is invalid.
 func parsePaginationParams(pageSize string, nextPageToken string) (int32, error) {
-	pageSizeInt := int32(10)
-	if pageSize != "" {
-		parsed, err := strconv.ParseInt(pageSize, 10, 32)
-		if err != nil {
-			return 0, fmt.Errorf("invalid pageSize: %w", err)
-		}
-		if parsed < 1 {
-			return 0, fmt.Errorf("pageSize must be at least 1, got %d", parsed)
-		}
-		pageSizeInt = int32(parsed)
+	pageSizeInt, err := parsePageSize(pageSize)
+	if err != nil {
+		return 0, err
 	}
 	if nextPageToken != "" {
 		if _, err := scopes.DecodeCursor(nextPageToken); err != nil {
@@ -32,21 +44,22 @@ func parsePaginationParams(pageSize string, nextPageToken string) (int32, error)
 	return pageSizeInt, nil
 }
 
-// parsePageSize validates and parses only the pageSize parameter, without validating nextPageToken.
-// Used by endpoints that handle their own pagination token format (e.g., in-memory offset-based pagination).
-func parsePageSize(pageSize string) (int32, error) {
-	pageSizeInt := int32(10)
-	if pageSize != "" {
-		parsed, err := strconv.ParseInt(pageSize, 10, 32)
-		if err != nil {
-			return 0, fmt.Errorf("invalid pageSize: %w", err)
-		}
-		if parsed < 1 {
-			return 0, fmt.Errorf("pageSize must be at least 1, got %d", parsed)
-		}
-		pageSizeInt = int32(parsed)
+// validateRecommendedNextPageToken validates that a nextPageToken for the recommended
+// path is a non-negative integer within the int32 range (0..2147483647).
+// The recommended path uses numeric offset tokens, unlike the non-recommended path
+// which uses base64-encoded DB cursors.
+func validateRecommendedNextPageToken(nextPageToken string) error {
+	if nextPageToken == "" {
+		return nil
 	}
-	return pageSizeInt, nil
+	n, err := strconv.ParseUint(nextPageToken, 10, 32)
+	if err != nil {
+		return fmt.Errorf("invalid nextPageToken: must be a non-negative integer (0..%d), got %q: %w", math.MaxInt32, nextPageToken, err)
+	}
+	if n > math.MaxInt32 {
+		return fmt.Errorf("invalid nextPageToken: must be a non-negative integer (0..%d), got %q", math.MaxInt32, nextPageToken)
+	}
+	return nil
 }
 
 type paginator[T model.Sortable] struct {
