@@ -8,6 +8,7 @@ import {
   CatalogModel,
   CatalogModelArtifact,
   CatalogModelDetailsParams,
+  CatalogPerformanceMetricsArtifact,
   HardwareConfiguration,
   MetricsType,
   ModelCatalogFilterStates,
@@ -338,6 +339,8 @@ export type FilterQueryTarget = 'models' | 'artifacts';
  * Determines if a filter should be included based on the target endpoint.
  * - For models: Include all filters except RPS (which is passed as a separate param)
  * - For artifacts: Only include filters that have the artifacts.* prefix
+ * Cold-start load time is excluded from the main AND clause for both targets;
+ * it is placed in the OR clause via buildColdStartOrClause.
  */
 const shouldIncludeFilter = (filterId: string, target: FilterQueryTarget): boolean => {
   // RPS is always passed as a separate param, not in filterQuery
@@ -345,14 +348,13 @@ const shouldIncludeFilter = (filterId: string, target: FilterQueryTarget): boole
     return false;
   }
 
-  // Cold-start filter is excluded from the performance artifacts endpoint
-  // (performance-metrics artifacts don't have this field — it's on cold-start-metrics artifacts).
-  if (filterId === ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME && target === 'artifacts') {
+  // Cold-start filter is excluded from the main AND clause for both targets.
+  // It is placed in the OR clause via buildColdStartOrClause.
+  if (filterId === ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME) {
     return false;
   }
 
   if (target === 'models') {
-    // For models, include all filters (except RPS and cold-start which are already excluded)
     return true;
   }
 
@@ -440,7 +442,43 @@ export const filtersToFilterQuery = (
     .map(([filterId, data]) => serializeFilterEntry(filterId, data, options, target));
 
   const nonEmptyFilters = serializedFilters.filter((v) => !!v);
-  return nonEmptyFilters.length === 0 ? '' : nonEmptyFilters.join(' AND ');
+  if (nonEmptyFilters.length === 0) {
+    return '';
+  }
+
+  const baseQuery = nonEmptyFilters.join(' AND ');
+  const coldStartClause = buildColdStartOrClause(filterData, options, target);
+  return `${baseQuery} OR ${coldStartClause}`;
+};
+
+/**
+ * Builds the OR clause for cold-start artifacts in the filter query.
+ * Always includes `performance_sub_type.string_value='cold-start'`.
+ * If a cold start load time filter is active, appends it as an AND condition.
+ * Uses the appropriate key format based on target (with artifacts.* prefix for models, stripped for artifacts).
+ */
+const buildColdStartOrClause = (
+  filterData: ModelCatalogFilterStates,
+  options: CatalogFilterOptionsList,
+  target: FilterQueryTarget,
+): string => {
+  const subTypePrefix = target === 'models' ? 'artifacts.' : '';
+  const subTypeFilter = `${subTypePrefix}performance_sub_type.string_value='cold-start'`;
+  const coldStartValue = filterData[ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME];
+
+  if (coldStartValue === undefined || typeof coldStartValue !== 'number') {
+    return subTypeFilter;
+  }
+
+  const operator = getNumericFilterOperator(
+    options,
+    ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME,
+  );
+  const coldStartKey =
+    target === 'models'
+      ? ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME
+      : stripArtifactsPrefix(ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME);
+  return `${subTypeFilter} AND ${coldStartKey} ${operator} ${coldStartValue}`;
 };
 
 /**
@@ -623,4 +661,73 @@ export const getHardwareConfigurationsFromCustomProperties = (
   } catch {
     return [];
   }
+};
+
+/**
+ * Identifies whether a performance artifact is a cold-start sub-type.
+ */
+export const isColdStartArtifact = (artifact: CatalogPerformanceMetricsArtifact): boolean => {
+  const subType = artifact.customProperties?.performance_sub_type;
+  return (
+    subType?.metadataType === ModelRegistryMetadataType.STRING &&
+    subType.string_value === 'cold-start'
+  );
+};
+
+/**
+ * Extracts HardwareConfiguration[] from cold-start performance artifacts.
+ * Cold-start artifacts are identified by `performance_sub_type === "cold-start"` in customProperties
+ * and contain gpu_type, gpu_count, cold_start_time_to_load_seconds, and runtime_command.
+ */
+export const getHardwareConfigurationsFromArtifacts = (
+  artifacts: CatalogPerformanceMetricsArtifact[],
+): HardwareConfiguration[] =>
+  artifacts.filter(isColdStartArtifact).map((artifact) => {
+    const props = artifact.customProperties;
+    return {
+      // eslint-disable-next-line camelcase
+      gpu_type: props?.gpu_type?.string_value ?? '',
+      // eslint-disable-next-line camelcase
+      gpu_count: props?.gpu_count?.int_value ? parseInt(props.gpu_count.int_value, 10) : 0,
+      // eslint-disable-next-line camelcase
+      cold_start_time_to_load_seconds: props?.cold_start_time_to_load_seconds?.double_value ?? 0,
+      // eslint-disable-next-line camelcase
+      runtime_command: props?.runtime_command?.string_value ?? '',
+    };
+  });
+
+/**
+ * Filters out cold-start artifacts, returning only regular performance artifacts.
+ */
+export const filterRegularPerformanceArtifacts = (
+  artifacts: CatalogPerformanceMetricsArtifact[],
+): CatalogPerformanceMetricsArtifact[] => artifacts.filter((a) => !isColdStartArtifact(a));
+
+/**
+ * Finds the matching HardwareConfiguration for a given hardware description.
+ * Requires an exact match on both gpu_type and gpu_count; returns undefined otherwise.
+ */
+export const findMatchingHardwareConfig = (
+  configs: HardwareConfiguration[],
+  hwConfig: string,
+  hwType: string,
+  hwCount: number,
+): HardwareConfiguration | undefined =>
+  configs.find(
+    (c) => (hwConfig.startsWith(c.gpu_type) || c.gpu_type === hwType) && c.gpu_count === hwCount,
+  );
+
+/**
+ * Resolves hardware configurations from performance artifacts (cold-start sub-type),
+ * falling back to the model's customProperties when no artifact-based configs exist.
+ */
+export const resolveHardwareConfigurations = (
+  artifacts: CatalogPerformanceMetricsArtifact[],
+  customProperties?: ModelRegistryCustomProperties,
+): HardwareConfiguration[] => {
+  const fromArtifacts = getHardwareConfigurationsFromArtifacts(artifacts);
+  if (fromArtifacts.length > 0) {
+    return fromArtifacts;
+  }
+  return getHardwareConfigurationsFromCustomProperties(customProperties);
 };

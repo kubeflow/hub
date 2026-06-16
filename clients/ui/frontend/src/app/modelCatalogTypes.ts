@@ -133,6 +133,12 @@ export type PerformanceMetricsCustomProperties = {
   // Computed properties when targetRPS is provided
   replicas?: ModelRegistryCustomPropertyInt;
   total_requests_per_second?: ModelRegistryCustomPropertyDouble;
+  // Cold-start sub-type fields (returned by API with metricsType "performance-metrics")
+  performance_sub_type?: ModelRegistryCustomPropertyString;
+  gpu_type?: ModelRegistryCustomPropertyString;
+  gpu_count?: ModelRegistryCustomPropertyInt;
+  cold_start_time_to_load_seconds?: ModelRegistryCustomPropertyDouble;
+  runtime_command?: ModelRegistryCustomPropertyString;
 } & Partial<Record<LatencyPropertyKey, ModelRegistryCustomPropertyDouble>>;
 
 export type AccuracyMetricsCustomProperties = {
