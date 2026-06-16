@@ -11,13 +11,15 @@ import (
 	"github.com/kubeflow/hub/internal/platform/db/scopes"
 )
 
+const defaultPageSize int32 = 10
+
 // parsePageSize validates and parses the pageSize parameter, returning the
-// page size as int32 (defaulting to 10 when empty). This is the single source
+// page size as int32 (defaulting to defaultPageSize when empty). This is the single source
 // of truth for pageSize validation, used by both parsePaginationParams and the
 // recommended path in FindModels.
 func parsePageSize(pageSize string) (int32, error) {
 	if pageSize == "" {
-		return 10, nil
+		return defaultPageSize, nil
 	}
 	parsed, err := strconv.ParseInt(pageSize, 10, 32)
 	if err != nil {
@@ -48,16 +50,15 @@ func parsePaginationParams(pageSize string, nextPageToken string) (int32, error)
 // path is a non-negative integer within the int32 range (0..2147483647).
 // The recommended path uses numeric offset tokens, unlike the non-recommended path
 // which uses base64-encoded DB cursors.
+// Using bitSize 31 in ParseUint ensures values >= 2^31 (i.e. > MaxInt32) are
+// rejected during parsing, eliminating the need for a separate range check.
 func validateRecommendedNextPageToken(nextPageToken string) error {
 	if nextPageToken == "" {
 		return nil
 	}
-	n, err := strconv.ParseUint(nextPageToken, 10, 32)
+	_, err := strconv.ParseUint(nextPageToken, 10, 31)
 	if err != nil {
 		return fmt.Errorf("invalid nextPageToken: must be a non-negative integer (0..%d), got %q: %w", math.MaxInt32, nextPageToken, err)
-	}
-	if n > math.MaxInt32 {
-		return fmt.Errorf("invalid nextPageToken: must be a non-negative integer (0..%d), got %q", math.MaxInt32, nextPageToken)
 	}
 	return nil
 }
@@ -78,7 +79,7 @@ func newPaginator[T model.Sortable](pageSize string, orderBy model.OrderByField,
 	}
 
 	p := &paginator[T]{
-		PageSize:  10, // Default page size
+		PageSize:  defaultPageSize,
 		OrderBy:   orderBy,
 		SortOrder: sortOrder,
 	}
