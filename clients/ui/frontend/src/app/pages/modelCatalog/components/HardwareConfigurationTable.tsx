@@ -2,7 +2,7 @@ import * as React from 'react';
 import { DashboardEmptyTableView, Table, ManageColumnsModal } from 'mod-arch-shared';
 import { Button, Spinner } from '@patternfly/react-core';
 import { ColumnsIcon } from '@patternfly/react-icons';
-import { OuterScrollContainer } from '@patternfly/react-table';
+import { InnerScrollContainer } from '@patternfly/react-table';
 import { CatalogPerformanceMetricsArtifact, HardwareConfiguration } from '~/app/modelCatalogTypes';
 import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
 import { getActiveLatencyFieldName } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
@@ -106,15 +106,13 @@ const HardwareConfigurationTable: React.FC<HardwareConfigurationTableProps> = ({
 
   return (
     <>
-      <OuterScrollContainer>
+      {toolbarContent}
+      <InnerScrollContainer>
         <Table
           data-testid="hardware-configuration-table"
           variant="compact"
-          isStickyHeader
-          hasStickyColumns
           data={performanceArtifacts}
           columns={columns}
-          toolbarContent={toolbarContent}
           onClearFilters={handleClearFilters}
           {...(hasActiveSort ? { defaultSortColumn: sortIndex } : {})}
           {...controlledSortProps}
@@ -141,7 +139,7 @@ const HardwareConfigurationTable: React.FC<HardwareConfigurationTableProps> = ({
             );
           }}
         />
-      </OuterScrollContainer>
+      </InnerScrollContainer>
       <ManageColumnsModal
         manageColumnsResult={manageColumnsResult}
         description="Manage the columns that appear in the hardware configuration table."
