@@ -43,13 +43,18 @@ func (e *HTTPError) Error() string {
 }
 
 func NewHTTPClient(logger *slog.Logger, baseURL string, headers http.Header, insecureSkipVerify bool, rootCAs *x509.CertPool) (HTTPClientInterface, error) {
-	tlsCfg := &tls.Config{InsecureSkipVerify: insecureSkipVerify}
+	tlsCfg := &tls.Config{
+		InsecureSkipVerify: insecureSkipVerify,
+		MinVersion:         tls.VersionTLS12,
+		NextProtos:         []string{"h2", "http/1.1"},
+	}
 	if rootCAs != nil {
 		tlsCfg.RootCAs = rootCAs
 	}
 	return &HTTPClient{
 		client: &http.Client{Transport: &http.Transport{
-			TLSClientConfig: tlsCfg,
+			ForceAttemptHTTP2: true,
+			TLSClientConfig:   tlsCfg,
 		}},
 		baseURL: baseURL,
 		logger:  logger,

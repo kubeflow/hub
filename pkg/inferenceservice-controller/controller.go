@@ -48,13 +48,15 @@ func NewInferenceServiceController(
 	serviceURLAnnotation,
 	defaultMRNamespace string,
 ) *InferenceServiceController {
-	httpClient := http.DefaultClient
-
+	transport := http.DefaultTransport.(*http.Transport).Clone()
 	if skipTLSVerify {
-		httpClient.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		transport.TLSClientConfig = &tls.Config{
+			InsecureSkipVerify: true,
+			MinVersion:         tls.VersionTLS12,
+			NextProtos:         []string{"h2", "http/1.1"},
 		}
 	}
+	httpClient := &http.Client{Transport: transport}
 
 	return &InferenceServiceController{
 		client:                        client,

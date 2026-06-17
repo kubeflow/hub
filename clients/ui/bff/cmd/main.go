@@ -101,6 +101,7 @@ func main() {
 			// Configure TLS if both cert and key files are provided
 			tlsConfig := &tls.Config{
 				MinVersion: tls.VersionTLS13,
+				NextProtos: []string{"h2", "http/1.1"},
 			}
 			srv.TLSConfig = tlsConfig
 			err = srv.ListenAndServeTLS(certFile, keyFile)
