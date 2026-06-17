@@ -24,6 +24,7 @@ import (
 const (
 	defaultHuggingFaceURL = "https://huggingface.co"
 	defaultAPIKeyEnvVar   = "HF_API_KEY"
+	apiKeyEnvVarPrefix    = "HF_API_KEY_"
 	urlKey                = "url"
 	apiKeyEnvVarKey       = "apiKeyEnvVar"
 	maxModelsKey          = "maxModels"
@@ -850,6 +851,29 @@ func (p *hfModelProvider) validateCredentials(ctx context.Context) error {
 	return nil
 }
 
+// sanitizeHFProperties validates security-sensitive properties and returns the env var name to
+// use for the API key. The apiKeyEnvVar property is accepted only when it equals defaultAPIKeyEnvVar
+// ("HF_API_KEY") or starts with apiKeyEnvVarPrefix ("HF_API_KEY_"); all other values are rejected
+// and the default is used. Custom URLs are always rejected to prevent SSRF. In both cases the
+// property is removed from the map to prevent it from leaking into downstream metadata.
+func sanitizeHFProperties(props map[string]any, label string) string {
+	envVarName := defaultAPIKeyEnvVar
+	if envVar, ok := props[apiKeyEnvVarKey].(string); ok && envVar != "" {
+		if envVar == defaultAPIKeyEnvVar || strings.HasPrefix(envVar, apiKeyEnvVarPrefix) {
+			envVarName = envVar
+		} else {
+			glog.Warningf("%s: apiKeyEnvVar %q rejected; must be %q or start with %q — falling back to default",
+				label, envVar, defaultAPIKeyEnvVar, apiKeyEnvVarPrefix)
+		}
+		delete(props, apiKeyEnvVarKey)
+	}
+	if url, ok := props[urlKey].(string); ok && url != "" {
+		glog.Warningf("%s: custom URL %q ignored (SSRF prevention)", label, url)
+		delete(props, urlKey)
+	}
+	return envVarName
+}
+
 func newHFModelProvider(ctx context.Context, source *basecatalog.ModelSource, reldir string) (<-chan ModelProviderRecord, error) {
 	p := &hfModelProvider{}
 	p.client = &http.Client{Timeout: 30 * time.Second}
@@ -861,24 +885,14 @@ func newHFModelProvider(ctx context.Context, source *basecatalog.ModelSource, re
 	}
 	p.sourceId = sourceId
 
-	// Parse API key from environment variable
-	// Allow the environment variable name to be configured via properties, defaulting to HF_API_KEY
-	apiKeyEnvVar := defaultAPIKeyEnvVar
-	if envVar, ok := source.Properties[apiKeyEnvVarKey].(string); ok && envVar != "" {
-		apiKeyEnvVar = envVar
-	}
+	// Reject custom URLs (SSRF prevention) and validate apiKeyEnvVar (must be HF_API_KEY or HF_API_KEY_*).
+	apiKeyEnvVar := sanitizeHFProperties(source.Properties, "HuggingFace catalog")
 	apiKey := os.Getenv(apiKeyEnvVar)
 	if apiKey == "" {
 		glog.Infof("No API key configured for Hugging Face. Only public models and limited data for gated models will be available.")
 	}
 	p.apiKey = apiKey
-
-	// Parse base URL (optional, defaults to huggingface.co)
-	// This allows tests to use mock servers by providing a custom URL
 	p.baseURL = defaultHuggingFaceURL
-	if url, ok := source.Properties[urlKey].(string); ok && url != "" {
-		p.baseURL = strings.TrimSuffix(url, "/")
-	}
 
 	allowedOrg, _ := source.Properties[allowedOrgKey].(string)
 	restrictToOrg(allowedOrg, &source.IncludedModels, &source.ExcludedModels)
@@ -946,21 +960,13 @@ func NewHFPreviewProvider(config *PreviewConfig) (*hfModelProvider, error) {
 		syncInterval: defaultSyncInterval,
 	}
 
-	// Parse API key from environment variable (optional - allows public model access without key)
-	apiKeyEnvVar := defaultAPIKeyEnvVar
-	if envVar, ok := config.Properties[apiKeyEnvVarKey].(string); ok && envVar != "" {
-		apiKeyEnvVar = envVar
-	}
+	// Reject custom URLs (SSRF prevention) and validate apiKeyEnvVar (must be HF_API_KEY or HF_API_KEY_*).
+	apiKeyEnvVar := sanitizeHFProperties(config.Properties, "HuggingFace preview")
 	apiKey := os.Getenv(apiKeyEnvVar)
 	if apiKey == "" {
 		glog.Infof("No API key configured for Hugging Face preview. Only public models and limited data for gated models will be available.")
 	}
 	p.apiKey = apiKey
-
-	// Parse base URL (optional, defaults to huggingface.co)
-	if url, ok := config.Properties[urlKey].(string); ok && url != "" {
-		p.baseURL = strings.TrimSuffix(url, "/")
-	}
 
 	allowedOrg, _ := config.Properties[allowedOrgKey].(string)
 	restrictToOrg(allowedOrg, &config.IncludedModels, &config.ExcludedModels)

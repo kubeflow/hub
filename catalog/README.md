@@ -343,8 +343,8 @@ kubectl create secret generic model-catalog-hf-api-key \
 kubectl rollout restart deployment model-catalog-server -n kubeflow
 ```
 
-**Custom Environment Variable Name:**
-You can configure a custom environment variable name per source by setting the `apiKeyEnvVar` property in your source configuration (see below). This is useful when you need different API keys for different sources.
+**Per-source API keys:**
+Set `apiKeyEnvVar` to use a different API key per source. The value must be `HF_API_KEY` (the default) or start with `HF_API_KEY_` — for example, `HF_API_KEY_META` for a Meta-specific key. Other env var names are rejected. This lets operators supply separate credentials for different HuggingFace organizations without exposing arbitrary environment variables.
 
 **Important Notes:**
 - **Private Models**: For private models, the API key must belong to an account that has been granted access to the model. Without proper access, the catalog service will not be able to retrieve model information.
@@ -374,10 +374,9 @@ catalogs:
       - "some-org/unwanted-model"
       - "another-org/test-*"  # Excludes all models starting with "test-"
 
-    # Optional: Configure a custom environment variable name for the API key
-    # Defaults to "HF_API_KEY" if not specified
+    # Optional: Use a per-source API key (must be HF_API_KEY or start with HF_API_KEY_)
     properties:
-      apiKeyEnvVar: "MY_CUSTOM_API_KEY_VAR"
+      apiKeyEnvVar: "HF_API_KEY_MYORG"
 ```
 
 #### Organization-Restricted Sources

@@ -131,7 +131,7 @@ model_catalogs:
     type: hf
     enabled: true
     properties:
-      apiKeyEnvVar: "HF_API_KEY"    # Env var name holding the API key
+      apiKeyEnvVar: "HF_API_KEY"    # Default; or use HF_API_KEY_<suffix> for per-source keys
     includedModels:
       - "meta-llama/Llama-3.2-1B"
       - "microsoft/phi-2"
@@ -144,7 +144,7 @@ model_catalogs:
     type: hf
     enabled: true
     properties:
-      apiKeyEnvVar: "HF_API_KEY"
+      apiKeyEnvVar: "HF_API_KEY_META"   # Per-source key; must be HF_API_KEY or HF_API_KEY_*
       allowedOrganization: "meta-llama"   # Auto-prefixes patterns
     includedModels:
       - "*"              # Expands to: meta-llama/*
@@ -155,7 +155,7 @@ model_catalogs:
 
 | Property | Type | Required | Description |
 |----------|------|----------|-------------|
-| `apiKeyEnvVar` | string | No | Name of the environment variable containing the HF API key (default: `HF_API_KEY`) |
+| `apiKeyEnvVar` | string | No | Env var holding the HF API key. Must be `HF_API_KEY` (default) or start with `HF_API_KEY_` (e.g. `HF_API_KEY_ORG1`). Other values are rejected. |
 | `allowedOrganization` | string | No | Restricts to a single HF organization; auto-prefixes all patterns with `org/` |
 
 The API key value itself should be stored in a Kubernetes Secret and exposed as an environment variable in the pod configuration.
@@ -660,8 +660,6 @@ model_catalogs:
     id: my_hf_models
     type: hf
     enabled: true
-    properties:
-      apiKeyEnvVar: "HF_API_KEY"
     includedModels:
       - "meta-llama/Llama-3.2-1B"
       - "microsoft/phi-2"
@@ -933,7 +931,7 @@ model_catalogs:
     type: hf
     enabled: true
     properties:
-      apiKeyEnvVar: "HF_API_KEY"
+      apiKeyEnvVar: "HF_API_KEY_META"   # Per-source key; must be HF_API_KEY or HF_API_KEY_*
       allowedOrganization: "meta-llama"
     includedModels:
       - "*"                # All meta-llama models
@@ -945,8 +943,6 @@ model_catalogs:
     id: hf-curated
     type: hf
     enabled: true
-    properties:
-      apiKeyEnvVar: "HF_API_KEY"
     includedModels:
       - "meta-llama/Llama-3.2-1B"
       - "microsoft/phi-2"
