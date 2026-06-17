@@ -40,7 +40,9 @@ export const getCatalogModelsBySource =
   ): Promise<CatalogModelList> => {
     const computedFilterQuery =
       filterQuery ??
-      (filterData && filterOptions ? filtersToFilterQuery(filterData, filterOptions) : '');
+      (filterData && filterOptions
+        ? filtersToFilterQuery(filterData, filterOptions, 'models', !!performanceParams)
+        : '');
 
     const allParams = {
       source: sourceId,

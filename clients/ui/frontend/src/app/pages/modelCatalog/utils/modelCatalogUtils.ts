@@ -429,6 +429,8 @@ const serializeFilterEntry = (
  * @param target - The target endpoint:
  *   - 'models': Include all filters (except RPS), use filter keys directly
  *   - 'artifacts': Only include artifact-prefixed filters, strip the prefix in output
+ * @param includeColdStartClause - Whether to append the cold-start OR clause.
+ *   Should be true only when performance view is enabled.
  *
  * Note: RPS is NOT included in filterQuery for either target - it's passed as targetRPS param.
  */
@@ -436,6 +438,7 @@ export const filtersToFilterQuery = (
   filterData: ModelCatalogFilterStates,
   options: CatalogFilterOptionsList,
   target: FilterQueryTarget = 'models',
+  includeColdStartClause = true,
 ): string => {
   const serializedFilters: string[] = Object.entries(filterData)
     .filter(([filterId]) => shouldIncludeFilter(filterId, target))
@@ -447,6 +450,11 @@ export const filtersToFilterQuery = (
   }
 
   const baseQuery = nonEmptyFilters.join(' AND ');
+
+  if (!includeColdStartClause) {
+    return baseQuery;
+  }
+
   const coldStartClause = buildColdStartOrClause(filterData, options, target);
   return `${baseQuery} OR ${coldStartClause}`;
 };

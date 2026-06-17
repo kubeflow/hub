@@ -491,6 +491,44 @@ describe('filtersToFilterQuery', () => {
       expect(query).toContain('modelcar_image_size.double_value <= 10');
     });
   });
+
+  describe('includeColdStartClause parameter', () => {
+    it('does not append cold-start OR clause when includeColdStartClause is false', () => {
+      const query = filtersToFilterQuery(
+        mockFormData({ tasks: [ModelCatalogTask.TEXT_TO_TEXT] }),
+        mockFilterOptions,
+        'models',
+        false,
+      );
+      expect(query).toBe("tasks='text-to-text'");
+      expect(query).not.toContain('performance_sub_type');
+      expect(query).not.toContain('cold-start');
+    });
+
+    it('appends cold-start OR clause when includeColdStartClause is true (default)', () => {
+      const query = filtersToFilterQuery(
+        mockFormData({ tasks: [ModelCatalogTask.TEXT_TO_TEXT] }),
+        mockFilterOptions,
+        'models',
+        true,
+      );
+      expect(query).toContain("OR artifacts.performance_sub_type.string_value='cold-start'");
+    });
+
+    it('does not append cold-start OR clause with multiple basic filters when performance is off', () => {
+      const query = filtersToFilterQuery(
+        mockFormData({
+          tasks: [ModelCatalogTask.TEXT_TO_TEXT],
+          provider: [ModelCatalogProvider.GOOGLE],
+        }),
+        mockFilterOptions,
+        'models',
+        false,
+      );
+      expect(query).toBe("tasks='text-to-text' AND provider='Google'");
+      expect(query).not.toContain('performance_sub_type');
+    });
+  });
 });
 
 describe('catalog source filtering utilities', () => {
