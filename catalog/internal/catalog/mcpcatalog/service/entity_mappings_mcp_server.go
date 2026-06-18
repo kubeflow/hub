@@ -35,6 +35,7 @@ var mcpServerProperties = map[string]filter.PropertyDefinition{
 	"lastUpdateTimeSinceEpoch": {Location: filter.EntityTable, ValueType: filter.IntValueType, Column: "last_update_time_since_epoch"},
 	"source_id":                {Location: filter.PropertyTable, ValueType: filter.StringValueType, Column: "source_id"},
 	"base_name":                {Location: filter.PropertyTable, ValueType: filter.StringValueType, Column: "base_name"},
+	"displayName":              {Location: filter.PropertyTable, ValueType: filter.StringValueType, Column: "displayName"},
 	"description":              {Location: filter.PropertyTable, ValueType: filter.StringValueType, Column: "description"},
 	"provider":                 {Location: filter.PropertyTable, ValueType: filter.StringValueType, Column: "provider"},
 	"license":                  {Location: filter.PropertyTable, ValueType: filter.StringValueType, Column: "license"},

@@ -10,6 +10,26 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestConvertDbMCPServerToOpenapi_IncludesDisplayName(t *testing.T) {
+	baseName := "test-server"
+	displayName := "Test Server"
+	version := "1.0.0"
+	server := &models.MCPServerImpl{
+		Attributes: &models.MCPServerAttributes{
+			Name: &baseName,
+		},
+		Properties: &[]dbmodels.Properties{
+			{Name: "displayName", StringValue: &displayName},
+			{Name: "version", StringValue: &version},
+		},
+	}
+
+	result := converter.ConvertDbMCPServerToOpenapi(server)
+	require.NotNil(t, result)
+	require.NotNil(t, result.DisplayName)
+	assert.Equal(t, displayName, *result.DisplayName)
+}
+
 func TestConvertDbMCPToolToOpenapi_StripsQualifiedPrefix(t *testing.T) {
 	tests := []struct {
 		name         string

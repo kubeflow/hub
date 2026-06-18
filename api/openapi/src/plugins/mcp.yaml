@@ -165,6 +165,10 @@ components:
             name:
               type: string
               description: Human-readable MCP server name. Must be unique within a source.
+            displayName:
+              type: string
+              description: Optional human-friendly display label for this MCP server.
+              maxLength: 255
             source_id:
               type: string
               description: Catalog source that provides this server.

@@ -3,6 +3,7 @@ package mcpcatalog
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,6 +18,7 @@ import (
 func TestYamlMCPServerConversion(t *testing.T) {
 	yamlServer := &yamlMCPServer{
 		Name:        "test-server",
+		DisplayName: new("Test Server"),
 		Description: new("Test MCP server"),
 		Provider:    new("Test Provider"),
 		Version:     new("1.0.0"),
@@ -43,9 +45,14 @@ func TestYamlMCPServerConversion(t *testing.T) {
 	require.NotNil(t, props)
 
 	// Check that basic properties are set
+	foundDisplayName := false
 	foundDescription := false
 	foundProvider := false
 	for _, prop := range *props {
+		if prop.Name == "displayName" && prop.StringValue != nil {
+			assert.Equal(t, "Test Server", *prop.StringValue)
+			foundDisplayName = true
+		}
 		if prop.Name == "description" && prop.StringValue != nil {
 			assert.Equal(t, "Test MCP server", *prop.StringValue)
 			foundDescription = true
@@ -55,8 +62,63 @@ func TestYamlMCPServerConversion(t *testing.T) {
 			foundProvider = true
 		}
 	}
+	assert.True(t, foundDisplayName, "displayName property should be set")
 	assert.True(t, foundDescription, "description property should be set")
 	assert.True(t, foundProvider, "provider property should be set")
+}
+
+func TestYamlMCPServerDisplayNameTooLong(t *testing.T) {
+	displayName := strings.Repeat("a", maxMCPDisplayNameLen+1)
+	yamlServer := &yamlMCPServer{
+		Name:        "test-server",
+		DisplayName: &displayName,
+	}
+
+	record := yamlServer.ToMCPServerProviderRecord()
+	require.Error(t, record.Error)
+	assert.Contains(t, record.Error.Error(), "displayName exceeds maximum length")
+}
+
+func TestYamlMCPProviderEmitWithDisplayNameKey(t *testing.T) {
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test-catalog.yaml")
+
+	yamlContent := `mcp_servers:
+  - name: "test-server-1"
+    displayName: "Test Server One"
+    description: "First test server"
+    provider: "Test Provider"
+    version: "1.0.0"
+`
+	err := os.WriteFile(testFile, []byte(yamlContent), 0644)
+	require.NoError(t, err)
+
+	source := basecatalog.MCPSource{
+		Type: "yaml",
+		Properties: map[string]any{
+			yamlMCPCatalogPathKey: testFile,
+		},
+	}
+
+	provider, err := NewYamlMCPProvider(source)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	recordChan := provider.Servers(ctx)
+
+	record, ok := <-recordChan
+	require.True(t, ok)
+	require.Nil(t, record.Error)
+	require.NotNil(t, record.Server)
+	require.NotNil(t, record.Server.Properties)
+
+	var foundDisplayName string
+	for _, prop := range *record.Server.Properties {
+		if prop.Name == "displayName" && prop.StringValue != nil {
+			foundDisplayName = *prop.StringValue
+		}
+	}
+	assert.Equal(t, "Test Server One", foundDisplayName)
 }
 
 func TestNewYamlMCPProviderPaths(t *testing.T) {
@@ -180,9 +242,8 @@ func TestYamlMCPProviderEmitWithCancellation(t *testing.T) {
 	var yamlContent strings.Builder
 	yamlContent.WriteString("mcp_servers:\n")
 	for i := range 10 {
-		yamlContent.WriteString(`  - name: "test-server-` + string(rune('0'+i)) + `"
-    description: "Test server"
-`)
+		_, err := fmt.Fprintf(&yamlContent, "  - name: \"test-server-%c\"\n    description: \"Test server\"\n", rune('0'+i))
+		require.NoError(t, err)
 	}
 	err := os.WriteFile(testFile, []byte(yamlContent.String()), 0644)
 	require.NoError(t, err)

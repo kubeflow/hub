@@ -202,6 +202,7 @@ func TestFindMCPServers(t *testing.T) {
 
 	openAIServer := &model.MCPServer{
 		Name:                     "openai-assistant",
+		DisplayName:              new("OpenAI Assistant"),
 		Description:              new("OpenAI Assistant MCP server"),
 		Provider:                 new("OpenAI"),
 		Version:                  new("1.2.0"),
@@ -212,6 +213,7 @@ func TestFindMCPServers(t *testing.T) {
 
 	githubServer := &model.MCPServer{
 		Name:                     "github-integration",
+		DisplayName:              new("GitHub Integration"),
 		Description:              new("GitHub MCP server"),
 		Provider:                 new("GitHub Inc"),
 		Version:                  new("2.1.3"),

@@ -519,6 +519,21 @@ func TestMCPServerRepository(t *testing.T) {
 					},
 				},
 			},
+			{
+				Attributes: &models.MCPServerAttributes{
+					Name: new("display-name-server"),
+				},
+				Properties: &[]dbmodels.Properties{
+					{
+						Name:        "source_id",
+						StringValue: new("query-source-3"),
+					},
+					{
+						Name:        "displayName",
+						StringValue: new("Special Display Server"),
+					},
+				},
+			},
 		}
 
 		for _, server := range testServers {
@@ -526,14 +541,15 @@ func TestMCPServerRepository(t *testing.T) {
 			require.NoError(t, err)
 		}
 
-		// Search for "special" (should find both: one in description, one in provider)
+		// Search for "special" (should find all three: one in description,
+		// one in provider, and one in displayName)
 		query := "special"
 		listOptions := models.MCPServerListOptions{
 			Query: &query,
 		}
 		result, err := repo.List(listOptions)
 		require.NoError(t, err)
-		assert.GreaterOrEqual(t, len(result.Items), 2)
+		assert.GreaterOrEqual(t, len(result.Items), 3)
 	})
 
 	t.Run("TestList_FilterBySourceIDs", func(t *testing.T) {
@@ -878,6 +894,28 @@ func TestMCPServerRepository(t *testing.T) {
 		_, err := repo.Save(server)
 		require.Error(t, err)
 		assert.ErrorIs(t, err, ErrVersionTooLong)
+	})
+
+	t.Run("TestValidation_DisplayNameTooLong", func(t *testing.T) {
+		longDisplayName := strings.Repeat("a", 256)
+		server := &models.MCPServerImpl{
+			Attributes: &models.MCPServerAttributes{
+				Name: new("test-server"),
+			},
+			Properties: &[]dbmodels.Properties{
+				{
+					Name:        "source_id",
+					StringValue: new("test-source"),
+				},
+				{
+					Name:        "displayName",
+					StringValue: new(longDisplayName),
+				},
+			},
+		}
+		_, err := repo.Save(server)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, ErrDisplayNameTooLong)
 	})
 
 	t.Run("TestValidation_ValidBaseNameWithSpecialChars", func(t *testing.T) {

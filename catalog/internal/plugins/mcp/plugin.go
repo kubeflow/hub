@@ -42,6 +42,7 @@ func (p *Plugin) DatastoreEntries() []plugin.DatastoreEntry {
 			Spec: datastore.NewSpecType(mcpcatalogservice.NewMCPServerRepository).
 				AddString("source_id").
 				AddString("base_name").
+				AddString("displayName").
 				AddString("description").
 				AddString("provider").
 				AddString("license").

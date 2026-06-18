@@ -33,6 +33,7 @@ func ConvertOpenapiMCPServerToDb(openapiServer *openapi.MCPServer) models.MCPSer
 
 	// Simple string fields
 	addStringProperty(&properties, "source_id", openapiServer.SourceId)
+	addStringProperty(&properties, "displayName", openapiServer.DisplayName)
 	addStringProperty(&properties, "provider", openapiServer.Provider)
 	addStringProperty(&properties, "logo", openapiServer.Logo)
 	addStringProperty(&properties, "version", openapiServer.Version)
@@ -167,6 +168,7 @@ func convertDbMCPServerToOpenapiInternal(dbServer models.MCPServer, tools []open
 
 	// Extract simple string properties
 	openapiServer.SourceId = pa.GetStringPtr("source_id")
+	openapiServer.DisplayName = pa.GetStringPtr("displayName")
 	openapiServer.Provider = pa.GetStringPtr("provider")
 	openapiServer.Logo = pa.GetStringPtr("logo")
 	openapiServer.Version = &version

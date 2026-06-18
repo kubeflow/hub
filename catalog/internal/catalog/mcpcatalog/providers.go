@@ -21,6 +21,7 @@ import (
 
 const (
 	yamlMCPCatalogPathKey = "yamlCatalogPath"
+	maxMCPDisplayNameLen  = 255
 )
 
 // yamlMCPParameter represents a single input parameter for an MCP tool.
@@ -104,6 +105,7 @@ type yamlMCPSecurityIndicator struct {
 // yamlMCPServer represents an MCP server definition in YAML
 type yamlMCPServer struct {
 	Name                     string                              `yaml:"name"`
+	DisplayName              *string                             `yaml:"displayName,omitempty"`
 	ExternalID               *string                             `yaml:"externalId,omitempty"`
 	Description              *string                             `yaml:"description,omitempty"`
 	Provider                 *string                             `yaml:"provider,omitempty"`
@@ -262,6 +264,16 @@ func (yp *yamlMCPProvider) emit(ctx context.Context, path string, recordChan cha
 
 // ToMCPServerProviderRecord converts a yamlMCPServer to an MCPServerProviderRecord
 func (ys *yamlMCPServer) ToMCPServerProviderRecord() MCPServerProviderRecord {
+	if ys.DisplayName != nil && len(*ys.DisplayName) > maxMCPDisplayNameLen {
+		return MCPServerProviderRecord{
+			Error: fmt.Errorf(
+				"server %q displayName exceeds maximum length of %d characters",
+				ys.Name,
+				maxMCPDisplayNameLen,
+			),
+		}
+	}
+
 	attrs := &models.MCPServerAttributes{
 		Name:       &ys.Name,
 		ExternalID: ys.ExternalID,
@@ -287,6 +299,9 @@ func (ys *yamlMCPServer) ToMCPServerProviderRecord() MCPServerProviderRecord {
 	// Convert standard properties
 	properties := []mrmodels.Properties{}
 
+	if ys.DisplayName != nil {
+		properties = append(properties, mrmodels.NewStringProperty("displayName", *ys.DisplayName, false))
+	}
 	if ys.Description != nil {
 		properties = append(properties, mrmodels.NewStringProperty("description", *ys.Description, false))
 	}

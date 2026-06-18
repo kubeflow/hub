@@ -34,6 +34,8 @@ type MCPServer struct {
 	CreateTimeSinceEpoch *string `json:"createTimeSinceEpoch,omitempty"`
 	// Output only. Last update time of the resource since epoch in millisecond since epoch.
 	LastUpdateTimeSinceEpoch *string `json:"lastUpdateTimeSinceEpoch,omitempty"`
+	// Optional human-friendly display label for this MCP server.
+	DisplayName *string `json:"displayName,omitempty"`
 	// Catalog source that provides this server.
 	SourceId *string `json:"source_id,omitempty"`
 	// Organization providing the server.
@@ -310,6 +312,38 @@ func (o *MCPServer) HasLastUpdateTimeSinceEpoch() bool {
 // SetLastUpdateTimeSinceEpoch gets a reference to the given string and assigns it to the LastUpdateTimeSinceEpoch field.
 func (o *MCPServer) SetLastUpdateTimeSinceEpoch(v string) {
 	o.LastUpdateTimeSinceEpoch = &v
+}
+
+// GetDisplayName returns the DisplayName field value if set, zero value otherwise.
+func (o *MCPServer) GetDisplayName() string {
+	if o == nil || IsNil(o.DisplayName) {
+		var ret string
+		return ret
+	}
+	return *o.DisplayName
+}
+
+// GetDisplayNameOk returns a tuple with the DisplayName field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *MCPServer) GetDisplayNameOk() (*string, bool) {
+	if o == nil || IsNil(o.DisplayName) {
+		return nil, false
+	}
+	return o.DisplayName, true
+}
+
+// HasDisplayName returns a boolean if a field has been set.
+func (o *MCPServer) HasDisplayName() bool {
+	if o != nil && !IsNil(o.DisplayName) {
+		return true
+	}
+
+	return false
+}
+
+// SetDisplayName gets a reference to the given string and assigns it to the DisplayName field.
+func (o *MCPServer) SetDisplayName(v string) {
+	o.DisplayName = &v
 }
 
 // GetSourceId returns the SourceId field value if set, zero value otherwise.
@@ -1004,6 +1038,9 @@ func (o MCPServer) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.LastUpdateTimeSinceEpoch) {
 		toSerialize["lastUpdateTimeSinceEpoch"] = o.LastUpdateTimeSinceEpoch
+	}
+	if !IsNil(o.DisplayName) {
+		toSerialize["displayName"] = o.DisplayName
 	}
 	if !IsNil(o.SourceId) {
 		toSerialize["source_id"] = o.SourceId

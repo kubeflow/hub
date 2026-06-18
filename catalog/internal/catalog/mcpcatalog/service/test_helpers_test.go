@@ -22,6 +22,7 @@ func testDatastoreSpec() *datastore.Spec {
 		AddContext(testMCPServerTypeName, datastore.NewSpecType(NewMCPServerRepository).
 			AddString("source_id").
 			AddString("base_name").
+			AddString("displayName").
 			AddString("description").
 			AddString("provider").
 			AddString("license").

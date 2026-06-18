@@ -22,6 +22,7 @@ var (
 	ErrBaseNameContainsAtSign = errors.New("base_name cannot contain '@' character")
 	ErrBaseNameEmpty          = errors.New("base_name cannot be empty")
 	ErrBaseNameTooLong        = errors.New("base_name exceeds maximum length of 255 characters")
+	ErrDisplayNameTooLong     = errors.New("displayName exceeds maximum length of 255 characters")
 	ErrVersionTooLong         = errors.New("version exceeds maximum length of 100 characters")
 	ErrVersionContainsAtSign  = errors.New("version cannot contain '@' character")
 )
@@ -71,6 +72,7 @@ func (r *MCPServerRepositoryImpl) Save(server models.MCPServer) (models.MCPServe
 	if attr != nil && attr.Name != nil {
 		baseName := strings.TrimSpace(*attr.Name)
 		version := extractVersionProperty(server)
+		displayName := extractDisplayNameProperty(server)
 
 		// Validate base_name
 		if baseName == "" {
@@ -89,6 +91,9 @@ func (r *MCPServerRepositoryImpl) Save(server models.MCPServer) (models.MCPServe
 		}
 		if strings.Contains(version, "@") {
 			return nil, fmt.Errorf("%w: %s", ErrVersionContainsAtSign, version)
+		}
+		if displayName != nil && len(*displayName) > 255 {
+			return nil, fmt.Errorf("%w: length %d", ErrDisplayNameTooLong, len(*displayName))
 		}
 
 		// Build composite name for Context.name field
@@ -190,6 +195,22 @@ func extractVersionProperty(server models.MCPServer) string {
 	}
 
 	return ""
+}
+
+// extractDisplayNameProperty extracts the displayName property value from an MCP server.
+// Returns nil if no displayName property exists.
+func extractDisplayNameProperty(server models.MCPServer) *string {
+	if server.GetProperties() == nil {
+		return nil
+	}
+
+	for _, prop := range *server.GetProperties() {
+		if prop.Name == "displayName" && prop.StringValue != nil {
+			return prop.StringValue
+		}
+	}
+
+	return nil
 }
 
 // buildCompositeName constructs the composite name (name@version) for storage in Context.name.
@@ -349,13 +370,13 @@ func applyMCPServerListFilters(query *gorm.DB, listOptions *models.MCPServerList
 		// Search in name (context table)
 		nameCondition := fmt.Sprintf("LOWER(%s.name) LIKE ?", contextTable)
 
-		// Search in description, provider properties
-		propertyCondition := fmt.Sprintf("EXISTS (SELECT 1 FROM %s cp WHERE cp.context_id = %s.id AND cp.name IN (?, ?) AND LOWER(cp.string_value) LIKE ?)",
+		// Search in displayName, description, and provider properties
+		propertyCondition := fmt.Sprintf("EXISTS (SELECT 1 FROM %s cp WHERE cp.context_id = %s.id AND cp.name IN (?, ?, ?) AND LOWER(cp.string_value) LIKE ?)",
 			propertyTable, contextTable)
 
 		query = query.Where(fmt.Sprintf("(%s OR %s)", nameCondition, propertyCondition),
 			queryPattern,
-			"description", "provider", queryPattern,
+			"displayName", "description", "provider", queryPattern,
 		)
 	}
 
