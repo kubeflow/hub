@@ -85,7 +85,7 @@ const ModelCatalogSourceLabelSelector: React.FC<ModelCatalogSourceLabelSelectorP
 
     // When performance view is ON, check if any performance filters differ from defaults
     // (the HardwareConfigurationFilterToolbar handles showing its own "Clear all filters")
-    // The top toolbar should only show "Reset all filters" if basic filters are applied
+    // The top toolbar should only show "Reset all defaults" if basic filters are applied
     // or if there's a search term
     return false;
   }, [hasSearchTerm, hasBasicFiltersApplied, performanceViewEnabled]);
@@ -135,7 +135,7 @@ const ModelCatalogSourceLabelSelector: React.FC<ModelCatalogSourceLabelSelectorP
           {...(onResetAllFilters && !performanceViewEnabled && hasBasicFiltersApplied
             ? {
                 clearAllFilters: handleClearAllFilters,
-                clearFiltersButtonText: 'Reset all filters',
+                clearFiltersButtonText: 'Reset all defaults',
               }
             : {})}
         >

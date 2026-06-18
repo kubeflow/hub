@@ -285,9 +285,7 @@ const ModelCatalogGalleryView: React.FC<ModelCatalogPageProps> = ({
           description="Adjust your filters and try again."
           primaryAction={
             <Button variant="link" onClick={handleFilterReset}>
-              {performanceViewEnabled && hasPerformanceFiltersChanged
-                ? 'Reset all defaults'
-                : 'Reset all filters'}
+              Reset all defaults
             </Button>
           }
         />

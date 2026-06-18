@@ -719,6 +719,40 @@ describe('Single Category Behavior', () => {
   });
 });
 
+describe('Reset Button Label', () => {
+  it('should show "Reset all defaults" when performance view is OFF', () => {
+    initIntercepts({
+      sources: mockDefaultSources(),
+    });
+    setupFilteredModelsIntercept({ returnModelsForFilters: false });
+    modelCatalog.visit();
+
+    modelCatalog.findFilterShowMoreButton('Task').click();
+    modelCatalog.findFilterCheckbox('Task', 'audio-to-text').click();
+
+    modelCatalog.findModelCatalogEmptyState().should('contain.text', 'No results found');
+    modelCatalog.findEmptyStateResetFiltersButton().should('contain.text', 'Reset all defaults');
+  });
+
+  it('should show "Reset all defaults" when performance view is ON', () => {
+    initIntercepts({
+      sources: mockTwoProviderSources(),
+      hasValidatedModels: false,
+    });
+    setupFilteredModelsIntercept({ returnModelsForFilters: false });
+    modelCatalog.visit();
+
+    modelCatalog.togglePerformanceView();
+    modelCatalog.findCategoryToggle('label-Provider one').click();
+
+    modelCatalog.findFilterShowMoreButton('Task').click();
+    modelCatalog.findFilterCheckbox('Task', 'audio-to-text').click();
+
+    modelCatalog.findModelCatalogEmptyState().should('contain.text', 'No results found');
+    modelCatalog.findEmptyStateResetFiltersButton().should('contain.text', 'Reset all defaults');
+  });
+});
+
 describe('Clear All Filters Button Behavior', () => {
   it('should not show clear all filters button when performance view is activated with filters applied', () => {
     initIntercepts({
