@@ -147,6 +147,30 @@ var _ = Describe("TestGetAllCatalogSourcesHandler", func() {
 			}
 		})
 
+		It("should retrieve the security artifacts", func() {
+			By("fetching the catalog security artifacts")
+			data := mocks.GetCatalogSecurityMetricsArtifactListMock()
+			requestIdentity := kubernetes.RequestIdentity{
+				UserID: "user@example.com",
+			}
+
+			expected := catalogModelArtifactsListEnvelope{Data: &data}
+			actual, rs, err := setupApiTest[catalogModelArtifactsListEnvelope](http.MethodGet, "/api/v1/model_catalog/sources/source/security_artifacts/model-name?namespace=kubeflow", nil, kubernetesMockedStaticClientFactory, requestIdentity, "kubeflow")
+			Expect(err).NotTo(HaveOccurred())
+
+			By("should fetch the expected security artifacts")
+			Expect(rs.StatusCode).To(Equal(http.StatusOK))
+			Expect(actual.Data.Size).To(Equal(expected.Data.Size))
+			Expect(actual.Data.PageSize).To(Equal(expected.Data.PageSize))
+			Expect(actual.Data.NextPageToken).To(Equal(expected.Data.NextPageToken))
+			Expect(len(actual.Data.Items)).To(Equal(len(expected.Data.Items)))
+			for i := range expected.Data.Items {
+				Expect(actual.Data.Items[i].ArtifactType).To(Equal(expected.Data.Items[i].ArtifactType))
+				Expect(actual.Data.Items[i].MetricsType).To(Equal(expected.Data.Items[i].MetricsType))
+				Expect(actual.Data.Items[i].CreateTimeSinceEpoch).To(Equal(expected.Data.Items[i].CreateTimeSinceEpoch))
+			}
+		})
+
 	})
 })
 

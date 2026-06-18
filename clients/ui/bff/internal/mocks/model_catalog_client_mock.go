@@ -293,6 +293,11 @@ func (m *ModelCatalogClientMock) GetCatalogModelPerformanceArtifacts(client http
 
 }
 
+func (m *ModelCatalogClientMock) GetCatalogModelSecurityArtifacts(client httpclient.HTTPClientInterface, sourceId string, modelName string, pageValues url.Values) (*models.CatalogModelArtifactList, error) {
+	allMockModelSecurityArtifacts := GetCatalogSecurityMetricsArtifactListMock()
+	return &allMockModelSecurityArtifacts, nil
+}
+
 func (m *ModelCatalogClientMock) GetCatalogFilterOptions(client httpclient.HTTPClientInterface) (*models.FilterOptionsList, error) {
 	filterOptions := GetFilterOptionsListMock()
 

@@ -19,6 +19,7 @@ type CatalogSourcesInterface interface {
 	GetCatalogSourceModelArtifacts(client httpclient.HTTPClientInterface, sourceId string, modelName string, pageValues url.Values) (*models.CatalogModelArtifactList, error)
 	GetCatalogFilterOptions(client httpclient.HTTPClientInterface) (*models.FilterOptionsList, error)
 	GetCatalogModelPerformanceArtifacts(client httpclient.HTTPClientInterface, sourceId string, modelName string, pageValues url.Values) (*models.CatalogModelArtifactList, error)
+	GetCatalogModelSecurityArtifacts(client httpclient.HTTPClientInterface, sourceId string, modelName string, pageValues url.Values) (*models.CatalogModelArtifactList, error)
 	GetCatalogLabels(client httpclient.HTTPClientInterface, pageValues url.Values) (*models.CatalogLabelList, error)
 }
 
@@ -103,6 +104,28 @@ func (a CatalogSources) GetCatalogModelPerformanceArtifacts(client httpclient.HT
 	responseData, err := client.GET(UrlWithPageParams(path, pageValues))
 	if err != nil {
 		return nil, fmt.Errorf("error fetching sourcesPath: %w", err)
+	}
+
+	var catalogModelArtifacts models.CatalogModelArtifactList
+
+	if err := json.Unmarshal(responseData, &catalogModelArtifacts); err != nil {
+		return nil, fmt.Errorf("error decoding response data: %w", err)
+	}
+	return &catalogModelArtifacts, nil
+}
+
+func (a CatalogSources) GetCatalogModelSecurityArtifacts(client httpclient.HTTPClientInterface, sourceId string, modelName string, pageValues url.Values) (*models.CatalogModelArtifactList, error) {
+	path, err := url.JoinPath(sourcesPath, sourceId, "models", modelName, "artifacts")
+	if err != nil {
+		return nil, err
+	}
+
+	filteredValues := FilterPageValues(pageValues)
+	filteredValues.Set("filterQuery", `metricsType.string_value="security-metrics"`)
+
+	responseData, err := client.GET(UrlWithParams(path, filteredValues))
+	if err != nil {
+		return nil, fmt.Errorf("error fetching security artifacts: %w", err)
 	}
 
 	var catalogModelArtifacts models.CatalogModelArtifactList

@@ -70,6 +70,7 @@ const (
 	CatalogSourceModelCatchAllPath      = CatalogPathPrefix + "/sources/:" + CatalogSourceId + "/models/*" + CatalogModelName
 	CatalogSourceModelArtifactsCatchAll = CatalogPathPrefix + "/sources/:" + CatalogSourceId + "/artifacts/*" + CatalogModelName
 	CatalogModelPerformanceArtifacts    = CatalogPathPrefix + "/sources/:" + CatalogSourceId + "/performance_artifacts/*" + CatalogModelName
+	CatalogModelSecurityArtifacts       = CatalogPathPrefix + "/sources/:" + CatalogSourceId + "/security_artifacts/*" + CatalogModelName
 
 	ModelCatalogSettingsPathPrefix           = SettingsPath + "/model_catalog"
 	ModelCatalogSettingsSourceConfigListPath = ModelCatalogSettingsPathPrefix + "/source_configs"
@@ -272,6 +273,7 @@ func (app *App) Routes() http.Handler {
 	apiRouter.GET(CatalogSourceModelCatchAllPath, app.AttachNamespace(app.AttachModelCatalogRESTClient(app.GetCatalogSourceModelHandler)))
 	apiRouter.GET(CatalogSourceModelArtifactsCatchAll, app.AttachNamespace(app.AttachModelCatalogRESTClient(app.GetCatalogSourceModelArtifactsHandler)))
 	apiRouter.GET(CatalogModelPerformanceArtifacts, app.AttachNamespace(app.AttachModelCatalogRESTClient(app.GetCatalogModelPerformanceArtifactsHandler)))
+	apiRouter.GET(CatalogModelSecurityArtifacts, app.AttachNamespace(app.AttachModelCatalogRESTClient(app.GetCatalogModelSecurityArtifactsHandler)))
 	// Kubernetes routes
 	apiRouter.GET(UserPath, app.UserHandler)
 	apiRouter.POST(CheckNamespaceRegistryAccessPath, app.CheckNamespaceRegistryAccessHandler)
