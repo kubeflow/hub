@@ -83,7 +83,7 @@ class ModelRegistry:
         port: int = 443,
         *,
         author: str,
-        is_secure: bool = True,
+        is_secure: bool | None = None,
         user_token: str | None = None,
         user_token_envvar: str | None = None,
         custom_ca: str | None = None,
@@ -99,7 +99,7 @@ class ModelRegistry:
 
         Keyword Args:
             author: Name of the author.
-            is_secure: Whether to use a secure connection. Defaults to True.
+            is_secure: Whether to use a secure connection. Inferred from URL scheme if not provided; defaults to True.
             user_token: The PEM-encoded user token as a string.
             user_token_envvar: Environment variable to read the user token from if it's not passed as an arg. Defaults to KF_PIPELINES_SA_TOKEN_PATH.
             custom_ca: Path to the PEM-encoded root certificates as a string.
@@ -129,6 +129,21 @@ class ModelRegistry:
                 warn("User access token is missing", stacklevel=2)
 
         self.hint_server_address_port(server_address, port)
+
+        # --- START OF URL SANITIZATION BLOCK ---
+        from urllib.parse import urlparse
+
+        parsed = urlparse(server_address)
+        if parsed.scheme in ("http", "https"):
+            if parsed.port:
+                port = parsed.port
+            # Infer is_secure from scheme only if user didn't explicitly pass it
+            if is_secure is None:
+                is_secure = parsed.scheme == "https"
+        # Fall back to secure by default if still unset
+        if is_secure is None:
+            is_secure = True
+        # --- END OF URL SANITIZATION BLOCK ---
         if is_secure:
             if not custom_ca and custom_ca_envvar and (cert := os.getenv(custom_ca_envvar)):
                 logger.info(
