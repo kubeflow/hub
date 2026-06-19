@@ -33,7 +33,78 @@ make -C catalog gen/catalog-plugin NAME=<name> DESCRIPTION="<desc>" ENTITIES=<en
 
 Check exit code. Report files created.
 
-## Phase 3: Replace Panic TODOs
+## Phase 3: Register Asset Type
+
+New plugins must register their asset type in the shared catalog infrastructure so that
+sources can be scoped to the correct plugin via the model catalog's `/sources` endpoint.
+
+The asset type value is derived from the primary entity's snake_case name, pluralized
+(e.g., entity `CatalogAgent` → `catalog_agents`, entity `Agent` → `agents`).
+
+### 3a: Add to the OpenAPI enum
+
+Edit `api/openapi/src/catalog.yaml` — find the `CatalogAssetType` enum and add the new value:
+
+```yaml
+CatalogAssetType:
+  type: string
+  enum:
+    - models
+    - mcp_servers
+    - <asset_type_value>    # e.g., agents
+  default: models
+```
+
+### 3b: Add the Go constant
+
+Edit `catalog/internal/catalog/basecatalog/source_types.go` — add to the `AssetType` constants:
+
+```go
+const (
+    AssetTypeModels     = "models"
+    AssetTypeMCPServers = "mcp_servers"
+    AssetType<PascalAssetType> = "<asset_type_value>"  // e.g., AssetTypeAgents = "agents"
+)
+```
+
+### 3c: Add to the validation map
+
+Edit `catalog/internal/catalog/basecatalog/validation.go` — add to the `validAssetTypes` map
+in `ValidateNamedQueries`:
+
+```go
+validAssetTypes := map[string]bool{
+    AssetTypeModels:     true,
+    AssetTypeMCPServers: true,
+    AssetType<PascalAssetType>: true,
+}
+```
+
+Also update the error message format string to include the new constant.
+
+### 3d: Add AssetType field to PluginSource (if not already present)
+
+Check `catalog/internal/catalog/basecatalog/source_types.go` — the `PluginSource` struct
+must have an `AssetType` field. If missing, add it:
+
+```go
+type PluginSource struct {
+    Name       string                      `json:"name" yaml:"name"`
+    ID         string                      `json:"id" yaml:"id"`
+    Type       string                      `json:"type" yaml:"type"`
+    Enabled    *bool                       `json:"enabled,omitempty" yaml:"enabled,omitempty"`
+    Properties map[string]any              `json:"properties" yaml:"properties"`
+    Labels     []string                    `json:"labels" yaml:"labels"`
+    AssetType  *apimodels.CatalogAssetType `json:"assetType,omitempty" yaml:"assetType,omitempty"`
+
+    Origin string `json:"-" yaml:"-"`
+}
+```
+
+This matches the pattern used by `MCPSource`.
+
+## Phase 4: Replace Panic TODOs
+
 
 All 8 panics are in the generated entity service files at:
 `catalog/internal/catalog/<name>catalog/service/<entity_snake>.go`
@@ -68,7 +139,7 @@ Each group of panics is documented in a separate file. **Read the file** for eac
 - **Panics 4–5** (filtering & ordering): Read `.agents/skills/init-catalog/panic-ordering.md`
 - **Panics 6–8** (delete/query ops, imports, Save override): Read `.agents/skills/init-catalog/panic-crud.md`
 
-## Phase 4: Generate OpenAPI Stubs
+## Phase 5: Generate OpenAPI Stubs
 
 Three make targets must run in order:
 
@@ -92,7 +163,7 @@ Verify that these files were created or updated:
 - `catalog/internal/server/openapi/api_<name>.go`
 - `catalog/pkg/openapi/model_<entity_snake>.go` (one per entity)
 
-## Phase 5: Implement DB Provider
+## Phase 6: Implement DB Provider
 
 The generated `db_<name>.go` has a TODO stub. Replace it with a working implementation
 that queries the repository and maps results to OpenAPI models.
@@ -113,9 +184,7 @@ that queries the repository and maps results to OpenAPI models.
 4. **Add `Get<Entity>` method**: parse ID string to int32, call repository `.GetByID()`,
    map via the mapping function, return or 404.
 
-5. **Add `FindSources` method**: iterate `sources.AllSources()`, build `CatalogSourceList`.
-
-6. **Implement `mapDB<Entity>ToAPI` mapping function**: map ID (format int64 → string),
+5. **Implement `mapDB<Entity>ToAPI` mapping function**: map ID (format int64 → string),
    Name from attributes, then loop over Properties matching by name:
    - String fields: `res.<Field> = prop.StringValue`
    - Boolean fields: `res.<Field> = prop.BoolValue`
@@ -123,9 +192,9 @@ that queries the repository and maps results to OpenAPI models.
 
    Reference: `catalog/internal/catalog/modelcatalog/db_catalog.go` function `mapDBModelToAPIModel`.
 
-7. **Remove** the `var _ sharedmodels.CatalogSourceRepository` placeholder and the TODO comments.
+6. **Remove** the `var _ sharedmodels.CatalogSourceRepository` placeholder and the TODO comments.
 
-## Phase 6: Create OpenAPI Service Implementation
+## Phase 7: Create OpenAPI Service Implementation
 
 After `gen/openapi-server` runs, an interface `<PascalName>CatalogServiceAPIServicer` exists in
 `catalog/internal/server/openapi/api_<name>.go`. Create a service implementation that calls
@@ -141,12 +210,13 @@ through to the DB provider.
      - `Find<Entity>s` → call `provider.List<Entity>s(ctx, params)`, return 200 or error
      - `Get<Entity>` → call `provider.Get<Entity>(ctx, id)`, return 200 or 404
      - `GetFilterOptions` → call `provider.GetFilterOptions(ctx)`
-     - `FindSources` → call `provider.FindSources(ctx)`
    - For errors, use `api.ErrNotFound` / `api.ErrBadRequest` checks from `github.com/kubeflow/hub/pkg/api`
+   - Note: Plugins do NOT implement a `FindSources` method — sources are managed by the
+     model catalog via the shared `/sources` endpoint with `assetType` filtering.
 
    Match the exact method signatures from the interface.
 
-## Phase 7: Implement YAML Provider + Wire Loader
+## Phase 8: Implement YAML Provider + Wire Loader
 
 Add a YAML provider so the plugin can load data from YAML files at startup.
 
@@ -230,7 +300,7 @@ and saves via the repository. The Save call signature depends on datastore type:
 Reference: `catalog/internal/catalog/mcpcatalog/providers.go` for path resolution and
 `catalog/internal/catalog/mcpcatalog/loader.go` `updateDatabase` for the save pattern.
 
-## Phase 8: Wire RegisterRoutes
+## Phase 9: Wire RegisterRoutes
 
 Update `catalog/internal/plugins/<name>/plugin.go`:
 
@@ -252,7 +322,7 @@ func (p *Plugin) RegisterRoutes(router chi.Router) error {
 }
 ```
 
-## Phase 9: Verify Compilation
+## Phase 10: Verify Compilation
 
 ```bash
 go build ./catalog/...
@@ -261,7 +331,7 @@ go build ./catalog/...
 If compilation fails, read the error output, fix the issues (typically unused or missing imports,
 pointer vs value mismatches on list struct fields), and retry.
 
-## Phase 10: Report
+## Phase 11: Report
 
 Print a summary with:
 

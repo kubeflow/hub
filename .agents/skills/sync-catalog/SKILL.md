@@ -126,9 +126,10 @@ stubs (no `List*` or `Get*` methods), wire it up:
 
 3. **Add Get method**: parse the ID, call `GetByID`, convert via mapping function, return the API type or 404.
 
-4. **Add FindSources method**: iterate `sources.AllSources()`, return `CatalogSourceList`.
+4. **Add a `ListParams` struct** for the method parameters (Name, SourceIDs, FilterQuery, OrderBy, SortOrder, NextPageToken, PageSize).
 
-5. **Add a `ListParams` struct** for the method parameters (Name, SourceIDs, FilterQuery, OrderBy, SortOrder, NextPageToken, PageSize).
+Note: Plugins do NOT implement a `FindSources` method — sources are managed by the
+model catalog via the shared `/sources` endpoint with `assetType` filtering.
 
 Reference: `catalog/internal/catalog/modelcatalog/db_catalog.go` (`ListModels`, `GetModel`, `mapDBModelToAPIModel`).
 

@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/kubeflow/hub/catalog/internal/catalog/basecatalog"
+	model "github.com/kubeflow/hub/catalog/pkg/openapi"
 )
 
 type {{.CamelName}}OriginEntry struct {
@@ -66,8 +67,8 @@ func merge{{.PascalName}}Sources(base, override basecatalog.PluginSource) baseca
 	result := base
 
 	common := basecatalog.MergeCommonSourceFields(
-		basecatalog.CommonSourceFields{Name: base.Name, Enabled: base.Enabled, Labels: base.Labels, Type: base.Type, Properties: base.Properties, Origin: base.Origin},
-		basecatalog.CommonSourceFields{Name: override.Name, Enabled: override.Enabled, Labels: override.Labels, Type: override.Type, Properties: override.Properties, Origin: override.Origin},
+		basecatalog.CommonSourceFields{Name: base.Name, Enabled: base.Enabled, Labels: base.Labels, Type: base.Type, Properties: base.Properties, Origin: base.Origin, AssetType: base.AssetType},
+		basecatalog.CommonSourceFields{Name: override.Name, Enabled: override.Enabled, Labels: override.Labels, Type: override.Type, Properties: override.Properties, Origin: override.Origin, AssetType: override.AssetType},
 	)
 	result.Name = common.Name
 	result.Enabled = common.Enabled
@@ -75,6 +76,7 @@ func merge{{.PascalName}}Sources(base, override basecatalog.PluginSource) baseca
 	result.Type = common.Type
 	result.Properties = common.Properties
 	result.Origin = common.Origin
+	result.AssetType = common.AssetType
 
 	return result
 }
@@ -85,6 +87,9 @@ func apply{{.PascalName}}Defaults(source basecatalog.PluginSource) basecatalog.P
 	}
 	if source.Labels == nil {
 		source.Labels = []string{}
+	}
+	if source.AssetType == nil {
+		source.AssetType = model.CATALOGASSETTYPE_{{.AssetTypeConstSuffix}}.Ptr()
 	}
 	return source
 }

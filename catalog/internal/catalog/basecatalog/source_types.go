@@ -198,12 +198,13 @@ func (s *MCPSource) IsEnabled() bool {
 // PluginSource is the generic source type for catalog plugins.
 // New plugins should use this instead of defining a custom source struct.
 type PluginSource struct {
-	Name       string         `json:"name" yaml:"name"`
-	ID         string         `json:"id" yaml:"id"`
-	Type       string         `json:"type" yaml:"type"`
-	Enabled    *bool          `json:"enabled,omitempty" yaml:"enabled,omitempty"`
-	Properties map[string]any `json:"properties" yaml:"properties"`
-	Labels     []string       `json:"labels" yaml:"labels"`
+	Name       string                      `json:"name" yaml:"name"`
+	ID         string                      `json:"id" yaml:"id"`
+	Type       string                      `json:"type" yaml:"type"`
+	Enabled    *bool                       `json:"enabled,omitempty" yaml:"enabled,omitempty"`
+	Properties map[string]any              `json:"properties" yaml:"properties"`
+	Labels     []string                    `json:"labels" yaml:"labels"`
+	AssetType  *apimodels.CatalogAssetType `json:"assetType,omitempty" yaml:"assetType,omitempty"`
 
 	// Origin is the absolute path of the config file this source was loaded from.
 	Origin string `json:"-" yaml:"-"`

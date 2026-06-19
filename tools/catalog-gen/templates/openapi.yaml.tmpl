@@ -63,21 +63,6 @@ paths:
       operationId: get{{.Name}}
 {{- end}}
 
-  {{.BasePath}}/sources:
-    description: List configured sources for this catalog.
-    get:
-      summary: List catalog sources.
-      tags:
-        - {{.PascalName}}CatalogService
-      responses:
-        "200":
-          $ref: "#/components/responses/CatalogSourceListResponse"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-      operationId: find{{.PascalName}}Sources
-
   {{.BasePath}}/filter_options:
     description: Lists filter options for this catalog.
     get:

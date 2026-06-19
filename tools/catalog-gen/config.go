@@ -43,6 +43,18 @@ func (c *PluginConfig) BasePath() string {
 	return "/api/" + c.Name + "_catalog/v1alpha1"
 }
 
+func (c *PluginConfig) AssetTypeValue() string {
+	return c.PrimaryEntity().SnakeName() + "s"
+}
+
+func (c *PluginConfig) AssetTypeConstSuffix() string {
+	return strings.ToUpper(c.AssetTypeValue())
+}
+
+func (c *PluginConfig) AssetTypePascal() string {
+	return toPascalCase(c.AssetTypeValue())
+}
+
 func (c *PluginConfig) SourceStructName() string {
 	return c.PascalName() + "Source"
 }
