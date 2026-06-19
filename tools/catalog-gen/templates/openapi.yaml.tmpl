@@ -14,6 +14,12 @@ paths:
             type: string
           in: query
           required: false
+        - name: q
+          description: Free-form keyword search used to filter the response.
+          schema:
+            type: string
+          in: query
+          required: false
         - name: source
           description: Filter by source ID.
           schema:
@@ -22,6 +28,19 @@ paths:
               type: string
           in: query
           required: false
+        - name: sourceLabel
+          description: |-
+            Filter by the label associated with the source. Multiple
+            values can be separated by commas. If one of the values is the
+            string `null`, then entities from every source without a label will
+            be returned.
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+          required: false
+        - $ref: "#/components/parameters/filterQuery"
         - $ref: "#/components/parameters/pageSize"
         - $ref: "#/components/parameters/orderBy"
         - $ref: "#/components/parameters/sortOrder"
@@ -36,6 +55,23 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
       operationId: find{{.Name}}s
+
+  {{$.BasePath}}/{{.SnakeName}}s/filter_options:
+    description: Lists options for `filterQuery` when listing {{.SnakeName}}s.
+    get:
+      summary: Lists fields and values that can be used in `filterQuery` on the list {{.SnakeName}}s endpoint.
+      tags:
+        - {{$.PascalName}}CatalogService
+      responses:
+        "200":
+          $ref: "#/components/responses/FilterOptionsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      operationId: find{{.Name}}sFilterOptions
 
   {{$.BasePath}}/{{.SnakeName}}s/{id}:
     description: >-
@@ -63,55 +99,37 @@ paths:
       operationId: get{{.Name}}
 {{- end}}
 
-  {{.BasePath}}/filter_options:
-    description: Lists filter options for this catalog.
-    get:
-      summary: Lists fields and values that can be used for filtering.
-      tags:
-        - {{.PascalName}}CatalogService
-      responses:
-        "200":
-          $ref: "#/components/responses/FilterOptionsResponse"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-      operationId: get{{.PascalName}}FilterOptions
-
-# Parameters (pageSize, orderBy, etc.) and shared responses (BadRequest, etc.)
-# are provided by lib/common.yaml during spec assembly. Only plugin-specific
-# schemas and responses are defined here.
+# Parameters (pageSize, orderBy, filterQuery, sortOrder, nextPageToken) and shared
+# responses (BadRequest, FilterOptionsResponse, etc.) are provided by lib/common.yaml
+# and catalog.yaml during spec assembly. Only plugin-specific schemas and responses
+# are defined here.
 components:
   schemas:
 {{- range .ContextEntities}}
     {{.Name}}:
       description: A {{.SnakeName}} entity in the catalog.
-      type: object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        source_id:
-          type: string
-        description:
-          type: string
-        # TODO: Add entity-specific fields here.
+      allOf:
+        - $ref: "#/components/schemas/BaseResource"
+        - type: object
+          properties:
+            source_id:
+              type: string
+              description: Catalog source that provides this entity.
+            # TODO: Add entity-specific fields here.
 
     {{.Name}}List:
       description: A list of {{.SnakeName}} entities.
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/{{.Name}}"
-        nextPageToken:
-          type: string
-        pageSize:
-          type: integer
-        size:
-          type: integer
+      allOf:
+        - type: object
+          properties:
+            items:
+              description: Array of `{{.Name}}` entities.
+              type: array
+              items:
+                $ref: "#/components/schemas/{{.Name}}"
+          required:
+            - items
+        - $ref: "#/components/schemas/BaseResourceList"
 {{- end}}
 
   responses:

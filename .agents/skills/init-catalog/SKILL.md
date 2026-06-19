@@ -345,23 +345,11 @@ Then print **Next Steps** the developer must complete manually:
 ```
 Next steps:
   1. Edit the OpenAPI spec (api/openapi/src/plugins/<name>.yaml) to add entity-specific fields.
-     IMPORTANT: The generated spec uses a flat `type: object` schema. For consistency with
-     model and MCP plugins, update it to use `allOf` with `$ref: BaseResource` so the entity
-     inherits customProperties, externalId, and timestamp fields:
+     The generated spec already uses `allOf` with `BaseResource` (which provides
+     customProperties, description, externalId, and timestamp fields) and includes
+     q, sourceLabel, and filterQuery parameters on the list endpoint.
 
-       CatalogXxx:
-         description: ...
-         allOf:
-           - $ref: "#/components/schemas/BaseResource"
-           - type: object
-             properties:
-               name:
-                 type: string
-               # ... entity-specific fields ...
-
-     BaseResource is defined in api/openapi/src/lib/common.yaml and provides:
-       customProperties, description, externalId, createTimeSinceEpoch, lastUpdateTimeSinceEpoch
-
+     Add entity-specific properties under the second `allOf` entry alongside source_id.
      For URL fields use `format: uri`. Follow MCP's camelCase naming for new fields
      (e.g., repositoryUrl, not repository_url) — exception: source_id stays snake_case
      because it's a cross-plugin convention.
