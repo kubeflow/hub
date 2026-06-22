@@ -129,7 +129,7 @@
     "@testing-library/user-event": "14.6.1",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
-    "cypress": "^14.4.1",
+    "cypress": "^15.17.0",
     "cypress-axe": "^1.5.0",
     "cypress-high-resolution": "^1.0.0",
     "cypress-mochawesome-reporter": "^3.8.2",
