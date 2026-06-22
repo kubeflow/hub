@@ -364,6 +364,15 @@ class ModelCatalog {
     return this;
   }
 
+  // Hardware slider filter helpers (sidebar)
+  findMinVramFilter() {
+    return cy.findByTestId('minimum-vram-filter');
+  }
+
+  findContainerSizeFilter() {
+    return cy.findByTestId('container-size-filter');
+  }
+
   // Cold start latency filter helpers
   findColdStartLatencyFilter() {
     return cy.findByTestId('cold-start-load-time-filter');

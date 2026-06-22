@@ -371,7 +371,7 @@ export const hardwareConfigColumns: HardwareConfigColumn[] = [
   },
   {
     field: 'runtime_command',
-    label: 'Runtime Command',
+    label: 'Runtime command',
     info: {
       popover:
         'The vLLM runtime command used to validate the model with the selected hardware configuration.',
@@ -406,6 +406,7 @@ export const DEFAULT_VISIBLE_COLUMN_FIELDS: HardwareConfigColumnField[] = [
   'requests_per_second',
   'ttft_p90',
   'tps_p90',
+  'cold_start_load_time',
   'mean_input_tokens',
   'mean_output_tokens',
   'framework_version',

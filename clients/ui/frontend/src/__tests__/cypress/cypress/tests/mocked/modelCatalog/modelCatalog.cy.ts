@@ -243,8 +243,10 @@ describe('Model Catalog Page', () => {
     modelCatalog.findFilter('Provider').should('be.visible');
     modelCatalog.findFilter('License').should('be.visible');
     modelCatalog.findFilter('Task').should('be.visible');
-    modelCatalog.findFilter('Language').should('be.visible');
+    modelCatalog.findFilter('Language').scrollIntoView().should('be.visible');
     modelCatalog.findFilter('Tensor type').scrollIntoView().should('be.visible');
+    modelCatalog.findMinVramFilter().scrollIntoView().should('be.visible');
+    modelCatalog.findContainerSizeFilter().scrollIntoView().should('be.visible');
   });
 
   it('filters show more and show less button should work', () => {

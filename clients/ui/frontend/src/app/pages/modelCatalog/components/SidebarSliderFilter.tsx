@@ -27,8 +27,7 @@ const SidebarSliderFilter: React.FC<SidebarSliderFilterProps> = ({
   fallbackMin,
   fallbackMax,
 }) => {
-  const { filterOptions, filterOptionsLoaded, performanceViewEnabled } =
-    React.useContext(ModelCatalogContext);
+  const { filterOptions, filterOptionsLoaded } = React.useContext(ModelCatalogContext);
   const { value: filterValue, setValue: setFilterValue } = useCatalogNumberFilterState(filterKey);
   const [isOpen, setIsOpen] = React.useState(false);
 
@@ -53,7 +52,7 @@ const SidebarSliderFilter: React.FC<SidebarSliderFilterProps> = ({
     }
   }, [isOpen, filterValue, range.max]);
 
-  if (!performanceViewEnabled || !filterOptionsLoaded || !filterOptions?.filters?.[filterKey]) {
+  if (!filterOptionsLoaded || !filterOptions?.filters?.[filterKey]) {
     return null;
   }
 

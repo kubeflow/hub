@@ -275,8 +275,8 @@ const ModelCatalogCardBody: React.FC<ModelCatalogCardBodyProps> = ({
                     bodyContent={
                       <div>
                         <p>
-                          This is the initial delay that occurs when a model is triggered after a
-                          period of inactivity.
+                          The time it takes for vLLM to load the model. This does not include the
+                          time it takes to download the model.
                         </p>
                       </div>
                     }
