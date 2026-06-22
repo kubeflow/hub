@@ -16,7 +16,7 @@ import { ArrowRightIcon, FilterIcon } from '@patternfly/react-icons';
 import React from 'react';
 import { useThemeContext } from 'mod-arch-kubeflow';
 import { ThemeAwareSearchInput } from 'mod-arch-shared';
-import { BASIC_FILTER_KEYS } from '~/concepts/modelCatalog/const';
+import { BASIC_FILTER_KEYS, RESET_ALL_DEFAULTS_LABEL } from '~/concepts/modelCatalog/const';
 import ModelCatalogActiveFilters from '~/app/pages/modelCatalog/components/ModelCatalogActiveFilters';
 import HardwareConfigurationFilterToolbar from '~/app/pages/modelCatalog/components/HardwareConfigurationFilterToolbar';
 import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
@@ -135,7 +135,7 @@ const ModelCatalogSourceLabelSelector: React.FC<ModelCatalogSourceLabelSelectorP
           {...(onResetAllFilters && !performanceViewEnabled && hasBasicFiltersApplied
             ? {
                 clearAllFilters: handleClearAllFilters,
-                clearFiltersButtonText: 'Reset all defaults',
+                clearFiltersButtonText: RESET_ALL_DEFAULTS_LABEL,
               }
             : {})}
         >

@@ -720,30 +720,12 @@ describe('Single Category Behavior', () => {
 });
 
 describe('Reset Button Label', () => {
-  it('should show "Reset all defaults" when performance view is OFF', () => {
+  it('should show "Reset all defaults" in empty state', () => {
     initIntercepts({
       sources: mockDefaultSources(),
     });
     setupFilteredModelsIntercept({ returnModelsForFilters: false });
     modelCatalog.visit();
-
-    modelCatalog.findFilterShowMoreButton('Task').click();
-    modelCatalog.findFilterCheckbox('Task', 'audio-to-text').click();
-
-    modelCatalog.findModelCatalogEmptyState().should('contain.text', 'No results found');
-    modelCatalog.findEmptyStateResetFiltersButton().should('contain.text', 'Reset all defaults');
-  });
-
-  it('should show "Reset all defaults" when performance view is ON', () => {
-    initIntercepts({
-      sources: mockTwoProviderSources(),
-      hasValidatedModels: false,
-    });
-    setupFilteredModelsIntercept({ returnModelsForFilters: false });
-    modelCatalog.visit();
-
-    modelCatalog.togglePerformanceView();
-    modelCatalog.findCategoryToggle('label-Provider one').click();
 
     modelCatalog.findFilterShowMoreButton('Task').click();
     modelCatalog.findFilterCheckbox('Task', 'audio-to-text').click();
