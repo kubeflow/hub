@@ -55,6 +55,8 @@ type CatalogModel struct {
 	// List of tasks for this model which have been validated by the catalog provider.
 	ValidatedTasks []string       `json:"validatedTasks,omitempty"`
 	ServingConfig  *ServingConfig `json:"servingConfig,omitempty"`
+	// Read-only counts of artifacts by category. Only populated on the single-model detail endpoint (GetModel). Keys with zero count are omitted. When no artifacts exist, the field is omitted entirely.
+	ArtifactCounts *map[string]int32 `json:"artifactCounts,omitempty"`
 }
 
 type _CatalogModel CatalogModel
@@ -677,6 +679,38 @@ func (o *CatalogModel) SetServingConfig(v ServingConfig) {
 	o.ServingConfig = &v
 }
 
+// GetArtifactCounts returns the ArtifactCounts field value if set, zero value otherwise.
+func (o *CatalogModel) GetArtifactCounts() map[string]int32 {
+	if o == nil || IsNil(o.ArtifactCounts) {
+		var ret map[string]int32
+		return ret
+	}
+	return *o.ArtifactCounts
+}
+
+// GetArtifactCountsOk returns a tuple with the ArtifactCounts field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *CatalogModel) GetArtifactCountsOk() (*map[string]int32, bool) {
+	if o == nil || IsNil(o.ArtifactCounts) {
+		return nil, false
+	}
+	return o.ArtifactCounts, true
+}
+
+// HasArtifactCounts returns a boolean if a field has been set.
+func (o *CatalogModel) HasArtifactCounts() bool {
+	if o != nil && !IsNil(o.ArtifactCounts) {
+		return true
+	}
+
+	return false
+}
+
+// SetArtifactCounts gets a reference to the given map[string]int32 and assigns it to the ArtifactCounts field.
+func (o *CatalogModel) SetArtifactCounts(v map[string]int32) {
+	o.ArtifactCounts = &v
+}
+
 func (o CatalogModel) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -741,6 +775,9 @@ func (o CatalogModel) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.ServingConfig) {
 		toSerialize["servingConfig"] = o.ServingConfig
+	}
+	if !IsNil(o.ArtifactCounts) {
+		toSerialize["artifactCounts"] = o.ArtifactCounts
 	}
 	return toSerialize, nil
 }

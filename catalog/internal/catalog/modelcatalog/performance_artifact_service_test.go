@@ -73,6 +73,10 @@ func (m *mockPerfArtifactRepo) DeleteByParentID(artifactType string, parentResou
 	return args.Error(0)
 }
 
+func (m *mockPerfArtifactRepo) CountByParentIDs(parentIDs []int32) (map[int32]map[string]int32, error) {
+	return make(map[int32]map[string]int32), nil
+}
+
 func TestPerformanceArtifactService_GetArtifacts(t *testing.T) {
 	// Mock repository for testing
 	mockArtifactRepo := &mockPerfArtifactRepo{}

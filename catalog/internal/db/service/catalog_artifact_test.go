@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/kubeflow/hub/catalog/internal/testhelpers"
 	modelcatalogmodels "github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog/models"
 	modelcatalogservice "github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog/service"
 	"github.com/kubeflow/hub/catalog/internal/db/models"
 	"github.com/kubeflow/hub/catalog/internal/db/service"
+	"github.com/kubeflow/hub/catalog/internal/testhelpers"
 	dbmodels "github.com/kubeflow/hub/internal/platform/db/entity"
 	"github.com/kubeflow/hub/internal/testutils"
 	"github.com/stretchr/testify/assert"
@@ -1704,5 +1704,149 @@ func TestCatalogArtifactRepository(t *testing.T) {
 			assert.Less(t, withoutPropertyArtifacts[i].id, withoutPropertyArtifacts[i+1].id,
 				"Artifacts without property should be ordered by ID (even in DESC mode)")
 		}
+	})
+}
+
+func TestCountByParentIDs(t *testing.T) {
+	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, testhelpers.MustDatastoreSpec(t))
+	defer cleanup()
+
+	modelArtifactTypeID := getCatalogModelArtifactTypeID(t, sharedDB)
+	metricsArtifactTypeID := getCatalogMetricsArtifactTypeID(t, sharedDB)
+	catalogModelTypeID := getCatalogModelTypeID(t, sharedDB)
+
+	artifactTypeMap := map[string]int32{
+		service.CatalogModelArtifactTypeName:   modelArtifactTypeID,
+		service.CatalogMetricsArtifactTypeName: metricsArtifactTypeID,
+	}
+	repo := service.NewCatalogArtifactRepository(sharedDB, artifactTypeMap)
+	catalogModelRepo := modelcatalogservice.NewCatalogModelRepository(sharedDB, catalogModelTypeID)
+	modelArtifactRepo := modelcatalogservice.NewCatalogModelArtifactRepository(sharedDB, modelArtifactTypeID)
+	metricsArtifactRepo := modelcatalogservice.NewCatalogMetricsArtifactRepository(sharedDB, metricsArtifactTypeID)
+
+	saveModel := func(name string) modelcatalogmodels.CatalogModel {
+		m := &modelcatalogmodels.CatalogModelImpl{
+			TypeID: new(int32(catalogModelTypeID)),
+			Attributes: &modelcatalogmodels.CatalogModelAttributes{
+				Name:       new(name),
+				ExternalID: new(name + "-ext"),
+			},
+		}
+		saved, err := catalogModelRepo.Save(m)
+		require.NoError(t, err)
+		return saved
+	}
+
+	saveModelArtifact := func(parentID *int32, name string) {
+		a := &modelcatalogmodels.CatalogModelArtifactImpl{
+			TypeID: new(int32(modelArtifactTypeID)),
+			Attributes: &modelcatalogmodels.CatalogModelArtifactAttributes{
+				Name:         new(name),
+				URI:          new("s3://bucket/" + name),
+				ArtifactType: new(modelcatalogmodels.CatalogModelArtifactType),
+			},
+		}
+		_, err := modelArtifactRepo.Save(a, parentID)
+		require.NoError(t, err)
+	}
+
+	saveMetricsArtifact := func(parentID *int32, name string, mt modelcatalogmodels.MetricsType) {
+		a := &modelcatalogmodels.CatalogMetricsArtifactImpl{
+			TypeID: new(int32(metricsArtifactTypeID)),
+			Attributes: &modelcatalogmodels.CatalogMetricsArtifactAttributes{
+				Name:         new(name),
+				MetricsType:  mt,
+				ArtifactType: new(modelcatalogmodels.CatalogMetricsArtifactType),
+			},
+		}
+		_, err := metricsArtifactRepo.Save(a, parentID)
+		require.NoError(t, err)
+	}
+
+	t.Run("EmptyParentList", func(t *testing.T) {
+		counts, err := repo.CountByParentIDs([]int32{})
+		require.NoError(t, err)
+		assert.Empty(t, counts)
+	})
+
+	t.Run("ParentWithNoArtifacts", func(t *testing.T) {
+		model := saveModel("count-test-no-artifacts")
+		counts, err := repo.CountByParentIDs([]int32{*model.GetID()})
+		require.NoError(t, err)
+		_, found := counts[*model.GetID()]
+		assert.False(t, found, "model with no artifacts should have no entry")
+	})
+
+	t.Run("OnlyModelArtifacts", func(t *testing.T) {
+		model := saveModel("count-test-model-only")
+		saveModelArtifact(model.GetID(), "count-model-only-art-1")
+		saveModelArtifact(model.GetID(), "count-model-only-art-2")
+
+		counts, err := repo.CountByParentIDs([]int32{*model.GetID()})
+		require.NoError(t, err)
+		require.Contains(t, counts, *model.GetID())
+		assert.Equal(t, map[string]int32{"model-artifact": 2}, counts[*model.GetID()])
+	})
+
+	t.Run("OnlyMetricsArtifactsMultipleTypes", func(t *testing.T) {
+		model := saveModel("count-test-metrics-only")
+		saveMetricsArtifact(model.GetID(), "count-perf-1", modelcatalogmodels.MetricsTypePerformance)
+		saveMetricsArtifact(model.GetID(), "count-perf-2", modelcatalogmodels.MetricsTypePerformance)
+		saveMetricsArtifact(model.GetID(), "count-perf-3", modelcatalogmodels.MetricsTypePerformance)
+		saveMetricsArtifact(model.GetID(), "count-acc-1", modelcatalogmodels.MetricsTypeAccuracy)
+
+		counts, err := repo.CountByParentIDs([]int32{*model.GetID()})
+		require.NoError(t, err)
+		require.Contains(t, counts, *model.GetID())
+		assert.Equal(t, map[string]int32{
+			"performance-metrics": 3,
+			"accuracy-metrics":    1,
+		}, counts[*model.GetID()])
+		_, hasSecurity := counts[*model.GetID()]["security-metrics"]
+		assert.False(t, hasSecurity, "security-metrics key should be absent when count is zero")
+	})
+
+	t.Run("MixedArtifactTypes", func(t *testing.T) {
+		model := saveModel("count-test-mixed")
+		saveModelArtifact(model.GetID(), "count-mixed-model-1")
+		saveMetricsArtifact(model.GetID(), "count-mixed-perf-1", modelcatalogmodels.MetricsTypePerformance)
+		saveMetricsArtifact(model.GetID(), "count-mixed-acc-1", modelcatalogmodels.MetricsTypeAccuracy)
+		saveMetricsArtifact(model.GetID(), "count-mixed-sec-1", modelcatalogmodels.MetricsTypeSecurityMetrics)
+
+		counts, err := repo.CountByParentIDs([]int32{*model.GetID()})
+		require.NoError(t, err)
+		require.Contains(t, counts, *model.GetID())
+		assert.Equal(t, map[string]int32{
+			"model-artifact":      1,
+			"performance-metrics": 1,
+			"accuracy-metrics":    1,
+			"security-metrics":    1,
+		}, counts[*model.GetID()])
+	})
+
+	t.Run("MultipleParentIDs", func(t *testing.T) {
+		modelA := saveModel("count-test-multi-a")
+		modelB := saveModel("count-test-multi-b")
+
+		saveModelArtifact(modelA.GetID(), "count-multi-a-model-1")
+		saveModelArtifact(modelA.GetID(), "count-multi-a-model-2")
+		saveMetricsArtifact(modelA.GetID(), "count-multi-a-perf-1", modelcatalogmodels.MetricsTypePerformance)
+
+		saveMetricsArtifact(modelB.GetID(), "count-multi-b-acc-1", modelcatalogmodels.MetricsTypeAccuracy)
+		saveMetricsArtifact(modelB.GetID(), "count-multi-b-acc-2", modelcatalogmodels.MetricsTypeAccuracy)
+
+		counts, err := repo.CountByParentIDs([]int32{*modelA.GetID(), *modelB.GetID()})
+		require.NoError(t, err)
+
+		require.Contains(t, counts, *modelA.GetID())
+		assert.Equal(t, map[string]int32{
+			"model-artifact":      2,
+			"performance-metrics": 1,
+		}, counts[*modelA.GetID()])
+
+		require.Contains(t, counts, *modelB.GetID())
+		assert.Equal(t, map[string]int32{
+			"accuracy-metrics": 2,
+		}, counts[*modelB.GetID()])
 	})
 }

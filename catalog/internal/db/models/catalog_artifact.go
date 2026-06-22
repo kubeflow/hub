@@ -74,4 +74,9 @@ type CatalogArtifactRepository interface {
 	GetByID(id int32) (CatalogArtifact, error)
 	List(listOptions CatalogArtifactListOptions) (*models.ListWrapper[CatalogArtifact], error)
 	DeleteByParentID(artifactType string, parentResourceID int32) error
+	// CountByParentIDs returns artifact counts grouped by category for each parent model ID.
+	// The outer map key is the parent model ID; the inner map key is the artifact category
+	// ("model-artifact", "performance-metrics", "accuracy-metrics", "security-metrics").
+	// Categories with zero count are omitted. Parents with no artifacts have no entry.
+	CountByParentIDs(parentIDs []int32) (map[int32]map[string]int32, error)
 }

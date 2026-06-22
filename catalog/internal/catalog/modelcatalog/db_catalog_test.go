@@ -107,6 +107,117 @@ func TestDBCatalog(t *testing.T) {
 		assert.ErrorIs(t, err, api.ErrNotFound)
 	})
 
+	t.Run("TestGetModel_ArtifactCounts_NoArtifacts", func(t *testing.T) {
+		testModel := &models.CatalogModelImpl{
+			TypeID: new(int32(catalogModelTypeID)),
+			Attributes: &models.CatalogModelAttributes{
+				Name:       new("artifact-counts-source:artifact-counts-no-artifacts"),
+				ExternalID: new("artifact-counts-no-artifacts-ext"),
+			},
+			Properties: &[]mr_models.Properties{
+				{Name: "source_id", StringValue: new("artifact-counts-source")},
+			},
+		}
+		_, err := catalogModelRepo.Save(testModel)
+		require.NoError(t, err)
+
+		retrieved, err := dbCatalog.GetModel(ctx, "artifact-counts-no-artifacts", "artifact-counts-source")
+		require.NoError(t, err)
+		assert.Nil(t, retrieved.ArtifactCounts, "ArtifactCounts should be nil when no artifacts exist")
+	})
+
+	t.Run("TestGetModel_ArtifactCounts_WithArtifacts", func(t *testing.T) {
+		testModel := &models.CatalogModelImpl{
+			TypeID: new(int32(catalogModelTypeID)),
+			Attributes: &models.CatalogModelAttributes{
+				Name:       new("artifact-counts-source:artifact-counts-with-artifacts"),
+				ExternalID: new("artifact-counts-with-artifacts-ext"),
+			},
+			Properties: &[]mr_models.Properties{
+				{Name: "source_id", StringValue: new("artifact-counts-source")},
+			},
+		}
+		savedModel, err := catalogModelRepo.Save(testModel)
+		require.NoError(t, err)
+
+		// Create: 1 model artifact, 2 performance, 1 accuracy
+		modelArt := &models.CatalogModelArtifactImpl{
+			TypeID: new(int32(modelArtifactTypeID)),
+			Attributes: &models.CatalogModelArtifactAttributes{
+				Name:         new("ac-model-art-1"),
+				URI:          new("s3://bucket/model.bin"),
+				ArtifactType: new(models.CatalogModelArtifactType),
+			},
+		}
+		_, err = modelArtifactRepo.Save(modelArt, savedModel.GetID())
+		require.NoError(t, err)
+
+		for i, mt := range []models.MetricsType{
+			models.MetricsTypePerformance,
+			models.MetricsTypePerformance,
+			models.MetricsTypeAccuracy,
+		} {
+			ma := &models.CatalogMetricsArtifactImpl{
+				TypeID: new(int32(metricsArtifactTypeID)),
+				Attributes: &models.CatalogMetricsArtifactAttributes{
+					Name:         new(fmt.Sprintf("ac-metrics-art-%d", i)),
+					MetricsType:  mt,
+					ArtifactType: new(models.CatalogMetricsArtifactType),
+				},
+			}
+			_, err = metricsArtifactRepo.Save(ma, savedModel.GetID())
+			require.NoError(t, err)
+		}
+
+		retrieved, err := dbCatalog.GetModel(ctx, "artifact-counts-with-artifacts", "artifact-counts-source")
+		require.NoError(t, err)
+		require.NotNil(t, retrieved.ArtifactCounts)
+		assert.Equal(t, map[string]int32{
+			"model-artifact":      1,
+			"performance-metrics": 2,
+			"accuracy-metrics":    1,
+		}, *retrieved.ArtifactCounts)
+		_, hasSecurityKey := (*retrieved.ArtifactCounts)["security-metrics"]
+		assert.False(t, hasSecurityKey, "security-metrics key should be absent when count is zero")
+	})
+
+	t.Run("TestListModels_ArtifactCountsNotPopulated", func(t *testing.T) {
+		// Create a model with artifacts and confirm ListModels does not populate ArtifactCounts
+		testModel := &models.CatalogModelImpl{
+			TypeID: new(int32(catalogModelTypeID)),
+			Attributes: &models.CatalogModelAttributes{
+				Name:       new("list-no-counts-source:list-no-counts-model"),
+				ExternalID: new("list-no-counts-ext"),
+			},
+			Properties: &[]mr_models.Properties{
+				{Name: "source_id", StringValue: new("list-no-counts-source")},
+			},
+		}
+		savedModel, err := catalogModelRepo.Save(testModel)
+		require.NoError(t, err)
+
+		modelArt := &models.CatalogModelArtifactImpl{
+			TypeID: new(int32(modelArtifactTypeID)),
+			Attributes: &models.CatalogModelArtifactAttributes{
+				Name:         new("list-no-counts-art-1"),
+				URI:          new("s3://bucket/list-model.bin"),
+				ArtifactType: new(models.CatalogModelArtifactType),
+			},
+		}
+		_, err = modelArtifactRepo.Save(modelArt, savedModel.GetID())
+		require.NoError(t, err)
+
+		listResult, err := dbCatalog.ListModels(ctx, ListModelsParams{
+			SourceIDs: []string{"list-no-counts-source"},
+			PageSize:  10,
+		})
+		require.NoError(t, err)
+		require.NotEmpty(t, listResult.Items)
+		for _, m := range listResult.Items {
+			assert.Nil(t, m.ArtifactCounts, "ArtifactCounts must not be populated on list endpoints")
+		}
+	})
+
 	t.Run("TestListModels_Success", func(t *testing.T) {
 		// Create test models
 		sourceIDs := []string{"list-test-source"}

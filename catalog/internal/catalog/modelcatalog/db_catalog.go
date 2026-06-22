@@ -38,8 +38,8 @@ func NewDBCatalog(services Services, sources *SourceCollection) APIProvider {
 	}
 }
 
-func (d *dbCatalogImpl) GetModel(ctx context.Context, modelName string, sourceID string) (*apimodels.CatalogModel, error) {
-	// Resolve by namespaced identifier: sourceId:modelName
+// resolveModel looks up a single model by display name and source ID, returning the DB model.
+func (d *dbCatalogImpl) resolveModel(modelName, sourceID string) (models.CatalogModel, error) {
 	namespacedName := sourceID + ":" + modelName
 	modelsList, err := d.catalogModelRepository.List(models.CatalogModelListOptions{
 		Name:      &namespacedName,
@@ -48,18 +48,33 @@ func (d *dbCatalogImpl) GetModel(ctx context.Context, modelName string, sourceID
 	if err != nil {
 		return nil, err
 	}
-
 	if len(modelsList.Items) == 0 {
 		return nil, fmt.Errorf("no models found for name=%v: %w", modelName, api.ErrNotFound)
 	}
-
 	if len(modelsList.Items) > 1 {
 		return nil, fmt.Errorf("multiple models found for name=%v: %w", modelName, api.ErrNotFound)
 	}
+	return modelsList.Items[0], nil
+}
 
-	model, err := mapDBModelToAPIModel(modelsList.Items[0])
+func (d *dbCatalogImpl) GetModel(ctx context.Context, modelName string, sourceID string) (*apimodels.CatalogModel, error) {
+	dbModel, err := d.resolveModel(modelName, sourceID)
+	if err != nil {
+		return nil, err
+	}
+
+	model, err := mapDBModelToAPIModel(dbModel)
 	if err != nil {
 		return nil, fmt.Errorf("error mapping model %s: %w", modelName, err)
+	}
+
+	modelDBID := *dbModel.GetID()
+	artifactCounts, err := d.catalogArtifactRepository.CountByParentIDs([]int32{modelDBID})
+	if err != nil {
+		return nil, fmt.Errorf("error counting artifacts for model %s: %w", modelName, err)
+	}
+	if counts, ok := artifactCounts[modelDBID]; ok && len(counts) > 0 {
+		model.ArtifactCounts = &counts
 	}
 
 	return &model, nil
@@ -141,7 +156,7 @@ func (d *dbCatalogImpl) GetArtifacts(ctx context.Context, modelName string, sour
 
 	nextPageToken := params.NextPageToken
 
-	m, err := d.GetModel(ctx, modelName, sourceID)
+	dbModel, err := d.resolveModel(modelName, sourceID)
 	if err != nil {
 		if errors.Is(err, api.ErrNotFound) {
 			return apimodels.CatalogArtifactList{}, fmt.Errorf("invalid model name '%s' for source '%s': %w", modelName, sourceID, api.ErrBadRequest)
@@ -149,12 +164,7 @@ func (d *dbCatalogImpl) GetArtifacts(ctx context.Context, modelName string, sour
 		return apimodels.CatalogArtifactList{}, err
 	}
 
-	parentResourceID, err := strconv.ParseInt(*m.Id, 10, 32)
-	if err != nil {
-		return apimodels.CatalogArtifactList{}, err
-	}
-
-	parentResourceID32 := int32(parentResourceID)
+	parentResourceID32 := *dbModel.GetID()
 
 	var filterQueryPtr *string
 	if params.FilterQuery != "" {
@@ -251,29 +261,13 @@ func (d *dbCatalogImpl) GetFilterOptions(ctx context.Context) (*apimodels.Filter
 }
 
 func (d *dbCatalogImpl) GetPerformanceArtifacts(ctx context.Context, modelName string, sourceID string, params ListPerformanceArtifactsParams) (apimodels.CatalogArtifactList, error) {
-	// Resolve by namespaced identifier: sourceId:modelName
-	namespacedName := sourceID + ":" + modelName
-	// Get the model to validate it exists and get its ID
-	modelsList, err := d.catalogModelRepository.List(models.CatalogModelListOptions{
-		Name:      &namespacedName,
-		SourceIDs: &[]string{sourceID},
-	})
+	dbModel, err := d.resolveModel(modelName, sourceID)
 	if err != nil {
 		return apimodels.CatalogArtifactList{}, err
 	}
 
-	if len(modelsList.Items) == 0 {
-		return apimodels.CatalogArtifactList{}, fmt.Errorf("no models found for name=%v: %w", modelName, api.ErrNotFound)
-	}
-
-	if len(modelsList.Items) > 1 {
-		return apimodels.CatalogArtifactList{}, fmt.Errorf("multiple models found for name=%v: %w", modelName, api.ErrNotFound)
-	}
-
-	model := modelsList.Items[0]
-
 	serviceParams := PerformanceArtifactParams{
-		ModelID:               *model.GetID(),
+		ModelID:               *dbModel.GetID(),
 		TargetRPS:             params.TargetRPS,
 		Recommendations:       params.Recommendations,
 		FilterQuery:           params.FilterQuery,

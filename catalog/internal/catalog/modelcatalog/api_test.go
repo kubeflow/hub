@@ -977,6 +977,10 @@ func (m *MockCatalogArtifactRepository) DeleteByParentID(artifactType string, pa
 	return nil
 }
 
+func (m *MockCatalogArtifactRepository) CountByParentIDs(parentIDs []int32) (map[int32]map[string]int32, error) {
+	return make(map[int32]map[string]int32), nil
+}
+
 // MockNotFoundError represents an error when an entity is not found.
 type MockNotFoundError struct {
 	Entity string

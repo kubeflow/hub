@@ -366,6 +366,20 @@ components:
               description: List of tasks for this model which have been validated by the catalog provider.
             servingConfig:
               $ref: "#/components/schemas/ServingConfig"
+            artifactCounts:
+              type: object
+              description: >-
+                Read-only counts of artifacts by category. Only populated on the
+                single-model detail endpoint (GetModel). Keys with zero count are omitted.
+                When no artifacts exist, the field is omitted entirely.
+              readOnly: true
+              additionalProperties:
+                type: integer
+                format: int32
+              example:
+                model-artifact: 3
+                performance-metrics: 12
+                accuracy-metrics: 2
         - $ref: "#/components/schemas/BaseModel"
         - $ref: "#/components/schemas/BaseResource"
     ServingConfig:

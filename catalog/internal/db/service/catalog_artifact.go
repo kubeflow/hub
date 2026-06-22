@@ -11,9 +11,9 @@ import (
 	"github.com/kubeflow/hub/internal/platform/datastore"
 	"github.com/kubeflow/hub/internal/platform/db/dbutil"
 	dbmodels "github.com/kubeflow/hub/internal/platform/db/entity"
+	service "github.com/kubeflow/hub/internal/platform/db/repository"
 	"github.com/kubeflow/hub/internal/platform/db/schema"
 	"github.com/kubeflow/hub/internal/platform/db/scopes"
-	service "github.com/kubeflow/hub/internal/platform/db/repository"
 	"github.com/kubeflow/hub/internal/platform/db/utils"
 	"github.com/kubeflow/hub/pkg/api"
 	"gorm.io/gorm"
@@ -456,6 +456,66 @@ func (r *CatalogArtifactRepositoryImpl) applyCursorPagination(query *gorm.DB, cu
 	// Note that we sort ID ASCENDING as a tie-breaker, so ">" is correct below.
 	return query.Where(fmt.Sprintf("(sort_value.%s %s ? OR (sort_value.%s = ? AND %s.id > ?) OR sort_value.%s IS NULL)", sortColumn, cmp, sortColumn, artifactTable, sortColumn),
 		cursor.Value, cursor.Value, cursor.ID)
+}
+
+// CountByParentIDs returns artifact counts grouped by category for each parent model.
+// The outer map key is the parent model ID (context_id from Attribution).
+// The inner map key is the artifact category: "model-artifact" for CatalogModelArtifacts,
+// or the metricsType value ("performance-metrics", "accuracy-metrics", etc.) for CatalogMetricsArtifacts.
+// Categories with zero count are omitted from the inner map.
+// Parents with no artifacts have no entry in the outer map.
+func (r *CatalogArtifactRepositoryImpl) CountByParentIDs(parentIDs []int32) (map[int32]map[string]int32, error) {
+	result := make(map[int32]map[string]int32, len(parentIDs))
+	if len(parentIDs) == 0 {
+		return result, nil
+	}
+
+	modelArtifactTypeID := r.nameToID[CatalogModelArtifactTypeName]
+	metricsArtifactTypeID := r.nameToID[CatalogMetricsArtifactTypeName]
+
+	artifactTable := utils.GetTableName(r.db, &schema.Artifact{})
+	attributionTable := utils.GetTableName(r.db, &schema.Attribution{})
+	propertyTable := utils.GetTableName(r.db, &schema.ArtifactProperty{})
+
+	selectClause := fmt.Sprintf(
+		`%s.context_id,
+		CASE
+			WHEN %s.type_id = %d THEN 'model-artifact'
+			WHEN %s.type_id = %d THEN COALESCE(%s.string_value, 'unknown')
+		END AS category,
+		COUNT(*) AS count`,
+		attributionTable,
+		artifactTable, modelArtifactTypeID,
+		artifactTable, metricsArtifactTypeID,
+		propertyTable,
+	)
+
+	type countRow struct {
+		ContextID int32  `gorm:"column:context_id"`
+		Category  string `gorm:"column:category"`
+		Count     int32  `gorm:"column:count"`
+	}
+
+	var rows []countRow
+	err := r.db.Table(artifactTable).
+		Select(selectClause).
+		Joins(fmt.Sprintf("INNER JOIN %s ON %s.artifact_id = %s.id", attributionTable, attributionTable, artifactTable)).
+		Joins(fmt.Sprintf("LEFT JOIN %s ON %s.artifact_id = %s.id AND %s.name = 'metricsType' AND %s.is_custom_property = false", propertyTable, propertyTable, artifactTable, propertyTable, propertyTable)).
+		Where(fmt.Sprintf("%s.context_id IN ? AND %s.type_id IN ?", attributionTable, artifactTable), parentIDs, []int32{modelArtifactTypeID, metricsArtifactTypeID}).
+		Group(fmt.Sprintf("%s.context_id, category", attributionTable)).
+		Find(&rows).Error
+	if err != nil {
+		return nil, fmt.Errorf("error counting catalog artifacts by parents: %w", err)
+	}
+
+	for _, row := range rows {
+		if result[row.ContextID] == nil {
+			result[row.ContextID] = make(map[string]int32)
+		}
+		result[row.ContextID][row.Category] = row.Count
+	}
+
+	return result, nil
 }
 
 func (r *CatalogArtifactRepositoryImpl) DeleteByParentID(artifactTypeName string, parentResourceID int32) error {
