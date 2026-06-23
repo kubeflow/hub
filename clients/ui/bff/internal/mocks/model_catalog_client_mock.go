@@ -258,7 +258,7 @@ func filterArtifactsByQuery(list models.CatalogModelArtifactList, filterQuery st
 		return list
 	}
 
-	var filtered []models.CatalogArtifact
+	filtered := []models.CatalogArtifact{}
 	for _, item := range list.Items {
 		if item.MetricsType != nil && *item.MetricsType == metricsTypeFilter {
 			filtered = append(filtered, item)
