@@ -24,7 +24,8 @@ type CatalogSourcePreviewResponse struct {
 	// Maximum number of resources to return in the result.
 	PageSize int32 `json:"pageSize"`
 	// Number of items in result list.
-	Size int32 `json:"size"`
+	Size      int32            `json:"size"`
+	AssetType CatalogAssetType `json:"assetType"`
 	// Array of model preview results.
 	Items   []ModelPreviewResult                     `json:"items"`
 	Summary CatalogSourcePreviewResponseAllOfSummary `json:"summary"`
@@ -36,11 +37,12 @@ type _CatalogSourcePreviewResponse CatalogSourcePreviewResponse
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewCatalogSourcePreviewResponse(nextPageToken string, pageSize int32, size int32, items []ModelPreviewResult, summary CatalogSourcePreviewResponseAllOfSummary) *CatalogSourcePreviewResponse {
+func NewCatalogSourcePreviewResponse(nextPageToken string, pageSize int32, size int32, assetType CatalogAssetType, items []ModelPreviewResult, summary CatalogSourcePreviewResponseAllOfSummary) *CatalogSourcePreviewResponse {
 	this := CatalogSourcePreviewResponse{}
 	this.NextPageToken = nextPageToken
 	this.PageSize = pageSize
 	this.Size = size
+	this.AssetType = assetType
 	this.Items = items
 	this.Summary = summary
 	return &this
@@ -51,6 +53,8 @@ func NewCatalogSourcePreviewResponse(nextPageToken string, pageSize int32, size 
 // but it doesn't guarantee that properties required by API are set
 func NewCatalogSourcePreviewResponseWithDefaults() *CatalogSourcePreviewResponse {
 	this := CatalogSourcePreviewResponse{}
+	var assetType CatalogAssetType = CATALOGASSETTYPE_MODELS
+	this.AssetType = assetType
 	return &this
 }
 
@@ -126,6 +130,30 @@ func (o *CatalogSourcePreviewResponse) SetSize(v int32) {
 	o.Size = v
 }
 
+// GetAssetType returns the AssetType field value
+func (o *CatalogSourcePreviewResponse) GetAssetType() CatalogAssetType {
+	if o == nil {
+		var ret CatalogAssetType
+		return ret
+	}
+
+	return o.AssetType
+}
+
+// GetAssetTypeOk returns a tuple with the AssetType field value
+// and a boolean to check if the value has been set.
+func (o *CatalogSourcePreviewResponse) GetAssetTypeOk() (*CatalogAssetType, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.AssetType, true
+}
+
+// SetAssetType sets field value
+func (o *CatalogSourcePreviewResponse) SetAssetType(v CatalogAssetType) {
+	o.AssetType = v
+}
+
 // GetItems returns the Items field value
 func (o *CatalogSourcePreviewResponse) GetItems() []ModelPreviewResult {
 	if o == nil {
@@ -187,6 +215,7 @@ func (o CatalogSourcePreviewResponse) ToMap() (map[string]interface{}, error) {
 	toSerialize["nextPageToken"] = o.NextPageToken
 	toSerialize["pageSize"] = o.PageSize
 	toSerialize["size"] = o.Size
+	toSerialize["assetType"] = o.AssetType
 	toSerialize["items"] = o.Items
 	toSerialize["summary"] = o.Summary
 	return toSerialize, nil

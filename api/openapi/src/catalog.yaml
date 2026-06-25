@@ -237,21 +237,11 @@ paths:
           required: false
       responses:
         "200":
-          description: |-
-            Preview results for the catalog source configuration.
-
-            **Polymorphic response:** The response schema depends on the `assetType`
-            field in the uploaded config:
-            - `models` (default): Returns a `CatalogSourcePreviewResponse` with
-              `ModelPreviewResult` items and model-specific summary fields.
-            - `mcp_servers`: Returns an `AssetSourcePreviewResponse` with
-              `AssetPreviewResult` items and generic summary fields.
-
-            See the `AssetSourcePreviewResponse` schema for the MCP response shape.
+          description: Preview results for the catalog source configuration.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CatalogSourcePreviewResponse"
+                $ref: "#/components/schemas/PreviewCatalogSourceResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -420,6 +410,8 @@ components:
       allOf:
         - type: object
           properties:
+            assetType:
+              $ref: "#/components/schemas/CatalogAssetType"
             items:
               description: Array of model preview results.
               type: array
@@ -446,6 +438,7 @@ components:
                 - includedModels
                 - excludedModels
           required:
+            - assetType
             - items
             - summary
         - $ref: "#/components/schemas/BaseResourceList"
@@ -486,6 +479,8 @@ components:
       allOf:
         - type: object
           properties:
+            assetType:
+              $ref: "#/components/schemas/CatalogAssetType"
             items:
               description: Array of asset preview results.
               type: array
@@ -512,9 +507,22 @@ components:
                 - includedAssets
                 - excludedAssets
           required:
+            - assetType
             - items
             - summary
         - $ref: "#/components/schemas/BaseResourceList"
+    PreviewCatalogSourceResponse:
+      description: >-
+        Polymorphic preview response. The `assetType` discriminator determines
+        whether the payload is a model preview or an MCP server preview.
+      oneOf:
+        - $ref: "#/components/schemas/CatalogSourcePreviewResponse"
+        - $ref: "#/components/schemas/AssetSourcePreviewResponse"
+      discriminator:
+        propertyName: assetType
+        mapping:
+          models: "#/components/schemas/CatalogSourcePreviewResponse"
+          mcp_servers: "#/components/schemas/AssetSourcePreviewResponse"
     FilterOption:
       type: object
       required:
@@ -607,16 +615,17 @@ components:
           schema:
             $ref: "#/components/schemas/FilterOptionsList"
       description: A response containing options for a `filterQuery` parameter.
-    CatalogSourcePreviewResponse:
+    PreviewCatalogSourceResponse:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/CatalogSourcePreviewResponse"
+            $ref: "#/components/schemas/PreviewCatalogSourceResponse"
           examples:
             allModels:
               summary: All models with inclusion status
               description: Response showing all models when filterStatus=all
               value:
+                assetType: models
                 nextPageToken: ""
                 pageSize: 10
                 size: 5
@@ -639,6 +648,7 @@ components:
               summary: Only included models
               description: Response when filterStatus=included
               value:
+                assetType: models
                 nextPageToken: ""
                 pageSize: 10
                 size: 3
@@ -657,6 +667,7 @@ components:
               summary: Only excluded models
               description: Response when filterStatus=excluded
               value:
+                assetType: models
                 nextPageToken: ""
                 pageSize: 10
                 size: 2
@@ -673,6 +684,7 @@ components:
               summary: Paginated response
               description: Response with pagination when pageSize is smaller than total
               value:
+                assetType: models
                 nextPageToken: "eyJvZmZzZXQiOjEwfQ==" # notsecret
                 pageSize: 10
                 size: 10
@@ -701,19 +713,11 @@ components:
                   totalModels: 150
                   includedModels: 85
                   excludedModels: 65
-      description: |-
-        A response containing a list of models with their inclusion/exclusion
-        status based on the provided catalog source configuration.
-    AssetSourcePreviewResponse:
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/AssetSourcePreviewResponse"
-          examples:
-            allAssets:
+            allMCPServers:
               summary: All MCP servers with inclusion status
-              description: Response showing all MCP servers when filterStatus=all
+              description: Response showing all MCP servers when assetType=mcp_servers
               value:
+                assetType: mcp_servers
                 nextPageToken: ""
                 pageSize: 10
                 size: 3
@@ -728,25 +732,10 @@ components:
                   totalAssets: 3
                   includedAssets: 2
                   excludedAssets: 1
-            includedOnly:
-              summary: Only included MCP servers
-              description: Response when filterStatus=included
-              value:
-                nextPageToken: ""
-                pageSize: 10
-                size: 2
-                items:
-                  - name: "kubernetes-mcp"
-                    included: true
-                  - name: "prometheus-mcp"
-                    included: true
-                summary:
-                  totalAssets: 3
-                  includedAssets: 2
-                  excludedAssets: 1
       description: |-
-        A response containing a list of assets (e.g., MCP servers) with their
-        inclusion/exclusion status based on the provided catalog source configuration.
+        A response containing preview results with inclusion/exclusion status.
+        The `assetType` discriminator determines whether the payload contains
+        model previews or MCP server previews.
 
   parameters:
     filterQuery:

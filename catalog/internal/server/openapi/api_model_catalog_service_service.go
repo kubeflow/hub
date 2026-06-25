@@ -593,6 +593,7 @@ func (m *ModelCatalogServiceAPIService) previewModelSource(ctx context.Context, 
 	}
 
 	return Response(http.StatusOK, model.CatalogSourcePreviewResponse{
+		AssetType:     model.CATALOGASSETTYPE_MODELS,
 		PageSize:      page.pageSize,
 		Size:          int32(len(page.items)),
 		NextPageToken: page.nextPageToken,
@@ -622,6 +623,7 @@ func (m *ModelCatalogServiceAPIService) previewMCPSource(ctx context.Context, co
 	}
 
 	return Response(http.StatusOK, model.AssetSourcePreviewResponse{
+		AssetType:     model.CATALOGASSETTYPE_MCP_SERVERS,
 		PageSize:      page.pageSize,
 		Size:          int32(len(page.items)),
 		NextPageToken: page.nextPageToken,

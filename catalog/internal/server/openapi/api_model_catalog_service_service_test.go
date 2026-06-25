@@ -2289,10 +2289,12 @@ includedServers:
 				modelResp, ok := resp.Body.(model.CatalogSourcePreviewResponse)
 				require.True(t, ok, "expected CatalogSourcePreviewResponse, got %T", resp.Body)
 				assert.Len(t, modelResp.Items, tt.expectedTotalItems)
+				assert.Equal(t, model.CATALOGASSETTYPE_MODELS, modelResp.AssetType)
 			} else {
 				assetResp, ok := resp.Body.(model.AssetSourcePreviewResponse)
 				require.True(t, ok, "expected AssetSourcePreviewResponse, got %T", resp.Body)
 				assert.Len(t, assetResp.Items, tt.expectedTotalItems)
+				assert.Equal(t, model.CATALOGASSETTYPE_MCP_SERVERS, assetResp.AssetType)
 			}
 		})
 	}
@@ -2332,6 +2334,7 @@ mcp_servers:
 	assetResp, ok := resp.Body.(model.AssetSourcePreviewResponse)
 	require.True(t, ok)
 
+	assert.Equal(t, model.CATALOGASSETTYPE_MCP_SERVERS, assetResp.AssetType)
 	assert.Equal(t, int32(3), assetResp.Summary.TotalAssets)
 	assert.Equal(t, int32(2), assetResp.Summary.IncludedAssets)
 	assert.Equal(t, int32(1), assetResp.Summary.ExcludedAssets)

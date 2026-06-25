@@ -16,6 +16,16 @@ func AssertCatalogArtifactConstraints(obj model.CatalogArtifact) error {
 	return nil
 }
 
+// AssertPreviewCatalogSourceResponseRequired checks if the required fields are not zero-ed
+func AssertPreviewCatalogSourceResponseRequired(obj model.PreviewCatalogSourceResponse) error {
+	return nil
+}
+
+// AssertPreviewCatalogSourceResponseConstraints checks if the values respects the defined constraints
+func AssertPreviewCatalogSourceResponseConstraints(obj model.PreviewCatalogSourceResponse) error {
+	return nil
+}
+
 // AssertFilterOptionRequired checks if the required fields are not zero-ed
 func AssertFilterOptionRequired(obj model.FilterOption) error {
 	elements := map[string]any{

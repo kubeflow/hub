@@ -537,21 +537,11 @@ paths:
           required: false
       responses:
         "200":
-          description: |-
-            Preview results for the catalog source configuration.
-
-            **Polymorphic response:** The response schema depends on the `assetType`
-            field in the uploaded config:
-            - `models` (default): Returns a `CatalogSourcePreviewResponse` with
-              `ModelPreviewResult` items and model-specific summary fields.
-            - `mcp_servers`: Returns an `AssetSourcePreviewResponse` with
-              `AssetPreviewResult` items and generic summary fields.
-
-            See the `AssetSourcePreviewResponse` schema for the MCP response shape.
+          description: Preview results for the catalog source configuration.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CatalogSourcePreviewResponse"
+                $ref: "#/components/schemas/PreviewCatalogSourceResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -734,6 +724,8 @@ components:
       allOf:
         - type: object
           properties:
+            assetType:
+              $ref: "#/components/schemas/CatalogAssetType"
             items:
               description: Array of asset preview results.
               type: array
@@ -760,6 +752,7 @@ components:
                 - includedAssets
                 - excludedAssets
           required:
+            - assetType
             - items
             - summary
         - $ref: "#/components/schemas/BaseResourceList"
@@ -1124,6 +1117,8 @@ components:
       allOf:
         - type: object
           properties:
+            assetType:
+              $ref: "#/components/schemas/CatalogAssetType"
             items:
               description: Array of model preview results.
               type: array
@@ -1150,6 +1145,7 @@ components:
                 - includedModels
                 - excludedModels
           required:
+            - assetType
             - items
             - summary
         - $ref: "#/components/schemas/BaseResourceList"
@@ -1972,6 +1968,17 @@ components:
         - NAME
         - RECOMMENDED
       type: string
+    PreviewCatalogSourceResponse:
+      description: >-
+        Polymorphic preview response. The `assetType` discriminator determines whether the payload is a model preview or an MCP server preview.
+      oneOf:
+        - $ref: "#/components/schemas/CatalogSourcePreviewResponse"
+        - $ref: "#/components/schemas/AssetSourcePreviewResponse"
+      discriminator:
+        propertyName: assetType
+        mapping:
+          models: "#/components/schemas/CatalogSourcePreviewResponse"
+          mcp_servers: "#/components/schemas/AssetSourcePreviewResponse"
     ServingConfig:
       description: >-
         Serving and deployment configuration for the model. Each property represents a distinct configuration concern with its own typed schema. All properties are optional.
@@ -2014,49 +2021,6 @@ components:
           example:
             - "--config_format granite"
   responses:
-    AssetSourcePreviewResponse:
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/AssetSourcePreviewResponse"
-          examples:
-            allAssets:
-              summary: All MCP servers with inclusion status
-              description: Response showing all MCP servers when filterStatus=all
-              value:
-                nextPageToken: ""
-                pageSize: 10
-                size: 3
-                items:
-                  - name: "kubernetes-mcp"
-                    included: true
-                  - name: "prometheus-mcp"
-                    included: true
-                  - name: "grafana-internal"
-                    included: false
-                summary:
-                  totalAssets: 3
-                  includedAssets: 2
-                  excludedAssets: 1
-            includedOnly:
-              summary: Only included MCP servers
-              description: Response when filterStatus=included
-              value:
-                nextPageToken: ""
-                pageSize: 10
-                size: 2
-                items:
-                  - name: "kubernetes-mcp"
-                    included: true
-                  - name: "prometheus-mcp"
-                    included: true
-                summary:
-                  totalAssets: 3
-                  includedAssets: 2
-                  excludedAssets: 1
-      description: |-
-        A response containing a list of assets (e.g., MCP servers) with their
-        inclusion/exclusion status based on the provided catalog source configuration.
     BadRequest:
       content:
         application/json:
@@ -2093,103 +2057,6 @@ components:
           schema:
             $ref: "#/components/schemas/CatalogSourceList"
       description: A response containing a list of CatalogSource entities.
-    CatalogSourcePreviewResponse:
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/CatalogSourcePreviewResponse"
-          examples:
-            allModels:
-              summary: All models with inclusion status
-              description: Response showing all models when filterStatus=all
-              value:
-                nextPageToken: ""
-                pageSize: 10
-                size: 5
-                items:
-                  - name: "ibm-granite/granite-3.0-8b-instruct"
-                    included: true
-                  - name: "ibm-granite/granite-3.0-2b-instruct"
-                    included: true
-                  - name: "meta-llama/Llama-2-7b-hf"
-                    included: true
-                  - name: "mistralai/Mistral-7B-v0.1-draft"
-                    included: false
-                  - name: "microsoft/phi-2-experimental"
-                    included: false
-                summary:
-                  totalModels: 5
-                  includedModels: 3
-                  excludedModels: 2
-            includedOnly:
-              summary: Only included models
-              description: Response when filterStatus=included
-              value:
-                nextPageToken: ""
-                pageSize: 10
-                size: 3
-                items:
-                  - name: "ibm-granite/granite-3.0-8b-instruct"
-                    included: true
-                  - name: "ibm-granite/granite-3.0-2b-instruct"
-                    included: true
-                  - name: "meta-llama/Llama-2-7b-hf"
-                    included: true
-                summary:
-                  totalModels: 5
-                  includedModels: 3
-                  excludedModels: 2
-            excludedOnly:
-              summary: Only excluded models
-              description: Response when filterStatus=excluded
-              value:
-                nextPageToken: ""
-                pageSize: 10
-                size: 2
-                items:
-                  - name: "mistralai/Mistral-7B-v0.1-draft"
-                    included: false
-                  - name: "microsoft/phi-2-experimental"
-                    included: false
-                summary:
-                  totalModels: 5
-                  includedModels: 3
-                  excludedModels: 2
-            withPagination:
-              summary: Paginated response
-              description: Response with pagination when pageSize is smaller than total
-              value:
-                nextPageToken: "eyJvZmZzZXQiOjEwfQ==" # notsecret
-                pageSize: 10
-                size: 10
-                items:
-                  - name: "ibm-granite/granite-3.0-8b-instruct"
-                    included: true
-                  - name: "ibm-granite/granite-3.0-2b-instruct"
-                    included: true
-                  - name: "meta-llama/Llama-2-7b-hf"
-                    included: true
-                  - name: "meta-llama/Llama-2-13b-hf"
-                    included: true
-                  - name: "mistralai/Mistral-7B-Instruct-v0.3"
-                    included: true
-                  - name: "mistralai/Mistral-7B-v0.1"
-                    included: true
-                  - name: "microsoft/phi-2"
-                    included: true
-                  - name: "google/gemma-7b"
-                    included: true
-                  - name: "mistralai/Mistral-7B-v0.1-draft"
-                    included: false
-                  - name: "microsoft/phi-2-experimental"
-                    included: false
-                summary:
-                  totalModels: 150
-                  includedModels: 85
-                  excludedModels: 65
-      description: |-
-        A response containing a list of models with their inclusion/exclusion
-        status based on the provided catalog source configuration.
     CatalogSourceResponse:
       content:
         application/json:
@@ -2250,6 +2117,127 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
       description: The specified resource was not found
+    PreviewCatalogSourceResponse:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/PreviewCatalogSourceResponse"
+          examples:
+            allModels:
+              summary: All models with inclusion status
+              description: Response showing all models when filterStatus=all
+              value:
+                assetType: models
+                nextPageToken: ""
+                pageSize: 10
+                size: 5
+                items:
+                  - name: "ibm-granite/granite-3.0-8b-instruct"
+                    included: true
+                  - name: "ibm-granite/granite-3.0-2b-instruct"
+                    included: true
+                  - name: "meta-llama/Llama-2-7b-hf"
+                    included: true
+                  - name: "mistralai/Mistral-7B-v0.1-draft"
+                    included: false
+                  - name: "microsoft/phi-2-experimental"
+                    included: false
+                summary:
+                  totalModels: 5
+                  includedModels: 3
+                  excludedModels: 2
+            includedOnly:
+              summary: Only included models
+              description: Response when filterStatus=included
+              value:
+                assetType: models
+                nextPageToken: ""
+                pageSize: 10
+                size: 3
+                items:
+                  - name: "ibm-granite/granite-3.0-8b-instruct"
+                    included: true
+                  - name: "ibm-granite/granite-3.0-2b-instruct"
+                    included: true
+                  - name: "meta-llama/Llama-2-7b-hf"
+                    included: true
+                summary:
+                  totalModels: 5
+                  includedModels: 3
+                  excludedModels: 2
+            excludedOnly:
+              summary: Only excluded models
+              description: Response when filterStatus=excluded
+              value:
+                assetType: models
+                nextPageToken: ""
+                pageSize: 10
+                size: 2
+                items:
+                  - name: "mistralai/Mistral-7B-v0.1-draft"
+                    included: false
+                  - name: "microsoft/phi-2-experimental"
+                    included: false
+                summary:
+                  totalModels: 5
+                  includedModels: 3
+                  excludedModels: 2
+            withPagination:
+              summary: Paginated response
+              description: Response with pagination when pageSize is smaller than total
+              value:
+                assetType: models
+                nextPageToken: "eyJvZmZzZXQiOjEwfQ==" # notsecret
+                pageSize: 10
+                size: 10
+                items:
+                  - name: "ibm-granite/granite-3.0-8b-instruct"
+                    included: true
+                  - name: "ibm-granite/granite-3.0-2b-instruct"
+                    included: true
+                  - name: "meta-llama/Llama-2-7b-hf"
+                    included: true
+                  - name: "meta-llama/Llama-2-13b-hf"
+                    included: true
+                  - name: "mistralai/Mistral-7B-Instruct-v0.3"
+                    included: true
+                  - name: "mistralai/Mistral-7B-v0.1"
+                    included: true
+                  - name: "microsoft/phi-2"
+                    included: true
+                  - name: "google/gemma-7b"
+                    included: true
+                  - name: "mistralai/Mistral-7B-v0.1-draft"
+                    included: false
+                  - name: "microsoft/phi-2-experimental"
+                    included: false
+                summary:
+                  totalModels: 150
+                  includedModels: 85
+                  excludedModels: 65
+            allMCPServers:
+              summary: All MCP servers with inclusion status
+              description: Response showing all MCP servers when assetType=mcp_servers
+              value:
+                assetType: mcp_servers
+                nextPageToken: ""
+                pageSize: 10
+                size: 3
+                items:
+                  - name: "kubernetes-mcp"
+                    included: true
+                  - name: "prometheus-mcp"
+                    included: true
+                  - name: "grafana-internal"
+                    included: false
+                summary:
+                  totalAssets: 3
+                  includedAssets: 2
+                  excludedAssets: 1
+      description: |-
+        A response containing preview results with inclusion/exclusion status.
+        The `assetType` discriminator determines whether the payload contains
+        model previews or MCP server previews.
     ServiceUnavailable:
       content:
         application/json:

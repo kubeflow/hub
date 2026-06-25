@@ -61,6 +61,7 @@ model_metadata_struct_value.go
 model_metadata_value.go
 model_model_preview_result.go
 model_order_by_field.go
+model_preview_catalog_source_response.go
 model_serving_config.go
 model_sort_order.go
 model_tool_calling_config.go

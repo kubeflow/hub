@@ -1547,7 +1547,7 @@ func (r ApiPreviewCatalogSourceRequest) CatalogData(catalogData *os.File) ApiPre
 	return r
 }
 
-func (r ApiPreviewCatalogSourceRequest) Execute() (*CatalogSourcePreviewResponse, *http.Response, error) {
+func (r ApiPreviewCatalogSourceRequest) Execute() (*PreviewCatalogSourceResponse, *http.Response, error) {
 	return r.ApiService.PreviewCatalogSourceExecute(r)
 }
 
@@ -1587,13 +1587,13 @@ func (a *ModelCatalogServiceAPIService) PreviewCatalogSource(ctx context.Context
 
 // Execute executes the request
 //
-//	@return CatalogSourcePreviewResponse
-func (a *ModelCatalogServiceAPIService) PreviewCatalogSourceExecute(r ApiPreviewCatalogSourceRequest) (*CatalogSourcePreviewResponse, *http.Response, error) {
+//	@return PreviewCatalogSourceResponse
+func (a *ModelCatalogServiceAPIService) PreviewCatalogSourceExecute(r ApiPreviewCatalogSourceRequest) (*PreviewCatalogSourceResponse, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPost
 		localVarPostBody    interface{}
 		formFiles           []formFile
-		localVarReturnValue *CatalogSourcePreviewResponse
+		localVarReturnValue *PreviewCatalogSourceResponse
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ModelCatalogServiceAPIService.PreviewCatalogSource")

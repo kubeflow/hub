@@ -88,6 +88,7 @@ func AssertAssetSourcePreviewResponseRequired(obj model.AssetSourcePreviewRespon
 		"nextPageToken": obj.NextPageToken,
 		"pageSize":      obj.PageSize,
 		"size":          obj.Size,
+		"assetType":     obj.AssetType,
 		"items":         obj.Items,
 		"summary":       obj.Summary,
 	}
@@ -420,6 +421,7 @@ func AssertCatalogSourcePreviewResponseRequired(obj model.CatalogSourcePreviewRe
 		"nextPageToken": obj.NextPageToken,
 		"pageSize":      obj.PageSize,
 		"size":          obj.Size,
+		"assetType":     obj.AssetType,
 		"items":         obj.Items,
 		"summary":       obj.Summary,
 	}
