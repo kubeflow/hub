@@ -79,7 +79,7 @@ properties:
 			},
 		},
 		{
-			name: "conflicting patterns",
+			name: "conflicting patterns - logged but not rejected",
 			configYAML: `
 type: yaml
 includedServers:
@@ -87,7 +87,12 @@ includedServers:
 excludedServers:
   - "kubernetes*"
 `,
-			expectError: true,
+			expectError: false,
+			validate: func(t *testing.T, config *MCPPreviewConfig) {
+				assert.Equal(t, "yaml", config.Type)
+				assert.Equal(t, []string{"kubernetes*"}, config.IncludedServers)
+				assert.Equal(t, []string{"kubernetes*"}, config.ExcludedServers)
+			},
 		},
 		{
 			name: "empty pattern",
