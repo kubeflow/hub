@@ -69,23 +69,30 @@ paths:
     description: >-
       The REST endpoint/path used to preview a catalog source configuration.
       This endpoint accepts a catalog source definition and returns a list of
-      models with their inclusion/exclusion status based on the configured filters.
+      assets (models or MCP servers) with their inclusion/exclusion status based
+      on the configured filters.
     post:
       summary: Preview catalog source configuration
       description: |-
-        Accepts a catalog source configuration and returns a list of models showing
+        Accepts a catalog source configuration and returns a list of assets showing
         which would be included or excluded based on the configured filters. This allows
         users to test and validate their source configurations before applying them.
+
+        The response type varies based on the `assetType` field in the uploaded config:
+        - `models` (default): Returns a `CatalogSourcePreviewResponse` with `ModelPreviewResult` items
+          and model-specific summary fields (`totalModels`, `includedModels`, `excludedModels`).
+        - `mcp_servers`: Returns an `AssetSourcePreviewResponse` with `AssetPreviewResult` items
+          and generic summary fields (`totalAssets`, `includedAssets`, `excludedAssets`).
 
         **Two modes of operation:**
 
         1. **Stateless mode (recommended for new sources):** Upload both `config` and
-           `catalogData` files via multipart form. The models are read directly from
+           `catalogData` files via multipart form. The assets are read directly from
            the uploaded `catalogData`, enabling preview of new sources before saving
            anything to the server. This is ideal for testing configurations.
 
         2. **Path mode (for existing sources):** Upload only `config` with a `yamlCatalogPath`
-           property. The models are read from the specified file path on the server.
+           property. The assets are read from the specified file path on the server.
            Use this for previewing changes to existing saved sources.
       tags:
         - ModelCatalogService
@@ -103,17 +110,29 @@ paths:
                   format: binary
                   description: |-
                     YAML file containing the catalog source configuration.
-                    The file should contain a source definition with type and properties
-                    fields, including optional includedModels and excludedModels filters.
+                    The file should contain a source definition with `type` and `properties`
+                    fields, and an optional `assetType` field to specify the kind of assets
+                    being previewed (defaults to `models`).
 
-                    Model filter patterns support the `*` wildcard only and are case-insensitive.
-                    Patterns match the entire model name (e.g., `ibm-granite/*` matches all
-                    models starting with "ibm-granite/").
+                    **For model sources** (`assetType: models` or omitted):
+                    Use `includedModels` and `excludedModels` filter patterns.
+
+                    **For MCP server sources** (`assetType: mcp_servers`):
+                    Use `includedServers` and `excludedServers` filter patterns.
+
+                    Filter patterns support the `*` wildcard only and are case-insensitive.
+                    Patterns match the entire asset name (e.g., `ibm-granite/*` matches all
+                    models starting with "ibm-granite/", `kubernetes*` matches all servers
+                    starting with "kubernetes").
                 catalogData:
                   type: string
                   format: binary
                   description: |-
-                    Optional YAML file containing the catalog data (models).
+                    Optional YAML file containing the catalog data.
+
+                    For model sources, the file should contain a `models:` key with a list
+                    of model entries. For MCP server sources, the file should contain an
+                    `mcp_servers:` key with a list of server entries.
 
                     This field enables stateless preview of new sources before saving them.
                     When provided, the catalog data is read directly from this file instead of
@@ -121,7 +140,7 @@ paths:
 
                     **Two modes of operation:**
                     1. **Stateless mode (recommended for new sources):** Upload both `config` and
-                       `catalogData` files. The models are read from `catalogData`, allowing preview
+                       `catalogData` files. The assets are read from `catalogData`, allowing preview
                        without saving anything to the server.
                     2. **Path mode (for existing sources):** Upload only `config` with a `yamlCatalogPath`
                        property pointing to a catalog file on the server filesystem.
@@ -183,15 +202,30 @@ paths:
                   properties:
                     apiKey: "your-huggingface-api-key-here" # notsecret
                     modelLimit: 100
+              mcpStatelessPreview:
+                summary: Stateless MCP server preview
+                description: |-
+                  Preview an MCP server source configuration with uploaded catalog data.
+                  Set assetType to mcp_servers and use includedServers/excludedServers filters.
+                  Upload this as the `config` field. The `catalogData` field should contain
+                  a separate YAML file with `mcp_servers:` entries.
+                value: |
+                  assetType: mcp_servers
+                  type: yaml
+                  includedServers:
+                    - "kubernetes*"
+                    - "prometheus*"
+                  excludedServers:
+                    - "*-internal"
       parameters:
         - $ref: "#/components/parameters/pageSize"
         - $ref: "#/components/parameters/nextPageToken"
         - name: filterStatus
           description: |-
-            Filter the response to show specific model statuses:
-            - `all` (default): Show all models regardless of inclusion status
-            - `included`: Show only models that pass the configured filters
-            - `excluded`: Show only models that are filtered out
+            Filter the response to show specific asset statuses:
+            - `all` (default): Show all assets regardless of inclusion status
+            - `included`: Show only assets that pass the configured filters
+            - `excluded`: Show only assets that are filtered out
           schema:
             type: string
             enum:
@@ -203,7 +237,21 @@ paths:
           required: false
       responses:
         "200":
-          $ref: "#/components/responses/CatalogSourcePreviewResponse"
+          description: |-
+            Preview results for the catalog source configuration.
+
+            **Polymorphic response:** The response schema depends on the `assetType`
+            field in the uploaded config:
+            - `models` (default): Returns a `CatalogSourcePreviewResponse` with
+              `ModelPreviewResult` items and model-specific summary fields.
+            - `mcp_servers`: Returns an `AssetSourcePreviewResponse` with
+              `AssetPreviewResult` items and generic summary fields.
+
+            See the `AssetSourcePreviewResponse` schema for the MCP response shape.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CatalogSourcePreviewResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -417,6 +465,56 @@ components:
         included:
           type: boolean
           description: Whether this model would be included based on the source configuration
+    AssetPreviewResult:
+      description: |-
+        An asset (e.g., MCP server) with its inclusion/exclusion status based on the
+        configured catalog source filters.
+      type: object
+      required:
+        - name
+        - included
+      properties:
+        name:
+          type: string
+          description: Name of the asset
+          example: prometheus-mcp
+        included:
+          type: boolean
+          description: Whether this asset would be included based on the source configuration
+    AssetSourcePreviewResponse:
+      description: Response containing assets and their inclusion/exclusion status.
+      allOf:
+        - type: object
+          properties:
+            items:
+              description: Array of asset preview results.
+              type: array
+              items:
+                $ref: "#/components/schemas/AssetPreviewResult"
+            summary:
+              description: Summary of the preview results
+              type: object
+              properties:
+                totalAssets:
+                  type: integer
+                  description: Total number of assets evaluated
+                  example: 25
+                includedAssets:
+                  type: integer
+                  description: Number of assets that would be included
+                  example: 18
+                excludedAssets:
+                  type: integer
+                  description: Number of assets that would be excluded
+                  example: 7
+              required:
+                - totalAssets
+                - includedAssets
+                - excludedAssets
+          required:
+            - items
+            - summary
+        - $ref: "#/components/schemas/BaseResourceList"
     FilterOption:
       type: object
       required:
@@ -606,6 +704,49 @@ components:
       description: |-
         A response containing a list of models with their inclusion/exclusion
         status based on the provided catalog source configuration.
+    AssetSourcePreviewResponse:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AssetSourcePreviewResponse"
+          examples:
+            allAssets:
+              summary: All MCP servers with inclusion status
+              description: Response showing all MCP servers when filterStatus=all
+              value:
+                nextPageToken: ""
+                pageSize: 10
+                size: 3
+                items:
+                  - name: "kubernetes-mcp"
+                    included: true
+                  - name: "prometheus-mcp"
+                    included: true
+                  - name: "grafana-internal"
+                    included: false
+                summary:
+                  totalAssets: 3
+                  includedAssets: 2
+                  excludedAssets: 1
+            includedOnly:
+              summary: Only included MCP servers
+              description: Response when filterStatus=included
+              value:
+                nextPageToken: ""
+                pageSize: 10
+                size: 2
+                items:
+                  - name: "kubernetes-mcp"
+                    included: true
+                  - name: "prometheus-mcp"
+                    included: true
+                summary:
+                  totalAssets: 3
+                  includedAssets: 2
+                  excludedAssets: 1
+      description: |-
+        A response containing a list of assets (e.g., MCP servers) with their
+        inclusion/exclusion status based on the provided catalog source configuration.
 
   parameters:
     filterQuery:

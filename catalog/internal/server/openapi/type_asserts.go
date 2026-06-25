@@ -28,6 +28,86 @@ func AssertArtifactTypeQueryParamRequired(obj model.ArtifactTypeQueryParam) erro
 	return nil
 }
 
+// AssertAssetPreviewResultConstraints checks if the values respects the defined constraints
+func AssertAssetPreviewResultConstraints(obj model.AssetPreviewResult) error {
+	return nil
+}
+
+// AssertAssetPreviewResultRequired checks if the required fields are not zero-ed
+func AssertAssetPreviewResultRequired(obj model.AssetPreviewResult) error {
+	elements := map[string]interface{}{
+		"name":     obj.Name,
+		"included": obj.Included,
+	}
+	for name, el := range elements {
+		if isZero := IsZeroValue(el); isZero {
+			return &RequiredError{Field: name}
+		}
+	}
+
+	return nil
+}
+
+// AssertAssetSourcePreviewResponseAllOfSummaryConstraints checks if the values respects the defined constraints
+func AssertAssetSourcePreviewResponseAllOfSummaryConstraints(obj model.AssetSourcePreviewResponseAllOfSummary) error {
+	return nil
+}
+
+// AssertAssetSourcePreviewResponseAllOfSummaryRequired checks if the required fields are not zero-ed
+func AssertAssetSourcePreviewResponseAllOfSummaryRequired(obj model.AssetSourcePreviewResponseAllOfSummary) error {
+	elements := map[string]interface{}{
+		"totalAssets":    obj.TotalAssets,
+		"includedAssets": obj.IncludedAssets,
+		"excludedAssets": obj.ExcludedAssets,
+	}
+	for name, el := range elements {
+		if isZero := IsZeroValue(el); isZero {
+			return &RequiredError{Field: name}
+		}
+	}
+
+	return nil
+}
+
+// AssertAssetSourcePreviewResponseConstraints checks if the values respects the defined constraints
+func AssertAssetSourcePreviewResponseConstraints(obj model.AssetSourcePreviewResponse) error {
+	for _, el := range obj.Items {
+		if err := AssertAssetPreviewResultConstraints(el); err != nil {
+			return err
+		}
+	}
+	if err := AssertAssetSourcePreviewResponseAllOfSummaryConstraints(obj.Summary); err != nil {
+		return err
+	}
+	return nil
+}
+
+// AssertAssetSourcePreviewResponseRequired checks if the required fields are not zero-ed
+func AssertAssetSourcePreviewResponseRequired(obj model.AssetSourcePreviewResponse) error {
+	elements := map[string]interface{}{
+		"nextPageToken": obj.NextPageToken,
+		"pageSize":      obj.PageSize,
+		"size":          obj.Size,
+		"items":         obj.Items,
+		"summary":       obj.Summary,
+	}
+	for name, el := range elements {
+		if isZero := IsZeroValue(el); isZero {
+			return &RequiredError{Field: name}
+		}
+	}
+
+	for _, el := range obj.Items {
+		if err := AssertAssetPreviewResultRequired(el); err != nil {
+			return err
+		}
+	}
+	if err := AssertAssetSourcePreviewResponseAllOfSummaryRequired(obj.Summary); err != nil {
+		return err
+	}
+	return nil
+}
+
 // AssertBaseModelConstraints checks if the values respects the defined constraints
 func AssertBaseModelConstraints(obj model.BaseModel) error {
 	return nil

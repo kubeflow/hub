@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -2139,6 +2140,218 @@ func TestFindModelsRecommendedRejectsNonNumericToken(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, resp.Code)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid nextPageToken")
+}
+
+func writeTempYAML(t *testing.T, prefix, content string) *os.File {
+	t.Helper()
+	f, err := os.CreateTemp(t.TempDir(), prefix+"-*.yaml")
+	require.NoError(t, err)
+	_, err = f.WriteString(content)
+	require.NoError(t, err)
+	require.NoError(t, f.Sync())
+	return f
+}
+
+func TestPreviewCatalogSourceAssetTypeRouting(t *testing.T) {
+	service := newTestServiceWithSources(map[string]*model.CatalogModel{})
+
+	mcpCatalogData := `
+mcp_servers:
+  - name: kubernetes-mcp
+    description: "Kubernetes server"
+  - name: prometheus-mcp
+    description: "Prometheus server"
+  - name: vault-internal
+    description: "Vault internal"
+`
+
+	modelCatalogData := `
+models:
+  - name: "ibm-granite/granite-3b"
+    description: "Granite 3B"
+  - name: "meta-llama/llama-2-7b"
+    description: "Llama 2 7B"
+`
+
+	tests := []struct {
+		name               string
+		config             string
+		catalogData        string
+		filterStatus       string
+		expectedStatus     int
+		expectModelResp    bool
+		expectedTotalItems int
+	}{
+		{
+			name: "missing assetType defaults to model preview",
+			config: `
+type: yaml
+includedModels:
+  - "*"
+`,
+			catalogData:        modelCatalogData,
+			expectedStatus:     http.StatusOK,
+			expectModelResp:    true,
+			expectedTotalItems: 2,
+		},
+		{
+			name: "explicit assetType models routes to model preview",
+			config: `
+assetType: models
+type: yaml
+`,
+			catalogData:        modelCatalogData,
+			expectedStatus:     http.StatusOK,
+			expectModelResp:    true,
+			expectedTotalItems: 2,
+		},
+		{
+			name: "assetType mcp_servers routes to MCP preview",
+			config: `
+assetType: mcp_servers
+type: yaml
+includedServers:
+  - "kubernetes*"
+`,
+			catalogData:        mcpCatalogData,
+			expectedStatus:     http.StatusOK,
+			expectModelResp:    false,
+			expectedTotalItems: 3,
+		},
+		{
+			name: "unknown assetType falls through to model preview",
+			config: `
+assetType: agents
+type: yaml
+`,
+			catalogData:        modelCatalogData,
+			expectedStatus:     http.StatusOK,
+			expectModelResp:    true,
+			expectedTotalItems: 2,
+		},
+		{
+			name: "MCP preview with filterStatus included",
+			config: `
+assetType: mcp_servers
+type: yaml
+includedServers:
+  - "*-mcp"
+`,
+			catalogData:        mcpCatalogData,
+			filterStatus:       "included",
+			expectedStatus:     http.StatusOK,
+			expectModelResp:    false,
+			expectedTotalItems: 2,
+		},
+		{
+			name: "MCP preview with filterStatus excluded",
+			config: `
+assetType: mcp_servers
+type: yaml
+includedServers:
+  - "*-mcp"
+`,
+			catalogData:        mcpCatalogData,
+			filterStatus:       "excluded",
+			expectedStatus:     http.StatusOK,
+			expectModelResp:    false,
+			expectedTotalItems: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			configFile := writeTempYAML(t, "config", tt.config)
+			var catalogDataFile *os.File
+			if tt.catalogData != "" {
+				catalogDataFile = writeTempYAML(t, "catalogdata", tt.catalogData)
+			}
+
+			resp, err := service.PreviewCatalogSource(
+				context.Background(),
+				configFile,
+				"100",
+				"",
+				tt.filterStatus,
+				catalogDataFile,
+			)
+
+			if tt.expectedStatus != http.StatusOK {
+				assert.Equal(t, tt.expectedStatus, resp.Code)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, http.StatusOK, resp.Code)
+			require.NotNil(t, resp.Body)
+
+			if tt.expectModelResp {
+				modelResp, ok := resp.Body.(model.CatalogSourcePreviewResponse)
+				require.True(t, ok, "expected CatalogSourcePreviewResponse, got %T", resp.Body)
+				assert.Len(t, modelResp.Items, tt.expectedTotalItems)
+			} else {
+				assetResp, ok := resp.Body.(model.AssetSourcePreviewResponse)
+				require.True(t, ok, "expected AssetSourcePreviewResponse, got %T", resp.Body)
+				assert.Len(t, assetResp.Items, tt.expectedTotalItems)
+			}
+		})
+	}
+}
+
+func TestPreviewCatalogSourceMCPSummary(t *testing.T) {
+	service := newTestServiceWithSources(map[string]*model.CatalogModel{})
+
+	configFile := writeTempYAML(t, "config", `
+assetType: mcp_servers
+type: yaml
+includedServers:
+  - "*-mcp"
+`)
+	catalogDataFile := writeTempYAML(t, "catalogdata", `
+mcp_servers:
+  - name: kubernetes-mcp
+    description: "Kubernetes"
+  - name: prometheus-mcp
+    description: "Prometheus"
+  - name: vault-internal
+    description: "Vault"
+`)
+
+	resp, err := service.PreviewCatalogSource(
+		context.Background(),
+		configFile,
+		"100",
+		"",
+		"",
+		catalogDataFile,
+	)
+
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.Code)
+
+	assetResp, ok := resp.Body.(model.AssetSourcePreviewResponse)
+	require.True(t, ok)
+
+	assert.Equal(t, int32(3), assetResp.Summary.TotalAssets)
+	assert.Equal(t, int32(2), assetResp.Summary.IncludedAssets)
+	assert.Equal(t, int32(1), assetResp.Summary.ExcludedAssets)
+	assert.Len(t, assetResp.Items, 3)
+}
+
+func TestPreviewCatalogSourceNilConfig(t *testing.T) {
+	service := newTestServiceWithSources(map[string]*model.CatalogModel{})
+
+	resp, err := service.PreviewCatalogSource(
+		context.Background(),
+		nil,
+		"10",
+		"",
+		"",
+		nil,
+	)
+
+	assert.Equal(t, http.StatusBadRequest, resp.Code)
+	assert.Error(t, err)
 }
 
 func TestFindModelsRecommendedRejectsOverflowToken(t *testing.T) {

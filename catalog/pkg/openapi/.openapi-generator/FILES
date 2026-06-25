@@ -3,6 +3,9 @@ api_model_catalog_service.go
 client.go
 configuration.go
 model_artifact_type_query_param.go
+model_asset_preview_result.go
+model_asset_source_preview_response.go
+model_asset_source_preview_response_all_of_summary.go
 model_base_model.go
 model_base_resource.go
 model_base_resource_dates.go

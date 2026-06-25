@@ -43,3 +43,11 @@ func (m ModelPreviewResult) SortValue(field OrderByField) string {
 	}
 	return ""
 }
+
+func (a AssetPreviewResult) SortValue(field OrderByField) string {
+	switch field {
+	case ORDERBYFIELD_ID, ORDERBYFIELD_NAME:
+		return a.Name
+	}
+	return ""
+}

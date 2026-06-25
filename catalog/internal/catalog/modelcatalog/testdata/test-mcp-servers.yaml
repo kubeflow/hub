@@ -1,0 +1,87 @@
+mcp_servers:
+  - name: kubernetes-mcp
+    description: "Kubernetes cluster management MCP server"
+    provider: "CNCF"
+    version: "1.0.0"
+    deploymentMode: remote
+    transports:
+      - http
+    tools:
+      - name: list_pods
+        description: "List pods in a namespace"
+        accessType: read_only
+      - name: scale_deployment
+        description: "Scale a deployment"
+        accessType: read_write
+
+  - name: kubernetes-admin-mcp
+    description: "Kubernetes admin operations MCP server"
+    provider: "CNCF"
+    version: "0.9.0"
+    deploymentMode: remote
+    transports:
+      - http
+    tools:
+      - name: create_namespace
+        description: "Create a new namespace"
+        accessType: read_write
+
+  - name: prometheus-mcp
+    description: "Prometheus metrics query MCP server"
+    provider: "CNCF"
+    version: "2.1.0"
+    deploymentMode: remote
+    transports:
+      - sse
+    tools:
+      - name: query_metrics
+        description: "Execute PromQL query"
+        accessType: read_only
+
+  - name: grafana-internal
+    description: "Internal Grafana dashboard management"
+    provider: "Grafana Labs"
+    version: "1.5.0"
+    deploymentMode: remote
+    transports:
+      - http
+
+  - name: vault-mcp
+    description: "HashiCorp Vault secrets management"
+    provider: "HashiCorp"
+    version: "1.0.0"
+    deploymentMode: remote
+    transports:
+      - http
+    tools:
+      - name: read_secret
+        description: "Read a secret from Vault"
+        accessType: read_only
+
+  - name: jira-mcp
+    description: "Atlassian Jira integration MCP server"
+    provider: "Atlassian"
+    version: "2.0.0"
+    deploymentMode: remote
+    transports:
+      - http
+      - sse
+    tools:
+      - name: search_issues
+        description: "Search Jira issues"
+        accessType: read_only
+      - name: create_issue
+        description: "Create a Jira issue"
+        accessType: read_write
+
+  - name: slack-internal
+    description: "Internal Slack messaging MCP server"
+    provider: "Slack"
+    version: "1.3.0"
+    deploymentMode: remote
+    transports:
+      - sse
+    tools:
+      - name: send_message
+        description: "Send a Slack message"
+        accessType: read_write

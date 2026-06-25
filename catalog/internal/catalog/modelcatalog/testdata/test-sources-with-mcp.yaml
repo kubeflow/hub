@@ -1,0 +1,15 @@
+model_catalogs:
+  - name: "Test Models"
+    id: test-models
+    type: yaml
+    enabled: true
+    properties:
+      yamlCatalogPath: test-yaml-catalog.yaml
+
+mcp_catalogs:
+  - name: "Test MCP Servers"
+    id: test-mcp-servers
+    type: yaml
+    enabled: true
+    properties:
+      yamlCatalogPath: test-mcp-servers.yaml
