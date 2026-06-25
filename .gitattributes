@@ -140,6 +140,7 @@ catalog/pkg/openapi/model_metadata_struct_value.go linguist-generated=true
 catalog/pkg/openapi/model_metadata_value.go linguist-generated=true
 catalog/pkg/openapi/model_model_preview_result.go linguist-generated=true
 catalog/pkg/openapi/model_order_by_field.go linguist-generated=true
+catalog/pkg/openapi/model_preview_catalog_source_response.go linguist-generated=true
 catalog/pkg/openapi/model_serving_config.go linguist-generated=true
 catalog/pkg/openapi/model_sort_order.go linguist-generated=true
 catalog/pkg/openapi/model_tool_calling_config.go linguist-generated=true
