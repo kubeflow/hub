@@ -11,10 +11,20 @@ import (
 
 	"cirello.io/pglock"
 	"github.com/golang/glog"
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 )
 
 const defaultUnhealthyThreshold int32 = 3
+
+// isFatalError reports whether err indicates a lost pglock schema (SQLSTATE 42P01,
+// "undefined table/sequence"). When resetFunc is available, the run loop attempts
+// in-process recovery; otherwise the process exits so Kubernetes can restart it
+// and recreate the schema via TryCreateTable.
+func isFatalError(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "42P01"
+}
 
 // lockHandle represents a held distributed lock.
 type lockHandle interface {
@@ -114,6 +124,13 @@ type LeaderElector struct {
 
 	// retryBackoff overrides the default backoff for testing. nil = use defaults.
 	retryBackoff *backoff
+
+	// resetFunc recreates the lock client after a 42P01 schema-loss error.
+	// When non-nil, the run loop calls it instead of exiting, allowing
+	// in-process recovery without a pod restart. When nil, the fatal exit
+	// path is used (backwards-compatible default for tests that construct
+	// LeaderElector directly).
+	resetFunc func() (lockClient, error)
 }
 
 // NewLeaderElector creates a new LeaderElector instance.
@@ -165,6 +182,20 @@ func NewLeaderElector(
 		locker:             &pglockAdapter{client: client},
 		done:               make(chan struct{}),
 		unhealthyThreshold: defaultUnhealthyThreshold,
+		resetFunc: func() (lockClient, error) {
+			c, err := pglock.UnsafeNew(
+				db,
+				pglock.WithLeaseDuration(lockDuration),
+				pglock.WithHeartbeatFrequency(heartbeatFreq),
+			)
+			if err != nil {
+				return nil, fmt.Errorf("failed to recreate pglock client: %w", err)
+			}
+			if err := c.TryCreateTable(); err != nil {
+				return nil, fmt.Errorf("failed to recreate pglock schema: %w", err)
+			}
+			return &pglockAdapter{client: c}, nil
+		},
 	}
 	// dbReachable starts false (zero value) — pod is not ready until first
 	// successful DB contact. No need to hack the failure counter.
@@ -282,6 +313,26 @@ func (e *LeaderElector) run() {
 				backoff.reset()
 				delay = backoff.next()
 				glog.Infof("Lock held by another instance, retrying in %v", delay)
+			} else if isFatalError(err) {
+				if e.resetFunc == nil {
+					// No recovery path — exit so the pod restarts and recreates the schema.
+					glog.Errorf("Fatal leader election error (schema lost): %v — exiting for pod restart", err)
+					e.err = fmt.Errorf("fatal leader election error: %w", err)
+					return
+				}
+				glog.Warningf("Schema lost (pglock table missing): %v — attempting in-process recovery", err)
+				e.consecutiveFailures.Add(1)
+				newLocker, resetErr := e.resetFunc()
+				if resetErr != nil {
+					glog.Errorf("Unable to recreate pglock schema: %v — exiting for pod restart", resetErr)
+					e.err = fmt.Errorf("fatal leader election error: %w (recovery failed: %v)", err, resetErr)
+					return
+				}
+				e.locker = newLocker
+				e.consecutiveFailures.Store(0)
+				glog.Info("pglock schema recreated successfully, resuming leader election")
+				backoff.reset()
+				delay = backoff.next()
 			} else {
 				failures := e.consecutiveFailures.Add(1)
 				delay = backoff.next()
