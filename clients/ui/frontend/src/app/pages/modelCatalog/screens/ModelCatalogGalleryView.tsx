@@ -29,6 +29,7 @@ import {
   BASIC_FILTER_KEYS,
   PERFORMANCE_FILTER_KEYS,
   RESET_ALL_FILTERS_LABEL,
+  SortField,
 } from '~/concepts/modelCatalog/const';
 
 type ModelCatalogPageProps = {
@@ -91,7 +92,7 @@ const ModelCatalogGalleryView: React.FC<ModelCatalogPageProps> = ({
     return {
       targetRPS,
       latencyProperty,
-      recommendations: true,
+      orderBy: SortField.RECOMMENDED,
     };
   }, [performanceViewEnabled, filters, activeLatencyField]);
 

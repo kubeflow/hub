@@ -23,6 +23,9 @@ import {
   UseCaseOptionValue,
   CatalogModelCustomPropertyKey,
   ModelType,
+  ModelCatalogSortOption,
+  SortField,
+  SortOrder,
 } from '~/concepts/modelCatalog/const';
 import { CatalogSourceStatus } from '~/concepts/modelCatalogSettings/const';
 import {
@@ -42,6 +45,8 @@ import {
   getCatalogModelTypePropertyForRegistration,
   hasValidatedToolCalling,
   getToolCallingArgs,
+  getSortParams,
+  getEffectiveSortBy,
 } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
 import { mockCatalogModelArtifact } from '~/__mocks__/mockCatalogModelArtifactList';
 import { ModelRegistryMetadataType } from '~/app/types';
@@ -1912,5 +1917,76 @@ describe('getToolCallingArgs', () => {
       toolCallParser: 'mistral',
     });
     expect(result).toBe('--tool-call-parser mistral');
+  });
+});
+
+describe('getEffectiveSortBy', () => {
+  it('returns the provided sortBy when not null', () => {
+    expect(getEffectiveSortBy(ModelCatalogSortOption.LOWEST_LATENCY, false)).toBe(
+      ModelCatalogSortOption.LOWEST_LATENCY,
+    );
+    expect(getEffectiveSortBy(ModelCatalogSortOption.RECENT_PUBLISH, true)).toBe(
+      ModelCatalogSortOption.RECENT_PUBLISH,
+    );
+  });
+
+  it('defaults to LOWEST_LATENCY when sortBy is null and performance view is enabled', () => {
+    expect(getEffectiveSortBy(null, true)).toBe(ModelCatalogSortOption.LOWEST_LATENCY);
+  });
+
+  it('defaults to RECENT_PUBLISH when sortBy is null and performance view is disabled', () => {
+    expect(getEffectiveSortBy(null, false)).toBe(ModelCatalogSortOption.RECENT_PUBLISH);
+  });
+});
+
+describe('getSortParams', () => {
+  it('returns LAST_UPDATE_TIME DESC for RECENT_PUBLISH sort', () => {
+    const result = getSortParams(ModelCatalogSortOption.RECENT_PUBLISH, false, undefined);
+    expect(result).toEqual({
+      orderBy: SortField.LAST_UPDATE_TIME,
+      sortOrder: SortOrder.DESC,
+    });
+  });
+
+  it('returns LAST_UPDATE_TIME DESC when performance view is disabled and sortBy is null', () => {
+    const result = getSortParams(null, false, undefined);
+    expect(result).toEqual({
+      orderBy: SortField.LAST_UPDATE_TIME,
+      sortOrder: SortOrder.DESC,
+    });
+  });
+
+  it('returns active latency field ASC for LOWEST_LATENCY with an active latency field', () => {
+    const latencyField = 'artifacts.ttft_mean.double_value' as const;
+    const result = getSortParams(ModelCatalogSortOption.LOWEST_LATENCY, true, latencyField);
+    expect(result).toEqual({
+      orderBy: latencyField,
+      sortOrder: SortOrder.ASC,
+    });
+  });
+
+  it('falls back to LAST_UPDATE_TIME DESC for LOWEST_LATENCY without an active latency field', () => {
+    const result = getSortParams(ModelCatalogSortOption.LOWEST_LATENCY, true, undefined);
+    expect(result).toEqual({
+      orderBy: SortField.LAST_UPDATE_TIME,
+      sortOrder: SortOrder.DESC,
+    });
+  });
+
+  it('returns COLD_START_LOAD_TIME ASC for LOWEST_COLD_START sort', () => {
+    const result = getSortParams(ModelCatalogSortOption.LOWEST_COLD_START, true, undefined);
+    expect(result).toEqual({
+      orderBy: ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME,
+      sortOrder: SortOrder.ASC,
+    });
+  });
+
+  it('uses default performance sort when sortBy is null and performance view is enabled', () => {
+    const latencyField = 'artifacts.e2e_mean.double_value' as const;
+    const result = getSortParams(null, true, latencyField);
+    expect(result).toEqual({
+      orderBy: latencyField,
+      sortOrder: SortOrder.ASC,
+    });
   });
 });

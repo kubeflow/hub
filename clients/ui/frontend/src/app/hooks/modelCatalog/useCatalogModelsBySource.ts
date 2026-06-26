@@ -39,7 +39,7 @@ export const useCatalogModelsBySources = (
   performanceParams?: {
     targetRPS?: number;
     latencyProperty?: string;
-    recommendations?: boolean;
+    orderBy?: string;
   },
 ): ModelList => {
   const { api, apiAvailable } = useModelCatalogAPI();

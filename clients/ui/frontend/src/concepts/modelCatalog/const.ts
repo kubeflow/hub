@@ -638,6 +638,7 @@ export enum SortOrder {
 
 export enum SortField {
   LAST_UPDATE_TIME = 'LAST_UPDATE_TIME',
+  RECOMMENDED = 'RECOMMENDED',
 }
 
 export const RESET_ALL_FILTERS_LABEL = 'Reset all filters';
