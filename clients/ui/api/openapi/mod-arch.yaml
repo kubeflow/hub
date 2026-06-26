@@ -879,6 +879,40 @@ paths:
           $ref: "#/components/responses/InternalServerError"
       operationId: getAllModelArtifacts
 
+  /api/v1/model_catalog/sources/{sourceId}/security_artifacts/{CatalogModelName+}:
+    description: >-
+      The REST endpoint/path used to list security evaluation artifacts for a catalog model.
+    get:
+      summary: List CatalogModelSecurityArtifacts.
+      tags:
+        - ModelCatalogService
+      parameters:
+        - $ref: "#/components/parameters/kubeflowUserId"
+        - name: sourceId
+          description: A unique identifier for a `CatalogSource`.
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: CatalogModelName+
+          description: A unique identifier for the model.
+          schema:
+            type: string
+          in: path
+          required: true
+        - $ref: "#/components/parameters/pageSize"
+        - $ref: "#/components/parameters/nextPageToken"
+      responses:
+        "200":
+          $ref: "#/components/responses/CatalogModelArtifactListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      operationId: getSecurityArtifacts
+
   /api/v1/model_catalog/sources/{sourceId}/performance_artifacts/{CatalogModelName+}:
     description: >-
       The REST endpoint/path used to list `CatalogModelPerformanceArtifacts`.
@@ -2411,6 +2445,21 @@ components:
             - artifactType
             - metricsType
           properties:
+            id:
+              format: int64
+              description: The unique server generated id of the resource.
+              type: string
+            name:
+              description: |-
+                The client provided name of the artifact. This field is optional. If set,
+                it must be unique among all the artifacts of the same artifact type within
+                a database instance and cannot be changed once set.
+              type: string
+            externalId:
+              description: |-
+                The external id that come from the clients' system. This field is optional.
+                If set, it must be unique among all resources within a database instance.
+              type: string
             artifactType:
               type: string
               default: metrics-artifact

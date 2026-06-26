@@ -1797,6 +1797,9 @@ func securityMetricsCustomProperties(id, benchmark, description, evaluation, pro
 func GetCatalogSecurityMetricsArtifactMock() []models.CatalogArtifact {
 	return []models.CatalogArtifact{
 		{
+			ID:                       stringToPointer("259211"),
+			Name:                     stringToPointer("security-a1b2c3d4-1001-4000-a000-000000000001"),
+			ExternalID:               stringToPointer("a1b2c3d4-1001-4000-a000-000000000001"),
 			ArtifactType:             *stringToPointer("metrics-artifact"),
 			MetricsType:              stringToPointer("security-metrics"),
 			CreateTimeSinceEpoch:     stringToPointer("1693526400000"),
@@ -1804,6 +1807,9 @@ func GetCatalogSecurityMetricsArtifactMock() []models.CatalogArtifact {
 			CustomProperties:         securityMetricsCustomProperties("a1b2c3d4-1001-4000-a000-000000000001", "intents", "Risk assessment with a context-aware custom intent typology and probes of increasing complexity. Runs as an AI Pipeline and requires a Data Science Pipelines setup.", "Context-aware vulnerability scan (Pipeline)", "garak-kfp", "attack_success_rate", "repo1/granite-8b-code-instruct", true, 0.12, 0.3),
 		},
 		{
+			ID:                       stringToPointer("259212"),
+			Name:                     stringToPointer("security-a1b2c3d4-1001-4000-a000-000000000002"),
+			ExternalID:               stringToPointer("a1b2c3d4-1001-4000-a000-000000000002"),
 			ArtifactType:             *stringToPointer("metrics-artifact"),
 			MetricsType:              stringToPointer("security-metrics"),
 			CreateTimeSinceEpoch:     stringToPointer("1693526400000"),
@@ -1811,6 +1817,9 @@ func GetCatalogSecurityMetricsArtifactMock() []models.CatalogArtifact {
 			CustomProperties:         securityMetricsCustomProperties("a1b2c3d4-1001-4000-a000-000000000002", "intents", "Risk assessment with a context-aware custom intent typology and probes of increasing complexity. Standalone execution without pipeline dependencies.", "Context-aware vulnerability scan (Standalone)", "garak-standalone", "attack_success_rate", "repo1/granite-8b-code-instruct", false, 0.65, 0.3),
 		},
 		{
+			ID:                       stringToPointer("259213"),
+			Name:                     stringToPointer("security-a1b2c3d4-1001-4000-a000-000000000003"),
+			ExternalID:               stringToPointer("a1b2c3d4-1001-4000-a000-000000000003"),
 			ArtifactType:             *stringToPointer("metrics-artifact"),
 			MetricsType:              stringToPointer("security-metrics"),
 			CreateTimeSinceEpoch:     stringToPointer("1695200000000"),
@@ -1818,6 +1827,9 @@ func GetCatalogSecurityMetricsArtifactMock() []models.CatalogArtifact {
 			CustomProperties:         securityMetricsCustomProperties("a1b2c3d4-1001-4000-a000-000000000003", "prompt-injection", "Evaluates model robustness against prompt injection attacks using adversarial input patterns.", "Prompt injection robustness test", "garak-standalone", "injection_success_rate", "repo1/granite-8b-code-instruct", true, 0.05, 0.1),
 		},
 		{
+			ID:                       stringToPointer("259214"),
+			Name:                     stringToPointer("security-a1b2c3d4-1001-4000-a000-000000000004"),
+			ExternalID:               stringToPointer("a1b2c3d4-1001-4000-a000-000000000004"),
 			ArtifactType:             *stringToPointer("metrics-artifact"),
 			MetricsType:              stringToPointer("security-metrics"),
 			CreateTimeSinceEpoch:     stringToPointer("1696300000000"),
@@ -1825,6 +1837,9 @@ func GetCatalogSecurityMetricsArtifactMock() []models.CatalogArtifact {
 			CustomProperties:         securityMetricsCustomProperties("a1b2c3d4-1001-4000-a000-000000000004", "toxicity", "Scans model outputs for toxic, harmful, or offensive content across domain-specific scenarios.", "Domain-specific toxicity scan", "garak-kfp", "toxicity_rate", "repo1/granite-8b-code-instruct", true, 0.02, 0.05),
 		},
 		{
+			ID:                       stringToPointer("259215"),
+			Name:                     stringToPointer("security-a1b2c3d4-1001-4000-a000-000000000005"),
+			ExternalID:               stringToPointer("a1b2c3d4-1001-4000-a000-000000000005"),
 			ArtifactType:             *stringToPointer("metrics-artifact"),
 			MetricsType:              stringToPointer("security-metrics"),
 			CreateTimeSinceEpoch:     stringToPointer("1697400000000"),
