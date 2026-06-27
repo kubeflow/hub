@@ -1099,6 +1099,119 @@ paths:
       operationId: getMcpServerTools
       description: Gets the list of tools exposed by an `McpServer`.
 
+  # MCP catalog settings endpoints
+  /api/v1/settings/mcp_catalog/source_configs:
+    summary: Path used to manage MCP catalog sources.
+    description: The REST endpoint/path used to list and create MCP catalog sources.
+    get:
+      tags:
+        - K8SOperation
+      parameters:
+        - $ref: "#/components/parameters/kubeflowUserId"
+      responses:
+        "200":
+          $ref: "#/components/responses/McpCatalogSourceConfigListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      operationId: getMcpCatalogSources
+      summary: List ALL the MCP catalog sources.
+      description: Gets a list of all MCP catalog sources.
+    post:
+      requestBody:
+        description: A new MCP catalog source to be created.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/McpCatalogSourceConfigPayload"
+        required: true
+      tags:
+        - K8SOperation
+      parameters:
+        - $ref: "#/components/parameters/kubeflowUserId"
+      responses:
+        "201":
+          $ref: "#/components/responses/McpCatalogSourceConfigResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      operationId: createMcpCatalogSource
+      summary: Create an MCP Catalog source
+      description: Creates a new MCP catalog source.
+  /api/v1/settings/mcp_catalog/source_configs/{sourceId}:
+    summary: Path used to manage MCP catalog sources.
+    description: >-
+      The REST endpoint/path used to get, update and delete a single MCP Catalog Source.
+    get:
+      tags:
+        - K8SOperation
+      parameters:
+        - $ref: "#/components/parameters/kubeflowUserId"
+        - $ref: "#/components/parameters/sourceId"
+      responses:
+        "200":
+          $ref: "#/components/responses/McpCatalogSourceConfigResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      operationId: getMcpCatalogSource
+      summary: Get an MCP Catalog Source
+      description: Gets the details of a single MCP Catalog source.
+    patch:
+      requestBody:
+        description: Updated MCP Catalog Source information.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/McpCatalogSourceConfigPayload"
+        required: true
+      tags:
+        - K8SOperation
+      parameters:
+        - $ref: "#/components/parameters/kubeflowUserId"
+        - $ref: "#/components/parameters/sourceId"
+      responses:
+        "200":
+          $ref: "#/components/responses/McpCatalogSourceConfigResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      operationId: updateMcpCatalogSource
+      summary: Update an MCP Catalog Source
+      description: Updates an existing MCP Catalog source.
+    delete:
+      tags:
+        - K8SOperation
+      parameters:
+        - $ref: "#/components/parameters/kubeflowUserId"
+        - $ref: "#/components/parameters/sourceId"
+      responses:
+        "204":
+          description: Successfully deleted
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      operationId: deleteMcpCatalogSource
+      summary: Delete an MCP Catalog source
+      description: Deletes an existing MCP Catalog Source.
+
   # Model catalog settings endpoints
   /api/v1/settings/model_catalog/source_configs:
     summary: Path used to manage Model catalog sources.
@@ -3291,6 +3404,71 @@ components:
           description: name of the organization that need to ingest from the source.
           example: org1
 
+    # Schema for MCP catalog settings
+    McpCatalogSourceConfig:
+      description: A single MCP catalog source configuration
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/McpCatalogSourceConfigPayload"
+    McpCatalogSourceConfigList:
+      description: List of MCP catalog sources.
+      type: object
+      properties:
+        catalogs:
+          description: Array of MCP catalog sources.
+          type: array
+          items:
+            $ref: "#/components/schemas/McpCatalogSourceConfig"
+
+    McpCatalogSourceConfigPayload:
+      description: Payload for creating an MCP catalog source
+      type: object
+      required:
+        - name
+        - id
+        - type
+      properties:
+        name:
+          type: string
+          description: The name of the MCP catalog source.
+          example: Community MCP Servers
+        id:
+          type: string
+          description: A unique identifier for an MCP catalog source.
+          example: community_mcp_servers
+        type:
+          type: string
+          example: yaml
+        enabled:
+          type: boolean
+          description: Whether the MCP catalog source is enabled.
+          default: true
+          example: true
+        labels:
+          description: |-
+            Labels associated with the source. The catalog source labels can be
+            used to filter MCP servers from sources with the same label.
+          type: array
+          items:
+            type: string
+        isDefault:
+          type: boolean
+          example: true
+        yaml:
+          type: string
+          description: Complete YAML catalog content for yaml-type sources.
+        includedServers:
+          type: array
+          items:
+            type: string
+            example: kubernetes-mcp
+        excludedServers:
+          type: array
+          items:
+            type: string
+            example: internal-*
+            description: list of MCP server names that will be excluded.
+
     ModelTransferJobSourceType:
       description: The type of source for a transfer job.
       type: string
@@ -3818,6 +3996,26 @@ components:
               data:
                 $ref: "#/components/schemas/CatalogSourceConfig"
       description: A response containing a catalog source.
+
+    # MCP catalog settings responses
+    McpCatalogSourceConfigListResponse:
+      description: A response containing a list of MCP catalog sources.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: "#/components/schemas/McpCatalogSourceConfigList"
+    McpCatalogSourceConfigResponse:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: "#/components/schemas/McpCatalogSourceConfig"
+      description: A response containing an MCP catalog source.
 
     ModelTransferJobResponse:
       content:
