@@ -901,6 +901,8 @@ paths:
           in: path
           required: true
         - $ref: "#/components/parameters/pageSize"
+        - $ref: "#/components/parameters/orderBy"
+        - $ref: "#/components/parameters/sortOrder"
         - $ref: "#/components/parameters/nextPageToken"
       responses:
         "200":
@@ -2445,21 +2447,6 @@ components:
             - artifactType
             - metricsType
           properties:
-            id:
-              format: int64
-              description: The unique server generated id of the resource.
-              type: string
-            name:
-              description: |-
-                The client provided name of the artifact. This field is optional. If set,
-                it must be unique among all the artifacts of the same artifact type within
-                a database instance and cannot be changed once set.
-              type: string
-            externalId:
-              description: |-
-                The external id that come from the clients' system. This field is optional.
-                If set, it must be unique among all resources within a database instance.
-              type: string
             artifactType:
               type: string
               default: metrics-artifact
@@ -2470,12 +2457,7 @@ components:
                 - performance-metrics
                 - accuracy-metrics
                 - security-metrics
-            customProperties:
-              description: User provided custom properties which are not defined by its type.
-              type: object
-              additionalProperties:
-                $ref: "#/components/schemas/MetadataValue"
-        - $ref: "#/components/schemas/BaseResourceDates"
+        - $ref: "#/components/schemas/BaseResource"
     CatalogModel:
       description: A model in the model catalog.
       allOf:
