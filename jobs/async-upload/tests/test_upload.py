@@ -244,6 +244,38 @@ class TestGetUploadParams:
         assert result.base_image == "foo-bar:latest"
         assert result.oci_ref == "quay.io/example/test:latest"
         assert result.dest_dir == "/tmp/test-model"
+        assert result.oci_username is None
+        assert result.oci_password is None
+
+    def test_get_upload_params_oci_preserves_inline_credentials_without_credentials_path(self):
+        """Test inline OCI credentials are kept when no authfile is configured"""
+        config = AsyncUploadConfig(
+            source=S3StorageConfig(
+                bucket="source-bucket",
+                key="source-key",
+                access_key_id="source-key-id",
+                secret_access_key="source-secret",
+                region="us-west-1"
+            ),
+            destination=OCIStorageConfig(
+                uri="quay.io/example/test:latest",
+                registry="quay.io",
+                username="test-user",
+                password="test-password",
+                base_image="foo-bar:latest",
+                enable_tls_verify=True,
+                credentials_path=None
+            ),
+            model=ModelConfig(
+                intent=UpdateArtifactIntent(artifact_id="123")
+            ),
+            storage=StorageConfig(path="/tmp/test-model"),
+            registry=RegistryConfig(server_address="test-server")
+        )
+
+        result = _get_upload_params(config)
+
+        assert isinstance(result, OCIParams)
         assert result.oci_username == "test-user"
         assert result.oci_password == "test-password"
 
@@ -334,6 +366,8 @@ class TestPerformUpload:
 
         # - And the returned URI is forwarded
         assert result_uri == "quay.io/example/oci/abc:def"
+        assert mock_save_to_oci_registry.call_args.kwargs["oci_username"] is None
+        assert mock_save_to_oci_registry.call_args.kwargs["oci_password"] is None
 
     @patch("job.upload._get_upload_params")
     def test_perform_upload_propagates_exceptions_from_get_upload_params(
@@ -426,12 +460,15 @@ class TestValidateCredentialsPath:
         result = _validate_credentials_path(str(creds_file))
         assert result == str(creds_file)
 
-    def test_rejects_relative_path(self, tmp_path):
-        """Test that a relative path is rejected"""
-        creds_file = tmp_path / "auth.json"
+    def test_rejects_tilde_expanded_path(self, tmp_path, monkeypatch):
+        """Test that a home-relative path is rejected unless already absolute"""
+        home_dir = tmp_path / "home"
+        home_dir.mkdir()
+        creds_file = home_dir / "auth.json"
         creds_file.write_text("{}")
+        monkeypatch.setenv("HOME", str(home_dir))
         with pytest.raises(ValueError, match="must be an absolute path"):
-            _validate_credentials_path("auth.json")
+            _validate_credentials_path("~/auth.json")
 
     def test_accepts_symlink_to_regular_file(self, tmp_path):
         """Test that a symlink to a regular file is accepted (Kubernetes Secret mounts use symlinks)"""

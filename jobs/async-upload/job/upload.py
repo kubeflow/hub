@@ -56,6 +56,8 @@ def _get_upload_params(config: AsyncUploadConfig) -> S3Params | OCIParams:
     elif isinstance(destination_config, OCIStorageConfig):
         push_args = []
         pull_args = []
+        username = destination_config.username
+        password = destination_config.password
         # Note: These are all skopeo args, see: https://github.com/containers/skopeo/blob/main/docs/skopeo-copy.1.md
         if not destination_config.enable_tls_verify:
             push_args.append("--dest-tls-verify=false")
@@ -66,13 +68,16 @@ def _get_upload_params(config: AsyncUploadConfig) -> S3Params | OCIParams:
             push_args.append(validated_path)
             pull_args.append("--authfile")
             pull_args.append(validated_path)
+            # Avoid synthesizing a second authfile in save_to_oci_registry().
+            username = None
+            password = None
 
         return OCIParams(
             base_image=destination_config.base_image,
             oci_ref=destination_config.uri,
             dest_dir=config.storage.path,
-            oci_username=destination_config.username,
-            oci_password=destination_config.password,
+            oci_username=username,
+            oci_password=password,
             # Same as the default backend, but with additional args included
             custom_oci_backend=utils._get_skopeo_backend(
                 pull_args=pull_args,
