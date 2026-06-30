@@ -48,6 +48,39 @@ var _ = Describe("CreateCatalogSourcePreviewHandler", func() {
 
 		})
 
+		It("should return MCP server preview when assetType=mcp_servers", func() {
+			By("creating a source preview with assetType=mcp_servers")
+			requestIdentity := kubernetes.RequestIdentity{
+				UserID: "user@example.com",
+			}
+
+			requestBody := struct {
+				Data models.CatalogSourcePreviewRequest `json:"data"`
+			}{
+				Data: models.CatalogSourcePreviewRequest{
+					Type:           "yaml",
+					IncludedModels: []string{},
+					ExcludedModels: []string{},
+					Properties: map[string]interface{}{
+						"yaml": "servers:\n  - name: test-server",
+					},
+				},
+			}
+			bodyBytes, _ := json.Marshal(requestBody)
+
+			actual, rs, err := setupApiTest[CatalogSourcePreviewEnvelope](http.MethodPost, "/api/v1/settings/model_catalog/source_preview?namespace=kubeflow&assetType=mcp_servers", bytes.NewReader(bodyBytes), kubernetesMockedStaticClientFactory, requestIdentity, "kubeflow")
+			Expect(err).NotTo(HaveOccurred())
+
+			By("should return MCP server preview data")
+			Expect(rs.StatusCode).To(Equal(http.StatusOK))
+			Expect(actual.Data.Summary.TotalModels).To(Equal(int32(17)))
+			Expect(actual.Data.Summary.IncludedModels).To(Equal(int32(12)))
+			Expect(actual.Data.Summary.ExcludedModels).To(Equal(int32(5)))
+			for _, item := range actual.Data.Items {
+				Expect(item.Name).To(ContainSubstring("mcp-source/"))
+			}
+		})
+
 		It("should filter by filterStatus=included", func() {
 			By("creating a source preview with filterStatus=included")
 			requestIdentity := kubernetes.RequestIdentity{

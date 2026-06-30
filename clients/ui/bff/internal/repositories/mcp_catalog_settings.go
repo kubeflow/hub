@@ -14,6 +14,7 @@ var (
 	ErrMcpCatalogSourceAlreadyExist = errors.New("mcp catalog source already exists")
 	ErrMcpCatalogSourceIdRequired   = errors.New("mcp catalog source ID is required")
 	ErrMcpCatalogSourceConflict     = errors.New("mcp catalog source was modified by another request")
+	ErrMcpCatalogNotImplemented     = errors.New("mcp catalog settings not implemented yet")
 )
 
 type McpCatalogSettingsRepository struct {
@@ -24,21 +25,40 @@ func NewMcpCatalogSettingsRepository() *McpCatalogSettingsRepository {
 }
 
 func (r *McpCatalogSettingsRepository) GetAllMcpCatalogSourceConfigs(_ context.Context, _ k8s.KubernetesClientInterface, _ string) (*models.McpCatalogSourceConfigList, error) {
-	return nil, fmt.Errorf("not implemented yet")
+	return &models.McpCatalogSourceConfigList{
+		Catalogs: []models.McpCatalogSourceConfig{},
+	}, nil
 }
 
-func (r *McpCatalogSettingsRepository) GetMcpCatalogSourceConfig(_ context.Context, _ k8s.KubernetesClientInterface, _ string, _ string) (*models.McpCatalogSourceConfig, error) {
-	return nil, fmt.Errorf("not implemented yet")
+func (r *McpCatalogSettingsRepository) GetMcpCatalogSourceConfig(_ context.Context, _ k8s.KubernetesClientInterface, _ string, sourceID string) (*models.McpCatalogSourceConfig, error) {
+	return nil, fmt.Errorf("%w: %s", ErrMcpCatalogSourceNotFound, sourceID)
 }
 
-func (r *McpCatalogSettingsRepository) CreateMcpCatalogSourceConfig(_ context.Context, _ k8s.KubernetesClientInterface, _ string, _ models.McpCatalogSourceConfigPayload) (*models.McpCatalogSourceConfig, error) {
-	return nil, fmt.Errorf("not implemented yet")
+func (r *McpCatalogSettingsRepository) CreateMcpCatalogSourceConfig(_ context.Context, _ k8s.KubernetesClientInterface, _ string, payload models.McpCatalogSourceConfigPayload) (*models.McpCatalogSourceConfig, error) {
+	if payload.Id == "" {
+		return nil, ErrMcpCatalogSourceIdRequired
+	}
+	enabled := true
+	return &models.McpCatalogSourceConfig{
+		Id:      payload.Id,
+		Name:    payload.Name,
+		Type:    payload.Type,
+		Enabled: &enabled,
+		Labels:  payload.Labels,
+	}, nil
 }
 
-func (r *McpCatalogSettingsRepository) UpdateMcpCatalogSourceConfig(_ context.Context, _ k8s.KubernetesClientInterface, _ string, _ string, _ models.McpCatalogSourceConfigPayload) (*models.McpCatalogSourceConfig, error) {
-	return nil, fmt.Errorf("not implemented yet")
+func (r *McpCatalogSettingsRepository) UpdateMcpCatalogSourceConfig(_ context.Context, _ k8s.KubernetesClientInterface, _ string, sourceID string, payload models.McpCatalogSourceConfigPayload) (*models.McpCatalogSourceConfig, error) {
+	enabled := true
+	return &models.McpCatalogSourceConfig{
+		Id:      sourceID,
+		Name:    payload.Name,
+		Type:    payload.Type,
+		Enabled: &enabled,
+		Labels:  payload.Labels,
+	}, nil
 }
 
 func (r *McpCatalogSettingsRepository) DeleteMcpCatalogSourceConfig(_ context.Context, _ k8s.KubernetesClientInterface, _ string, _ string) (*models.McpCatalogSourceConfig, error) {
-	return nil, fmt.Errorf("not implemented yet")
+	return nil, nil
 }

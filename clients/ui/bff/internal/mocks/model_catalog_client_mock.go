@@ -328,8 +328,14 @@ func (m *ModelCatalogClientMock) CreateCatalogSourcePreview(client httpclient.HT
 	}
 
 	nextPageToken := pageValues.Get("nextPageToken")
+	assetType := pageValues.Get("assetType")
 
-	catalogSourcePreview := CreateCatalogSourcePreviewMockWithFilter(filterStatus, pageSize, nextPageToken)
+	var catalogSourcePreview models.CatalogSourcePreviewResult
+	if assetType == "mcp_servers" {
+		catalogSourcePreview = CreateMcpCatalogSourcePreviewMockWithFilter(filterStatus, pageSize, nextPageToken)
+	} else {
+		catalogSourcePreview = CreateCatalogSourcePreviewMockWithFilter(filterStatus, pageSize, nextPageToken)
+	}
 
 	return &catalogSourcePreview, nil
 }

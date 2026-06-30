@@ -99,7 +99,12 @@ func (app *App) CreateMcpCatalogSourceConfigHandler(w http.ResponseWriter, r *ht
 
 	var envelope McpCatalogSourcePayloadEnvelope
 	if err := json.NewDecoder(r.Body).Decode(&envelope); err != nil {
-		app.serverErrorResponse(w, r, fmt.Errorf("error decoding JSON: %v", err.Error()))
+		app.badRequestResponse(w, r, fmt.Errorf("error decoding JSON: %w", err))
+		return
+	}
+
+	if envelope.Data == nil {
+		app.badRequestResponse(w, r, fmt.Errorf("missing required field: data"))
 		return
 	}
 
@@ -143,7 +148,12 @@ func (app *App) UpdateMcpCatalogSourceConfigHandler(w http.ResponseWriter, r *ht
 
 	var envelope McpCatalogSourcePayloadEnvelope
 	if err := json.NewDecoder(r.Body).Decode(&envelope); err != nil {
-		app.serverErrorResponse(w, r, fmt.Errorf("error decoding JSON: %v", err.Error()))
+		app.badRequestResponse(w, r, fmt.Errorf("error decoding JSON: %w", err))
+		return
+	}
+
+	if envelope.Data == nil {
+		app.badRequestResponse(w, r, fmt.Errorf("missing required field: data"))
 		return
 	}
 
@@ -190,7 +200,7 @@ func (app *App) DeleteMcpCatalogSourceConfigHandler(w http.ResponseWriter, r *ht
 
 	sourceID := ps.ByName(McpSourceId)
 
-	deleted, err := app.repositories.McpCatalogSettingsRepository.DeleteMcpCatalogSourceConfig(ctx, client, namespace, sourceID)
+	_, err = app.repositories.McpCatalogSettingsRepository.DeleteMcpCatalogSourceConfig(ctx, client, namespace, sourceID)
 	if err != nil {
 		if errors.Is(err, repositories.ErrMcpCatalogSourceNotFound) {
 			app.notFoundResponse(w, r)
@@ -202,11 +212,5 @@ func (app *App) DeleteMcpCatalogSourceConfigHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	result := McpCatalogSettingsSourceConfigEnvelope{
-		Data: deleted,
-	}
-
-	if err = app.WriteJSON(w, http.StatusOK, result, nil); err != nil {
-		app.serverErrorResponse(w, r, err)
-	}
+	w.WriteHeader(http.StatusNoContent)
 }
