@@ -94,6 +94,13 @@ type DatastoreSpecProvider interface {
 	DatastoreEntries() []DatastoreEntry
 }
 
+// Reconnectable is an optional interface that plugins can implement
+// to refresh their cached repository references and type IDs after
+// the database has been recreated (e.g., after emptyDir data loss recovery).
+type Reconnectable interface {
+	Reconnect(ctx context.Context, cfg Config) error
+}
+
 // DatastoreEntry describes a single entity type contributed by a plugin.
 type DatastoreEntry struct {
 	TypeName string

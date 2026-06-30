@@ -182,6 +182,38 @@ func (s *Server) NotifyLeader(ctx context.Context) {
 	wg.Wait()
 }
 
+// Reconnect updates the server's RepoSet and notifies all Reconnectable plugins
+// to refresh their cached repository references and type IDs. This must be
+// called after RunMigrations recreates the database schema from scratch (e.g.,
+// after emptyDir data loss).
+func (s *Server) Reconnect(ctx context.Context, repoSet datastore.RepoSet) error {
+	s.mu.Lock()
+	s.cfg.RepoSet = repoSet
+	plugins := make([]CatalogPlugin, len(s.plugins))
+	copy(plugins, s.plugins)
+	s.mu.Unlock()
+
+	var errs []error
+	for _, p := range plugins {
+		rc, ok := p.(Reconnectable)
+		if !ok {
+			continue
+		}
+		cfg := Config{
+			DB:                     s.cfg.DB,
+			BasePath:               computeBasePath(p),
+			ConfigPaths:            s.cfg.ConfigPaths,
+			RepoSet:                repoSet,
+			PerformanceMetricsPath: s.cfg.PerformanceMetricsPath,
+			Logger:                 s.cfg.Logger.With("plugin", p.Name()),
+		}
+		if err := rc.Reconnect(ctx, cfg); err != nil {
+			errs = append(errs, fmt.Errorf("plugin %s reconnect failed: %w", p.Name(), err))
+		}
+	}
+	return errors.Join(errs...)
+}
+
 // Plugins returns the list of initialized plugins.
 func (s *Server) Plugins() []CatalogPlugin {
 	s.mu.RLock()

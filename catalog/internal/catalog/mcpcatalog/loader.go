@@ -62,6 +62,14 @@ func (ml *MCPLoader) setCloser(closer func()) {
 	ml.closer = closer
 }
 
+// UpdateServices replaces the loader's repository references after a database
+// reconnect. Safe to call from the OnBecomeLeader callback: the elector
+// drains all previous leader callbacks before invoking a new one, so this
+// always runs before NotifyLeader starts any leader-mode loading.
+func (ml *MCPLoader) UpdateServices(services Services) {
+	ml.services = services
+}
+
 // NewMCPLoaderWithState creates a new MCP loader with external state
 func NewMCPLoaderWithState(services Services, state basecatalog.LoaderState) *MCPLoader {
 	paths := state.Paths()

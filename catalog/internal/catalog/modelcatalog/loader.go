@@ -12,7 +12,7 @@ import (
 	"github.com/kubeflow/hub/catalog/internal/catalog/basecatalog"
 	"github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog/models"
 	sharedmodels "github.com/kubeflow/hub/catalog/internal/db/models"
-	"github.com/kubeflow/hub/catalog/internal/db/service"  // for type name constants
+	"github.com/kubeflow/hub/catalog/internal/db/service" // for type name constants
 	mrmodels "github.com/kubeflow/hub/internal/platform/db/entity"
 )
 
@@ -78,6 +78,14 @@ type ModelLoader struct {
 	services      Services
 	handlers      []LoaderEventHandler
 	loadedSources map[string]bool // tracks which source IDs have been loaded
+}
+
+// UpdateServices replaces the loader's repository references after a database
+// reconnect. Safe to call from the OnBecomeLeader callback: the elector
+// drains all previous leader callbacks before invoking a new one, so this
+// always runs before NotifyLeader starts any leader-mode loading.
+func (l *ModelLoader) UpdateServices(services Services) {
+	l.services = services
 }
 
 // NewModelLoader creates a new ModelLoader with external state

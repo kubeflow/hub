@@ -97,6 +97,17 @@ func (p *Plugin) Init(_ context.Context, cfg plugin.Config) error {
 	return nil
 }
 
+func (p *Plugin) Reconnect(_ context.Context, cfg plugin.Config) error {
+	p.services = mcpcatalog.Services{
+		MCPServerRepository:       plugin.GetRepo[mcpcatalogmodels.MCPServerRepository](cfg.RepoSet),
+		MCPServerToolRepository:   plugin.GetRepo[mcpcatalogmodels.MCPServerToolRepository](cfg.RepoSet),
+		CatalogSourceRepository:   plugin.GetRepo[models.CatalogSourceRepository](cfg.RepoSet),
+		PropertyOptionsRepository: plugin.GetRepo[models.PropertyOptionsRepository](cfg.RepoSet),
+	}
+	p.loader.UpdateServices(p.services)
+	return nil
+}
+
 func (p *Plugin) RegisterRoutes(router chi.Router) error {
 	mcpProvider := mcpcatalog.NewDBMCPCatalog(p.services, p.loader.Sources, func(name string) (map[string]basecatalog.FieldFilter, bool) {
 		return p.loader.Sources.GetNamedQuery(name)

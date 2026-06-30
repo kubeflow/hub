@@ -142,6 +142,17 @@ func runCatalogServer(_ *cobra.Command, _ []string) error {
 		case <-leaderCtx.Done():
 			return
 		}
+		newRepoSet, err := ds.Reconnect(spec)
+		if err != nil {
+			glog.Errorf("unable to reconnect after migrations: %v — canceling to trigger restart", err)
+			cancel()
+			return
+		}
+		if err := pluginServer.Reconnect(leaderCtx, newRepoSet); err != nil {
+			glog.Errorf("unable to reconnect plugins: %v — canceling to trigger restart", err)
+			cancel()
+			return
+		}
 		pluginServer.NotifyLeader(leaderCtx)
 	})
 

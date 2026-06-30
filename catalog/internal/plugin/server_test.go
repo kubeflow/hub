@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -452,6 +453,68 @@ func TestReadyzReadinessCheckRecovery(t *testing.T) {
 	assertStatus(t, router, "/readyz", http.StatusOK)
 	body := getJSON(t, router, "/readyz")
 	assert.Equal(t, "ready", body["status"])
+}
+
+// fakeRepoSet is a minimal RepoSet implementation for tests.
+type fakeRepoSet struct {
+	typeMap map[string]int32
+}
+
+func (f *fakeRepoSet) TypeMap() map[string]int32              { return f.typeMap }
+func (f *fakeRepoSet) Repository(_ reflect.Type) (any, error) { return nil, nil }
+
+// reconnectablePlugin implements Reconnectable to record reconnect calls.
+type reconnectablePlugin struct {
+	mockPlugin
+	reconnectCalled bool
+	reconnectCfg    Config
+	reconnectErr    error
+}
+
+func (p *reconnectablePlugin) Reconnect(_ context.Context, cfg Config) error {
+	p.reconnectCalled = true
+	p.reconnectCfg = cfg
+	return p.reconnectErr
+}
+
+func TestServerReconnect_UpdatesRepoSetAndCallsPlugins(t *testing.T) {
+	Reset()
+	defer Reset()
+
+	oldRepoSet := &fakeRepoSet{typeMap: map[string]int32{"TypeA": 1}}
+	newRepoSet := &fakeRepoSet{typeMap: map[string]int32{"TypeA": 99}}
+
+	plain := &mockPlugin{name: "plain", version: "v1"}
+	rc := &reconnectablePlugin{mockPlugin: mockPlugin{name: "rc", version: "v1"}}
+	Register(plain)
+	Register(rc)
+
+	s := NewServer(ServerConfig{RepoSet: oldRepoSet})
+	require.NoError(t, s.Init(context.Background()))
+
+	require.NoError(t, s.Reconnect(context.Background(), newRepoSet))
+
+	assert.Equal(t, newRepoSet, s.cfg.RepoSet, "server RepoSet must be updated")
+	assert.True(t, rc.reconnectCalled, "Reconnectable plugin must be called")
+	assert.Equal(t, newRepoSet, rc.reconnectCfg.RepoSet, "plugin must receive new RepoSet")
+}
+
+func TestServerReconnect_PropagatesError(t *testing.T) {
+	Reset()
+	defer Reset()
+
+	rc := &reconnectablePlugin{
+		mockPlugin:   mockPlugin{name: "rc", version: "v1"},
+		reconnectErr: errors.New("reconnect boom"),
+	}
+	Register(rc)
+
+	s := NewServer(ServerConfig{})
+	require.NoError(t, s.Init(context.Background()))
+
+	err := s.Reconnect(context.Background(), &fakeRepoSet{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "reconnect boom")
 }
 
 // Test helpers

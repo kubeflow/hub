@@ -182,6 +182,26 @@ type PerformanceMetricsLoader struct {
 	modelDirCache map[string]string
 }
 
+// UpdateRepos replaces the loader's cached repository references and type IDs
+// after a database reconnect. Safe to call from the OnBecomeLeader callback:
+// the elector drains all previous leader callbacks before invoking a new one,
+// so this always runs before NotifyLeader starts any leader-mode loading.
+func (pml *PerformanceMetricsLoader) UpdateRepos(modelRepo dbmodels.CatalogModelRepository, metricsArtifactRepo dbmodels.CatalogMetricsArtifactRepository, typeMap map[string]int32) error {
+	modelTypeID, exists := typeMap[service.CatalogModelTypeName]
+	if !exists {
+		return fmt.Errorf("CatalogModel type not found in type map")
+	}
+	metricsArtifactTypeID, exists := typeMap[service.CatalogMetricsArtifactTypeName]
+	if !exists {
+		return fmt.Errorf("CatalogMetricsArtifact type not found in type map")
+	}
+	pml.modelRepo = modelRepo
+	pml.metricsArtifactRepo = metricsArtifactRepo
+	pml.modelTypeID = modelTypeID
+	pml.metricsArtifactTypeID = metricsArtifactTypeID
+	return nil
+}
+
 func NewPerformanceMetricsLoader(path []string, modelRepo dbmodels.CatalogModelRepository, metricsArtifactRepo dbmodels.CatalogMetricsArtifactRepository, typeMap map[string]int32) (*PerformanceMetricsLoader, error) {
 	if len(path) == 0 {
 		glog.Info("No performance metrics path provided, skipping performance metrics loading")

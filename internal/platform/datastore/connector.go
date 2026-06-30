@@ -16,6 +16,10 @@ type Connector interface {
 	Type() string
 	Connect(spec *Spec) (RepoSet, error)
 	RunMigrations(spec *Spec) error
+	// Reconnect creates a fresh RepoSet after the database has been recreated
+	// (e.g., by RunMigrations recovering from data loss). It must not re-run
+	// migrations; callers are responsible for calling RunMigrations first.
+	Reconnect(spec *Spec) (RepoSet, error)
 }
 
 var connectorTypes map[string]func(any) (Connector, error)

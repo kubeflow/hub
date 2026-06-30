@@ -3,7 +3,9 @@ package embedmd
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -219,7 +221,7 @@ func (s *EmbedMDService) syncTypes(conn *gorm.DB, spec *datastore.Spec) error {
 
 func (s *EmbedMDService) createTypes(repo models.TypeRepository, types map[string]*datastore.SpecType, kind int32, idMap map[string]int32) error {
 	var errs []error
-	for name := range types {
+	for _, name := range slices.Sorted(maps.Keys(types)) {
 		t, err := repo.Save(&models.TypeImpl{
 			Attributes: &models.TypeAttributes{
 				Name:     &name,
@@ -242,16 +244,26 @@ func (s *EmbedMDService) createTypes(repo models.TypeRepository, types map[strin
 	return errors.Join(errs...)
 }
 
+func (s *EmbedMDService) Reconnect(spec *datastore.Spec) (datastore.RepoSet, error) {
+	connectedDB, err := s.dbConnector.Connect()
+	if err != nil {
+		return nil, err
+	}
+	return newRepoSet(connectedDB, spec)
+}
+
 func (s *EmbedMDService) createTypeProperties(repo models.TypePropertyRepository, types map[string]*datastore.SpecType, idMap map[string]int32) error {
 	var errs []error
-	for typeName, typeSpec := range types {
+	for _, typeName := range slices.Sorted(maps.Keys(types)) {
+		typeSpec := types[typeName]
 		typeID := idMap[typeName]
 		if typeID == 0 {
 			errs = append(errs, fmt.Errorf("%s: unknown type", typeName))
 			continue
 		}
 
-		for name, dataType := range typeSpec.Properties {
+		for _, name := range slices.Sorted(maps.Keys(typeSpec.Properties)) {
+			dataType := typeSpec.Properties[name]
 			_, err := repo.Save(&models.TypePropertyImpl{
 				TypeID:   typeID,
 				Name:     name,
