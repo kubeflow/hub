@@ -328,6 +328,25 @@ describe('Model Catalog Performance Filters API Behavior', () => {
       });
     });
 
+    it('should use AND (not OR) for cold-start filter to exclude non-matching models', () => {
+      visitWithPerformanceToggle(true);
+
+      modelCatalog.openColdStartLatencyFilter();
+      modelCatalog.applyColdStartLatencyFilter();
+
+      cy.intercept('GET', '**/model_catalog/models*').as('getModelsWithColdStartAnd');
+
+      triggerFilterRefresh();
+
+      cy.wait('@getModelsWithColdStartAnd').then((interception) => {
+        const decodedUrl = decodeURIComponent(interception.request.url);
+        const filterQuery = decodedUrl.match(/filterQuery=([^&]+)/)?.[1] ?? '';
+        expect(filterQuery).to.include('cold_start_time_to_load_seconds');
+        expect(filterQuery).to.not.include(' OR ');
+        expect(filterQuery).to.not.include('performance_sub_type');
+      });
+    });
+
     it('should pass cold_start_time_to_load_seconds as orderBy when cold start sort is selected', () => {
       visitWithPerformanceToggle(true);
 

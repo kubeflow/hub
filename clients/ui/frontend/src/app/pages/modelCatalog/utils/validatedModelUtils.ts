@@ -29,6 +29,7 @@ export type ValidatedModelMetrics = {
   replicas: number | undefined;
   totalRequestsPerSecond: number | undefined;
   latencyMetrics: LatencyMetricsMap;
+  coldStartTimeToLoadSeconds: number | undefined;
 };
 
 export type PerformanceMetrics = {
@@ -40,6 +41,7 @@ export type PerformanceMetrics = {
   replicas: number | undefined;
   totalRequestsPerSecond: number | undefined;
   latencyMetrics: LatencyMetricsMap;
+  coldStartTimeToLoadSeconds: number | undefined;
 };
 
 /**
@@ -83,6 +85,8 @@ export const extractPerformanceMetrics = (
       : undefined,
     totalRequestsPerSecond:
       performanceMetrics.customProperties?.total_requests_per_second?.double_value,
+    coldStartTimeToLoadSeconds:
+      performanceMetrics.customProperties?.cold_start_time_to_load_seconds?.double_value,
     latencyMetrics: extractLatencyMetrics(performanceMetrics.customProperties),
   };
 };

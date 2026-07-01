@@ -3,14 +3,10 @@ import { DashboardEmptyTableView, Table, ManageColumnsModal } from 'mod-arch-sha
 import { Button, Spinner } from '@patternfly/react-core';
 import { ColumnsIcon } from '@patternfly/react-icons';
 import { InnerScrollContainer } from '@patternfly/react-table';
-import { CatalogPerformanceMetricsArtifact, HardwareConfiguration } from '~/app/modelCatalogTypes';
+import { CatalogPerformanceMetricsArtifact } from '~/app/modelCatalogTypes';
 import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
-import {
-  getActiveLatencyFieldName,
-  findMatchingHardwareConfig,
-} from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
-import { getStringValue } from '~/app/utils';
-import { SortOrder, PerformancePropertyKey } from '~/concepts/modelCatalog/const';
+import { getActiveLatencyFieldName } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
+import { SortOrder } from '~/concepts/modelCatalog/const';
 import {
   useHardwareConfigColumns,
   ControlledTableSortProps,
@@ -20,14 +16,12 @@ import HardwareConfigurationFilterToolbar from './HardwareConfigurationFilterToo
 
 type HardwareConfigurationTableProps = {
   performanceArtifacts: CatalogPerformanceMetricsArtifact[];
-  hardwareConfigurations?: HardwareConfiguration[];
   isLoading?: boolean;
   onSortChange?: (sort: { orderBy?: string; sortOrder?: string }) => void;
 };
 
 const HardwareConfigurationTable: React.FC<HardwareConfigurationTableProps> = ({
   performanceArtifacts,
-  hardwareConfigurations,
   isLoading = false,
   onSortChange,
 }) => {
@@ -120,32 +114,13 @@ const HardwareConfigurationTable: React.FC<HardwareConfigurationTableProps> = ({
           {...(hasActiveSort ? { defaultSortColumn: sortIndex } : {})}
           {...controlledSortProps}
           emptyTableView={<DashboardEmptyTableView onClearFilters={handleClearFilters} />}
-          rowRenderer={(artifact: CatalogPerformanceMetricsArtifact) => {
-            const hwConfig = getStringValue(
-              artifact.customProperties,
-              PerformancePropertyKey.HARDWARE_CONFIGURATION,
-            );
-            const hwType = getStringValue(
-              artifact.customProperties,
-              PerformancePropertyKey.HARDWARE_TYPE,
-            );
-            const hwCount = artifact.customProperties?.hardware_count?.int_value
-              ? parseInt(artifact.customProperties.hardware_count.int_value, 10)
-              : 1;
-            return (
-              <HardwareConfigurationTableRow
-                key={artifact.customProperties?.config_id?.string_value}
-                performanceArtifact={artifact}
-                columns={columns}
-                matchedHardwareConfig={findMatchingHardwareConfig(
-                  hardwareConfigurations ?? [],
-                  hwConfig,
-                  hwType,
-                  hwCount,
-                )}
-              />
-            );
-          }}
+          rowRenderer={(artifact: CatalogPerformanceMetricsArtifact) => (
+            <HardwareConfigurationTableRow
+              key={artifact.customProperties?.config_id?.string_value}
+              performanceArtifact={artifact}
+              columns={columns}
+            />
+          )}
         />
       </InnerScrollContainer>
       <ManageColumnsModal

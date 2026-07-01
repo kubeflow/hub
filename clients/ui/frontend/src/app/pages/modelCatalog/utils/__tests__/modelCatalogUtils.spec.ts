@@ -257,41 +257,39 @@ describe('filtersToFilterQuery', () => {
     });
 
     it('handles a single array of a single data point', () => {
-      const orSuffix = " OR artifacts.performance_sub_type.string_value='cold-start'";
       expect(
         filtersToFilterQuery(
           mockFormData({ tasks: [ModelCatalogTask.TEXT_TO_TEXT] }),
           mockFilterOptions,
         ),
-      ).toBe(`tasks='text-to-text'${orSuffix}`);
+      ).toBe("tasks='text-to-text'");
       expect(
         filtersToFilterQuery(
           mockFormData({ provider: [ModelCatalogProvider.GOOGLE] }),
           mockFilterOptions,
         ),
-      ).toBe(`provider='Google'${orSuffix}`);
+      ).toBe("provider='Google'");
       expect(
         filtersToFilterQuery(mockFormData({ license: ['Apache 2.0'] }), mockFilterOptions),
-      ).toBe(`license='Apache 2.0'${orSuffix}`);
+      ).toBe("license='Apache 2.0'");
       expect(
         filtersToFilterQuery(mockFormData({ language: [AllLanguageCode.CA] }), mockFilterOptions),
-      ).toBe(`language='ca'${orSuffix}`);
+      ).toBe("language='ca'");
       expect(
         filtersToFilterQuery(
           mockFormData({ use_case: [UseCaseOptionValue.CHATBOT] }),
           mockFilterOptions,
         ),
-      ).toBe(`artifacts.use_case.string_value='chatbot'${orSuffix}`);
+      ).toBe("artifacts.use_case.string_value='chatbot'");
       expect(
         filtersToFilterQuery(
           mockFormData({ tensor_type: [ModelCatalogTensorType.FP16] }),
           mockFilterOptions,
         ),
-      ).toBe(`tensor_type.string_value='FP16'${orSuffix}`);
+      ).toBe("tensor_type.string_value='FP16'");
     });
 
     it('handles multiple arrays of a single data point', () => {
-      const orSuffix = " OR artifacts.performance_sub_type.string_value='cold-start'";
       expect(
         filtersToFilterQuery(
           mockFormData({
@@ -300,48 +298,46 @@ describe('filtersToFilterQuery', () => {
           }),
           mockFilterOptions,
         ),
-      ).toBe(`tasks='text-to-text' AND license='Apache 2.0'${orSuffix}`);
+      ).toBe("tasks='text-to-text' AND license='Apache 2.0'");
       expect(
         filtersToFilterQuery(
           mockFormData({ provider: [ModelCatalogProvider.GOOGLE], language: [AllLanguageCode.CA] }),
           mockFilterOptions,
         ),
-      ).toBe(`provider='Google' AND language='ca'${orSuffix}`);
+      ).toBe("provider='Google' AND language='ca'");
     });
 
     it('handles a single array with multiple data points', () => {
-      const orSuffix = " OR artifacts.performance_sub_type.string_value='cold-start'";
       expect(
         filtersToFilterQuery(
           mockFormData({ tasks: [ModelCatalogTask.TEXT_TO_TEXT, ModelCatalogTask.IMAGE_TO_TEXT] }),
           mockFilterOptions,
         ),
-      ).toBe(`tasks IN ('text-to-text','image-to-text')${orSuffix}`);
+      ).toBe("tasks IN ('text-to-text','image-to-text')");
       expect(
         filtersToFilterQuery(
           mockFormData({ provider: [ModelCatalogProvider.GOOGLE, ModelCatalogProvider.DEEPSEEK] }),
           mockFilterOptions,
         ),
-      ).toBe(`provider IN ('Google','DeepSeek')${orSuffix}`);
+      ).toBe("provider IN ('Google','DeepSeek')");
       expect(
         filtersToFilterQuery(mockFormData({ license: ['Apache 2.0', 'MIT'] }), mockFilterOptions),
-      ).toBe(`license IN ('Apache 2.0','MIT')${orSuffix}`);
+      ).toBe("license IN ('Apache 2.0','MIT')");
       expect(
         filtersToFilterQuery(
           mockFormData({ language: [AllLanguageCode.CA, AllLanguageCode.PT] }),
           mockFilterOptions,
         ),
-      ).toBe(`language IN ('ca','pt')${orSuffix}`);
+      ).toBe("language IN ('ca','pt')");
       expect(
         filtersToFilterQuery(
           mockFormData({ tensor_type: [ModelCatalogTensorType.FP16, ModelCatalogTensorType.FP8] }),
           mockFilterOptions,
         ),
-      ).toBe(`tensor_type.string_value IN ('FP16','FP8')${orSuffix}`);
+      ).toBe("tensor_type.string_value IN ('FP16','FP8')");
     });
 
     it('handles all tensor type enum values', () => {
-      const orSuffix = " OR artifacts.performance_sub_type.string_value='cold-start'";
       expect(
         filtersToFilterQuery(
           mockFormData({
@@ -355,11 +351,10 @@ describe('filtersToFilterQuery', () => {
           }),
           mockFilterOptions,
         ),
-      ).toBe(`tensor_type.string_value IN ('FP16','FP8','INT4','INT8','MXFP4')${orSuffix}`);
+      ).toBe("tensor_type.string_value IN ('FP16','FP8','INT4','INT8','MXFP4')");
     });
 
     it('handles multiple arrays with mixed count of data points', () => {
-      const orSuffix = " OR artifacts.performance_sub_type.string_value='cold-start'";
       expect(
         filtersToFilterQuery(
           mockFormData({
@@ -376,12 +371,11 @@ describe('filtersToFilterQuery', () => {
           mockFilterOptions,
         ),
       ).toBe(
-        `tasks IN ('text-to-text','image-to-text') AND provider='Google' AND license='MIT' AND language IN ('ca','pt','vi','zsm')${orSuffix}`,
+        "tasks IN ('text-to-text','image-to-text') AND provider='Google' AND license='MIT' AND language IN ('ca','pt','vi','zsm')",
       );
     });
 
     it('handles tensor type combined with other basic filters', () => {
-      const orSuffix = " OR artifacts.performance_sub_type.string_value='cold-start'";
       expect(
         filtersToFilterQuery(
           mockFormData({
@@ -392,31 +386,28 @@ describe('filtersToFilterQuery', () => {
           mockFilterOptions,
         ),
       ).toBe(
-        `tasks='text-to-text' AND provider='Google' AND tensor_type.string_value IN ('FP16','INT8')${orSuffix}`,
+        "tasks='text-to-text' AND provider='Google' AND tensor_type.string_value IN ('FP16','INT8')",
       );
     });
   });
 
   describe('match-all (AND logic) filters', () => {
     it('handles a single validated configuration value', () => {
-      const orSuffix = " OR artifacts.performance_sub_type.string_value='cold-start'";
       expect(
         filtersToFilterQuery(mockFormData({ validatedTasks: ['tool-calling'] }), mockFilterOptions),
-      ).toBe(`validated_tasks='tool-calling'${orSuffix}`);
+      ).toBe("validated_tasks='tool-calling'");
     });
 
     it('handles multiple validated configuration values with AND logic instead of IN', () => {
-      const orSuffix = " OR artifacts.performance_sub_type.string_value='cold-start'";
       expect(
         filtersToFilterQuery(
           mockFormData({ validatedTasks: ['tool-calling', 'text-generation'] }),
           mockFilterOptions,
         ),
-      ).toBe(`validated_tasks='tool-calling' AND validated_tasks='text-generation'${orSuffix}`);
+      ).toBe("validated_tasks='tool-calling' AND validated_tasks='text-generation'");
     });
 
     it('handles validated configuration combined with other OR-logic filters', () => {
-      const orSuffix = " OR artifacts.performance_sub_type.string_value='cold-start'";
       expect(
         filtersToFilterQuery(
           mockFormData({
@@ -427,7 +418,7 @@ describe('filtersToFilterQuery', () => {
           mockFilterOptions,
         ),
       ).toBe(
-        `tasks IN ('text-to-text','image-to-text') AND provider='Google' AND validated_tasks='tool-calling' AND validated_tasks='text-generation'${orSuffix}`,
+        "tasks IN ('text-to-text','image-to-text') AND provider='Google' AND validated_tasks='tool-calling' AND validated_tasks='text-generation'",
       );
     });
   });
@@ -468,7 +459,7 @@ describe('filtersToFilterQuery', () => {
   //   });
 
   describe('numeric filter target behavior', () => {
-    it('includes cold-start and model-level filters for models target, excludes cold-start for artifacts target', () => {
+    it('includes cold-start and model-level filters for models target, includes cold-start for artifacts target', () => {
       const data = mockFormData({ cold_start_latency: 50, min_vram: 24, image_size: 15 });
 
       const modelsQuery = filtersToFilterQuery(data, mockFilterOptions, 'models');
@@ -477,7 +468,7 @@ describe('filtersToFilterQuery', () => {
       expect(modelsQuery).toContain('modelcar_image_size.double_value');
 
       const artifactsQuery = filtersToFilterQuery(data, mockFilterOptions, 'artifacts');
-      expect(artifactsQuery).not.toContain('cold_start_time_to_load_seconds');
+      expect(artifactsQuery).toContain('cold_start_time_to_load_seconds');
       expect(artifactsQuery).not.toContain('min_vram_gb');
       expect(artifactsQuery).not.toContain('modelcar_image_size');
     });
@@ -492,41 +483,43 @@ describe('filtersToFilterQuery', () => {
     });
   });
 
-  describe('includeColdStartClause parameter', () => {
-    it('does not append cold-start OR clause when includeColdStartClause is false', () => {
+  describe('includeColdStart parameter', () => {
+    it('excludes cold-start filter from query when includeColdStart is false', () => {
       const query = filtersToFilterQuery(
-        mockFormData({ tasks: [ModelCatalogTask.TEXT_TO_TEXT] }),
+        mockFormData({ tasks: [ModelCatalogTask.TEXT_TO_TEXT], cold_start_latency: 50 }),
         mockFilterOptions,
         'models',
         false,
       );
       expect(query).toBe("tasks='text-to-text'");
-      expect(query).not.toContain('performance_sub_type');
-      expect(query).not.toContain('cold-start');
+      expect(query).not.toContain('cold_start_time_to_load_seconds');
     });
 
-    it('appends cold-start OR clause when includeColdStartClause is true (default)', () => {
+    it('includes cold-start filter in AND clause when includeColdStart is true (default)', () => {
       const query = filtersToFilterQuery(
-        mockFormData({ tasks: [ModelCatalogTask.TEXT_TO_TEXT] }),
+        mockFormData({ tasks: [ModelCatalogTask.TEXT_TO_TEXT], cold_start_latency: 50 }),
         mockFilterOptions,
         'models',
         true,
       );
-      expect(query).toContain("OR artifacts.performance_sub_type.string_value='cold-start'");
+      expect(query).toContain('cold_start_time_to_load_seconds');
+      expect(query).not.toContain(' OR ');
+      expect(query).not.toContain('performance_sub_type');
     });
 
-    it('does not append cold-start OR clause with multiple basic filters when performance is off', () => {
+    it('does not include cold-start filter with multiple basic filters when includeColdStart is false', () => {
       const query = filtersToFilterQuery(
         mockFormData({
           tasks: [ModelCatalogTask.TEXT_TO_TEXT],
           provider: [ModelCatalogProvider.GOOGLE],
+          cold_start_latency: 50,
         }),
         mockFilterOptions,
         'models',
         false,
       );
       expect(query).toBe("tasks='text-to-text' AND provider='Google'");
-      expect(query).not.toContain('performance_sub_type');
+      expect(query).not.toContain('cold_start_time_to_load_seconds');
     });
   });
 });

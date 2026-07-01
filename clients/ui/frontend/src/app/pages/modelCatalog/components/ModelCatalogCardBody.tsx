@@ -32,9 +32,6 @@ import { useCatalogPerformanceArtifacts } from '~/app/hooks/modelCatalog/useCata
 import {
   getActiveLatencyFieldName,
   stripArtifactsPrefix,
-  filterRegularPerformanceArtifacts,
-  findMatchingHardwareConfig,
-  resolveHardwareConfigurations,
 } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
 import { formatLatency } from '~/app/pages/modelCatalog/utils/performanceMetricsUtils';
 import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
@@ -99,16 +96,7 @@ const ModelCatalogCardBody: React.FC<ModelCatalogCardBodyProps> = ({
       isValidated, // Only fetch if validated
     );
 
-  // Separate cold-start artifacts from regular performance artifacts
-  const performanceMetrics = React.useMemo(
-    () => filterRegularPerformanceArtifacts(performanceArtifactsList.items),
-    [performanceArtifactsList.items],
-  );
-
-  const hardwareConfigurations = React.useMemo(
-    () => resolveHardwareConfigurations(performanceArtifactsList.items, model.customProperties),
-    [performanceArtifactsList.items, model.customProperties],
-  );
+  const performanceMetrics = performanceArtifactsList.items;
 
   // NOTE: Accuracy metrics are not currently returned by the /performance_artifacts endpoint.
   // This is kept as a placeholder for when accuracy metrics support is restored.
@@ -213,13 +201,7 @@ const ModelCatalogCardBody: React.FC<ModelCatalogCardBodyProps> = ({
       ? parseLatencyFilterKey(activeLatencyField).metric
       : LatencyMetric.TTFT;
 
-    const matchedConfig = findMatchingHardwareConfig(
-      hardwareConfigurations,
-      metrics.hardwareConfiguration,
-      metrics.hardwareType,
-      parseInt(metrics.hardwareCount, 10) || 1,
-    );
-    const matchedColdStart = matchedConfig?.cold_start_time_to_load_seconds;
+    const coldStartValue = metrics.coldStartTimeToLoadSeconds;
 
     return (
       <Stack hasGutter>
@@ -264,10 +246,10 @@ const ModelCatalogCardBody: React.FC<ModelCatalogCardBodyProps> = ({
                 </Popover>
               </Flex>
             </Flex>
-            {matchedColdStart !== undefined && (
+            {coldStartValue !== undefined && coldStartValue > 0 && (
               <Flex direction={{ default: 'column' }}>
                 <span className="pf-v6-u-font-weight-bold" data-testid="validated-model-cold-start">
-                  {matchedColdStart.toFixed(2)} s
+                  {coldStartValue.toFixed(2)} s
                 </span>
                 <Flex alignItems={{ default: 'alignItemsBaseline' }} gap={{ default: 'gapXs' }}>
                   <Content component={ContentVariants.small}>Cold start load time</Content>

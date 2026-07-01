@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Button, Popover } from '@patternfly/react-core';
 import { Td, Tr } from '@patternfly/react-table';
-import { CatalogPerformanceMetricsArtifact, HardwareConfiguration } from '~/app/modelCatalogTypes';
+import { CatalogPerformanceMetricsArtifact } from '~/app/modelCatalogTypes';
 import CodeBlockComponent from '~/app/shared/markdown/components/CodeBlockComponent';
 import {
   formatLatency,
@@ -19,13 +19,11 @@ import {
 type HardwareConfigurationTableRowProps = {
   performanceArtifact: CatalogPerformanceMetricsArtifact;
   columns: HardwareConfigColumn[];
-  matchedHardwareConfig?: HardwareConfiguration;
 };
 
 const HardwareConfigurationTableRow: React.FC<HardwareConfigurationTableRowProps> = ({
   performanceArtifact,
   columns,
-  matchedHardwareConfig,
 }) => {
   const getCellValue = (field: HardwareConfigColumnField): string | number => {
     const { customProperties } = performanceArtifact;
@@ -78,17 +76,19 @@ const HardwareConfigurationTableRow: React.FC<HardwareConfigurationTableRowProps
   };
 
   const renderModelLevelCell = (field: HardwareConfigColumnField): React.ReactNode => {
+    const { customProperties } = performanceArtifact;
+
     if (field === 'cold_start_load_time') {
-      return matchedHardwareConfig
-        ? `${matchedHardwareConfig.cold_start_time_to_load_seconds.toFixed(2)} s`
+      const coldStartSeconds = customProperties?.cold_start_time_to_load_seconds?.double_value;
+      return coldStartSeconds !== undefined && coldStartSeconds > 0
+        ? `${coldStartSeconds.toFixed(2)} s`
         : EMPTY_CUSTOM_PROPERTY_VALUE;
     }
     if (field === 'runtime_command') {
-      return matchedHardwareConfig?.runtime_command ? (
+      const runtimeCommand = getStringValue(customProperties, 'runtime_command');
+      return runtimeCommand ? (
         <Popover
-          bodyContent={
-            <CodeBlockComponent>{matchedHardwareConfig.runtime_command}</CodeBlockComponent>
-          }
+          bodyContent={<CodeBlockComponent>{runtimeCommand}</CodeBlockComponent>}
           position="left"
           maxWidth="450px"
         >
