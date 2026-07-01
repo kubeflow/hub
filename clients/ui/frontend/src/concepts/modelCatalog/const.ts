@@ -646,4 +646,4 @@ export enum SortField {
   LAST_UPDATE_TIME = 'LAST_UPDATE_TIME',
 }
 
-export const RESET_ALL_DEFAULTS_LABEL = 'Reset all defaults';
+export const RESET_ALL_FILTERS_LABEL = 'Reset all filters';

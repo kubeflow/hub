@@ -158,7 +158,7 @@ describe('Model Catalog Performance Filters Alert', () => {
       modelCatalog.findPerformanceFiltersUpdatedAlert().should('not.exist');
     });
 
-    it('should hide alert when Reset all defaults is clicked on catalog page', () => {
+    it('should hide alert when Reset all filters is clicked on catalog page', () => {
       modelCatalog.togglePerformanceView();
       modelCatalog.findLoadingState().should('not.exist');
 
@@ -174,7 +174,7 @@ describe('Model Catalog Performance Filters Alert', () => {
 
       modelCatalog.findPerformanceFiltersUpdatedAlert().should('be.visible');
 
-      cy.findByRole('button', { name: 'Reset all defaults' }).click();
+      cy.findByRole('button', { name: 'Reset all filters' }).click();
 
       modelCatalog.findPerformanceFiltersUpdatedAlert().should('not.exist');
     });

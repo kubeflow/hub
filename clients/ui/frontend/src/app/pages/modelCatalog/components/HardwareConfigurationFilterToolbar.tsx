@@ -13,7 +13,7 @@ import {
   getPerformanceFiltersToShow,
   getAllFiltersToShow,
   BASIC_FILTER_KEYS,
-  RESET_ALL_DEFAULTS_LABEL,
+  RESET_ALL_FILTERS_LABEL,
 } from '~/concepts/modelCatalog/const';
 import { isValueDifferentFromDefault } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
 import WorkloadTypeFilter from './globalFilters/WorkloadTypeFilter';
@@ -102,7 +102,7 @@ const HardwareConfigurationFilterToolbar: React.FC<HardwareConfigurationFilterTo
     <Toolbar
       className="pf-v6-u-pb-0"
       {...(onResetAllFilters && hasVisibleChips
-        ? { clearAllFilters: onResetAllFilters, clearFiltersButtonText: RESET_ALL_DEFAULTS_LABEL }
+        ? { clearAllFilters: onResetAllFilters, clearFiltersButtonText: RESET_ALL_FILTERS_LABEL }
         : {})}
     >
       <ToolbarContent rowWrap={{ default: 'wrap' }}>

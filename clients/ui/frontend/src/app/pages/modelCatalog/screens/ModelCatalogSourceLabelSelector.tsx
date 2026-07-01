@@ -16,7 +16,7 @@ import { ArrowRightIcon, FilterIcon } from '@patternfly/react-icons';
 import React from 'react';
 import { useThemeContext } from 'mod-arch-kubeflow';
 import { ThemeAwareSearchInput } from 'mod-arch-shared';
-import { BASIC_FILTER_KEYS, RESET_ALL_DEFAULTS_LABEL } from '~/concepts/modelCatalog/const';
+import { BASIC_FILTER_KEYS, RESET_ALL_FILTERS_LABEL } from '~/concepts/modelCatalog/const';
 import ModelCatalogActiveFilters from '~/app/pages/modelCatalog/components/ModelCatalogActiveFilters';
 import HardwareConfigurationFilterToolbar from '~/app/pages/modelCatalog/components/HardwareConfigurationFilterToolbar';
 import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
@@ -85,7 +85,7 @@ const ModelCatalogSourceLabelSelector: React.FC<ModelCatalogSourceLabelSelectorP
 
     // When performance view is ON, check if any performance filters differ from defaults
     // (the HardwareConfigurationFilterToolbar handles showing its own "Clear all filters")
-    // The top toolbar should only show "Reset all defaults" if basic filters are applied
+    // The top toolbar should only show "Reset all filters" if basic filters are applied
     // or if there's a search term
     return false;
   }, [hasSearchTerm, hasBasicFiltersApplied, performanceViewEnabled]);
@@ -135,7 +135,7 @@ const ModelCatalogSourceLabelSelector: React.FC<ModelCatalogSourceLabelSelectorP
           {...(onResetAllFilters && !performanceViewEnabled && hasBasicFiltersApplied
             ? {
                 clearAllFilters: handleClearAllFilters,
-                clearFiltersButtonText: RESET_ALL_DEFAULTS_LABEL,
+                clearFiltersButtonText: RESET_ALL_FILTERS_LABEL,
               }
             : {})}
         >

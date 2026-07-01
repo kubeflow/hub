@@ -28,7 +28,7 @@ import {
   parseLatencyFilterKey,
   BASIC_FILTER_KEYS,
   PERFORMANCE_FILTER_KEYS,
-  RESET_ALL_DEFAULTS_LABEL,
+  RESET_ALL_FILTERS_LABEL,
 } from '~/concepts/modelCatalog/const';
 
 type ModelCatalogPageProps = {
@@ -286,7 +286,7 @@ const ModelCatalogGalleryView: React.FC<ModelCatalogPageProps> = ({
           description="Adjust your filters and try again."
           primaryAction={
             <Button variant="link" onClick={handleFilterReset}>
-              {RESET_ALL_DEFAULTS_LABEL}
+              {RESET_ALL_FILTERS_LABEL}
             </Button>
           }
         />

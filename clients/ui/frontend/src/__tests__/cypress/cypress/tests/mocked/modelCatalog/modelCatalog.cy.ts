@@ -720,7 +720,7 @@ describe('Single Category Behavior', () => {
 });
 
 describe('Reset Button Label', () => {
-  it('should show "Reset all defaults" in empty state', () => {
+  it('should show "Reset all filters" in empty state', () => {
     initIntercepts({
       sources: mockDefaultSources(),
     });
@@ -731,7 +731,7 @@ describe('Reset Button Label', () => {
     modelCatalog.findFilterCheckbox('Task', 'audio-to-text').click();
 
     modelCatalog.findModelCatalogEmptyState().should('contain.text', 'No results found');
-    modelCatalog.findEmptyStateResetFiltersButton().should('contain.text', 'Reset all defaults');
+    modelCatalog.findEmptyStateResetFiltersButton().should('contain.text', 'Reset all filters');
   });
 });
 
