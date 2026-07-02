@@ -49,7 +49,7 @@ body fields.**
 
 This matches what each layer already does for most parameters. The path parameter names in the
 model-registry OpenAPI spec are the primary offenders; fixing them is the main practical change.
-The one body field outlier is `source_id` in Catalog response schemas, which becomes `sourceId`.
+The remaining Catalog body/response outliers are `source_id` (in `Agent`, `CatalogModel`, and `MCPServer`) and `license_link` (in `MCPServer`).
 
 See [Appendix A](#appendix-a-full-parameter-casing-changes) for the complete list of renames.
 
