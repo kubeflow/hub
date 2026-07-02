@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/kubeflow/hub/catalog/internal/catalog/agentcatalog/models"
 	agentservice "github.com/kubeflow/hub/catalog/internal/catalog/agentcatalog/service"
@@ -67,8 +66,14 @@ func (d *DBAgentCatalog) GetFilterOptions(ctx context.Context) (*openapi.FilterO
 		}
 	}
 
+	var namedQueriesPtr *map[string]map[string]openapi.FieldFilter
+	if d.sources != nil {
+		namedQueriesPtr = basecatalog.ConvertNamedQueries(d.sources.GetNamedQueries(), options)
+	}
+
 	return &openapi.FilterOptionsList{
-		Filters: &options,
+		Filters:      &options,
+		NamedQueries: namedQueriesPtr,
 	}, nil
 }
 
@@ -190,26 +195,10 @@ func mapDBAgentToAPI(dbAgent models.Agent) openapi.Agent {
 				res.Readme = prop.StringValue
 			case "framework":
 				res.Framework = prop.StringValue
-			case "agentType":
-				res.AgentType = prop.StringValue
 			case "logo":
 				res.Logo = prop.StringValue
 			case "repositoryUrl":
 				res.RepositoryUrl = prop.StringValue
-			case "publishedDate":
-				if t, err := time.Parse(time.RFC3339, *prop.StringValue); err == nil {
-					res.PublishedDate = &t
-				}
-			case "tags":
-				var tags []string
-				if err := json.Unmarshal([]byte(*prop.StringValue), &tags); err == nil {
-					res.Tags = tags
-				}
-			case "models":
-				var models []string
-				if err := json.Unmarshal([]byte(*prop.StringValue), &models); err == nil {
-					res.Models = models
-				}
 			case "env":
 				var envVars []openapi.AgentEnvVar
 				if err := json.Unmarshal([]byte(*prop.StringValue), &envVars); err == nil {

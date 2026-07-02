@@ -6,8 +6,7 @@ agents:
     description: "Multi-step travel planning agent that researches destinations, compares flights and hotels, and builds complete itineraries using tool calling."
     readme: "# Travel Planner Agent\n\nA starter kit for building a travel planning assistant. Uses ReAct-style reasoning to break down complex travel requests into research, comparison, and booking steps.\n\n## Features\n- Multi-city itinerary planning\n- Flight and hotel comparison via tool calls\n- Budget-aware recommendations"
     framework: langgraph
-    agentType: starter_kit
-    tags:
+    labels:
       - travel
       - planning
       - react
@@ -35,8 +34,7 @@ agents:
     displayName: "Code Review Agent"
     description: "Automated code review agent that analyzes pull requests for bugs, security issues, and style violations using static analysis tools and LLM reasoning."
     framework: crewai
-    agentType: starter_kit
-    tags:
+    labels:
       - code-review
       - security
       - developer-tools
@@ -61,8 +59,7 @@ agents:
     displayName: "Customer Support Bot"
     description: "RAG-powered customer support agent that searches knowledge bases and previous tickets to provide accurate, context-aware responses to customer inquiries."
     framework: llamaindex
-    agentType: starter_kit
-    tags:
+    labels:
       - customer-support
       - rag
       - knowledge-base
@@ -88,8 +85,7 @@ agents:
     displayName: "Data Pipeline Orchestrator"
     description: "Agent that designs and executes data transformation pipelines by composing SQL queries, API calls, and file operations through MCP tool servers."
     framework: autogen
-    agentType: starter_kit
-    tags:
+    labels:
       - data-engineering
       - mcp
       - pipeline
@@ -117,8 +113,7 @@ agents:
     displayName: "Research Assistant"
     description: "Web search and summarization agent that gathers information from multiple sources, cross-references findings, and produces structured research reports."
     framework: langgraph
-    agentType: starter_kit
-    tags:
+    labels:
       - research
       - web-search
       - summarization

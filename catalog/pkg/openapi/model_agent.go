@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"time"
 )
 
 // checks if the Agent type satisfies the MappedNullable interface at compile time
@@ -42,18 +41,10 @@ type Agent struct {
 	Readme *string `json:"readme,omitempty"`
 	// Agent framework (e.g., langgraph, crewai, autogen).
 	Framework *string `json:"framework,omitempty"`
-	// Catalog classification (e.g., starter_kit).
-	AgentType *string `json:"agentType,omitempty"`
-	// Tags for categorization and filtering.
-	Tags []string `json:"tags,omitempty"`
-	// Compatible model identifiers.
-	Models []string `json:"models,omitempty"`
 	// URL or path to the agent logo image.
 	Logo *string `json:"logo,omitempty"`
 	// URL to the agent source code repository.
 	RepositoryUrl *string `json:"repositoryUrl,omitempty"`
-	// Date when the agent was published.
-	PublishedDate *time.Time `json:"publishedDate,omitempty"`
 	// Environment variables required for deployment.
 	Env []AgentEnvVar `json:"env,omitempty"`
 	// OCI artifacts for agent deployment.
@@ -424,102 +415,6 @@ func (o *Agent) SetFramework(v string) {
 	o.Framework = &v
 }
 
-// GetAgentType returns the AgentType field value if set, zero value otherwise.
-func (o *Agent) GetAgentType() string {
-	if o == nil || IsNil(o.AgentType) {
-		var ret string
-		return ret
-	}
-	return *o.AgentType
-}
-
-// GetAgentTypeOk returns a tuple with the AgentType field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *Agent) GetAgentTypeOk() (*string, bool) {
-	if o == nil || IsNil(o.AgentType) {
-		return nil, false
-	}
-	return o.AgentType, true
-}
-
-// HasAgentType returns a boolean if a field has been set.
-func (o *Agent) HasAgentType() bool {
-	if o != nil && !IsNil(o.AgentType) {
-		return true
-	}
-
-	return false
-}
-
-// SetAgentType gets a reference to the given string and assigns it to the AgentType field.
-func (o *Agent) SetAgentType(v string) {
-	o.AgentType = &v
-}
-
-// GetTags returns the Tags field value if set, zero value otherwise.
-func (o *Agent) GetTags() []string {
-	if o == nil || IsNil(o.Tags) {
-		var ret []string
-		return ret
-	}
-	return o.Tags
-}
-
-// GetTagsOk returns a tuple with the Tags field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *Agent) GetTagsOk() ([]string, bool) {
-	if o == nil || IsNil(o.Tags) {
-		return nil, false
-	}
-	return o.Tags, true
-}
-
-// HasTags returns a boolean if a field has been set.
-func (o *Agent) HasTags() bool {
-	if o != nil && !IsNil(o.Tags) {
-		return true
-	}
-
-	return false
-}
-
-// SetTags gets a reference to the given []string and assigns it to the Tags field.
-func (o *Agent) SetTags(v []string) {
-	o.Tags = v
-}
-
-// GetModels returns the Models field value if set, zero value otherwise.
-func (o *Agent) GetModels() []string {
-	if o == nil || IsNil(o.Models) {
-		var ret []string
-		return ret
-	}
-	return o.Models
-}
-
-// GetModelsOk returns a tuple with the Models field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *Agent) GetModelsOk() ([]string, bool) {
-	if o == nil || IsNil(o.Models) {
-		return nil, false
-	}
-	return o.Models, true
-}
-
-// HasModels returns a boolean if a field has been set.
-func (o *Agent) HasModels() bool {
-	if o != nil && !IsNil(o.Models) {
-		return true
-	}
-
-	return false
-}
-
-// SetModels gets a reference to the given []string and assigns it to the Models field.
-func (o *Agent) SetModels(v []string) {
-	o.Models = v
-}
-
 // GetLogo returns the Logo field value if set, zero value otherwise.
 func (o *Agent) GetLogo() string {
 	if o == nil || IsNil(o.Logo) {
@@ -582,38 +477,6 @@ func (o *Agent) HasRepositoryUrl() bool {
 // SetRepositoryUrl gets a reference to the given string and assigns it to the RepositoryUrl field.
 func (o *Agent) SetRepositoryUrl(v string) {
 	o.RepositoryUrl = &v
-}
-
-// GetPublishedDate returns the PublishedDate field value if set, zero value otherwise.
-func (o *Agent) GetPublishedDate() time.Time {
-	if o == nil || IsNil(o.PublishedDate) {
-		var ret time.Time
-		return ret
-	}
-	return *o.PublishedDate
-}
-
-// GetPublishedDateOk returns a tuple with the PublishedDate field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *Agent) GetPublishedDateOk() (*time.Time, bool) {
-	if o == nil || IsNil(o.PublishedDate) {
-		return nil, false
-	}
-	return o.PublishedDate, true
-}
-
-// HasPublishedDate returns a boolean if a field has been set.
-func (o *Agent) HasPublishedDate() bool {
-	if o != nil && !IsNil(o.PublishedDate) {
-		return true
-	}
-
-	return false
-}
-
-// SetPublishedDate gets a reference to the given time.Time and assigns it to the PublishedDate field.
-func (o *Agent) SetPublishedDate(v time.Time) {
-	o.PublishedDate = &v
 }
 
 // GetEnv returns the Env field value if set, zero value otherwise.
@@ -721,23 +584,11 @@ func (o Agent) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Framework) {
 		toSerialize["framework"] = o.Framework
 	}
-	if !IsNil(o.AgentType) {
-		toSerialize["agentType"] = o.AgentType
-	}
-	if !IsNil(o.Tags) {
-		toSerialize["tags"] = o.Tags
-	}
-	if !IsNil(o.Models) {
-		toSerialize["models"] = o.Models
-	}
 	if !IsNil(o.Logo) {
 		toSerialize["logo"] = o.Logo
 	}
 	if !IsNil(o.RepositoryUrl) {
 		toSerialize["repositoryUrl"] = o.RepositoryUrl
-	}
-	if !IsNil(o.PublishedDate) {
-		toSerialize["publishedDate"] = o.PublishedDate
 	}
 	if !IsNil(o.Env) {
 		toSerialize["env"] = o.Env

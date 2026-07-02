@@ -818,19 +818,6 @@ components:
             framework:
               type: string
               description: Agent framework (e.g., langgraph, crewai, autogen).
-            agentType:
-              type: string
-              description: Catalog classification (e.g., starter_kit).
-            tags:
-              type: array
-              items:
-                type: string
-              description: Tags for categorization and filtering.
-            models:
-              type: array
-              items:
-                type: string
-              description: Compatible model identifiers.
             logo:
               type: string
               description: URL or path to the agent logo image.
@@ -838,10 +825,6 @@ components:
               type: string
               format: uri
               description: URL to the agent source code repository.
-            publishedDate:
-              type: string
-              format: date-time
-              description: Date when the agent was published.
             env:
               type: array
               items:

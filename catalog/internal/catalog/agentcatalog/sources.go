@@ -17,8 +17,9 @@ type agentOriginEntry struct {
 
 // AgentSourceCollection manages agent catalog sources from multiple origins with priority-based merging.
 type AgentSourceCollection struct {
-	mu      sync.RWMutex
-	entries []agentOriginEntry
+	mu           sync.RWMutex
+	entries      []agentOriginEntry
+	namedQueries map[string]map[string]basecatalog.FieldFilter
 }
 
 func NewAgentSourceCollection(originOrder ...string) *AgentSourceCollection {
@@ -27,7 +28,8 @@ func NewAgentSourceCollection(originOrder ...string) *AgentSourceCollection {
 		entries[i] = agentOriginEntry{origin: origin, sources: nil}
 	}
 	return &AgentSourceCollection{
-		entries: entries,
+		entries:      entries,
+		namedQueries: make(map[string]map[string]basecatalog.FieldFilter),
 	}
 }
 
@@ -44,6 +46,34 @@ func (sc *AgentSourceCollection) Merge(origin string, sources map[string]basecat
 
 	sc.entries = append(sc.entries, agentOriginEntry{origin: origin, sources: sources})
 	return nil
+}
+
+func (sc *AgentSourceCollection) MergeWithNamedQueries(origin string, sources map[string]basecatalog.PluginSource, namedQueries map[string]map[string]basecatalog.FieldFilter) error {
+	if err := sc.Merge(origin, sources); err != nil {
+		return err
+	}
+
+	sc.mu.Lock()
+	defer sc.mu.Unlock()
+	for queryName, fieldFilters := range namedQueries {
+		if sc.namedQueries[queryName] == nil {
+			sc.namedQueries[queryName] = make(map[string]basecatalog.FieldFilter)
+		}
+		maps.Copy(sc.namedQueries[queryName], fieldFilters)
+	}
+	return nil
+}
+
+func (sc *AgentSourceCollection) GetNamedQueries() map[string]map[string]basecatalog.FieldFilter {
+	sc.mu.RLock()
+	defer sc.mu.RUnlock()
+
+	result := make(map[string]map[string]basecatalog.FieldFilter, len(sc.namedQueries))
+	for queryName, fieldFilters := range sc.namedQueries {
+		result[queryName] = make(map[string]basecatalog.FieldFilter, len(fieldFilters))
+		maps.Copy(result[queryName], fieldFilters)
+	}
+	return result
 }
 
 func (sc *AgentSourceCollection) merged() map[string]basecatalog.PluginSource {

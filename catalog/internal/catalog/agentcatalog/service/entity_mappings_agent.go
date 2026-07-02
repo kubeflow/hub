@@ -38,9 +38,7 @@ var agentProperties = map[string]filter.PropertyDefinition{
 	"displayName":              {Location: filter.PropertyTable, ValueType: filter.StringValueType, Column: "displayName"},
 	"description":              {Location: filter.PropertyTable, ValueType: filter.StringValueType, Column: "description"},
 	"framework":                {Location: filter.PropertyTable, ValueType: filter.StringValueType, Column: "framework"},
-	"agentType":                {Location: filter.PropertyTable, ValueType: filter.StringValueType, Column: "agentType"},
-	"tags":                     {Location: filter.PropertyTable, ValueType: filter.ArrayValueType, Column: "tags"},
-	"models":                   {Location: filter.PropertyTable, ValueType: filter.ArrayValueType, Column: "models"},
 	"repositoryUrl":            {Location: filter.PropertyTable, ValueType: filter.StringValueType, Column: "repositoryUrl"},
-	"publishedDate":            {Location: filter.PropertyTable, ValueType: filter.StringValueType, Column: "publishedDate"},
+	"labels":                   {Location: filter.PropertyTable, ValueType: filter.ArrayValueType, Column: "labels"},
+	"models":                   {Location: filter.PropertyTable, ValueType: filter.ArrayValueType, Column: "models"},
 }

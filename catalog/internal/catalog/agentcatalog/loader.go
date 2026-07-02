@@ -186,6 +186,13 @@ func (l *AgentLoader) updateSources(path string, config *basecatalog.SourceConfi
 		glog.Infof("loaded agent source %s of type %s", source.GetId(), source.Type)
 	}
 
+	if config.NamedQueries != nil {
+		filtered := basecatalog.FilterNamedQueriesByAssetType(config.NamedQueries, basecatalog.AssetTypeAgents)
+		if len(filtered) > 0 {
+			return l.Sources.MergeWithNamedQueries(path, sources, filtered)
+		}
+	}
+
 	return l.Sources.Merge(path, sources)
 }
 
