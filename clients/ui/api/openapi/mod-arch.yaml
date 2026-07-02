@@ -3311,16 +3311,28 @@ components:
               properties:
                 totalModels:
                   type: integer
-                  description: Total number of models evaluated
+                  description: Total number of models evaluated (when assetType=models)
                   example: 1500
                 includedModels:
                   type: integer
-                  description: Number of models that would be included
+                  description: Number of models that would be included (when assetType=models)
                   example: 850
                 excludedModels:
                   type: integer
-                  description: Number of models that would be excluded
+                  description: Number of models that would be excluded (when assetType=models)
                   example: 650
+                totalAssets:
+                  type: integer
+                  description: Total number of assets evaluated (when assetType=mcp_servers)
+                  example: 25
+                includedAssets:
+                  type: integer
+                  description: Number of assets that would be included (when assetType=mcp_servers)
+                  example: 18
+                excludedAssets:
+                  type: integer
+                  description: Number of assets that would be excluded (when assetType=mcp_servers)
+                  example: 7
               required:
                 - totalModels
                 - includedModels

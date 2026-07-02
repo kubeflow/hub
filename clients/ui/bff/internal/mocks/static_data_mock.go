@@ -2698,9 +2698,9 @@ func GetMcpServersWithInclusionStatusListMocks() []models.CatalogSourcePreviewMo
 
 func GetMcpCatalogSourcePreviewSummaryMock() models.CatalogSourcePreviewSummary {
 	return models.CatalogSourcePreviewSummary{
-		TotalModels:    17,
-		IncludedModels: 12,
-		ExcludedModels: 5,
+		TotalAssets:    17,
+		IncludedAssets: 12,
+		ExcludedAssets: 5,
 	}
 }
 

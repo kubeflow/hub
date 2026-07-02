@@ -73,9 +73,9 @@ var _ = Describe("CreateCatalogSourcePreviewHandler", func() {
 
 			By("should return MCP server preview data")
 			Expect(rs.StatusCode).To(Equal(http.StatusOK))
-			Expect(actual.Data.Summary.TotalModels).To(Equal(int32(17)))
-			Expect(actual.Data.Summary.IncludedModels).To(Equal(int32(12)))
-			Expect(actual.Data.Summary.ExcludedModels).To(Equal(int32(5)))
+			Expect(actual.Data.Summary.TotalAssets).To(Equal(int32(17)))
+			Expect(actual.Data.Summary.IncludedAssets).To(Equal(int32(12)))
+			Expect(actual.Data.Summary.ExcludedAssets).To(Equal(int32(5)))
 			for _, item := range actual.Data.Items {
 				Expect(item.Name).To(ContainSubstring("mcp-source/"))
 			}
