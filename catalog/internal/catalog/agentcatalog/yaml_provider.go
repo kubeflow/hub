@@ -31,11 +31,8 @@ type yamlAgent struct {
 	Description      *string                             `yaml:"description,omitempty" json:"description,omitempty"`
 	Readme           *string                             `yaml:"readme,omitempty" json:"readme,omitempty"`
 	Framework        *string                             `yaml:"framework,omitempty" json:"framework,omitempty"`
-	Labels           []string                            `yaml:"labels,omitempty" json:"labels,omitempty"`
-	Models           []string                            `yaml:"models,omitempty" json:"models,omitempty"`
 	Logo             *string                             `yaml:"logo,omitempty" json:"logo,omitempty"`
 	RepositoryUrl    *string                             `yaml:"repositoryUrl,omitempty" json:"repositoryUrl,omitempty"`
-	PublishedDate    *string                             `yaml:"publishedDate,omitempty" json:"publishedDate,omitempty"`
 	Env              []yamlAgentEnvVar                   `yaml:"env,omitempty" json:"env,omitempty"`
 	Artifacts        []yamlAgentArtifact                 `yaml:"artifacts,omitempty" json:"artifacts,omitempty"`
 	CustomProperties *map[string]openapi.MetadataValue   `yaml:"customProperties,omitempty" json:"customProperties,omitempty"`
@@ -123,29 +120,11 @@ func yamlAgentToEntity(ya yamlAgent, sourceID string) models.Agent {
 
 	agent.Properties = &properties
 
-	customProps := []dbmodels.Properties{}
-
-	if ya.PublishedDate != nil {
-		customProps = append(customProps, dbmodels.NewStringProperty("publishedDate", *ya.PublishedDate, true))
-	}
-	if len(ya.Labels) > 0 {
-		if jsonBytes, err := json.Marshal(ya.Labels); err == nil {
-			customProps = append(customProps, dbmodels.NewStringProperty("labels", string(jsonBytes), true))
-		}
-	}
-	if len(ya.Models) > 0 {
-		if jsonBytes, err := json.Marshal(ya.Models); err == nil {
-			customProps = append(customProps, dbmodels.NewStringProperty("models", string(jsonBytes), true))
-		}
-	}
-
 	if ya.CustomProperties != nil {
+		customProps := []dbmodels.Properties{}
 		for key, value := range *ya.CustomProperties {
 			customProps = append(customProps, convertAgentMetadataToProperty(key, value))
 		}
-	}
-
-	if len(customProps) > 0 {
 		agent.CustomProperties = &customProps
 	}
 
