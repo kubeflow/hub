@@ -103,14 +103,17 @@ will persist indefinitely.
 |------|----------------|--------------|
 | `/registered_models/{id}` | `registeredmodelId` | `registered_model_id` |
 | `/registered_models/{id}/versions` | `registeredmodelId` | `registered_model_id` |
-| `/registered_models/{id}/versions/{versionId}/artifacts` | `registeredmodelId` | `registered_model_id` |
 | `/model_versions/{id}` | `modelversionId` | `model_version_id` |
 | `/model_versions/{id}/artifacts` | `modelversionId` | `model_version_id` |
 | `/model_artifacts/{id}` | `modelartifactId` | `model_artifact_id` |
 | `/inference_services/{id}` | `inferenceserviceId` | `inference_service_id` |
+| `/inference_services/{id}/model` | `inferenceserviceId` | `inference_service_id` |
+| `/inference_services/{id}/serves` | `inferenceserviceId` | `inference_service_id` |
+| `/inference_services/{id}/version` | `inferenceserviceId` | `inference_service_id` |
 | `/serving_environments/{id}` | `servingenvironmentId` | `serving_environment_id` |
 | `/serving_environments/{id}/inference_services` | `servingenvironmentId` | `serving_environment_id` |
-| `/experiment_runs` | `experimentrunId` | *N/A (endpoint removed)* |
+
+Experiment endpoints also currently use `experimentId` and `experimentrunId`, but those endpoints are removed from v1.
 
 ### Catalog path parameters
 
@@ -121,7 +124,8 @@ No changes needed. All catalog path parameters already use snake\_case (`server_
 
 | API | Alpha field | v1 field |
 |-----|------------|---------|
-| Catalog | `source_id` (in `CatalogModel` and `MCPServer` response bodies) | `sourceId` |
+| Catalog | `source_id` (in `Agent`, `CatalogModel`, and `MCPServer` response bodies) | `sourceId` |
+| Catalog | `license_link` (in `MCPServer` response bodies) | `licenseLink` |
 
 All other body and response fields are already camelCase in both APIs.
 
