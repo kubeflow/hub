@@ -25,12 +25,54 @@ func NewMcpCatalogSettingsRepository() *McpCatalogSettingsRepository {
 }
 
 func (r *McpCatalogSettingsRepository) GetAllMcpCatalogSourceConfigs(_ context.Context, _ k8s.KubernetesClientInterface, _ string) (*models.McpCatalogSourceConfigList, error) {
+	enabled := true
+	disabled := false
+	isDefault := true
 	return &models.McpCatalogSourceConfigList{
-		Catalogs: []models.McpCatalogSourceConfig{},
+		Catalogs: []models.McpCatalogSourceConfig{
+			{
+				Id:        "community-mcp-source",
+				Name:      "Community MCP Servers",
+				Type:      "yaml",
+				Enabled:   &enabled,
+				Labels:    []string{"community_mcp_servers"},
+				IsDefault: &isDefault,
+			},
+			{
+				Id:      "organization-mcp-source",
+				Name:    "Organization MCP Servers",
+				Type:    "yaml",
+				Enabled: &enabled,
+				Labels:  []string{"organization_mcp_servers"},
+			},
+			{
+				Id:      "standalone-mcp-source",
+				Name:    "Other MCP Servers",
+				Type:    "yaml",
+				Enabled: &enabled,
+				Labels:  []string{},
+			},
+			{
+				Id:      "disabled-mcp-source",
+				Name:    "Disabled MCP source",
+				Type:    "yaml",
+				Enabled: &disabled,
+				Labels:  []string{"disabled_servers"},
+			},
+		},
 	}, nil
 }
 
-func (r *McpCatalogSettingsRepository) GetMcpCatalogSourceConfig(_ context.Context, _ k8s.KubernetesClientInterface, _ string, sourceID string) (*models.McpCatalogSourceConfig, error) {
+func (r *McpCatalogSettingsRepository) GetMcpCatalogSourceConfig(ctx context.Context, client k8s.KubernetesClientInterface, namespace string, sourceID string) (*models.McpCatalogSourceConfig, error) {
+	all, err := r.GetAllMcpCatalogSourceConfigs(ctx, client, namespace)
+	if err != nil {
+		return nil, err
+	}
+	for i := range all.Catalogs {
+		if all.Catalogs[i].Id == sourceID {
+			return &all.Catalogs[i], nil
+		}
+	}
 	return nil, fmt.Errorf("%w: %s", ErrMcpCatalogSourceNotFound, sourceID)
 }
 

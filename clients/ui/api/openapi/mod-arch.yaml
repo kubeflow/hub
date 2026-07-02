@@ -1339,6 +1339,7 @@ paths:
         - ModelCatalogService
       parameters:
         - $ref: "#/components/parameters/kubeflowUserId"
+        - $ref: "#/components/parameters/assetType"
         - name: statusFilter
           description: |-
             Filter the response to show specific model statuses.

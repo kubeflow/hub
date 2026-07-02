@@ -85,7 +85,6 @@ const (
 
 	// MCP server catalog
 	McpServerId                   = "server_id"
-	McpSourceId                   = "source_id"
 	McpServerCatalogPathPrefix    = ApiPathPrefix + "/mcp_catalog"
 	McpServerListPath             = McpServerCatalogPathPrefix + "/mcp_servers"
 	McpServerFilterOptionListPath = McpServerCatalogPathPrefix + "/mcp_servers_filter_options"
@@ -99,7 +98,7 @@ const (
 	// MCP catalog settings
 	McpCatalogSettingsPathPrefix           = SettingsPath + "/mcp_catalog"
 	McpCatalogSettingsSourceConfigListPath = McpCatalogSettingsPathPrefix + "/source_configs"
-	McpCatalogSettingsSourceConfigPath     = McpCatalogSettingsSourceConfigListPath + "/:" + McpSourceId
+	McpCatalogSettingsSourceConfigPath     = McpCatalogSettingsSourceConfigListPath + "/:" + CatalogSourceId
 )
 
 type App struct {

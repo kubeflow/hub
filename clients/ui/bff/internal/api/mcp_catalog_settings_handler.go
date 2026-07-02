@@ -55,7 +55,7 @@ func (app *App) GetMcpCatalogSourceConfigHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	sourceID := ps.ByName(McpSourceId)
+	sourceID := ps.ByName(CatalogSourceId)
 
 	client, err := app.kubernetesClientFactory.GetClient(ctx)
 	if err != nil {
@@ -157,7 +157,7 @@ func (app *App) UpdateMcpCatalogSourceConfigHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	sourceID := ps.ByName(McpSourceId)
+	sourceID := ps.ByName(CatalogSourceId)
 	if sourceID == "" {
 		sourceID = envelope.Data.Id
 	}
@@ -198,7 +198,7 @@ func (app *App) DeleteMcpCatalogSourceConfigHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	sourceID := ps.ByName(McpSourceId)
+	sourceID := ps.ByName(CatalogSourceId)
 
 	_, err = app.repositories.McpCatalogSettingsRepository.DeleteMcpCatalogSourceConfig(ctx, client, namespace, sourceID)
 	if err != nil {
