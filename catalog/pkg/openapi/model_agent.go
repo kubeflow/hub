@@ -41,6 +41,8 @@ type Agent struct {
 	Readme *string `json:"readme,omitempty"`
 	// Agent framework (e.g., langgraph, crewai, autogen).
 	Framework *string `json:"framework,omitempty"`
+	// Labels for categorization and filtering.
+	Labels []string `json:"labels,omitempty"`
 	// URL or path to the agent logo image.
 	Logo *string `json:"logo,omitempty"`
 	// URL to the agent source code repository.
@@ -415,6 +417,38 @@ func (o *Agent) SetFramework(v string) {
 	o.Framework = &v
 }
 
+// GetLabels returns the Labels field value if set, zero value otherwise.
+func (o *Agent) GetLabels() []string {
+	if o == nil || IsNil(o.Labels) {
+		var ret []string
+		return ret
+	}
+	return o.Labels
+}
+
+// GetLabelsOk returns a tuple with the Labels field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *Agent) GetLabelsOk() ([]string, bool) {
+	if o == nil || IsNil(o.Labels) {
+		return nil, false
+	}
+	return o.Labels, true
+}
+
+// HasLabels returns a boolean if a field has been set.
+func (o *Agent) HasLabels() bool {
+	if o != nil && !IsNil(o.Labels) {
+		return true
+	}
+
+	return false
+}
+
+// SetLabels gets a reference to the given []string and assigns it to the Labels field.
+func (o *Agent) SetLabels(v []string) {
+	o.Labels = v
+}
+
 // GetLogo returns the Logo field value if set, zero value otherwise.
 func (o *Agent) GetLogo() string {
 	if o == nil || IsNil(o.Logo) {
@@ -583,6 +617,9 @@ func (o Agent) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.Framework) {
 		toSerialize["framework"] = o.Framework
+	}
+	if !IsNil(o.Labels) {
+		toSerialize["labels"] = o.Labels
 	}
 	if !IsNil(o.Logo) {
 		toSerialize["logo"] = o.Logo

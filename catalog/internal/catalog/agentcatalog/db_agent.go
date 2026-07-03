@@ -199,6 +199,11 @@ func mapDBAgentToAPI(dbAgent models.Agent) openapi.Agent {
 				res.Logo = prop.StringValue
 			case "repositoryUrl":
 				res.RepositoryUrl = prop.StringValue
+			case "labels":
+				var labels []string
+				if err := json.Unmarshal([]byte(*prop.StringValue), &labels); err == nil {
+					res.Labels = labels
+				}
 			case "env":
 				var envVars []openapi.AgentEnvVar
 				if err := json.Unmarshal([]byte(*prop.StringValue), &envVars); err == nil {

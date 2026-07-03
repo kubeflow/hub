@@ -3,6 +3,11 @@ agents:
     displayName: "Travel Planner Agent"
     description: "Multi-step travel planning agent that researches destinations, compares flights and hotels, and builds complete itineraries using tool calling."
     framework: langgraph
+    labels:
+      - travel
+      - planning
+      - react
+      - tool-calling
     repositoryUrl: "https://github.com/example-org/agent-starter-kits/tree/main/agents/travel-planner"
     readme: |
       # Travel Planner Agent
@@ -32,15 +37,9 @@ agents:
     artifacts:
       - uri: "oci://quay.io/example-org/travel-planner-agent:latest"
     customProperties:
-      labels:
-        metadataType: MetadataStringValue
-        string_value: '["travel","planning","react","tool-calling"]'
       models:
         metadataType: MetadataStringValue
         string_value: '["granite-3.1-8b-instruct","mistral-7b-instruct"]'
-      publishedDate:
-        metadataType: MetadataStringValue
-        string_value: "2025-06-01T00:00:00Z"
     createTimeSinceEpoch: "1748736000000"
     lastUpdateTimeSinceEpoch: "1750550400000"
 
@@ -48,6 +47,10 @@ agents:
     displayName: "Code Review Agent"
     description: "Automated code review agent that analyzes pull requests for bugs, security issues, and style violations using a CrewAI multi-agent pipeline."
     framework: crewai
+    labels:
+      - code-review
+      - security
+      - developer-tools
     repositoryUrl: "https://github.com/example-org/agent-starter-kits/tree/main/agents/code-reviewer"
     readme: |
       # Code Review Agent
@@ -72,15 +75,9 @@ agents:
     artifacts:
       - uri: "oci://quay.io/example-org/code-reviewer-agent:latest"
     customProperties:
-      labels:
-        metadataType: MetadataStringValue
-        string_value: '["code-review","security","developer-tools"]'
       models:
         metadataType: MetadataStringValue
         string_value: '["granite-3.1-8b-instruct"]'
-      publishedDate:
-        metadataType: MetadataStringValue
-        string_value: "2025-05-15T00:00:00Z"
     createTimeSinceEpoch: "1747267200000"
     lastUpdateTimeSinceEpoch: "1750550400000"
 
@@ -88,6 +85,10 @@ agents:
     displayName: "Customer Support Bot"
     description: "RAG-powered customer support agent that searches knowledge bases to provide context-aware responses to user queries."
     framework: llamaindex
+    labels:
+      - customer-support
+      - rag
+      - knowledge-base
     repositoryUrl: "https://github.com/example-org/agent-starter-kits/tree/main/agents/customer-support"
     readme: |
       # Customer Support Bot
@@ -106,15 +107,9 @@ agents:
       - name: VECTOR_DB_URI
         required: true
     customProperties:
-      labels:
-        metadataType: MetadataStringValue
-        string_value: '["customer-support","rag","knowledge-base"]'
       models:
         metadataType: MetadataStringValue
         string_value: '["granite-3.1-8b-instruct","llama-3.1-8b-instruct"]'
-      publishedDate:
-        metadataType: MetadataStringValue
-        string_value: "2025-05-20T00:00:00Z"
     createTimeSinceEpoch: "1747699200000"
     lastUpdateTimeSinceEpoch: "1750550400000"
 
@@ -122,6 +117,10 @@ agents:
     displayName: "Data Pipeline Builder"
     description: "Conversational agent that designs and generates Apache Airflow DAGs from natural language descriptions of data workflows."
     framework: langgraph
+    labels:
+      - data-engineering
+      - airflow
+      - code-generation
     repositoryUrl: "https://github.com/example-org/agent-starter-kits/tree/main/agents/data-pipeline-builder"
     readme: |
       # Data Pipeline Builder
@@ -142,15 +141,9 @@ agents:
     artifacts:
       - uri: "oci://quay.io/example-org/data-pipeline-builder:latest"
     customProperties:
-      labels:
-        metadataType: MetadataStringValue
-        string_value: '["data-engineering","airflow","code-generation"]'
       models:
         metadataType: MetadataStringValue
         string_value: '["granite-3.1-8b-instruct"]'
-      publishedDate:
-        metadataType: MetadataStringValue
-        string_value: "2025-06-10T00:00:00Z"
     createTimeSinceEpoch: "1749600000000"
     lastUpdateTimeSinceEpoch: "1750550400000"
 
@@ -158,6 +151,10 @@ agents:
     displayName: "Research Assistant"
     description: "Multi-tool research agent that searches academic papers, summarizes findings, and generates literature reviews with proper citations."
     framework: autogen
+    labels:
+      - research
+      - summarization
+      - academic
     repositoryUrl: "https://github.com/example-org/agent-starter-kits/tree/main/agents/research-assistant"
     readme: |
       # Research Assistant
@@ -177,15 +174,9 @@ agents:
     artifacts:
       - uri: "oci://quay.io/example-org/research-assistant:latest"
     customProperties:
-      labels:
-        metadataType: MetadataStringValue
-        string_value: '["research","summarization","academic"]'
       models:
         metadataType: MetadataStringValue
         string_value: '["granite-3.1-8b-instruct","mistral-7b-instruct"]'
-      publishedDate:
-        metadataType: MetadataStringValue
-        string_value: "2025-05-25T00:00:00Z"
     createTimeSinceEpoch: "1748131200000"
     lastUpdateTimeSinceEpoch: "1750550400000"
 
@@ -193,6 +184,10 @@ agents:
     displayName: "Multi-Agent Orchestrator"
     description: "A2A-compatible orchestrator that coordinates multiple specialized agents over the Agent-to-Agent protocol, enabling complex multi-step workflows with validated container images."
     framework: langgraph
+    labels:
+      - orchestration
+      - a2a
+      - multi-agent
     repositoryUrl: "https://github.com/example-org/agent-starter-kits/tree/main/agents/multi-agent-orchestrator"
     readme: |
       # Multi-Agent Orchestrator
@@ -212,15 +207,9 @@ agents:
     artifacts:
       - uri: "oci://quay.io/example-org/multi-agent-orchestrator:v0.1.0-validated"
     customProperties:
-      labels:
-        metadataType: MetadataStringValue
-        string_value: '["orchestration","a2a","multi-agent"]'
       models:
         metadataType: MetadataStringValue
         string_value: '["granite-3.1-8b-instruct"]'
-      publishedDate:
-        metadataType: MetadataStringValue
-        string_value: "2025-06-15T00:00:00Z"
       protocol:
         metadataType: MetadataStringValue
         string_value: A2A

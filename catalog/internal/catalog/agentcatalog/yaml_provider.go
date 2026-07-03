@@ -31,6 +31,7 @@ type yamlAgent struct {
 	Description      *string                             `yaml:"description,omitempty" json:"description,omitempty"`
 	Readme           *string                             `yaml:"readme,omitempty" json:"readme,omitempty"`
 	Framework        *string                             `yaml:"framework,omitempty" json:"framework,omitempty"`
+	Labels           []string                            `yaml:"labels,omitempty" json:"labels,omitempty"`
 	Logo             *string                             `yaml:"logo,omitempty" json:"logo,omitempty"`
 	RepositoryUrl    *string                             `yaml:"repositoryUrl,omitempty" json:"repositoryUrl,omitempty"`
 	Env              []yamlAgentEnvVar                   `yaml:"env,omitempty" json:"env,omitempty"`
@@ -95,6 +96,11 @@ func yamlAgentToEntity(ya yamlAgent, sourceID string) models.Agent {
 	}
 	if ya.Framework != nil {
 		properties = append(properties, dbmodels.NewStringProperty("framework", *ya.Framework, false))
+	}
+	if len(ya.Labels) > 0 {
+		if jsonBytes, err := json.Marshal(ya.Labels); err == nil {
+			properties = append(properties, dbmodels.NewStringProperty("labels", string(jsonBytes), false))
+		}
 	}
 	if ya.Logo != nil {
 		properties = append(properties, dbmodels.NewStringProperty("logo", *ya.Logo, false))

@@ -18,7 +18,6 @@ var expectedAgentProperties = map[string]filter.PropertyDefinition{
 	"framework":                {Location: filter.PropertyTable, ValueType: filter.StringValueType, Column: "framework"},
 	"repositoryUrl":            {Location: filter.PropertyTable, ValueType: filter.StringValueType, Column: "repositoryUrl"},
 	"labels":                   {Location: filter.PropertyTable, ValueType: filter.ArrayValueType, Column: "labels"},
-	"models":                   {Location: filter.PropertyTable, ValueType: filter.ArrayValueType, Column: "models"},
 }
 
 func TestAgentEntityMappings(t *testing.T) {

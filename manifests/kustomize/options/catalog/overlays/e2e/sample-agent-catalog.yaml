@@ -6,6 +6,11 @@ agents:
     description: "Multi-step travel planning agent that researches destinations, compares flights and hotels, and builds complete itineraries using tool calling."
     readme: "# Travel Planner Agent\n\nA starter kit for building a travel planning assistant. Uses ReAct-style reasoning to break down complex travel requests into research, comparison, and booking steps.\n\n## Features\n- Multi-city itinerary planning\n- Flight and hotel comparison via tool calls\n- Budget-aware recommendations"
     framework: langgraph
+    labels:
+      - travel
+      - planning
+      - react
+      - tool-calling
     logo: "https://example.com/logos/travel-planner.svg"
     repositoryUrl: "https://github.com/example-org/agent-starter-kits/tree/main/agents/travel-planner"
     env:
@@ -18,15 +23,9 @@ agents:
     artifacts:
       - uri: "oci://quay.io/example-org/travel-planner-agent:latest"
     customProperties:
-      labels:
-        metadataType: MetadataStringValue
-        string_value: '["travel","planning","react","tool-calling"]'
       models:
         metadataType: MetadataStringValue
         string_value: '["granite-3.1-8b-instruct","mistral-7b-instruct"]'
-      publishedDate:
-        metadataType: MetadataStringValue
-        string_value: "2025-06-01T00:00:00Z"
     createTimeSinceEpoch: "1748736000000"
     lastUpdateTimeSinceEpoch: "1750550400000"
 
@@ -34,6 +33,10 @@ agents:
     displayName: "Code Review Agent"
     description: "Automated code review agent that analyzes pull requests for bugs, security issues, and style violations using static analysis tools and LLM reasoning."
     framework: crewai
+    labels:
+      - code-review
+      - security
+      - developer-tools
     repositoryUrl: "https://github.com/example-org/agent-starter-kits/tree/main/agents/code-reviewer"
     env:
       - name: MODEL_ENDPOINT
@@ -45,15 +48,9 @@ agents:
     artifacts:
       - uri: "oci://quay.io/example-org/code-reviewer-agent:latest"
     customProperties:
-      labels:
-        metadataType: MetadataStringValue
-        string_value: '["code-review","security","developer-tools"]'
       models:
         metadataType: MetadataStringValue
         string_value: '["granite-3.1-8b-instruct"]'
-      publishedDate:
-        metadataType: MetadataStringValue
-        string_value: "2025-05-15T00:00:00Z"
     createTimeSinceEpoch: "1747267200000"
     lastUpdateTimeSinceEpoch: "1750550400000"
 
@@ -61,6 +58,10 @@ agents:
     displayName: "Customer Support Bot"
     description: "RAG-powered customer support agent that searches knowledge bases and previous tickets to provide accurate, context-aware responses to customer inquiries."
     framework: llamaindex
+    labels:
+      - customer-support
+      - rag
+      - knowledge-base
     repositoryUrl: "https://github.com/example-org/agent-starter-kits/tree/main/agents/customer-support"
     env:
       - name: MODEL_ENDPOINT
@@ -72,15 +73,9 @@ agents:
       - name: VECTOR_DB_TOKEN
         required: false
     customProperties:
-      labels:
-        metadataType: MetadataStringValue
-        string_value: '["customer-support","rag","knowledge-base"]'
       models:
         metadataType: MetadataStringValue
         string_value: '["granite-3.1-8b-instruct","llama-3.1-8b-instruct"]'
-      publishedDate:
-        metadataType: MetadataStringValue
-        string_value: "2025-05-20T00:00:00Z"
     createTimeSinceEpoch: "1747699200000"
     lastUpdateTimeSinceEpoch: "1750550400000"
 
@@ -88,6 +83,11 @@ agents:
     displayName: "Data Pipeline Orchestrator"
     description: "Agent that designs and executes data transformation pipelines by composing SQL queries, API calls, and file operations through MCP tool servers."
     framework: autogen
+    labels:
+      - data-engineering
+      - mcp
+      - pipeline
+      - sql
     repositoryUrl: "https://github.com/example-org/agent-starter-kits/tree/main/agents/data-pipeline"
     env:
       - name: MODEL_ENDPOINT
@@ -101,15 +101,9 @@ agents:
     artifacts:
       - uri: "oci://quay.io/example-org/data-pipeline-agent:latest"
     customProperties:
-      labels:
-        metadataType: MetadataStringValue
-        string_value: '["data-engineering","mcp","pipeline","sql"]'
       models:
         metadataType: MetadataStringValue
         string_value: '["granite-3.1-8b-instruct"]'
-      publishedDate:
-        metadataType: MetadataStringValue
-        string_value: "2025-04-28T00:00:00Z"
     createTimeSinceEpoch: "1745798400000"
     lastUpdateTimeSinceEpoch: "1750550400000"
 
@@ -117,6 +111,11 @@ agents:
     displayName: "Research Assistant"
     description: "Web search and summarization agent that gathers information from multiple sources, cross-references findings, and produces structured research reports."
     framework: langgraph
+    labels:
+      - research
+      - web-search
+      - summarization
+      - report-generation
     repositoryUrl: "https://github.com/example-org/agent-starter-kits/tree/main/agents/research-assistant"
     env:
       - name: MODEL_ENDPOINT
@@ -126,14 +125,8 @@ agents:
       - name: SEARCH_API_KEY
         required: true
     customProperties:
-      labels:
-        metadataType: MetadataStringValue
-        string_value: '["research","web-search","summarization","report-generation"]'
       models:
         metadataType: MetadataStringValue
         string_value: '["granite-3.1-8b-instruct","mistral-7b-instruct"]'
-      publishedDate:
-        metadataType: MetadataStringValue
-        string_value: "2025-05-10T00:00:00Z"
     createTimeSinceEpoch: "1746835200000"
     lastUpdateTimeSinceEpoch: "1750550400000"
