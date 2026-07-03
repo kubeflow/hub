@@ -40,12 +40,9 @@ func (p *Plugin) DatastoreEntries() []plugin.DatastoreEntry {
 				AddString("description").
 				AddString("readme").
 				AddString("framework").
-				AddString("agentType").
-				AddStruct("tags").
-				AddStruct("models").
+				AddStruct("labels").
 				AddString("logo").
 				AddString("repositoryUrl").
-				AddString("publishedDate").
 				AddStruct("env").
 				AddStruct("artifacts"),
 		},

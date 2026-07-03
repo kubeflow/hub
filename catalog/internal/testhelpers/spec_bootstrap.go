@@ -4,6 +4,7 @@
 package testhelpers
 
 import (
+	agentcatalogservice "github.com/kubeflow/hub/catalog/internal/catalog/agentcatalog/service"
 	mcpcatalogservice "github.com/kubeflow/hub/catalog/internal/catalog/mcpcatalog/service"
 	modelcatalogservice "github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog/service"
 	"github.com/kubeflow/hub/catalog/internal/db/service"
@@ -42,6 +43,21 @@ func init() {
 			Category: "artifact",
 			Spec: datastore.NewSpecType(modelcatalogservice.NewCatalogMetricsArtifactRepository).
 				AddString("metricsType"),
+		},
+		plugin.DatastoreEntry{
+			TypeName: "kf.Agent",
+			Category: "context",
+			Spec: datastore.NewSpecType(agentcatalogservice.NewAgentRepository).
+				AddString("source_id").
+				AddString("displayName").
+				AddString("description").
+				AddString("readme").
+				AddString("framework").
+				AddStruct("labels").
+				AddString("logo").
+				AddString("repositoryUrl").
+				AddStruct("env").
+				AddStruct("artifacts"),
 		},
 		plugin.DatastoreEntry{
 			TypeName: service.MCPServerTypeName,
