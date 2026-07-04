@@ -23,6 +23,48 @@ def test_secure_client(monkeypatch):
     assert "user token" in str(e.value).lower()
 
 
+def test_http_server_address_defaults_to_port_8080(mock_get_registered_models):
+    client = ModelRegistry(server_address="http://localhost", author="test_author")
+
+    assert client._api.config.host == "http://localhost:8080"
+    assert client._api.config.verify_ssl is False
+
+
+def test_https_server_address_defaults_to_port_443(mock_get_registered_models):
+    test_token = "test-token"  # noqa: S105
+    client = ModelRegistry(
+        server_address="https://localhost",
+        author="test_author",
+        user_token=test_token,
+    )
+
+    assert client._api.config.host == "https://localhost:443"
+
+
+def test_hint_server_address_port_http_url_uses_embedded_port(mock_get_registered_models, caplog):
+    with caplog.at_level(logging.WARNING):
+        client = ModelRegistry(server_address="http://example.com:8080", author="test")
+
+    assert client._api.config.host == "http://example.com:8080"
+    assert client._api.config.verify_ssl is False
+    assert len(caplog.records) == 0
+
+
+def test_hint_server_address_port_https_url_uses_embedded_port(mock_get_registered_models, caplog):
+    test_token = "test-token"  # noqa: S105
+    with caplog.at_level(logging.WARNING):
+        client = ModelRegistry(
+            server_address="https://example.com:8080",
+            author="test",
+            user_token=test_token,
+        )
+
+    assert client._api.config.host == "https://example.com:8080"
+    assert client._api.config.access_token == test_token
+    assert len(caplog.records) == 1
+    assert "Server address protocol is https://, but port is not 443 or ending with 443" in caplog.records[0].message
+
+
 @pytest.mark.e2e
 async def test_register_new(
     client: ModelRegistry,
