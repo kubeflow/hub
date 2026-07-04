@@ -141,8 +141,14 @@ func (p *ModelRegistryProvider) parseModelVersion(storageUri string) (string, *s
 	}
 
 	registeredModelName := tokens[0]
+	if registeredModelName == "" {
+		return "", nil, ErrInvalidMRURI
+	}
 
 	if len(tokens) == 2 {
+		if tokens[1] == "" {
+			return "", nil, ErrInvalidMRURI
+		}
 		versionName = &tokens[1]
 	}
 

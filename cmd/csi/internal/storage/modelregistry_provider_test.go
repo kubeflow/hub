@@ -72,6 +72,31 @@ func TestParseModelVersion(t *testing.T) {
 			expectedVersion: stringPtr("v1"),
 			expectError:     false,
 		},
+		{
+			name:        "missing model name",
+			storageUri:  "model-registry://",
+			expectError: true,
+		},
+		{
+			name:        "empty model name after slash",
+			storageUri:  "model-registry:///iris",
+			expectError: true,
+		},
+		{
+			name:        "embedded host without model name",
+			storageUri:  "model-registry://localhost:8080/",
+			expectError: true,
+		},
+		{
+			name:        "empty version name",
+			storageUri:  "model-registry://iris/",
+			expectError: true,
+		},
+		{
+			name:        "embedded host with empty version name",
+			storageUri:  "model-registry://localhost:8080/iris/",
+			expectError: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -79,6 +104,7 @@ func TestParseModelVersion(t *testing.T) {
 			model, version, err := provider.parseModelVersion(tt.storageUri)
 			if tt.expectError {
 				assert.Error(t, err)
+				assert.ErrorIs(t, err, ErrInvalidMRURI)
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expectedModel, model)
