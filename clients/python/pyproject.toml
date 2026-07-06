@@ -33,6 +33,7 @@ platformdirs = { version = "^4.0.0", optional = true }
 [tool.poetry.extras]
 hf = ["huggingface-hub"]
 boto3 = ["boto3"]
+s3 = ["boto3"]
 olot = ["olot"]
 signing = ["rh-model-signing", "platformdirs"]
 
