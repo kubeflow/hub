@@ -9,6 +9,7 @@ type ModelCatalogClientInterface interface {
 	CatalogModelsInterface
 	CatalogSourcePreviewInterface
 	McpServerCatalogInterface
+	AgentCatalogInterface
 }
 
 type ModelCatalogClient struct {
@@ -17,6 +18,7 @@ type ModelCatalogClient struct {
 	CatalogModels
 	CatalogSourcePreview
 	McpServerCatalog
+	AgentCatalog
 }
 
 func NewModelCatalogClient(logger *slog.Logger) (ModelCatalogClientInterface, error) {

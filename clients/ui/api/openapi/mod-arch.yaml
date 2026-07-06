@@ -1099,6 +1099,109 @@ paths:
       operationId: getMcpServerTools
       description: Gets the list of tools exposed by an `McpServer`.
 
+  # Agent catalog endpoints
+  /api/v1/agent_catalog/agents:
+    summary: Path used to get the list of agents.
+    description: >-
+      The REST endpoint/path used to list zero or more `Agent` entities from the agent catalog.
+    get:
+      summary: List agents
+      tags:
+        - AgentCatalogService
+      parameters:
+        - $ref: "#/components/parameters/kubeflowUserId"
+        - $ref: "#/components/parameters/namespace"
+        - name: name
+          description: Filter by name using SQL LIKE pattern matching.
+          schema:
+            type: string
+          in: query
+          required: false
+        - name: q
+          description: Free-form keyword search used to filter the response.
+          schema:
+            type: string
+          in: query
+          required: false
+        - name: source
+          description: |-
+            Filter agents by source. This parameter may be included multiple
+            times to include agents from multiple sources.
+          schema:
+            type: string
+          in: query
+          required: false
+        - name: sourceLabel
+          description: |-
+            Filter agents by the label associated with the source. Multiple
+            values can be separated by commas. If one of the values is the
+            string `null`, then entities from every source without a label will
+            be returned.
+          schema:
+            type: string
+          in: query
+          required: false
+        - $ref: "#/components/parameters/filterQuery"
+        - $ref: "#/components/parameters/pageSize"
+        - $ref: "#/components/parameters/orderBy"
+        - $ref: "#/components/parameters/sortOrder"
+        - $ref: "#/components/parameters/nextPageToken"
+      responses:
+        "200":
+          $ref: "#/components/responses/AgentListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      operationId: findAgents
+      description: Gets a list of all `Agent` entities from the agent catalog.
+  /api/v1/agent_catalog/agents_filter_options:
+    summary: Path used to get filter options for agents.
+    description: >-
+      The REST endpoint/path used to list filter options for listing agents.
+    get:
+      summary: List agent filter options
+      tags:
+        - AgentCatalogService
+      parameters:
+        - $ref: "#/components/parameters/kubeflowUserId"
+        - $ref: "#/components/parameters/namespace"
+      responses:
+        "200":
+          $ref: "#/components/responses/AgentFilterOptionsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      operationId: getAgentsFilterOptions
+      description: Gets filter options for the list agents endpoint.
+  /api/v1/agent_catalog/agents/{agentId}:
+    description: >-
+      The REST endpoint/path used to get a single `Agent`.
+    get:
+      summary: Get an agent
+      tags:
+        - AgentCatalogService
+      parameters:
+        - $ref: "#/components/parameters/kubeflowUserId"
+        - $ref: "#/components/parameters/namespace"
+        - $ref: "#/components/parameters/agentId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AgentResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      operationId: getAgent
+      description: Gets a single `Agent` by ID.
+
   # MCP catalog settings endpoints
   /api/v1/settings/mcp_catalog/source_configs:
     summary: Path used to manage MCP catalog sources.
@@ -2543,6 +2646,120 @@ components:
           format: int32
           description: Number of items in result list.
           type: integer
+    Agent:
+      description: An agent in the agent catalog.
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          description: Unique agent ID.
+        name:
+          type: string
+          description: Agent identifier. Must be unique within a source.
+        source_id:
+          type: string
+          description: Catalog source that provides this entity.
+        displayName:
+          type: string
+          description: Human-readable display name.
+        description:
+          type: string
+          description: Short description of the agent.
+        readme:
+          type: string
+          description: Full Markdown documentation.
+        framework:
+          type: string
+          description: Agent framework (e.g., langgraph, crewai, autogen).
+        labels:
+          type: array
+          items:
+            type: string
+          description: Labels for categorization and filtering.
+        logo:
+          type: string
+          description: URL or path to the agent logo image.
+        repositoryUrl:
+          type: string
+          format: uri
+          description: URL to the agent source code repository.
+        env:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentEnvVar"
+          description: Environment variables required for deployment.
+        artifacts:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentArtifact"
+          description: OCI artifacts for agent deployment.
+        customProperties:
+          description: User provided custom properties which are not defined by its type.
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/MetadataValue"
+        createTimeSinceEpoch:
+          format: int64
+          description: Output only. Create time of the resource in millisecond since epoch.
+          type: string
+          readOnly: true
+        lastUpdateTimeSinceEpoch:
+          format: int64
+          description: Output only. Last update time of the resource since epoch in millisecond since epoch.
+          type: string
+          readOnly: true
+    AgentArtifact:
+      description: OCI artifact for agent deployment.
+      type: object
+      required:
+        - uri
+      properties:
+        uri:
+          type: string
+          format: uri
+          description: URI of the artifact (e.g., OCI image reference).
+        createTimeSinceEpoch:
+          format: int64
+          description: Output only. Create time of the resource in millisecond since epoch.
+          type: string
+          readOnly: true
+        lastUpdateTimeSinceEpoch:
+          format: int64
+          description: Output only. Last update time of the resource since epoch in millisecond since epoch.
+          type: string
+          readOnly: true
+    AgentEnvVar:
+      description: An environment variable required by an agent.
+      type: object
+      required:
+        - name
+        - required
+      properties:
+        name:
+          type: string
+          description: Environment variable name.
+        required:
+          type: boolean
+          description: Whether this variable is required for deployment.
+        description:
+          type: string
+          description: Human-readable description of the environment variable.
+    AgentList:
+      description: List of Agent entities.
+      allOf:
+        - type: object
+          properties:
+            items:
+              description: Array of `Agent` entities.
+              type: array
+              items:
+                $ref: "#/components/schemas/Agent"
+          required:
+            - items
+        - $ref: "#/components/schemas/BaseResourceList"
     CatalogArtifact:
       description: A single artifact in the catalog API.
       oneOf:
@@ -2675,6 +2892,12 @@ components:
           description: |-
             Error message when status is Failed. Contains details about what went wrong.
           type: string
+        assetType:
+          $ref: "#/components/schemas/assetType"
+          description: |-
+            The type of assets this source manages. Defaults to "models" if not specified.
+            This field determines which loader processes the source and which API endpoints
+            return the assets.
     CatalogSourceList:
       description: List of CatalogSource entities.
       allOf:
@@ -2718,10 +2941,11 @@ components:
       enum:
         - models
         - mcp_servers
+        - agents
       default: models
       description: |-
         The type of assets a source manages. Filters sources by asset type.
-        "models" for model catalog sources, "mcp_servers" for MCP server catalog sources.
+        "models" for model catalog sources, "mcp_servers" for MCP server catalog sources, "agents" for agent catalog sources.
     FieldFilter:
       type: object
       required:
@@ -3946,6 +4170,26 @@ components:
                 $ref: "#/components/schemas/RoleBinding"
       description: A response containing a single `RoleBinding` entity.
 
+    # Agent Catalog responses
+    AgentListResponse:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AgentList"
+      description: A response containing a list of `Agent` entities.
+    AgentResponse:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Agent"
+      description: A response containing a single `Agent` entity.
+    AgentFilterOptionsResponse:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/FilterOptionsList"
+      description: A response containing filter options for listing agents.
+
     # Model Catalog response
     CatalogModelArtifactListResponse:
       content:
@@ -4177,7 +4421,7 @@ components:
       required: false
     assetType:
       name: assetType
-      description: Filter sources by asset type (models or mcp_servers).
+      description: Filter sources by asset type (models, mcp_servers, or agents).
       schema:
         $ref: "#/components/schemas/assetType"
       in: query
@@ -4372,6 +4616,13 @@ components:
       schema:
         type: string
       in: query
+      required: true
+    agentId:
+      name: agentId
+      description: A unique identifier for an `Agent`.
+      schema:
+        type: string
+      in: path
       required: true
     serverId:
       name: server_id

@@ -183,6 +183,8 @@ func (m *ModelCatalogClientMock) GetAllCatalogSources(client httpclient.HTTPClie
 
 	if assetType == "mcp_servers" {
 		allMockSources = GetMcpServerCatalogSourceListMock()
+	} else if assetType == "agents" {
+		allMockSources = GetAgentCatalogSourceListMock()
 	} else {
 		allMockSources = GetCatalogSourceListMock()
 	}
@@ -310,6 +312,8 @@ func (m *ModelCatalogClientMock) GetCatalogLabels(client httpclient.HTTPClientIn
 	var labels models.CatalogLabelList
 	if assetType == "mcp_servers" {
 		labels = GetMcpServerCatalogLabelListMock()
+	} else if assetType == "agents" {
+		labels = GetAgentCatalogLabelListMock()
 	} else {
 		labels = GetCatalogLabelListMock()
 	}
@@ -458,4 +462,129 @@ func (m *ModelCatalogClientMock) GetMcpServersTools(client httpclient.HTTPClient
 	mcpServerTools := GetMcpToolListMock()
 
 	return &mcpServerTools, nil
+}
+
+func (m *ModelCatalogClientMock) GetAllAgents(client httpclient.HTTPClientInterface, pageValues url.Values) (*models.AgentList, error) {
+	full := GetAgentListMock()
+	sourceLabel := pageValues.Get("sourceLabel")
+
+	var items []models.Agent
+	if sourceLabel != "" {
+		sources := GetAgentCatalogSourceMocks()
+		var matchingSourceIDs []string
+		if sourceLabel == "null" {
+			for _, source := range sources {
+				if source.Enabled != nil && !*source.Enabled {
+					continue
+				}
+				if len(source.Labels) == 0 {
+					matchingSourceIDs = append(matchingSourceIDs, source.Id)
+				}
+			}
+		} else {
+			for _, source := range sources {
+				for _, label := range source.Labels {
+					if label == sourceLabel {
+						matchingSourceIDs = append(matchingSourceIDs, source.Id)
+						break
+					}
+				}
+			}
+		}
+		for _, agent := range full.Items {
+			if agent.SourceID == nil {
+				if sourceLabel == "null" {
+					items = append(items, agent)
+				}
+				continue
+			}
+			for _, sid := range matchingSourceIDs {
+				if *agent.SourceID == sid {
+					items = append(items, agent)
+					break
+				}
+			}
+		}
+	} else {
+		items = full.Items
+	}
+
+	query := pageValues.Get("q")
+	if query != "" {
+		queryLower := strings.ToLower(query)
+		var filtered []models.Agent
+		for _, agent := range items {
+			if strings.Contains(strings.ToLower(agent.Name), queryLower) {
+				filtered = append(filtered, agent)
+			} else if agent.Description != nil && strings.Contains(strings.ToLower(*agent.Description), queryLower) {
+				filtered = append(filtered, agent)
+			}
+		}
+		items = filtered
+	}
+
+	pageSizeStr := pageValues.Get("pageSize")
+	pageSize := 10
+	if pageSizeStr != "" {
+		if parsed, err := strconv.Atoi(pageSizeStr); err == nil && parsed > 0 {
+			pageSize = parsed
+		}
+	}
+
+	pageTokenStr := pageValues.Get("nextPageToken")
+	startIndex := 0
+	if pageTokenStr != "" {
+		if parsed, err := strconv.Atoi(pageTokenStr); err == nil && parsed > 0 {
+			startIndex = parsed
+		}
+	}
+
+	totalSize := len(items)
+	endIndex := startIndex + pageSize
+	if endIndex > totalSize {
+		endIndex = totalSize
+	}
+
+	var pagedItems []models.Agent
+	if startIndex < totalSize {
+		pagedItems = items[startIndex:endIndex]
+	} else {
+		pagedItems = []models.Agent{}
+	}
+
+	var nextPageToken string
+	if endIndex < totalSize {
+		nextPageToken = strconv.Itoa(endIndex)
+	}
+
+	size := len(pagedItems)
+	if size > math.MaxInt32 {
+		size = math.MaxInt32
+	}
+	ps := pageSize
+	if ps > math.MaxInt32 {
+		ps = math.MaxInt32
+	}
+
+	return &models.AgentList{
+		Items:         pagedItems,
+		Size:          int32(size),
+		PageSize:      int32(ps),
+		NextPageToken: nextPageToken,
+	}, nil
+}
+
+func (m *ModelCatalogClientMock) GetAgentsFilter(client httpclient.HTTPClientInterface) (*models.FilterOptionsList, error) {
+	agentFilterOptions := GetAgentFilterOptionsListMock()
+	return &agentFilterOptions, nil
+}
+
+func (m *ModelCatalogClientMock) GetAgent(client httpclient.HTTPClientInterface, agentId string) (*models.Agent, error) {
+	allMocks := GetAgentMocks()
+	for i := range allMocks {
+		if allMocks[i].ID == agentId {
+			return &allMocks[i], nil
+		}
+	}
+	return nil, fmt.Errorf("agent id doesn't exist: %s", agentId)
 }
