@@ -22,6 +22,9 @@ import {
   MCP_CATALOG_SETTINGS_PAGE_TITLE,
 } from './routes/mcpCatalogSettings/mcpCatalogSettings';
 import { modelRegistryUrl } from './pages/modelRegistry/screens/routeUtils';
+import { MODEL_CATALOG_TITLE } from './pages/modelCatalog/const';
+import { MCP_CATALOG_TITLE } from './pages/mcpCatalog/const';
+import { AGENTS_CATALOG_TITLE } from './pages/agentsCatalog/const';
 import useUser from './hooks/useUser';
 
 export const useAdminSettings = (): NavDataItem[] => {
@@ -68,9 +71,9 @@ export const useNavData = (): NavDataItem[] => {
 
   if (isStandalone || isFederated) {
     baseNavItems.push(
-      { label: 'Model Catalog', path: modelCatalogUrl() },
-      { label: 'MCP Catalog', path: mcpCatalogUrl() },
-      { label: 'Agents Catalog', path: agentsCatalogUrl() },
+      { label: MODEL_CATALOG_TITLE, path: modelCatalogUrl() },
+      { label: MCP_CATALOG_TITLE, path: mcpCatalogUrl() },
+      { label: AGENTS_CATALOG_TITLE, path: agentsCatalogUrl() },
     );
   }
 

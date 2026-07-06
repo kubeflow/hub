@@ -1,6 +1,6 @@
 import type { McpFilterCategoryKey } from '~/app/pages/mcpCatalog/types/mcpCatalogFilterOptions';
 
-export const MCP_CATALOG_TITLE = 'MCP Catalog';
+export const MCP_CATALOG_TITLE = 'MCP catalog';
 export const MCP_CATALOG_DESCRIPTION =
   'Browse and deploy MCP servers provided by Red Hat partners and other providers.';
 

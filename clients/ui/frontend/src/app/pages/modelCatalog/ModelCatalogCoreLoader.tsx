@@ -12,6 +12,7 @@ import * as React from 'react';
 import { Outlet } from 'react-router-dom';
 import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
 import { EmptyCatalogState, hasSourcesWithModels } from '~/app/shared/components/catalog';
+import { MODEL_CATALOG_TITLE, MODEL_CATALOG_DESCRIPTION } from '~/app/pages/modelCatalog/const';
 
 const ModelCatalogCoreLoader: React.FC = () => {
   const { catalogSources, catalogSourcesLoaded, catalogSourcesLoadError } =
@@ -22,8 +23,10 @@ const ModelCatalogCoreLoader: React.FC = () => {
   if (catalogSourcesLoadError) {
     return (
       <ApplicationsPage
-        title={<TitleWithIcon title="Model Catalog" objectType={ProjectObjectType.modelCatalog} />}
-        description="Discover models that are available for your organization to register, deploy, and customize."
+        title={
+          <TitleWithIcon title={MODEL_CATALOG_TITLE} objectType={ProjectObjectType.modelCatalog} />
+        }
+        description={MODEL_CATALOG_DESCRIPTION}
         headerContent={null}
         empty
         emptyStatePage={
@@ -41,8 +44,10 @@ const ModelCatalogCoreLoader: React.FC = () => {
   if (!catalogSourcesLoaded) {
     return (
       <ApplicationsPage
-        title={<TitleWithIcon title="Model Catalog" objectType={ProjectObjectType.modelCatalog} />}
-        description="Discover models that are available for your organization to register, deploy, and customize."
+        title={
+          <TitleWithIcon title={MODEL_CATALOG_TITLE} objectType={ProjectObjectType.modelCatalog} />
+        }
+        description={MODEL_CATALOG_DESCRIPTION}
         headerContent={null}
         empty
         emptyStatePage={<Bullseye>Loading catalog sources...</Bullseye>}
@@ -54,8 +59,10 @@ const ModelCatalogCoreLoader: React.FC = () => {
   if (catalogSources?.items?.length === 0 || !hasSourcesWithModels(catalogSources)) {
     return (
       <ApplicationsPage
-        title={<TitleWithIcon title="Model Catalog" objectType={ProjectObjectType.modelCatalog} />}
-        description="Discover models that are available for your organization to register, deploy, and customize."
+        title={
+          <TitleWithIcon title={MODEL_CATALOG_TITLE} objectType={ProjectObjectType.modelCatalog} />
+        }
+        description={MODEL_CATALOG_DESCRIPTION}
         empty
         emptyStatePage={
           <EmptyCatalogState

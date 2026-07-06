@@ -6,6 +6,7 @@ import { ModelArtifact } from '~/app/types';
 import { modelSourcePropertiesToCatalogParams } from '~/concepts/modelRegistry/utils';
 import { getCatalogModelDetailsRoute } from '~/app/routes/modelCatalog/catalogModelDetails';
 import { getModelName } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
+import { MODEL_CATALOG_TITLE } from '~/app/pages/modelCatalog/const';
 
 type ModelVersionRegisteredFromLinkProps = {
   modelArtifact: ModelArtifact;
@@ -39,7 +40,7 @@ const ModelVersionRegisteredFromLink: React.FC<ModelVersionRegisteredFromLinkPro
         ) : (
           registeredfromText
         )}{' '}
-        in Model catalog
+        in {MODEL_CATALOG_TITLE}
       </>
     );
   };

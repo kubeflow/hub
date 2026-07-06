@@ -181,11 +181,12 @@ func (m *ModelCatalogClientMock) GetAllCatalogSources(client httpclient.HTTPClie
 	var allMockSources models.CatalogSourceList
 	assetType := pageValues.Get("assetType")
 
-	if assetType == "mcp_servers" {
+	switch assetType {
+	case "mcp_servers":
 		allMockSources = GetMcpServerCatalogSourceListMock()
-	} else if assetType == "agents" {
+	case "agents":
 		allMockSources = GetAgentCatalogSourceListMock()
-	} else {
+	default:
 		allMockSources = GetCatalogSourceListMock()
 	}
 	var filteredMockSources []models.CatalogSource
@@ -310,11 +311,12 @@ func (m *ModelCatalogClientMock) GetCatalogLabels(client httpclient.HTTPClientIn
 	assetType := pageValues.Get("assetType")
 
 	var labels models.CatalogLabelList
-	if assetType == "mcp_servers" {
+	switch assetType {
+	case "mcp_servers":
 		labels = GetMcpServerCatalogLabelListMock()
-	} else if assetType == "agents" {
+	case "agents":
 		labels = GetAgentCatalogLabelListMock()
-	} else {
+	default:
 		labels = GetCatalogLabelListMock()
 	}
 	return &labels, nil

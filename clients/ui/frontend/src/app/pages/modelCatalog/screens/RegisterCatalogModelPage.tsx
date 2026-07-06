@@ -13,6 +13,7 @@ import { useCatalogModelArtifacts } from '~/app/hooks/modelCatalog/useCatalogMod
 import { getCatalogModelDetailsRoute } from '~/app/routes/modelCatalog/catalogModelDetails';
 import { decodeParams, getModelName } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
 import { modelCatalogUrl } from '~/app/routes/modelCatalog/catalogModel';
+import { MODEL_CATALOG_TITLE } from '~/app/pages/modelCatalog/const';
 import RegisterCatalogModelForm from './RegisterCatalogModelForm';
 
 const RegisterCatalogModelPageInner: React.FC = () => {
@@ -48,7 +49,9 @@ const RegisterCatalogModelPageInner: React.FC = () => {
       description="Create and register the first version of a new model."
       breadcrumb={
         <Breadcrumb>
-          <BreadcrumbItem render={() => <Link to={modelCatalogUrl()}>Model catalog</Link>} />
+          <BreadcrumbItem
+            render={() => <Link to={modelCatalogUrl()}>{MODEL_CATALOG_TITLE}</Link>}
+          />
           <BreadcrumbItem
             data-testid="breadcrumb-model-name"
             render={() =>

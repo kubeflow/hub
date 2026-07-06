@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Breadcrumb, BreadcrumbItem } from '@patternfly/react-core';
 import { ApplicationsPage } from 'mod-arch-shared';
 import { agentsCatalogUrl } from '~/app/routes/agentsCatalog/agentsCatalog';
+import { AGENTS_CATALOG_TITLE } from '~/app/pages/agentsCatalog/const';
 
 const AgentDetailsPage: React.FC = () => {
   const { agentName = '' } = useParams<{ agentName: string }>();
@@ -13,7 +14,7 @@ const AgentDetailsPage: React.FC = () => {
       breadcrumb={
         <Breadcrumb>
           <BreadcrumbItem>
-            <Link to={agentsCatalogUrl()}>Agents Catalog</Link>
+            <Link to={agentsCatalogUrl()}>{AGENTS_CATALOG_TITLE}</Link>
           </BreadcrumbItem>
           <BreadcrumbItem isActive data-testid="breadcrumb-agent-name">
             {agentName || 'Details'}
