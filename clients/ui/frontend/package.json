@@ -135,7 +135,7 @@
     "cypress-mochawesome-reporter": "^3.8.2",
     "cypress-multi-reporters": "^2.0.5",
     "eslint": "^8.57.0",
-    "eslint-config-prettier": "^9.1.0",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-import-resolver-node": "^0.3.7",
     "eslint-import-resolver-typescript": "^3.8.3",
     "eslint-plugin-cypress": "^3.3.0",
