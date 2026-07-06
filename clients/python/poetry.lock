@@ -530,36 +530,36 @@ typing-extensions = {version = ">=4.6.0", markers = "python_full_version < \"3.1
 
 [[package]]
 name = "boto3"
-version = "1.43.14"
+version = "1.43.40"
 description = "The AWS SDK for Python"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
 markers = "extra == \"boto3\""
 files = [
-    {file = "boto3-1.43.14-py3-none-any.whl", hash = "sha256:574335744656cfed0b362a0a0467aaf2eb2bf15526edcd02d31d3c661f4b09e4"},
-    {file = "boto3-1.43.14.tar.gz", hash = "sha256:5c0a994b3182061ee101812e721100717a4d664f9f4ceaf4a86b6d032ce9fc2d"},
+    {file = "boto3-1.43.40-py3-none-any.whl", hash = "sha256:5fa80de4b4b7bab383dd8c563e235d51fcc7df4502662af56f0a2472c3c15651"},
+    {file = "boto3-1.43.40.tar.gz", hash = "sha256:a7108b9ce25b8f92d1ce96b9e35090794d5c58b219ff2f6a7a65c8986a4ed6f4"},
 ]
 
 [package.dependencies]
-botocore = ">=1.43.14,<1.44.0"
+botocore = ">=1.43.40,<1.44.0"
 jmespath = ">=0.7.1,<2.0.0"
-s3transfer = ">=0.17.0,<0.18.0"
+s3transfer = ">=0.19.0,<0.20.0"
 
 [package.extras]
 crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.43.14"
+version = "1.43.40"
 description = "Low-level, data-driven core of boto 3."
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
 markers = "extra == \"boto3\""
 files = [
-    {file = "botocore-1.43.14-py3-none-any.whl", hash = "sha256:1f4a2a95ea78c10398e78431e98c1fe47adb54a7b10a32975144c1f541186658"},
-    {file = "botocore-1.43.14.tar.gz", hash = "sha256:b9e500737e43d2f147c9d4e23b54360335e77d4c0ba90a318f51b65e06cb8516"},
+    {file = "botocore-1.43.40-py3-none-any.whl", hash = "sha256:0bc9d352267c9e48415c5d7bb61ff05c3f193eac2fc7e69cfd229a05fbab67d6"},
+    {file = "botocore-1.43.40.tar.gz", hash = "sha256:2085a4314cfd2c8bc1d08ab8039f76c92e99278db0d2a0e2437010526d5d5d70"},
 ]
 
 [package.dependencies]
@@ -3345,15 +3345,15 @@ files = [
 
 [[package]]
 name = "s3transfer"
-version = "0.17.0"
+version = "0.19.0"
 description = "An Amazon S3 Transfer Manager"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
 markers = "extra == \"boto3\""
 files = [
-    {file = "s3transfer-0.17.0-py3-none-any.whl", hash = "sha256:ce3801712acf4ad3e89fb9990df97b4972e93f4b3b0004d214be5bce12814c20"},
-    {file = "s3transfer-0.17.0.tar.gz", hash = "sha256:9edeb6d1c3c2f89d6050348548834ad8289610d886e5bf7b7207728bd43ce33a"},
+    {file = "s3transfer-0.19.0-py3-none-any.whl", hash = "sha256:777cc2415536f1debadb5c2ef7779275d0fc0fe0e042411cdd6caebeb2685262"},
+    {file = "s3transfer-0.19.0.tar.gz", hash = "sha256:ce436931687addc4c1712d52d40b32f53e88315723f107ffa20ba82b05a0f685"},
 ]
 
 [package.dependencies]
@@ -3408,9 +3408,10 @@ tests = ["aiohttp (>=3.9.1,<4.0)", "allure-python-commons (>=2.13.0)", "coverage
 name = "securesystemslib"
 version = "1.3.1"
 description = "A library that provides cryptographic and general-purpose routines for Secure Systems Lab projects at NYU"
-optional = false
+optional = true
 python-versions = "~=3.8"
 groups = ["main"]
+markers = "extra == \"signing\""
 files = [
     {file = "securesystemslib-1.3.1-py3-none-any.whl", hash = "sha256:2e5414bbdde33155a91805b295cbedc4ae3f12b48dccc63e1089093537f43c81"},
     {file = "securesystemslib-1.3.1.tar.gz", hash = "sha256:ca915f4b88209bb5450ac05426b859d74b7cd1421cafcf73b8dd3418a0b17486"},
@@ -3894,9 +3895,10 @@ telegram = ["requests"]
 name = "tuf"
 version = "7.0.0"
 description = "A secure updater framework for Python"
-optional = false
+optional = true
 python-versions = ">=3.10"
 groups = ["main"]
+markers = "extra == \"signing\""
 files = [
     {file = "tuf-7.0.0-py3-none-any.whl", hash = "sha256:572bdbdc9ff4a82278a0d4773e6100863b9b33023f27575e84ca65b486dd0d79"},
     {file = "tuf-7.0.0.tar.gz", hash = "sha256:9d2e6723538e0d5a3e482b6de805fcfe64481448d5853039ba6b06ba541efd7f"},
@@ -3991,6 +3993,7 @@ files = [
     {file = "urllib3-2.7.0-py3-none-any.whl", hash = "sha256:9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897"},
     {file = "urllib3-2.7.0.tar.gz", hash = "sha256:231e0ec3b63ceb14667c67be60f2f2c40a518cb38b03af60abc813da26505f4c"},
 ]
+markers = {main = "extra == \"boto3\" or extra == \"signing\""}
 
 [package.extras]
 brotli = ["brotli (>=1.2.0) ; platform_python_implementation == \"CPython\"", "brotlicffi (>=1.2.0.0) ; platform_python_implementation != \"CPython\""]
