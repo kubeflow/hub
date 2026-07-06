@@ -588,5 +588,11 @@ func (m *ModelCatalogClientMock) GetAgent(client httpclient.HTTPClientInterface,
 			return &allMocks[i], nil
 		}
 	}
-	return nil, fmt.Errorf("agent id doesn't exist: %s", agentId)
+	return nil, &httpclient.HTTPError{
+		StatusCode: 404,
+		ErrorResponse: httpclient.ErrorResponse{
+			Code:    "404",
+			Message: fmt.Sprintf("agent not found: %s", agentId),
+		},
+	}
 }
