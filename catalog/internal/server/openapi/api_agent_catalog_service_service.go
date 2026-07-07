@@ -79,6 +79,20 @@ func (s *AgentCatalogServiceAPIService) FindAgentsFilterOptions(ctx context.Cont
 	return Response(http.StatusOK, *filterOptions), nil
 }
 
+func (s *AgentCatalogServiceAPIService) GetAgentArtifacts(ctx context.Context, id string, artifactType []model.AgentArtifactTypeQueryParam, pageSize string, orderBy model.OrderByField, sortOrder model.SortOrder, nextPageToken string) (ImplResponse, error) {
+	pageSizeInt, err := parsePaginationParams(pageSize, nextPageToken)
+	if err != nil {
+		return ErrorResponse(http.StatusBadRequest, err), err
+	}
+
+	artifacts, err := s.provider.GetAgentArtifacts(ctx, id, artifactType, pageSizeInt, orderBy, sortOrder, &nextPageToken)
+	if err != nil {
+		return ErrorResponse(api.ErrToStatus(err), err), err
+	}
+
+	return Response(http.StatusOK, artifacts), nil
+}
+
 func (s *AgentCatalogServiceAPIService) GetAgent(ctx context.Context, id string) (ImplResponse, error) {
 	agent, err := s.provider.GetAgent(ctx, id)
 	if err != nil {

@@ -31,16 +31,18 @@ type ListAgentsParams struct {
 
 // DBAgentCatalog provides database-backed agent catalog operations.
 type DBAgentCatalog struct {
-	agentRepo                 models.AgentRepository
-	propertyOptionsRepository sharedmodels.PropertyOptionsRepository
-	sources                   *AgentSourceCollection
+	agentRepo                       models.AgentRepository
+	agentTemplateArtifactRepo       models.AgentTemplateArtifactRepository
+	propertyOptionsRepository       sharedmodels.PropertyOptionsRepository
+	sources                         *AgentSourceCollection
 }
 
 func NewDBAgentCatalog(services Services, sources *AgentSourceCollection) *DBAgentCatalog {
 	return &DBAgentCatalog{
-		agentRepo:                 services.AgentRepository,
-		propertyOptionsRepository: services.PropertyOptionsRepository,
-		sources:                   sources,
+		agentRepo:                       services.AgentRepository,
+		agentTemplateArtifactRepo:       services.AgentTemplateArtifactRepository,
+		propertyOptionsRepository:       services.PropertyOptionsRepository,
+		sources:                         sources,
 	}
 }
 
@@ -148,6 +150,92 @@ func (d *DBAgentCatalog) GetAgent(ctx context.Context, agentID string) (*openapi
 	return &apiAgent, nil
 }
 
+func (d *DBAgentCatalog) GetAgentArtifacts(ctx context.Context, agentID string, artifactType []openapi.AgentArtifactTypeQueryParam, pageSize int32, orderBy openapi.OrderByField, sortOrder openapi.SortOrder, nextPageToken *string) (openapi.AgentArtifactList, error) {
+	id, err := apiutils.ValidateIDAsInt32(agentID, "agent")
+	if err != nil {
+		return openapi.AgentArtifactList{}, fmt.Errorf("invalid agent ID '%s': %w", agentID, api.ErrBadRequest)
+	}
+
+	wantImages := len(artifactType) == 0
+	wantTemplates := len(artifactType) == 0
+	for _, at := range artifactType {
+		switch at {
+		case openapi.AGENTARTIFACTTYPEQUERYPARAM_IMAGE_ARTIFACT:
+			wantImages = true
+		case openapi.AGENTARTIFACTTYPEQUERYPARAM_TEMPLATE_ARTIFACT:
+			wantTemplates = true
+		}
+	}
+
+	var items []openapi.AgentArtifact
+
+	if wantImages {
+		agent, err := d.GetAgent(ctx, agentID)
+		if err != nil {
+			return openapi.AgentArtifactList{}, err
+		}
+		for i := range agent.Artifacts {
+			items = append(items, openapi.AgentArtifact{AgentImageArtifact: &agent.Artifacts[i]})
+		}
+	}
+
+	if wantTemplates && d.agentTemplateArtifactRepo != nil {
+		parentID := id
+		listOpts := models.AgentTemplateArtifactListOptions{
+			ParentResourceID: &parentID,
+		}
+		templateList, err := d.agentTemplateArtifactRepo.List(listOpts)
+		if err != nil {
+			return openapi.AgentArtifactList{}, err
+		}
+		for _, tmpl := range templateList.Items {
+			items = append(items, mapDBTemplateArtifactToAPI(tmpl))
+		}
+	}
+
+	if items == nil {
+		items = []openapi.AgentArtifact{}
+	}
+
+	return openapi.AgentArtifactList{
+		Items:    items,
+		Size:     int32(len(items)),
+		PageSize: pageSize,
+	}, nil
+}
+
+func mapDBTemplateArtifactToAPI(dbArtifact models.AgentTemplateArtifact) openapi.AgentArtifact {
+	tmpl := openapi.AgentTemplateArtifact{
+		ArtifactType: "template-artifact",
+	}
+
+	if dbArtifact.GetID() != nil {
+		idStr := strconv.FormatInt(int64(*dbArtifact.GetID()), 10)
+		tmpl.Id = &idStr
+	}
+
+	attrs := dbArtifact.GetAttributes()
+	if attrs != nil {
+		if attrs.Name != nil {
+			tmpl.Name = attrs.Name
+		}
+		if attrs.Content != nil {
+			tmpl.Content = *attrs.Content
+		}
+		if attrs.CreateTimeSinceEpoch != nil {
+			ts := strconv.FormatInt(*attrs.CreateTimeSinceEpoch, 10)
+			tmpl.CreateTimeSinceEpoch = &ts
+		}
+		if attrs.LastUpdateTimeSinceEpoch != nil {
+			ts := strconv.FormatInt(*attrs.LastUpdateTimeSinceEpoch, 10)
+			tmpl.LastUpdateTimeSinceEpoch = &ts
+		}
+		tmpl.ExternalId = attrs.ExternalID
+	}
+
+	return openapi.AgentArtifact{AgentTemplateArtifact: &tmpl}
+}
+
 func displayNameFromStoredName(storedName string) string {
 	if _, after, ok := strings.Cut(storedName, ":"); ok {
 		return after
@@ -210,7 +298,7 @@ func mapDBAgentToAPI(dbAgent models.Agent) openapi.Agent {
 					res.Env = envVars
 				}
 			case "artifacts":
-				var artifacts []openapi.AgentArtifact
+				var artifacts []openapi.AgentImageArtifact
 				if err := json.Unmarshal([]byte(*prop.StringValue), &artifacts); err == nil {
 					res.Artifacts = artifacts
 				}

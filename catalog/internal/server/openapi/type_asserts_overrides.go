@@ -16,6 +16,17 @@ func AssertCatalogArtifactConstraints(obj model.CatalogArtifact) error {
 	return nil
 }
 
+// AssertAgentArtifactRequired checks if the required fields are not zero-ed
+func AssertAgentArtifactRequired(obj model.AgentArtifact) error {
+	// AgentArtifact is a oneOf union — field validation is on the concrete types.
+	return nil
+}
+
+// AssertAgentArtifactConstraints checks if the values respects the defined constraints
+func AssertAgentArtifactConstraints(obj model.AgentArtifact) error {
+	return nil
+}
+
 // AssertPreviewCatalogSourceResponseRequired checks if the required fields are not zero-ed
 func AssertPreviewCatalogSourceResponseRequired(obj model.PreviewCatalogSourceResponse) error {
 	return nil

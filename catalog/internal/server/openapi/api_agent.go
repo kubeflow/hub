@@ -24,6 +24,7 @@ type AgentCatalogServiceAPIRouter interface {
 	FindAgents(http.ResponseWriter, *http.Request)
 	FindAgentsFilterOptions(http.ResponseWriter, *http.Request)
 	GetAgent(http.ResponseWriter, *http.Request)
+	GetAgentArtifacts(http.ResponseWriter, *http.Request)
 }
 
 // AgentCatalogServiceAPIServicer defines the api actions for the AgentCatalogServiceAPI service
@@ -34,4 +35,5 @@ type AgentCatalogServiceAPIServicer interface {
 	FindAgents(context.Context, string, string, []string, []string, string, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
 	FindAgentsFilterOptions(context.Context) (ImplResponse, error)
 	GetAgent(context.Context, string) (ImplResponse, error)
+	GetAgentArtifacts(context.Context, string, []model.AgentArtifactTypeQueryParam, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
 }

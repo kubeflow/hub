@@ -49,8 +49,8 @@ type Agent struct {
 	RepositoryUrl *string `json:"repositoryUrl,omitempty"`
 	// Environment variables required for deployment.
 	Env []AgentEnvVar `json:"env,omitempty"`
-	// OCI artifacts for agent deployment.
-	Artifacts []AgentArtifact `json:"artifacts,omitempty"`
+	// OCI image artifacts for agent deployment.
+	Artifacts []AgentImageArtifact `json:"artifacts,omitempty"`
 }
 
 type _Agent Agent
@@ -546,9 +546,9 @@ func (o *Agent) SetEnv(v []AgentEnvVar) {
 }
 
 // GetArtifacts returns the Artifacts field value if set, zero value otherwise.
-func (o *Agent) GetArtifacts() []AgentArtifact {
+func (o *Agent) GetArtifacts() []AgentImageArtifact {
 	if o == nil || IsNil(o.Artifacts) {
-		var ret []AgentArtifact
+		var ret []AgentImageArtifact
 		return ret
 	}
 	return o.Artifacts
@@ -556,7 +556,7 @@ func (o *Agent) GetArtifacts() []AgentArtifact {
 
 // GetArtifactsOk returns a tuple with the Artifacts field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *Agent) GetArtifactsOk() ([]AgentArtifact, bool) {
+func (o *Agent) GetArtifactsOk() ([]AgentImageArtifact, bool) {
 	if o == nil || IsNil(o.Artifacts) {
 		return nil, false
 	}
@@ -572,8 +572,8 @@ func (o *Agent) HasArtifacts() bool {
 	return false
 }
 
-// SetArtifacts gets a reference to the given []AgentArtifact and assigns it to the Artifacts field.
-func (o *Agent) SetArtifacts(v []AgentArtifact) {
+// SetArtifacts gets a reference to the given []AgentImageArtifact and assigns it to the Artifacts field.
+func (o *Agent) SetArtifacts(v []AgentImageArtifact) {
 	o.Artifacts = v
 }
 

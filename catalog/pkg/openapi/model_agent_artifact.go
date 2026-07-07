@@ -12,147 +12,108 @@ package openapi
 
 import (
 	"encoding/json"
+	"fmt"
 )
 
-// checks if the AgentArtifact type satisfies the MappedNullable interface at compile time
-var _ MappedNullable = &AgentArtifact{}
-
-// AgentArtifact OCI artifact for agent deployment.
+// AgentArtifact - A single artifact in the agent catalog API.
 type AgentArtifact struct {
-	// Output only. Create time of the resource in millisecond since epoch.
-	CreateTimeSinceEpoch *string `json:"createTimeSinceEpoch,omitempty"`
-	// Output only. Last update time of the resource since epoch in millisecond since epoch.
-	LastUpdateTimeSinceEpoch *string `json:"lastUpdateTimeSinceEpoch,omitempty"`
-	// URI of the artifact (e.g., OCI image reference).
-	Uri string `json:"uri"`
+	AgentImageArtifact    *AgentImageArtifact
+	AgentTemplateArtifact *AgentTemplateArtifact
 }
 
-type _AgentArtifact AgentArtifact
-
-// NewAgentArtifact instantiates a new AgentArtifact object
-// This constructor will assign default values to properties that have it defined,
-// and makes sure properties required by API are set, but the set of arguments
-// will change when the set of required properties is changed
-func NewAgentArtifact(uri string) *AgentArtifact {
-	this := AgentArtifact{}
-	this.Uri = uri
-	return &this
-}
-
-// NewAgentArtifactWithDefaults instantiates a new AgentArtifact object
-// This constructor will only assign default values to properties that have it defined,
-// but it doesn't guarantee that properties required by API are set
-func NewAgentArtifactWithDefaults() *AgentArtifact {
-	this := AgentArtifact{}
-	return &this
-}
-
-// GetCreateTimeSinceEpoch returns the CreateTimeSinceEpoch field value if set, zero value otherwise.
-func (o *AgentArtifact) GetCreateTimeSinceEpoch() string {
-	if o == nil || IsNil(o.CreateTimeSinceEpoch) {
-		var ret string
-		return ret
+// AgentImageArtifactAsAgentArtifact is a convenience function that returns AgentImageArtifact wrapped in AgentArtifact
+func AgentImageArtifactAsAgentArtifact(v *AgentImageArtifact) AgentArtifact {
+	return AgentArtifact{
+		AgentImageArtifact: v,
 	}
-	return *o.CreateTimeSinceEpoch
 }
 
-// GetCreateTimeSinceEpochOk returns a tuple with the CreateTimeSinceEpoch field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *AgentArtifact) GetCreateTimeSinceEpochOk() (*string, bool) {
-	if o == nil || IsNil(o.CreateTimeSinceEpoch) {
-		return nil, false
+// AgentTemplateArtifactAsAgentArtifact is a convenience function that returns AgentTemplateArtifact wrapped in AgentArtifact
+func AgentTemplateArtifactAsAgentArtifact(v *AgentTemplateArtifact) AgentArtifact {
+	return AgentArtifact{
+		AgentTemplateArtifact: v,
 	}
-	return o.CreateTimeSinceEpoch, true
 }
 
-// HasCreateTimeSinceEpoch returns a boolean if a field has been set.
-func (o *AgentArtifact) HasCreateTimeSinceEpoch() bool {
-	if o != nil && !IsNil(o.CreateTimeSinceEpoch) {
-		return true
-	}
-
-	return false
-}
-
-// SetCreateTimeSinceEpoch gets a reference to the given string and assigns it to the CreateTimeSinceEpoch field.
-func (o *AgentArtifact) SetCreateTimeSinceEpoch(v string) {
-	o.CreateTimeSinceEpoch = &v
-}
-
-// GetLastUpdateTimeSinceEpoch returns the LastUpdateTimeSinceEpoch field value if set, zero value otherwise.
-func (o *AgentArtifact) GetLastUpdateTimeSinceEpoch() string {
-	if o == nil || IsNil(o.LastUpdateTimeSinceEpoch) {
-		var ret string
-		return ret
-	}
-	return *o.LastUpdateTimeSinceEpoch
-}
-
-// GetLastUpdateTimeSinceEpochOk returns a tuple with the LastUpdateTimeSinceEpoch field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *AgentArtifact) GetLastUpdateTimeSinceEpochOk() (*string, bool) {
-	if o == nil || IsNil(o.LastUpdateTimeSinceEpoch) {
-		return nil, false
-	}
-	return o.LastUpdateTimeSinceEpoch, true
-}
-
-// HasLastUpdateTimeSinceEpoch returns a boolean if a field has been set.
-func (o *AgentArtifact) HasLastUpdateTimeSinceEpoch() bool {
-	if o != nil && !IsNil(o.LastUpdateTimeSinceEpoch) {
-		return true
-	}
-
-	return false
-}
-
-// SetLastUpdateTimeSinceEpoch gets a reference to the given string and assigns it to the LastUpdateTimeSinceEpoch field.
-func (o *AgentArtifact) SetLastUpdateTimeSinceEpoch(v string) {
-	o.LastUpdateTimeSinceEpoch = &v
-}
-
-// GetUri returns the Uri field value
-func (o *AgentArtifact) GetUri() string {
-	if o == nil {
-		var ret string
-		return ret
-	}
-
-	return o.Uri
-}
-
-// GetUriOk returns a tuple with the Uri field value
-// and a boolean to check if the value has been set.
-func (o *AgentArtifact) GetUriOk() (*string, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return &o.Uri, true
-}
-
-// SetUri sets field value
-func (o *AgentArtifact) SetUri(v string) {
-	o.Uri = v
-}
-
-func (o AgentArtifact) MarshalJSON() ([]byte, error) {
-	toSerialize, err := o.ToMap()
+// Unmarshal JSON data into one of the pointers in the struct
+func (dst *AgentArtifact) UnmarshalJSON(data []byte) error {
+	var err error
+	// use discriminator value to speed up the lookup
+	var jsonDict map[string]interface{}
+	err = newStrictDecoder(data).Decode(&jsonDict)
 	if err != nil {
-		return []byte{}, err
+		return fmt.Errorf("failed to unmarshal JSON into map for the discriminator lookup")
 	}
-	return json.Marshal(toSerialize)
+
+	// check if the discriminator value is 'image-artifact'
+	if jsonDict["artifactType"] == "image-artifact" {
+		// try to unmarshal JSON data into AgentImageArtifact
+		err = json.Unmarshal(data, &dst.AgentImageArtifact)
+		if err == nil {
+			return nil // data stored in dst.AgentImageArtifact, return on the first match
+		} else {
+			dst.AgentImageArtifact = nil
+			return fmt.Errorf("failed to unmarshal AgentArtifact as AgentImageArtifact: %s", err.Error())
+		}
+	}
+
+	// check if the discriminator value is 'template-artifact'
+	if jsonDict["artifactType"] == "template-artifact" {
+		// try to unmarshal JSON data into AgentTemplateArtifact
+		err = json.Unmarshal(data, &dst.AgentTemplateArtifact)
+		if err == nil {
+			return nil // data stored in dst.AgentTemplateArtifact, return on the first match
+		} else {
+			dst.AgentTemplateArtifact = nil
+			return fmt.Errorf("failed to unmarshal AgentArtifact as AgentTemplateArtifact: %s", err.Error())
+		}
+	}
+
+	return nil
 }
 
-func (o AgentArtifact) ToMap() (map[string]interface{}, error) {
-	toSerialize := map[string]interface{}{}
-	if !IsNil(o.CreateTimeSinceEpoch) {
-		toSerialize["createTimeSinceEpoch"] = o.CreateTimeSinceEpoch
+// Marshal data from the first non-nil pointers in the struct to JSON
+func (src AgentArtifact) MarshalJSON() ([]byte, error) {
+	if src.AgentImageArtifact != nil {
+		return json.Marshal(&src.AgentImageArtifact)
 	}
-	if !IsNil(o.LastUpdateTimeSinceEpoch) {
-		toSerialize["lastUpdateTimeSinceEpoch"] = o.LastUpdateTimeSinceEpoch
+
+	if src.AgentTemplateArtifact != nil {
+		return json.Marshal(&src.AgentTemplateArtifact)
 	}
-	toSerialize["uri"] = o.Uri
-	return toSerialize, nil
+
+	return nil, nil // no data in oneOf schemas
+}
+
+// Get the actual instance
+func (obj *AgentArtifact) GetActualInstance() interface{} {
+	if obj == nil {
+		return nil
+	}
+	if obj.AgentImageArtifact != nil {
+		return obj.AgentImageArtifact
+	}
+
+	if obj.AgentTemplateArtifact != nil {
+		return obj.AgentTemplateArtifact
+	}
+
+	// all schemas are nil
+	return nil
+}
+
+// Get the actual instance value
+func (obj AgentArtifact) GetActualInstanceValue() interface{} {
+	if obj.AgentImageArtifact != nil {
+		return *obj.AgentImageArtifact
+	}
+
+	if obj.AgentTemplateArtifact != nil {
+		return *obj.AgentTemplateArtifact
+	}
+
+	// all schemas are nil
+	return nil
 }
 
 type NullableAgentArtifact struct {

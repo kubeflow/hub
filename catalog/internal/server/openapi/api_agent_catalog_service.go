@@ -70,6 +70,12 @@ func (c *AgentCatalogServiceAPIController) Routes() Routes {
 			"/api/agent_catalog/v1alpha1/agents/{id}",
 			c.GetAgent,
 		},
+		"GetAgentArtifacts": Route{
+			"GetAgentArtifacts",
+			strings.ToUpper("Get"),
+			"/api/agent_catalog/v1alpha1/agents/{id}/artifacts",
+			c.GetAgentArtifacts,
+		},
 	}
 }
 
@@ -93,6 +99,12 @@ func (c *AgentCatalogServiceAPIController) OrderedRoutes() []Route {
 			strings.ToUpper("Get"),
 			"/api/agent_catalog/v1alpha1/agents/{id}",
 			c.GetAgent,
+		},
+		Route{
+			"GetAgentArtifacts",
+			strings.ToUpper("Get"),
+			"/api/agent_catalog/v1alpha1/agents/{id}/artifacts",
+			c.GetAgentArtifacts,
 		},
 	}
 }
@@ -191,6 +203,69 @@ func (c *AgentCatalogServiceAPIController) GetAgent(w http.ResponseWriter, r *ht
 		return
 	}
 	result, err := c.service.GetAgent(r.Context(), idParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	_ = EncodeJSONResponse(result.Body, &result.Code, w)
+}
+
+// GetAgentArtifacts - List artifacts for an agent.
+func (c *AgentCatalogServiceAPIController) GetAgentArtifacts(w http.ResponseWriter, r *http.Request) {
+	query, err := parseQuery(r.URL.RawQuery)
+	if err != nil {
+		c.errorHandler(w, r, &ParsingError{Err: err}, nil)
+		return
+	}
+	idParam := chi.URLParam(r, "id")
+	if idParam == "" {
+		c.errorHandler(w, r, &RequiredError{"id"}, nil)
+		return
+	}
+	var artifactTypeParam []model.AgentArtifactTypeQueryParam
+	if query.Has("artifactType") {
+		paramSplits := strings.Split(query.Get("artifactType"), ",")
+		artifactTypeParam = make([]model.AgentArtifactTypeQueryParam, 0, len(paramSplits))
+		for _, param := range paramSplits {
+			paramEnum, err := model.NewAgentArtifactTypeQueryParamFromValue(param)
+			if err != nil {
+				c.errorHandler(w, r, &ParsingError{Param: "artifactType", Err: err}, nil)
+				return
+			}
+			artifactTypeParam = append(artifactTypeParam, *paramEnum)
+		}
+	}
+	var pageSizeParam string
+	if query.Has("pageSize") {
+		param := query.Get("pageSize")
+
+		pageSizeParam = param
+	} else {
+	}
+	var orderByParam model.OrderByField
+	if query.Has("orderBy") {
+		param := model.OrderByField(query.Get("orderBy"))
+
+		orderByParam = param
+	} else {
+	}
+	var sortOrderParam model.SortOrder
+	if query.Has("sortOrder") {
+		param := model.SortOrder(query.Get("sortOrder"))
+
+		sortOrderParam = param
+	} else {
+	}
+	var nextPageTokenParam string
+	if query.Has("nextPageToken") {
+		param := query.Get("nextPageToken")
+
+		nextPageTokenParam = param
+	} else {
+	}
+	result, err := c.service.GetAgentArtifacts(r.Context(), idParam, artifactTypeParam, pageSizeParam, orderByParam, sortOrderParam, nextPageTokenParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)

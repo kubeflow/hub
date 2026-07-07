@@ -6,7 +6,8 @@ import (
 )
 
 type Services struct {
-	AgentRepository agentmodels.AgentRepository
-	CatalogSourceRepository   sharedmodels.CatalogSourceRepository
-	PropertyOptionsRepository sharedmodels.PropertyOptionsRepository
+	AgentRepository                 agentmodels.AgentRepository
+	AgentTemplateArtifactRepository agentmodels.AgentTemplateArtifactRepository
+	CatalogSourceRepository         sharedmodels.CatalogSourceRepository
+	PropertyOptionsRepository       sharedmodels.PropertyOptionsRepository
 }

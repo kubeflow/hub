@@ -18,15 +18,23 @@ import (
 	model "github.com/kubeflow/hub/catalog/pkg/openapi"
 )
 
-// AssertAgentArtifactConstraints checks if the values respects the defined constraints
-func AssertAgentArtifactConstraints(obj model.AgentArtifact) error {
+// AssertAgentArtifactListConstraints checks if the values respects the defined constraints
+func AssertAgentArtifactListConstraints(obj model.AgentArtifactList) error {
+	for _, el := range obj.Items {
+		if err := AssertAgentArtifactConstraints(el); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
-// AssertAgentArtifactRequired checks if the required fields are not zero-ed
-func AssertAgentArtifactRequired(obj model.AgentArtifact) error {
+// AssertAgentArtifactListRequired checks if the required fields are not zero-ed
+func AssertAgentArtifactListRequired(obj model.AgentArtifactList) error {
 	elements := map[string]interface{}{
-		"uri": obj.Uri,
+		"nextPageToken": obj.NextPageToken,
+		"pageSize":      obj.PageSize,
+		"size":          obj.Size,
+		"items":         obj.Items,
 	}
 	for name, el := range elements {
 		if isZero := IsZeroValue(el); isZero {
@@ -34,6 +42,21 @@ func AssertAgentArtifactRequired(obj model.AgentArtifact) error {
 		}
 	}
 
+	for _, el := range obj.Items {
+		if err := AssertAgentArtifactRequired(el); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// AssertAgentArtifactTypeQueryParamConstraints checks if the values respects the defined constraints
+func AssertAgentArtifactTypeQueryParamConstraints(obj model.AgentArtifactTypeQueryParam) error {
+	return nil
+}
+
+// AssertAgentArtifactTypeQueryParamRequired checks if the required fields are not zero-ed
+func AssertAgentArtifactTypeQueryParamRequired(obj model.AgentArtifactTypeQueryParam) error {
 	return nil
 }
 
@@ -45,7 +68,7 @@ func AssertAgentConstraints(obj model.Agent) error {
 		}
 	}
 	for _, el := range obj.Artifacts {
-		if err := AssertAgentArtifactConstraints(el); err != nil {
+		if err := AssertAgentImageArtifactConstraints(el); err != nil {
 			return err
 		}
 	}
@@ -62,6 +85,26 @@ func AssertAgentEnvVarRequired(obj model.AgentEnvVar) error {
 	elements := map[string]interface{}{
 		"name":     obj.Name,
 		"required": obj.Required,
+	}
+	for name, el := range elements {
+		if isZero := IsZeroValue(el); isZero {
+			return &RequiredError{Field: name}
+		}
+	}
+
+	return nil
+}
+
+// AssertAgentImageArtifactConstraints checks if the values respects the defined constraints
+func AssertAgentImageArtifactConstraints(obj model.AgentImageArtifact) error {
+	return nil
+}
+
+// AssertAgentImageArtifactRequired checks if the required fields are not zero-ed
+func AssertAgentImageArtifactRequired(obj model.AgentImageArtifact) error {
+	elements := map[string]interface{}{
+		"artifactType": obj.ArtifactType,
+		"uri":          obj.Uri,
 	}
 	for name, el := range elements {
 		if isZero := IsZeroValue(el); isZero {
@@ -121,10 +164,30 @@ func AssertAgentRequired(obj model.Agent) error {
 		}
 	}
 	for _, el := range obj.Artifacts {
-		if err := AssertAgentArtifactRequired(el); err != nil {
+		if err := AssertAgentImageArtifactRequired(el); err != nil {
 			return err
 		}
 	}
+	return nil
+}
+
+// AssertAgentTemplateArtifactConstraints checks if the values respects the defined constraints
+func AssertAgentTemplateArtifactConstraints(obj model.AgentTemplateArtifact) error {
+	return nil
+}
+
+// AssertAgentTemplateArtifactRequired checks if the required fields are not zero-ed
+func AssertAgentTemplateArtifactRequired(obj model.AgentTemplateArtifact) error {
+	elements := map[string]interface{}{
+		"artifactType": obj.ArtifactType,
+		"content":      obj.Content,
+	}
+	for name, el := range elements {
+		if isZero := IsZeroValue(el); isZero {
+			return &RequiredError{Field: name}
+		}
+	}
+
 	return nil
 }
 

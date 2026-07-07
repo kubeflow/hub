@@ -40,6 +40,9 @@ py-re-replace 1 'github\.com/kubeflow/hub/pkg/openapi' 'github.com/kubeflow/hub/
     "$GENDIR/api_agent_catalog_service.go" \
     "$GENDIR/api.go"
 
+# Fix broken array-of-enum syntax in api.go interface (generator emits "model.[]Foo" instead of "[]model.Foo")
+py-re-replace 0 'model\.\[\]' '[]model.' "$GENDIR/api.go"
+
 # Copy this plugin's files to the shared output directory
 cp "$GENDIR/api_agent_catalog_service.go" "$DST/"
 cp "$GENDIR/api.go" "$DST/api_agent.go"

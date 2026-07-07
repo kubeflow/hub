@@ -5,8 +5,12 @@ client.go
 configuration.go
 model_agent.go
 model_agent_artifact.go
+model_agent_artifact_list.go
+model_agent_artifact_type_query_param.go
 model_agent_env_var.go
+model_agent_image_artifact.go
 model_agent_list.go
+model_agent_template_artifact.go
 model_artifact_type_query_param.go
 model_asset_preview_result.go
 model_asset_source_preview_response.go

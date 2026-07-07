@@ -46,14 +46,21 @@ func (p *Plugin) DatastoreEntries() []plugin.DatastoreEntry {
 				AddStruct("env").
 				AddStruct("artifacts"),
 		},
+		{
+			TypeName: agentservice.AgentTemplateArtifactTypeName,
+			Category: "artifact",
+			Spec: datastore.NewSpecType(agentservice.NewAgentTemplateArtifactRepository).
+				AddString("content"),
+		},
 	}
 }
 
 func (p *Plugin) Init(_ context.Context, cfg plugin.Config) error {
 	p.services = agentcatalog.Services{
-		AgentRepository: plugin.GetRepo[agentmodels.AgentRepository](cfg.RepoSet),
-		CatalogSourceRepository:   plugin.GetRepo[models.CatalogSourceRepository](cfg.RepoSet),
-		PropertyOptionsRepository: plugin.GetRepo[models.PropertyOptionsRepository](cfg.RepoSet),
+		AgentRepository:                 plugin.GetRepo[agentmodels.AgentRepository](cfg.RepoSet),
+		AgentTemplateArtifactRepository: plugin.GetRepo[agentmodels.AgentTemplateArtifactRepository](cfg.RepoSet),
+		CatalogSourceRepository:         plugin.GetRepo[models.CatalogSourceRepository](cfg.RepoSet),
+		PropertyOptionsRepository:       plugin.GetRepo[models.PropertyOptionsRepository](cfg.RepoSet),
 	}
 
 	base := basecatalog.NewBaseLoader(cfg.ConfigPaths)
