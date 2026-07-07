@@ -36,6 +36,18 @@ agents:
         required: true
     artifacts:
       - uri: "oci://quay.io/example-org/travel-planner-agent:latest"
+    templates:
+      - content: |
+          name: travel-planner
+          displayName: "Travel Planner Agent"
+          framework: langgraph
+          description: "Multi-step travel planning agent that researches destinations, compares flights and hotels, and builds complete itineraries."
+          env:
+            required:
+              - MODEL_ENDPOINT
+              - MODEL_NAME
+            optional:
+              - FLIGHTS_API_KEY
     customProperties:
       models:
         metadataType: MetadataStringValue
@@ -74,6 +86,16 @@ agents:
         required: true
     artifacts:
       - uri: "oci://quay.io/example-org/code-reviewer-agent:latest"
+    templates:
+      - content: |
+          name: code-reviewer
+          displayName: "Code Review Agent"
+          framework: crewai
+          description: "Automated code review agent using CrewAI multi-agent pipeline."
+          env:
+            required:
+              - MODEL_ENDPOINT
+              - GITHUB_TOKEN
     customProperties:
       models:
         metadataType: MetadataStringValue
@@ -140,6 +162,17 @@ agents:
         required: false
     artifacts:
       - uri: "oci://quay.io/example-org/data-pipeline-builder:latest"
+    templates:
+      - content: |
+          name: data-pipeline-builder
+          displayName: "Data Pipeline Builder"
+          framework: langgraph
+          description: "Conversational agent that designs and generates Apache Airflow DAGs from natural language."
+          env:
+            required:
+              - MODEL_ENDPOINT
+            optional:
+              - AIRFLOW_API_URL
     customProperties:
       models:
         metadataType: MetadataStringValue

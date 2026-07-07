@@ -37,6 +37,19 @@ agents:
         required: false
     artifacts:
       - uri: "oci://quay.io/example-org/incident-responder:v2.1.0"
+    templates:
+      - content: |
+          name: incident-responder
+          displayName: "Incident Response Agent"
+          framework: langgraph
+          description: "Production incident response agent that triages alerts and suggests remediation steps."
+          env:
+            required:
+              - MODEL_ENDPOINT
+              - PAGERDUTY_API_KEY
+              - PROMETHEUS_URL
+            optional:
+              - SLACK_WEBHOOK_URL
     customProperties:
       models:
         metadataType: MetadataStringValue

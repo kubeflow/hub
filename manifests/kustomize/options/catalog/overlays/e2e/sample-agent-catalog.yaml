@@ -22,6 +22,16 @@ agents:
         required: false
     artifacts:
       - uri: "oci://quay.io/example-org/travel-planner-agent:latest"
+    templates:
+      - content: |
+          name: travel-planner
+          displayName: "Travel Planner Agent"
+          framework: langgraph
+          description: "Multi-step travel planning agent."
+          env:
+            required:
+              - MODEL_ENDPOINT
+              - MODEL_NAME
     customProperties:
       models:
         metadataType: MetadataStringValue
@@ -47,6 +57,16 @@ agents:
         required: true
     artifacts:
       - uri: "oci://quay.io/example-org/code-reviewer-agent:latest"
+    templates:
+      - content: |
+          name: code-reviewer
+          displayName: "Code Review Agent"
+          framework: crewai
+          description: "Automated code review agent."
+          env:
+            required:
+              - MODEL_ENDPOINT
+              - GITHUB_TOKEN
     customProperties:
       models:
         metadataType: MetadataStringValue
