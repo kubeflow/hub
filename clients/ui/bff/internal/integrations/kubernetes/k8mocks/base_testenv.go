@@ -266,6 +266,26 @@ func setupMock(mockK8sClient kubernetes.Interface, ctx context.Context) error {
 		return err
 	}
 
+	err = createMcpCatalogDefaultSourcesConfigMap(mockK8sClient, ctx, "kubeflow")
+	if err != nil {
+		return err
+	}
+
+	err = createMcpCatalogSourcesConfigMap(mockK8sClient, ctx, "kubeflow")
+	if err != nil {
+		return err
+	}
+
+	err = createMcpCatalogDefaultSourcesConfigMap(mockK8sClient, ctx, "bella-namespace")
+	if err != nil {
+		return err
+	}
+
+	err = createMcpCatalogSourcesConfigMap(mockK8sClient, ctx, "bella-namespace")
+	if err != nil {
+		return err
+	}
+
 	err = createHuggingFaceSecret(mockK8sClient, ctx, "kubeflow")
 	if err != nil {
 		return err
@@ -1412,6 +1432,99 @@ func createTransferJobPodEvents(k8sClient kubernetes.Interface, ctx context.Cont
 				return fmt.Errorf("failed to create event for pod %s: %w", pe.podName, err)
 			}
 		}
+	}
+
+	return nil
+}
+
+func createMcpCatalogDefaultSourcesConfigMap(
+	k8sClient kubernetes.Interface,
+	ctx context.Context,
+	namespace string,
+) error {
+	raw := strings.TrimSpace(`
+catalogs:
+  - name: Community MCP Servers
+    id: community_mcp_servers
+    type: yaml
+    enabled: true
+    properties:
+      yamlCatalogPath: community_mcp_servers.yaml
+    labels:
+      - Community
+
+  - name: Verified MCP Servers
+    id: verified_mcp_servers
+    type: yaml
+    enabled: true
+    properties:
+      yamlCatalogPath: verified_mcp_servers.yaml
+    labels:
+      - Verified
+`)
+
+	cm := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      k8s.McpCatalogSourceDefaultConfigMapName,
+			Namespace: namespace,
+		},
+		Data: map[string]string{
+			k8s.McpCatalogSourceKey:       raw,
+			"community_mcp_servers.yaml": "servers:\n - name: community_server_1",
+		},
+	}
+
+	if _, err := k8sClient.CoreV1().ConfigMaps(namespace).Create(ctx, cm, metav1.CreateOptions{}); err != nil {
+		return fmt.Errorf("failed to create default-mcp-catalog-sources configmap: %w", err)
+	}
+
+	return nil
+}
+
+func createMcpCatalogSourcesConfigMap(
+	k8sClient kubernetes.Interface,
+	ctx context.Context,
+	namespace string,
+) error {
+	raw := strings.TrimSpace(`
+catalogs:
+  - name: Custom MCP Servers
+    id: custom_mcp_servers
+    type: yaml
+    enabled: true
+    properties:
+      yamlCatalogPath: custom_mcp_servers.yaml
+    includedServers:
+      - server-*
+    excludedServers:
+      - test-server-*
+    labels:
+      - Custom
+
+  - name: Organization MCP
+    id: org_mcp_servers
+    type: yaml
+    enabled: false
+    properties:
+      yamlCatalogPath: org_mcp_servers.yaml
+    labels:
+      - Organization
+`)
+
+	cm := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      k8s.McpCatalogSourceUserConfigMapName,
+			Namespace: namespace,
+		},
+		Data: map[string]string{
+			k8s.McpCatalogSourceKey:    raw,
+			"custom_mcp_servers.yaml": "servers:\n - name: custom_server_1",
+			"org_mcp_servers.yaml":    "servers:\n - name: org_server_1",
+		},
+	}
+
+	if _, err := k8sClient.CoreV1().ConfigMaps(namespace).Create(ctx, cm, metav1.CreateOptions{}); err != nil {
+		return fmt.Errorf("failed to create mcp-catalog-sources configmap: %w", err)
 	}
 
 	return nil

@@ -168,6 +168,14 @@ func (f *fakeKubernetesClient) UpdateCatalogSourceConfig(ctx context.Context, na
 	return nil
 }
 
+func (f *fakeKubernetesClient) GetAllMcpCatalogSourceConfigs(ctx context.Context, namespace string) (corev1.ConfigMap, corev1.ConfigMap, error) {
+	return corev1.ConfigMap{}, corev1.ConfigMap{}, nil
+}
+
+func (f *fakeKubernetesClient) UpdateMcpCatalogSourceConfig(ctx context.Context, namespace string, configMap *corev1.ConfigMap) error {
+	return nil
+}
+
 func (f *fakeKubernetesClient) CreateSecret(ctx context.Context, namespace string, secret *corev1.Secret) (*corev1.Secret, error) {
 	return nil, nil
 }

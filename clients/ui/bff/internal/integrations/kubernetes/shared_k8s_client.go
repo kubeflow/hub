@@ -362,6 +362,73 @@ func (kc *SharedClientLogic) UpdateCatalogSourceConfig(
 	return nil
 }
 
+func (kc *SharedClientLogic) GetAllMcpCatalogSourceConfigs(
+	sessionCtx context.Context,
+	namespace string,
+) (corev1.ConfigMap, corev1.ConfigMap, error) {
+	if namespace == "" {
+		return corev1.ConfigMap{}, corev1.ConfigMap{}, fmt.Errorf("namespace cannot be empty")
+	}
+
+	sessionLogger := sessionCtx.Value(constants.TraceLoggerKey).(*slog.Logger)
+
+	defaultCM, err := kc.Client.CoreV1().
+		ConfigMaps(namespace).
+		Get(sessionCtx, McpCatalogSourceDefaultConfigMapName, metav1.GetOptions{})
+
+	if err != nil {
+		sessionLogger.Error("failed to fetch default MCP catalog source configmap",
+			"namespace", namespace,
+			"name", McpCatalogSourceDefaultConfigMapName,
+			"error", err,
+		)
+		return corev1.ConfigMap{}, corev1.ConfigMap{}, fmt.Errorf("failed to get %s: %w", McpCatalogSourceDefaultConfigMapName, err)
+	}
+
+	userCM, err := kc.Client.CoreV1().ConfigMaps(namespace).Get(sessionCtx, McpCatalogSourceUserConfigMapName, metav1.GetOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return *defaultCM, corev1.ConfigMap{}, nil
+		}
+		sessionLogger.Error("failed to fetch MCP catalog source configmap",
+			"namespace", namespace,
+			"name", McpCatalogSourceUserConfigMapName,
+			"error", err,
+		)
+		return corev1.ConfigMap{}, corev1.ConfigMap{}, fmt.Errorf("failed to get %s: %w", McpCatalogSourceUserConfigMapName, err)
+	}
+
+	return *defaultCM, *userCM, nil
+}
+
+func (kc *SharedClientLogic) UpdateMcpCatalogSourceConfig(
+	ctx context.Context,
+	namespace string,
+	configMap *corev1.ConfigMap,
+) error {
+	sessionLogger := ctx.Value(constants.TraceLoggerKey).(*slog.Logger)
+
+	_, err := kc.Client.CoreV1().
+		ConfigMaps(namespace).
+		Update(ctx, configMap, metav1.UpdateOptions{})
+
+	if err != nil {
+		sessionLogger.Error("failed to update MCP catalog sources configmap",
+			"namespace", namespace,
+			"name", configMap.Name,
+			"error", err,
+		)
+		return fmt.Errorf("failed to update configmap %s: %w", configMap.Name, err)
+	}
+
+	sessionLogger.Info("successfully updated MCP catalog sources configmap",
+		"namespace", namespace,
+		"name", configMap.Name,
+	)
+
+	return nil
+}
+
 // GetAllModelTransferJobs lists model transfer jobs. If jobNamespace is non-empty,
 // jobs are listed only in that namespace. Otherwise jobs are listed across all namespaces.
 func (kc *SharedClientLogic) GetAllModelTransferJobs(

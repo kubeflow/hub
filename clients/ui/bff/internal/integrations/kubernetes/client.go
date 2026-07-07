@@ -15,6 +15,10 @@ const CatalogSourceKey = "sources.yaml"
 const CatalogSourceDefaultConfigMapName = "default-catalog-sources"
 const CatalogSourceUserConfigMapName = "model-catalog-sources"
 
+const McpCatalogSourceKey = "sources.yaml"
+const McpCatalogSourceDefaultConfigMapName = "default-mcp-catalog-sources"
+const McpCatalogSourceUserConfigMapName = "mcp-catalog-sources"
+
 type KubernetesClientInterface interface {
 	// Service discovery
 	GetServiceNames(ctx context.Context, namespace string) ([]string, error)
@@ -47,6 +51,10 @@ type KubernetesClientInterface interface {
 	CreateSecret(ctx context.Context, namespace string, secret *corev1.Secret) (*corev1.Secret, error)
 	PatchSecret(ctx context.Context, namespace string, secretName string, data map[string]string) error
 	DeleteSecret(ctx context.Context, namespace string, secretName string) error
+
+	// MCP Catalog Settings
+	GetAllMcpCatalogSourceConfigs(ctx context.Context, namespace string) (corev1.ConfigMap, corev1.ConfigMap, error)
+	UpdateMcpCatalogSourceConfig(ctx context.Context, namespace string, configMap *corev1.ConfigMap) error
 
 	// Model transfer jobs
 	CanListJobsClusterWide(ctx context.Context, identity *RequestIdentity) (bool, error)

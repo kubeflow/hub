@@ -111,7 +111,8 @@ func (app *App) CreateMcpCatalogSourceConfigHandler(w http.ResponseWriter, r *ht
 	created, err := app.repositories.McpCatalogSettingsRepository.CreateMcpCatalogSourceConfig(ctx, client, namespace, *envelope.Data)
 	if err != nil {
 		if errors.Is(err, repositories.ErrMcpCatalogSourceAlreadyExist) ||
-			errors.Is(err, repositories.ErrMcpCatalogSourceIdRequired) {
+			errors.Is(err, repositories.ErrMcpCatalogSourceIdRequired) ||
+			errors.Is(err, repositories.ErrMcpCatalogValidationFailed) {
 			app.badRequestResponse(w, r, err)
 		} else if errors.Is(err, repositories.ErrMcpCatalogSourceConflict) {
 			app.conflictResponse(w, r, err.Error())
@@ -166,6 +167,9 @@ func (app *App) UpdateMcpCatalogSourceConfigHandler(w http.ResponseWriter, r *ht
 	if err != nil {
 		if errors.Is(err, repositories.ErrMcpCatalogSourceNotFound) {
 			app.notFoundResponse(w, r)
+		} else if errors.Is(err, repositories.ErrMcpCatalogCannotChangeDefault) ||
+			errors.Is(err, repositories.ErrMcpCatalogCannotChangeType) {
+			app.forbiddenResponse(w, r, err.Error())
 		} else if errors.Is(err, repositories.ErrMcpCatalogSourceConflict) {
 			app.conflictResponse(w, r, err.Error())
 		} else {
@@ -202,7 +206,9 @@ func (app *App) DeleteMcpCatalogSourceConfigHandler(w http.ResponseWriter, r *ht
 
 	_, err = app.repositories.McpCatalogSettingsRepository.DeleteMcpCatalogSourceConfig(ctx, client, namespace, sourceID)
 	if err != nil {
-		if errors.Is(err, repositories.ErrMcpCatalogSourceNotFound) {
+		if errors.Is(err, repositories.ErrMcpCatalogCannotDeleteDefault) {
+			app.forbiddenResponse(w, r, err.Error())
+		} else if errors.Is(err, repositories.ErrMcpCatalogSourceNotFound) {
 			app.notFoundResponse(w, r)
 		} else if errors.Is(err, repositories.ErrMcpCatalogSourceConflict) {
 			app.conflictResponse(w, r, err.Error())
