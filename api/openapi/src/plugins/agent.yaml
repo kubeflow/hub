@@ -97,6 +97,37 @@ paths:
           $ref: "#/components/responses/InternalServerError"
       operationId: getAgent
 
+  /api/agent_catalog/v1alpha1/agents/{id}/artifacts:
+    description: >-
+      The REST endpoint/path used to list artifacts for a specific agent.
+    get:
+      summary: List artifacts for an agent.
+      tags:
+        - AgentCatalogService
+      parameters:
+        - $ref: "#/components/parameters/agentArtifactType"
+        - $ref: "#/components/parameters/pageSize"
+        - $ref: "#/components/parameters/orderBy"
+        - $ref: "#/components/parameters/sortOrder"
+        - $ref: "#/components/parameters/nextPageToken"
+      responses:
+        "200":
+          $ref: "#/components/responses/AgentArtifactListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      operationId: getAgentArtifacts
+    parameters:
+      - name: id
+        description: The unique identifier of the agent.
+        schema:
+          type: string
+        in: path
+        required: true
+
 # Parameters (pageSize, orderBy, filterQuery, sortOrder, nextPageToken) and shared
 # responses (BadRequest, FilterOptionsResponse, etc.) are provided by lib/common.yaml
 # and catalog.yaml during spec assembly. Only plugin-specific schemas and responses
@@ -149,8 +180,8 @@ components:
             artifacts:
               type: array
               items:
-                $ref: "#/components/schemas/AgentArtifact"
-              description: OCI artifacts for agent deployment.
+                $ref: "#/components/schemas/AgentImageArtifact"
+              description: OCI image artifacts for agent deployment.
 
     AgentEnvVar:
       description: An environment variable required by an agent.
@@ -167,17 +198,74 @@ components:
           description: Whether this variable is required for deployment.
 
     AgentArtifact:
-      description: OCI artifact for agent deployment.
+      description: A single artifact in the agent catalog API.
+      oneOf:
+        - $ref: "#/components/schemas/AgentImageArtifact"
+        - $ref: "#/components/schemas/AgentTemplateArtifact"
+      discriminator:
+        propertyName: artifactType
+        mapping:
+          image-artifact: "#/components/schemas/AgentImageArtifact"
+          template-artifact: "#/components/schemas/AgentTemplateArtifact"
+
+    AgentImageArtifact:
+      description: OCI image artifact for agent deployment.
       allOf:
-        - $ref: "#/components/schemas/BaseResourceDates"
+        - $ref: "#/components/schemas/BaseResource"
         - type: object
           required:
+            - artifactType
             - uri
           properties:
+            artifactType:
+              type: string
+              default: image-artifact
             uri:
               type: string
               format: uri
               description: URI of the artifact (e.g., OCI image reference).
+
+    AgentTemplateArtifact:
+      description: >-
+        Agent deployment template artifact. Contains the full agent.yaml
+        specification as a JSON-encoded string.
+      allOf:
+        - $ref: "#/components/schemas/BaseResource"
+        - type: object
+          required:
+            - artifactType
+            - content
+          properties:
+            artifactType:
+              type: string
+              default: template-artifact
+            content:
+              type: string
+              description: >-
+                The agent.yaml specification as a JSON-encoded string.
+                Describes the agent's deployment configuration including
+                name, framework, environment variables, and other metadata.
+
+    AgentArtifactTypeQueryParam:
+      description: Supported artifact types for querying agent artifacts.
+      enum:
+        - image-artifact
+        - template-artifact
+      type: string
+
+    AgentArtifactList:
+      description: A list of agent artifact entities.
+      allOf:
+        - type: object
+          properties:
+            items:
+              description: Array of `AgentArtifact` entities.
+              type: array
+              items:
+                $ref: "#/components/schemas/AgentArtifact"
+          required:
+            - items
+        - $ref: "#/components/schemas/BaseResourceList"
 
     AgentList:
       description: A list of agent entities.
@@ -194,6 +282,12 @@ components:
         - $ref: "#/components/schemas/BaseResourceList"
 
   responses:
+    AgentArtifactListResponse:
+      description: A list of agent artifact entities.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AgentArtifactList"
     AgentListResponse:
       description: A list of agent entities.
       content:
@@ -206,3 +300,18 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Agent"
+  parameters:
+    agentArtifactType:
+      style: form
+      explode: true
+      examples:
+        agentArtifactType:
+          value: image-artifact
+      name: artifactType
+      description: Filter artifacts by type.
+      schema:
+        type: array
+        items:
+          $ref: "#/components/schemas/AgentArtifactTypeQueryParam"
+      in: query
+      required: false
