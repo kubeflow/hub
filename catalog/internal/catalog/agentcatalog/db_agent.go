@@ -175,6 +175,7 @@ func (d *DBAgentCatalog) GetAgentArtifacts(ctx context.Context, agentID string, 
 			return openapi.AgentArtifactList{}, err
 		}
 		for i := range agent.Artifacts {
+			agent.Artifacts[i].ArtifactType = "image-artifact"
 			items = append(items, openapi.AgentArtifact{AgentImageArtifact: &agent.Artifacts[i]})
 		}
 	}
