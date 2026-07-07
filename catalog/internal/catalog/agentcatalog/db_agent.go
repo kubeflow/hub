@@ -156,6 +156,11 @@ func (d *DBAgentCatalog) GetAgentArtifacts(ctx context.Context, agentID string, 
 		return openapi.AgentArtifactList{}, fmt.Errorf("invalid agent ID '%s': %w", agentID, api.ErrBadRequest)
 	}
 
+	agent, err := d.GetAgent(ctx, agentID)
+	if err != nil {
+		return openapi.AgentArtifactList{}, err
+	}
+
 	wantImages := len(artifactType) == 0
 	wantTemplates := len(artifactType) == 0
 	for _, at := range artifactType {
@@ -170,10 +175,6 @@ func (d *DBAgentCatalog) GetAgentArtifacts(ctx context.Context, agentID string, 
 	var items []openapi.AgentArtifact
 
 	if wantImages {
-		agent, err := d.GetAgent(ctx, agentID)
-		if err != nil {
-			return openapi.AgentArtifactList{}, err
-		}
 		for i := range agent.Artifacts {
 			agent.Artifacts[i].ArtifactType = "image-artifact"
 			items = append(items, openapi.AgentArtifact{AgentImageArtifact: &agent.Artifacts[i]})
@@ -182,8 +183,20 @@ func (d *DBAgentCatalog) GetAgentArtifacts(ctx context.Context, agentID string, 
 
 	if wantTemplates && d.agentTemplateArtifactRepo != nil {
 		parentID := id
+		ob := strings.ToUpper(string(orderBy))
+		so := strings.ToUpper(string(sortOrder))
 		listOpts := models.AgentTemplateArtifactListOptions{
 			ParentResourceID: &parentID,
+		}
+		listOpts.Pagination.PageSize = &pageSize
+		if ob != "" {
+			listOpts.Pagination.OrderBy = &ob
+		}
+		if so != "" {
+			listOpts.Pagination.SortOrder = &so
+		}
+		if nextPageToken != nil {
+			listOpts.Pagination.NextPageToken = nextPageToken
 		}
 		templateList, err := d.agentTemplateArtifactRepo.List(listOpts)
 		if err != nil {
