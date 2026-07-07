@@ -21,7 +21,7 @@ import (
 // AssertAgentArtifactListConstraints checks if the values respects the defined constraints
 func AssertAgentArtifactListConstraints(obj model.AgentArtifactList) error {
 	for _, el := range obj.Items {
-		if err := AssertAgentArtifactConstraints(el); err != nil {
+		if err := AssertAgentTemplateArtifactConstraints(el); err != nil {
 			return err
 		}
 	}
@@ -43,7 +43,7 @@ func AssertAgentArtifactListRequired(obj model.AgentArtifactList) error {
 	}
 
 	for _, el := range obj.Items {
-		if err := AssertAgentArtifactRequired(el); err != nil {
+		if err := AssertAgentTemplateArtifactRequired(el); err != nil {
 			return err
 		}
 	}

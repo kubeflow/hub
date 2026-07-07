@@ -26,7 +26,7 @@ type AgentArtifactList struct {
 	// Number of items in result list.
 	Size int32 `json:"size"`
 	// Array of `AgentArtifact` entities.
-	Items []AgentArtifact `json:"items"`
+	Items []AgentTemplateArtifact `json:"items"`
 }
 
 type _AgentArtifactList AgentArtifactList
@@ -35,7 +35,7 @@ type _AgentArtifactList AgentArtifactList
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewAgentArtifactList(nextPageToken string, pageSize int32, size int32, items []AgentArtifact) *AgentArtifactList {
+func NewAgentArtifactList(nextPageToken string, pageSize int32, size int32, items []AgentTemplateArtifact) *AgentArtifactList {
 	this := AgentArtifactList{}
 	this.NextPageToken = nextPageToken
 	this.PageSize = pageSize
@@ -125,9 +125,9 @@ func (o *AgentArtifactList) SetSize(v int32) {
 }
 
 // GetItems returns the Items field value
-func (o *AgentArtifactList) GetItems() []AgentArtifact {
+func (o *AgentArtifactList) GetItems() []AgentTemplateArtifact {
 	if o == nil {
-		var ret []AgentArtifact
+		var ret []AgentTemplateArtifact
 		return ret
 	}
 
@@ -136,7 +136,7 @@ func (o *AgentArtifactList) GetItems() []AgentArtifact {
 
 // GetItemsOk returns a tuple with the Items field value
 // and a boolean to check if the value has been set.
-func (o *AgentArtifactList) GetItemsOk() ([]AgentArtifact, bool) {
+func (o *AgentArtifactList) GetItemsOk() ([]AgentTemplateArtifact, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -144,7 +144,7 @@ func (o *AgentArtifactList) GetItemsOk() ([]AgentArtifact, bool) {
 }
 
 // SetItems sets field value
-func (o *AgentArtifactList) SetItems(v []AgentArtifact) {
+func (o *AgentArtifactList) SetItems(v []AgentTemplateArtifact) {
 	o.Items = v
 }
 

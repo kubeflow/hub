@@ -873,12 +873,10 @@ components:
     AgentArtifact:
       description: A single artifact in the agent catalog API.
       oneOf:
-        - $ref: "#/components/schemas/AgentImageArtifact"
         - $ref: "#/components/schemas/AgentTemplateArtifact"
       discriminator:
         propertyName: artifactType
         mapping:
-          image-artifact: "#/components/schemas/AgentImageArtifact"
           template-artifact: "#/components/schemas/AgentTemplateArtifact"
     AgentArtifactList:
       description: A list of agent artifact entities.
@@ -896,7 +894,6 @@ components:
     AgentArtifactTypeQueryParam:
       description: Supported artifact types for querying agent artifacts.
       enum:
-        - image-artifact
         - template-artifact
       type: string
     AgentEnvVar:

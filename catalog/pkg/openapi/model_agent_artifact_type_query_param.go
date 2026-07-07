@@ -20,13 +20,11 @@ type AgentArtifactTypeQueryParam string
 
 // List of AgentArtifactTypeQueryParam
 const (
-	AGENTARTIFACTTYPEQUERYPARAM_IMAGE_ARTIFACT    AgentArtifactTypeQueryParam = "image-artifact"
 	AGENTARTIFACTTYPEQUERYPARAM_TEMPLATE_ARTIFACT AgentArtifactTypeQueryParam = "template-artifact"
 )
 
 // All allowed values of AgentArtifactTypeQueryParam enum
 var AllowedAgentArtifactTypeQueryParamEnumValues = []AgentArtifactTypeQueryParam{
-	"image-artifact",
 	"template-artifact",
 }
 

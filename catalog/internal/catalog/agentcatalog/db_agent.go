@@ -156,30 +156,20 @@ func (d *DBAgentCatalog) GetAgentArtifacts(ctx context.Context, agentID string, 
 		return openapi.AgentArtifactList{}, fmt.Errorf("invalid agent ID '%s': %w", agentID, api.ErrBadRequest)
 	}
 
-	agent, err := d.GetAgent(ctx, agentID)
+	_, err = d.GetAgent(ctx, agentID)
 	if err != nil {
 		return openapi.AgentArtifactList{}, err
 	}
 
-	wantImages := len(artifactType) == 0
 	wantTemplates := len(artifactType) == 0
 	for _, at := range artifactType {
-		switch at {
-		case openapi.AGENTARTIFACTTYPEQUERYPARAM_IMAGE_ARTIFACT:
-			wantImages = true
-		case openapi.AGENTARTIFACTTYPEQUERYPARAM_TEMPLATE_ARTIFACT:
+		if at == openapi.AGENTARTIFACTTYPEQUERYPARAM_TEMPLATE_ARTIFACT {
 			wantTemplates = true
 		}
 	}
 
-	var items []openapi.AgentArtifact
-
-	if wantImages {
-		for i := range agent.Artifacts {
-			agent.Artifacts[i].ArtifactType = "image-artifact"
-			items = append(items, openapi.AgentArtifact{AgentImageArtifact: &agent.Artifacts[i]})
-		}
-	}
+	var items []openapi.AgentTemplateArtifact
+	var responseNextPageToken string
 
 	if wantTemplates && d.agentTemplateArtifactRepo != nil {
 		parentID := id
@@ -198,6 +188,7 @@ func (d *DBAgentCatalog) GetAgentArtifacts(ctx context.Context, agentID string, 
 		if nextPageToken != nil {
 			listOpts.Pagination.NextPageToken = nextPageToken
 		}
+
 		templateList, err := d.agentTemplateArtifactRepo.List(listOpts)
 		if err != nil {
 			return openapi.AgentArtifactList{}, err
@@ -205,20 +196,24 @@ func (d *DBAgentCatalog) GetAgentArtifacts(ctx context.Context, agentID string, 
 		for _, tmpl := range templateList.Items {
 			items = append(items, mapDBTemplateArtifactToAPI(tmpl))
 		}
+		if templateList.NextPageToken != "" {
+			responseNextPageToken = templateList.NextPageToken
+		}
 	}
 
 	if items == nil {
-		items = []openapi.AgentArtifact{}
+		items = []openapi.AgentTemplateArtifact{}
 	}
 
 	return openapi.AgentArtifactList{
-		Items:    items,
-		Size:     int32(len(items)),
-		PageSize: pageSize,
+		Items:         items,
+		Size:          int32(len(items)),
+		PageSize:      pageSize,
+		NextPageToken: responseNextPageToken,
 	}, nil
 }
 
-func mapDBTemplateArtifactToAPI(dbArtifact models.AgentTemplateArtifact) openapi.AgentArtifact {
+func mapDBTemplateArtifactToAPI(dbArtifact models.AgentTemplateArtifact) openapi.AgentTemplateArtifact {
 	tmpl := openapi.AgentTemplateArtifact{
 		ArtifactType: "template-artifact",
 	}
@@ -247,7 +242,7 @@ func mapDBTemplateArtifactToAPI(dbArtifact models.AgentTemplateArtifact) openapi
 		tmpl.ExternalId = attrs.ExternalID
 	}
 
-	return openapi.AgentArtifact{AgentTemplateArtifact: &tmpl}
+	return tmpl
 }
 
 func displayNameFromStoredName(storedName string) string {
