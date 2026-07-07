@@ -313,7 +313,6 @@ func (m *ModelRegistryRepository) createModelTransferJobResources(
 
 	jobID := uuid.NewString()
 	jobName := payload.Name
-
 	var configMapName, sourceSecretName, destSecretName string
 	destSecretName = existingDestSecretName
 
@@ -348,11 +347,36 @@ func (m *ModelRegistryRepository) createModelTransferJobResources(
 		destSecretName = destSecretCreated.Name
 	}
 
+	trustConfig, err := resolveAsyncUploadTrust(
+		ctx,
+		client,
+		payload.Namespace,
+		jobID,
+		isFederatedMode,
+		modelRegistryAddress,
+		payload.Destination.Registry,
+	)
+	if err != nil {
+		cleanupCreatedResources(ctx, client, payload.Namespace, configMapName, sourceSecretName, destSecretName, trustConfig.managedConfigMaps...)
+		return nil, err
+	}
+
 	imageURI := resolveAsyncUploadImage(ctx, client, isFederatedMode, podNamespace)
-	job := buildK8sJob(jobName, jobID, payload, configMapName, sourceSecretName, destSecretName, modelRegistryAddress, modelRegistryID, imageURI)
+	job := buildK8sJob(
+		jobName,
+		jobID,
+		payload,
+		configMapName,
+		trustConfig,
+		sourceSecretName,
+		destSecretName,
+		modelRegistryAddress,
+		modelRegistryID,
+		imageURI,
+	)
 	jobCreated, err := client.CreateModelTransferJob(ctx, payload.Namespace, job)
 	if err != nil {
-		cleanupCreatedResources(ctx, client, payload.Namespace, configMapName, sourceSecretName, destSecretName)
+		cleanupCreatedResources(ctx, client, payload.Namespace, configMapName, sourceSecretName, destSecretName, trustConfig.managedConfigMaps...)
 		if apierrors.IsAlreadyExists(err) {
 			return nil, fmt.Errorf("%w: job '%s' already exists", ErrJobValidationFailed, jobName)
 		}
@@ -361,7 +385,7 @@ func (m *ModelRegistryRepository) createModelTransferJobResources(
 
 	if jobCreated == nil {
 		logger.Error("created job is nil - unexpected K8s client behavior")
-		cleanupCreatedResources(ctx, client, payload.Namespace, configMapName, sourceSecretName, destSecretName)
+		cleanupCreatedResources(ctx, client, payload.Namespace, configMapName, sourceSecretName, destSecretName, trustConfig.managedConfigMaps...)
 		if err := client.DeleteModelTransferJob(ctx, payload.Namespace, jobName); err != nil && !apierrors.IsNotFound(err) {
 			logger.Warn("failed to cleanup job after nil response", "jobName", jobName, "error", err)
 		}
@@ -377,6 +401,11 @@ func (m *ModelRegistryRepository) createModelTransferJobResources(
 
 	if err := client.PatchConfigMapOwnerReference(ctx, payload.Namespace, configMapName, ownerRef); err != nil {
 		logger.Warn("failed to set ownerReference on configmap", "error", err)
+	}
+	for _, generatedConfigMapName := range trustConfig.managedConfigMaps {
+		if err := client.PatchConfigMapOwnerReference(ctx, payload.Namespace, generatedConfigMapName, ownerRef); err != nil {
+			logger.Warn("failed to set ownerReference on generated trusted CA configmap", "name", generatedConfigMapName, "error", err)
+		}
 	}
 	if sourceSecretName != "" {
 		if err := client.PatchSecretOwnerReference(ctx, payload.Namespace, sourceSecretName, ownerRef); err != nil {
@@ -664,7 +693,7 @@ func resolveAsyncUploadImage(ctx context.Context, client k8s.KubernetesClientInt
 }
 
 func buildK8sJob(jobName, jobID string, payload models.ModelTransferJob,
-	configMapName, sourceSecretName, destSecretName, modelRegistryAddress, modelRegistryID, imageURI string) *batchv1.Job {
+	configMapName string, trustConfig asyncUploadResolvedTrust, sourceSecretName, destSecretName, modelRegistryAddress, modelRegistryID, imageURI string) *batchv1.Job {
 
 	backoffLimit := int32(3)
 
@@ -732,9 +761,56 @@ func buildK8sJob(jobName, jobID string, payload models.ModelTransferJob,
 		"modelregistry.kubeflow.org/author":              payload.Author,
 		"modelregistry.kubeflow.org/configmap-name":      configMapName,
 		"modelregistry.kubeflow.org/dest-secret":         destSecretName,
+		asyncUploadRegistrySecureAnnot:                   strconv.FormatBool(registrySecure),
 		"modelregistry.kubeflow.org/registered-model-id": payload.RegisteredModelId,
 		"modelregistry.kubeflow.org/model-version-id":    payload.ModelVersionId,
 		"modelregistry.kubeflow.org/model-artifact-id":   payload.ModelArtifactId,
+	}
+
+	if trustConfig.modelRegistryCAMount != nil {
+		modelRegistryCAMount := trustConfig.modelRegistryCAMount
+		volumes = append(volumes, corev1.Volume{
+			Name: modelRegistryCAMount.volumeName,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: modelRegistryCAMount.configMapName,
+					},
+					Optional: func() *bool { b := true; return &b }(),
+				},
+			},
+		})
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{
+			Name:      modelRegistryCAMount.volumeName,
+			MountPath: modelRegistryCAMount.mountPath,
+			ReadOnly:  true,
+		})
+		if modelRegistryCAMount.envVarName != "" {
+			envVars = append(envVars, corev1.EnvVar{Name: modelRegistryCAMount.envVarName, Value: modelRegistryCAMount.filePath()})
+		}
+		annotations[modelRegistryCAMount.annotationConfigKey] = modelRegistryCAMount.configMapName
+		annotations[modelRegistryCAMount.annotationPathKey] = modelRegistryCAMount.filePath()
+	}
+
+	for _, destinationRegistryCAMount := range trustConfig.destinationRegistryCAMount {
+		volumes = append(volumes, corev1.Volume{
+			Name: destinationRegistryCAMount.volumeName,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: destinationRegistryCAMount.configMapName,
+					},
+					Optional: func() *bool { b := true; return &b }(),
+				},
+			},
+		})
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{
+			Name:      destinationRegistryCAMount.volumeName,
+			MountPath: destinationRegistryCAMount.mountPath,
+			ReadOnly:  true,
+		})
+		annotations[destinationRegistryCAMount.annotationConfigKey] = destinationRegistryCAMount.configMapName
+		annotations[destinationRegistryCAMount.annotationPathKey] = destinationRegistryCAMount.filePath()
 	}
 
 	switch payload.Source.Type {
@@ -1108,12 +1184,21 @@ func validateCreatePayload(payload models.ModelTransferJob, skipDestCredsValidat
 	return nil
 }
 
-func cleanupCreatedResources(ctx context.Context, client k8s.KubernetesClientInterface, namespace, configMapName, sourceSecretName, destSecretName string) {
+func cleanupCreatedResources(ctx context.Context, client k8s.KubernetesClientInterface, namespace, configMapName, sourceSecretName, destSecretName string, extraConfigMapNames ...string) {
 	logger := helper.GetContextLogger(ctx)
 
-	if configMapName != "" {
-		if err := client.DeleteConfigMap(ctx, namespace, configMapName); err != nil {
-			logger.Warn("failed to cleanup configmap", "name", configMapName, "error", err)
+	configMapNames := append([]string{configMapName}, extraConfigMapNames...)
+	configMapNameSet := map[string]struct{}{}
+	for _, name := range configMapNames {
+		if name == "" {
+			continue
+		}
+		if _, seen := configMapNameSet[name]; seen {
+			continue
+		}
+		configMapNameSet[name] = struct{}{}
+		if err := client.DeleteConfigMap(ctx, namespace, name); err != nil {
+			logger.Warn("failed to cleanup configmap", "name", name, "error", err)
 		}
 	}
 	if sourceSecretName != "" {

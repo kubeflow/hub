@@ -514,6 +514,18 @@ def get_config(argv: list[str] | None = None) -> AsyncUploadConfig:
             logger.error("❌ Failed to load ConfigMap metadata: %s", e)
             raise
 
+    registry_custom_ca = args.registry_custom_ca
+    if registry_custom_ca is not None:
+        custom_ca_path = Path(registry_custom_ca).expanduser()
+        if custom_ca_path.exists():
+            registry_custom_ca = str(custom_ca_path)
+        else:
+            logger.info(
+                "Registry custom CA file %s not found, falling back to system defaults",
+                custom_ca_path,
+            )
+            registry_custom_ca = None
+
     intent_type = model_args.intent_type
     if intent_type in (UploadIntent.create_model, UploadIntent.create_version):
         if metadata is None:
@@ -544,7 +556,7 @@ def get_config(argv: list[str] | None = None) -> AsyncUploadConfig:
                 author=args.registry_author,
                 user_token=args.registry_user_token,
                 user_token_envvar=args.registry_user_token_envvar,
-                custom_ca=args.registry_custom_ca,
+                custom_ca=registry_custom_ca,
                 custom_ca_envvar=args.registry_custom_ca_envvar,
                 log_level=args.registry_log_level,
             ),

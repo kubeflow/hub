@@ -511,3 +511,28 @@ def test_oci_credentials_file_loading(
     assert config.destination.email == expected["email"]
 
 
+def test_registry_custom_ca_uses_existing_file(
+    update_artifact_intent_env_vars, source_s3_env_vars, destination_oci_env_vars, tmp_path
+):
+    custom_ca = tmp_path / "ca-bundle.crt"
+    custom_ca.write_text("test ca bundle")
+
+    config = get_config([
+        "--registry-custom-ca", str(custom_ca),
+    ])
+
+    assert config.registry.custom_ca == str(custom_ca)
+
+
+def test_registry_custom_ca_missing_file_falls_back_to_system_defaults(
+    update_artifact_intent_env_vars, source_s3_env_vars, destination_oci_env_vars, tmp_path
+):
+    missing_custom_ca = tmp_path / "missing-ca-bundle.crt"
+
+    config = get_config([
+        "--registry-custom-ca", str(missing_custom_ca),
+    ])
+
+    assert config.registry.custom_ca is None
+
+

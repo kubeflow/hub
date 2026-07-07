@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -18,14 +19,21 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+const testNamespace = "test-namespace"
+
 // fakeKubernetesClient is a lightweight test double for KubernetesClientInterface that only
 // implements the methods used by GetAllModelTransferJobs. All other methods either return
 // zero values or panic if unexpectedly called.
 type fakeKubernetesClient struct {
-	jobs              *batchv1.JobList
-	podsByNamespace   map[string]*corev1.PodList
-	jobsByNamespace   map[string]map[string]*batchv1.Job
-	eventsByNamespace map[string]*corev1.EventList
+	jobs                  *batchv1.JobList
+	podsByNamespace       map[string]*corev1.PodList
+	jobsByNamespace       map[string]map[string]*batchv1.Job
+	eventsByNamespace     map[string]*corev1.EventList
+	configMapsByNamespace map[string]map[string]*corev1.ConfigMap
+	secretsByNamespace    map[string]map[string]*corev1.Secret
+	createdConfigMaps     []*corev1.ConfigMap
+	createConfigMapCalls  int
+	failCreateConfigMapAt int
 }
 
 // testContext returns a context with a RequestIdentity set, as required by GetAllModelTransferJobs.
@@ -169,7 +177,15 @@ func (f *fakeKubernetesClient) UpdateCatalogSourceConfig(ctx context.Context, na
 }
 
 func (f *fakeKubernetesClient) CreateSecret(ctx context.Context, namespace string, secret *corev1.Secret) (*corev1.Secret, error) {
-	return nil, nil
+	created := secret.DeepCopy()
+	if created.Name == "" {
+		if created.GenerateName != "" {
+			created.Name = created.GenerateName + "generated"
+		} else {
+			created.Name = "generated-secret"
+		}
+	}
+	return created, nil
 }
 
 func (f *fakeKubernetesClient) PatchSecret(ctx context.Context, namespace string, secretName string, data map[string]string) error {
@@ -181,7 +197,7 @@ func (f *fakeKubernetesClient) DeleteSecret(ctx context.Context, namespace strin
 }
 
 func (f *fakeKubernetesClient) CreateModelTransferJob(ctx context.Context, namespace string, job *batchv1.Job) (*batchv1.Job, error) {
-	return nil, nil
+	return job, nil
 }
 
 func (f *fakeKubernetesClient) GetEventsForPods(ctx context.Context, namespace string, podNames []string) (*corev1.EventList, error) {
@@ -199,7 +215,27 @@ func (f *fakeKubernetesClient) DeleteModelTransferJob(ctx context.Context, names
 }
 
 func (f *fakeKubernetesClient) CreateConfigMap(ctx context.Context, namespace string, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
-	return nil, nil
+	f.createConfigMapCalls++
+	if f.failCreateConfigMapAt > 0 && f.createConfigMapCalls == f.failCreateConfigMapAt {
+		return nil, fmt.Errorf("injected create configmap failure")
+	}
+	created := configMap.DeepCopy()
+	if created.Name == "" {
+		if created.GenerateName != "" {
+			created.Name = created.GenerateName + "generated"
+		} else {
+			created.Name = "generated-configmap"
+		}
+	}
+	f.createdConfigMaps = append(f.createdConfigMaps, created)
+	if f.configMapsByNamespace == nil {
+		f.configMapsByNamespace = map[string]map[string]*corev1.ConfigMap{}
+	}
+	if f.configMapsByNamespace[namespace] == nil {
+		f.configMapsByNamespace[namespace] = map[string]*corev1.ConfigMap{}
+	}
+	f.configMapsByNamespace[namespace][created.Name] = created
+	return created, nil
 }
 
 func (f *fakeKubernetesClient) DeleteConfigMap(ctx context.Context, namespace string, name string) error {
@@ -218,11 +254,25 @@ func (f *fakeKubernetesClient) GetModelTransferJob(ctx context.Context, namespac
 }
 
 func (f *fakeKubernetesClient) GetConfigMap(ctx context.Context, namespace string, name string) (*corev1.ConfigMap, error) {
+	if f.configMapsByNamespace != nil {
+		if byNS, ok := f.configMapsByNamespace[namespace]; ok {
+			if configMap, ok := byNS[name]; ok {
+				return configMap, nil
+			}
+		}
+	}
 	return nil, nil
 }
 
 func (f *fakeKubernetesClient) GetSecret(ctx context.Context, namespace string, name string) (*corev1.Secret, error) {
-	return nil, nil
+	if f.secretsByNamespace != nil {
+		if byNS, ok := f.secretsByNamespace[namespace]; ok {
+			if secret, ok := byNS[name]; ok {
+				return secret, nil
+			}
+		}
+	}
+	return nil, apierrors.NewNotFound(schema.GroupResource{Group: "", Resource: "secrets"}, name)
 }
 
 func (f *fakeKubernetesClient) PatchSecretOwnerReference(ctx context.Context, namespace string, name string, ownerRef metav1.OwnerReference) error {
@@ -691,6 +741,393 @@ func TestRegistryOriginOnly(t *testing.T) {
 				t.Errorf("registryOriginOnly(%q) = %q, want %q", tc.input, got, tc.expected)
 			}
 		})
+	}
+}
+
+func TestBuildK8sJobMountsTrustedCAForRegistry(t *testing.T) {
+	const (
+		trustedCAConfigMapName            = "job-trusted-ca"
+		destinationTrustedCAConfigMapName = "destination-trusted-ca"
+	)
+	trustConfig := asyncUploadResolvedTrust{
+		modelRegistryCAMount: &asyncUploadResolvedCAMount{
+			configMapName:       trustedCAConfigMapName,
+			volumeName:          asyncUploadTrustedCAVolumeName,
+			mountPath:           asyncUploadTrustedCAMountPath,
+			fileName:            asyncUploadTrustedCAFileName,
+			annotationConfigKey: asyncUploadTrustedCAConfigAnnot,
+			annotationPathKey:   asyncUploadTrustedCAPathAnnot,
+			envVarName:          "MODEL_SYNC_REGISTRY_CUSTOM_CA",
+		},
+		destinationRegistryCAMount: []asyncUploadResolvedCAMount{{
+			configMapName:       destinationTrustedCAConfigMapName,
+			volumeName:          asyncUploadDestinationTrustedCAVolumeName,
+			mountPath:           asyncUploadDestinationCAPath("quay.io"),
+			fileName:            asyncUploadDestinationCAFileName,
+			annotationConfigKey: asyncUploadDestinationCAConfigAnnot,
+			annotationPathKey:   asyncUploadDestinationCAPathAnnot,
+		}},
+	}
+
+	job := buildK8sJob(
+		"test-job",
+		"job-id",
+		models.ModelTransferJob{
+			Namespace:      "kubeflow",
+			JobDisplayName: "test transfer",
+			UploadIntent:   models.ModelTransferJobUploadIntentUpdateArtifact,
+			Source: models.ModelTransferJobSource{
+				Type: models.ModelTransferJobSourceTypeURI,
+				URI:  "https://example.com/model",
+			},
+			Destination: models.ModelTransferJobDestination{
+				Type:     models.ModelTransferJobDestinationTypeOCI,
+				URI:      "quay.io/example/model:latest",
+				Registry: "quay.io",
+			},
+		},
+		"metadata-config",
+		trustConfig,
+		"",
+		"destination-secret",
+		"https://my-registry-rest.apps.example.com/api/model_registry/v1alpha3",
+		"registry-id",
+		"example.com/async-upload:latest",
+	)
+
+	container := job.Spec.Template.Spec.Containers[0]
+
+	var trustedCAVolume *corev1.Volume
+	for i := range job.Spec.Template.Spec.Volumes {
+		if job.Spec.Template.Spec.Volumes[i].Name == asyncUploadTrustedCAVolumeName {
+			trustedCAVolume = &job.Spec.Template.Spec.Volumes[i]
+			break
+		}
+	}
+	if trustedCAVolume == nil {
+		t.Fatalf("expected trusted CA volume %q to be present", asyncUploadTrustedCAVolumeName)
+	}
+	if trustedCAVolume.ConfigMap == nil {
+		t.Fatalf("expected trusted CA volume to use a ConfigMap source")
+	}
+	if trustedCAVolume.ConfigMap.Name != trustedCAConfigMapName {
+		t.Fatalf("expected trusted CA ConfigMap %q, got %q", trustedCAConfigMapName, trustedCAVolume.ConfigMap.Name)
+	}
+	if trustedCAVolume.ConfigMap.Optional == nil || !*trustedCAVolume.ConfigMap.Optional {
+		t.Fatalf("expected trusted CA ConfigMap volume to be optional")
+	}
+
+	var trustedCAMount *corev1.VolumeMount
+	for i := range container.VolumeMounts {
+		if container.VolumeMounts[i].Name == asyncUploadTrustedCAVolumeName {
+			trustedCAMount = &container.VolumeMounts[i]
+			break
+		}
+	}
+	if trustedCAMount == nil {
+		t.Fatalf("expected trusted CA volume mount %q to be present", asyncUploadTrustedCAVolumeName)
+	}
+	if trustedCAMount.MountPath != asyncUploadTrustedCAMountPath {
+		t.Fatalf("expected trusted CA mount path %q, got %q", asyncUploadTrustedCAMountPath, trustedCAMount.MountPath)
+	}
+	if !trustedCAMount.ReadOnly {
+		t.Fatalf("expected trusted CA mount to be read-only")
+	}
+
+	envVars := map[string]string{}
+	for _, envVar := range container.Env {
+		envVars[envVar.Name] = envVar.Value
+	}
+	if envVars["MODEL_SYNC_REGISTRY_CUSTOM_CA"] != asyncUploadTrustedCAFilePath {
+		t.Fatalf("expected MODEL_SYNC_REGISTRY_CUSTOM_CA=%q, got %q", asyncUploadTrustedCAFilePath, envVars["MODEL_SYNC_REGISTRY_CUSTOM_CA"])
+	}
+	if envVars["MODEL_SYNC_REGISTRY_IS_SECURE"] != "true" {
+		t.Fatalf("expected MODEL_SYNC_REGISTRY_IS_SECURE=true, got %q", envVars["MODEL_SYNC_REGISTRY_IS_SECURE"])
+	}
+	if job.Annotations[asyncUploadRegistrySecureAnnot] != "true" {
+		t.Fatalf("expected %s=true, got %q", asyncUploadRegistrySecureAnnot, job.Annotations[asyncUploadRegistrySecureAnnot])
+	}
+	if job.Annotations[asyncUploadTrustedCAConfigAnnot] != trustedCAConfigMapName {
+		t.Fatalf("expected %s=%q, got %q", asyncUploadTrustedCAConfigAnnot, trustedCAConfigMapName, job.Annotations[asyncUploadTrustedCAConfigAnnot])
+	}
+	if job.Annotations[asyncUploadTrustedCAPathAnnot] != asyncUploadTrustedCAFilePath {
+		t.Fatalf("expected %s=%q, got %q", asyncUploadTrustedCAPathAnnot, asyncUploadTrustedCAFilePath, job.Annotations[asyncUploadTrustedCAPathAnnot])
+	}
+	if job.Annotations[asyncUploadDestinationCAConfigAnnot] != destinationTrustedCAConfigMapName {
+		t.Fatalf("expected %s=%q, got %q", asyncUploadDestinationCAConfigAnnot, destinationTrustedCAConfigMapName, job.Annotations[asyncUploadDestinationCAConfigAnnot])
+	}
+
+	var destinationTrustedCAVolume *corev1.Volume
+	for i := range job.Spec.Template.Spec.Volumes {
+		if job.Spec.Template.Spec.Volumes[i].Name == asyncUploadDestinationTrustedCAVolumeName {
+			destinationTrustedCAVolume = &job.Spec.Template.Spec.Volumes[i]
+			break
+		}
+	}
+	if destinationTrustedCAVolume == nil {
+		t.Fatalf("expected destination trusted CA volume %q to be present", asyncUploadDestinationTrustedCAVolumeName)
+	}
+	if destinationTrustedCAVolume.ConfigMap == nil {
+		t.Fatalf("expected destination trusted CA volume to use a ConfigMap source")
+	}
+	if destinationTrustedCAVolume.ConfigMap.Name != destinationTrustedCAConfigMapName {
+		t.Fatalf("expected destination trusted CA ConfigMap %q, got %q", destinationTrustedCAConfigMapName, destinationTrustedCAVolume.ConfigMap.Name)
+	}
+
+	var destinationTrustedCAMount *corev1.VolumeMount
+	for i := range container.VolumeMounts {
+		if container.VolumeMounts[i].Name == asyncUploadDestinationTrustedCAVolumeName {
+			destinationTrustedCAMount = &container.VolumeMounts[i]
+			break
+		}
+	}
+	if destinationTrustedCAMount == nil {
+		t.Fatalf("expected destination trusted CA volume mount %q to be present", asyncUploadDestinationTrustedCAVolumeName)
+	}
+	expectedDestinationTrustedCAMountPath := asyncUploadDestinationCAPath("quay.io")
+	if destinationTrustedCAMount.MountPath != expectedDestinationTrustedCAMountPath {
+		t.Fatalf("expected destination trusted CA mount path %q, got %q", expectedDestinationTrustedCAMountPath, destinationTrustedCAMount.MountPath)
+	}
+}
+
+func TestBuildK8sJobSkipsTrustedCAForInsecureRegistry(t *testing.T) {
+	job := buildK8sJob(
+		"test-job-http",
+		"job-id",
+		models.ModelTransferJob{
+			Namespace:      "kubeflow",
+			JobDisplayName: "test transfer",
+			UploadIntent:   models.ModelTransferJobUploadIntentUpdateArtifact,
+			Source: models.ModelTransferJobSource{
+				Type: models.ModelTransferJobSourceTypeURI,
+				URI:  "http://example.com/model",
+			},
+			Destination: models.ModelTransferJobDestination{
+				Type:     models.ModelTransferJobDestinationTypeOCI,
+				URI:      "quay.io/example/model:latest",
+				Registry: "quay.io",
+			},
+		},
+		"metadata-config",
+		asyncUploadResolvedTrust{},
+		"",
+		"destination-secret",
+		"http://my-registry-rest.apps.example.com/api/model_registry/v1alpha3",
+		"registry-id",
+		"example.com/async-upload:latest",
+	)
+
+	container := job.Spec.Template.Spec.Containers[0]
+	for _, volume := range job.Spec.Template.Spec.Volumes {
+		if volume.Name == asyncUploadTrustedCAVolumeName {
+			t.Fatalf("did not expect trusted CA volume for insecure registry")
+		}
+	}
+	for _, mount := range container.VolumeMounts {
+		if mount.Name == asyncUploadTrustedCAVolumeName {
+			t.Fatalf("did not expect trusted CA mount for insecure registry")
+		}
+	}
+
+	envVars := map[string]string{}
+	for _, envVar := range container.Env {
+		envVars[envVar.Name] = envVar.Value
+	}
+	if _, ok := envVars["MODEL_SYNC_REGISTRY_CUSTOM_CA"]; ok {
+		t.Fatalf("did not expect MODEL_SYNC_REGISTRY_CUSTOM_CA for insecure registry")
+	}
+	if envVars["MODEL_SYNC_REGISTRY_IS_SECURE"] != "false" {
+		t.Fatalf("expected MODEL_SYNC_REGISTRY_IS_SECURE=false, got %q", envVars["MODEL_SYNC_REGISTRY_IS_SECURE"])
+	}
+	if job.Annotations[asyncUploadRegistrySecureAnnot] != "false" {
+		t.Fatalf("expected %s=false, got %q", asyncUploadRegistrySecureAnnot, job.Annotations[asyncUploadRegistrySecureAnnot])
+	}
+	if _, ok := job.Annotations[asyncUploadTrustedCAConfigAnnot]; ok {
+		t.Fatalf("did not expect %s annotation for insecure registry", asyncUploadTrustedCAConfigAnnot)
+	}
+	if _, ok := job.Annotations[asyncUploadTrustedCAPathAnnot]; ok {
+		t.Fatalf("did not expect %s annotation for insecure registry", asyncUploadTrustedCAPathAnnot)
+	}
+	if _, ok := job.Annotations[asyncUploadDestinationCAConfigAnnot]; ok {
+		t.Fatalf("did not expect %s annotation for insecure registry", asyncUploadDestinationCAConfigAnnot)
+	}
+}
+
+func TestResolveAsyncUploadModelRegistryTrustCreatesGeneratedRouteBundleForFederatedRegistry(t *testing.T) {
+	client := &fakeKubernetesClient{
+		secretsByNamespace: map[string]map[string]*corev1.Secret{
+			asyncUploadOpenShiftRouterSecretNamespace: {
+				asyncUploadOpenShiftRouterSecretName: {
+					Data: map[string][]byte{
+						asyncUploadOpenShiftRouterSecretKey: []byte("router-ca-pem"),
+					},
+				},
+			},
+		},
+	}
+
+	trustMount, managedConfigMaps, err := resolveAsyncUploadModelRegistryTrust(
+		testContext(),
+		client,
+		testNamespace,
+		"job-id",
+		true,
+	)
+	if err != nil {
+		t.Fatalf("resolveAsyncUploadModelRegistryTrust returned error: %v", err)
+	}
+	if trustMount == nil {
+		t.Fatalf("expected model registry trust mount")
+	}
+	if trustMount.configMapName == "" || trustMount.configMapName == asyncUploadTrustedCAConfigMapName {
+		t.Fatalf("expected a generated trusted CA configmap name, got %q", trustMount.configMapName)
+	}
+	if len(managedConfigMaps) != 1 || managedConfigMaps[0] != trustMount.configMapName {
+		t.Fatalf("expected managed configmaps to contain %q, got %#v", trustMount.configMapName, managedConfigMaps)
+	}
+	if len(client.createdConfigMaps) != 1 {
+		t.Fatalf("expected 1 created configmap, got %d", len(client.createdConfigMaps))
+	}
+	createdConfigMap := client.createdConfigMaps[0]
+	if createdConfigMap.Namespace != testNamespace {
+		t.Fatalf("expected created configmap namespace %q, got %q", testNamespace, createdConfigMap.Namespace)
+	}
+	if createdConfigMap.Data[asyncUploadTrustedCAFileName] != "router-ca-pem" {
+		t.Fatalf(
+			"expected trusted CA data %q, got %q",
+			"router-ca-pem",
+			createdConfigMap.Data[asyncUploadTrustedCAFileName],
+		)
+	}
+}
+
+func TestResolveAsyncUploadModelRegistryTrustFallsBackWhenRouteCAUnavailable(t *testing.T) {
+	client := &fakeKubernetesClient{}
+
+	trustMount, managedConfigMaps, err := resolveAsyncUploadModelRegistryTrust(
+		testContext(),
+		client,
+		testNamespace,
+		"job-id",
+		true,
+	)
+	if err != nil {
+		t.Fatalf("resolveAsyncUploadModelRegistryTrust returned error: %v", err)
+	}
+	if trustMount == nil {
+		t.Fatalf("expected fallback model registry trust mount")
+	}
+	if trustMount.configMapName != asyncUploadTrustedCAConfigMapName {
+		t.Fatalf("expected fallback trusted CA configmap %q, got %q", asyncUploadTrustedCAConfigMapName, trustMount.configMapName)
+	}
+	if len(managedConfigMaps) != 0 {
+		t.Fatalf("expected no managed configmaps, got %#v", managedConfigMaps)
+	}
+}
+
+func TestResolveAsyncUploadDestinationRegistryTrustCreatesGeneratedServiceBundle(t *testing.T) {
+	client := &fakeKubernetesClient{
+		configMapsByNamespace: map[string]map[string]*corev1.ConfigMap{
+			testNamespace: {
+				asyncUploadOpenShiftServiceCAConfigMap: {
+					Data: map[string]string{
+						asyncUploadOpenShiftServiceCAConfigMapKey: "service-ca-pem",
+					},
+				},
+			},
+		},
+	}
+
+	trustMounts, managedConfigMaps, err := resolveAsyncUploadDestinationRegistryTrust(
+		testContext(),
+		client,
+		testNamespace,
+		"job-id",
+		"image-registry.openshift-image-registry.svc:5000",
+	)
+	if err != nil {
+		t.Fatalf("resolveAsyncUploadDestinationRegistryTrust returned error: %v", err)
+	}
+	if len(trustMounts) != 1 {
+		t.Fatalf("expected 1 destination trust mount, got %d", len(trustMounts))
+	}
+	if len(managedConfigMaps) != 1 || managedConfigMaps[0] != trustMounts[0].configMapName {
+		t.Fatalf("expected managed configmaps to contain %q, got %#v", trustMounts[0].configMapName, managedConfigMaps)
+	}
+	if len(client.createdConfigMaps) != 1 {
+		t.Fatalf("expected 1 created configmap, got %d", len(client.createdConfigMaps))
+	}
+	createdConfigMap := client.createdConfigMaps[0]
+	if createdConfigMap.Data[asyncUploadDestinationCAFileName] != "service-ca-pem" {
+		t.Fatalf(
+			"expected destination trusted CA data %q, got %q",
+			"service-ca-pem",
+			createdConfigMap.Data[asyncUploadDestinationCAFileName],
+		)
+	}
+}
+
+func TestResolveAsyncUploadDestinationRegistryTrustSkipsNonClusterServiceRegistry(t *testing.T) {
+	client := &fakeKubernetesClient{}
+
+	trustMounts, managedConfigMaps, err := resolveAsyncUploadDestinationRegistryTrust(
+		testContext(),
+		client,
+		testNamespace,
+		"job-id",
+		"registry.example.com:5000",
+	)
+	if err != nil {
+		t.Fatalf("resolveAsyncUploadDestinationRegistryTrust returned error: %v", err)
+	}
+	if len(trustMounts) != 0 {
+		t.Fatalf("did not expect destination trust mounts for non-cluster service registry")
+	}
+	if len(managedConfigMaps) != 0 {
+		t.Fatalf("expected no managed configmaps, got %#v", managedConfigMaps)
+	}
+}
+
+func TestResolveAsyncUploadTrustReturnsPartialStateOnDestinationTrustError(t *testing.T) {
+	client := &fakeKubernetesClient{
+		secretsByNamespace: map[string]map[string]*corev1.Secret{
+			asyncUploadOpenShiftRouterSecretNamespace: {
+				asyncUploadOpenShiftRouterSecretName: {
+					Data: map[string][]byte{
+						asyncUploadOpenShiftRouterSecretKey: []byte("router-ca-pem"),
+					},
+				},
+			},
+		},
+		configMapsByNamespace: map[string]map[string]*corev1.ConfigMap{
+			testNamespace: {
+				asyncUploadOpenShiftServiceCAConfigMap: {
+					Data: map[string]string{
+						asyncUploadOpenShiftServiceCAConfigMapKey: "service-ca-pem",
+					},
+				},
+			},
+		},
+		failCreateConfigMapAt: 2,
+	}
+
+	trustConfig, err := resolveAsyncUploadTrust(
+		testContext(),
+		client,
+		testNamespace,
+		"job-id",
+		true,
+		"https://example.apps.test/api/model_registry/v1alpha3",
+		"image-registry.openshift-image-registry.svc:5000",
+	)
+	if err == nil {
+		t.Fatalf("expected resolveAsyncUploadTrust to return an error")
+	}
+	if trustConfig.modelRegistryCAMount == nil {
+		t.Fatalf("expected partial trust config to retain model registry trust mount")
+	}
+	if len(trustConfig.managedConfigMaps) != 1 {
+		t.Fatalf("expected 1 managed configmap before destination failure, got %d", len(trustConfig.managedConfigMaps))
 	}
 }
 
