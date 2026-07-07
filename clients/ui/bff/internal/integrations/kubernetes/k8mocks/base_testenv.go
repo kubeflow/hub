@@ -1469,7 +1469,7 @@ catalogs:
 			Namespace: namespace,
 		},
 		Data: map[string]string{
-			k8s.McpCatalogSourceKey:       raw,
+			k8s.McpCatalogSourceKey:      raw,
 			"community_mcp_servers.yaml": "servers:\n - name: community_server_1",
 		},
 	}
@@ -1517,7 +1517,7 @@ catalogs:
 			Namespace: namespace,
 		},
 		Data: map[string]string{
-			k8s.McpCatalogSourceKey:    raw,
+			k8s.McpCatalogSourceKey:   raw,
 			"custom_mcp_servers.yaml": "servers:\n - name: custom_server_1",
 			"org_mcp_servers.yaml":    "servers:\n - name: org_server_1",
 		},

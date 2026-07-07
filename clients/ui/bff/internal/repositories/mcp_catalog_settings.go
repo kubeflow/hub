@@ -13,14 +13,14 @@ import (
 )
 
 var (
-	ErrMcpCatalogSourceNotFound       = errors.New("mcp catalog source not found")
-	ErrMcpCatalogSourceAlreadyExist   = errors.New("mcp catalog source already exists")
-	ErrMcpCatalogSourceIdRequired     = errors.New("mcp catalog source ID is required")
-	ErrMcpCatalogSourceConflict       = errors.New("mcp catalog source was modified by another request")
-	ErrMcpCatalogCannotChangeDefault  = errors.New("cannot change the default MCP source")
-	ErrMcpCatalogCannotDeleteDefault  = errors.New("cannot delete the default MCP source")
-	ErrMcpCatalogValidationFailed     = errors.New("validation failed")
-	ErrMcpCatalogCannotChangeType     = errors.New("cannot change MCP catalog source type")
+	ErrMcpCatalogSourceNotFound      = errors.New("mcp catalog source not found")
+	ErrMcpCatalogSourceAlreadyExist  = errors.New("mcp catalog source already exists")
+	ErrMcpCatalogSourceIdRequired    = errors.New("mcp catalog source ID is required")
+	ErrMcpCatalogSourceConflict      = errors.New("mcp catalog source was modified by another request")
+	ErrMcpCatalogCannotChangeDefault = errors.New("cannot change the default MCP source")
+	ErrMcpCatalogCannotDeleteDefault = errors.New("cannot delete the default MCP source")
+	ErrMcpCatalogValidationFailed    = errors.New("validation failed")
+	ErrMcpCatalogCannotChangeType    = errors.New("cannot change MCP catalog source type")
 )
 
 type McpCatalogSettingsRepository struct {
