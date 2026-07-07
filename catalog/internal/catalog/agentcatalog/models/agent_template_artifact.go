@@ -40,4 +40,5 @@ type AgentTemplateArtifactRepository interface {
 	GetByID(id int32) (AgentTemplateArtifact, error)
 	List(listOptions AgentTemplateArtifactListOptions) (*dbmodels.ListWrapper[AgentTemplateArtifact], error)
 	Save(artifact AgentTemplateArtifact, parentResourceID *int32) (AgentTemplateArtifact, error)
+	DeleteByParentID(parentID int32) error
 }

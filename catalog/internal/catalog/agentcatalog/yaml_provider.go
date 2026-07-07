@@ -24,6 +24,11 @@ type yamlAgentArtifact struct {
 	URI string `yaml:"uri" json:"uri"`
 }
 
+type yamlAgentTemplate struct {
+	Name    *string `yaml:"name,omitempty" json:"name,omitempty"`
+	Content string  `yaml:"content" json:"content"`
+}
+
 type yamlAgent struct {
 	Name             string                              `yaml:"name" json:"name"`
 	ExternalID       *string                             `yaml:"externalId,omitempty" json:"externalId,omitempty"`
@@ -36,6 +41,7 @@ type yamlAgent struct {
 	RepositoryUrl    *string                             `yaml:"repositoryUrl,omitempty" json:"repositoryUrl,omitempty"`
 	Env              []yamlAgentEnvVar                   `yaml:"env,omitempty" json:"env,omitempty"`
 	Artifacts        []yamlAgentArtifact                 `yaml:"artifacts,omitempty" json:"artifacts,omitempty"`
+	Templates        []yamlAgentTemplate                 `yaml:"templates,omitempty" json:"templates,omitempty"`
 	CustomProperties *map[string]openapi.MetadataValue   `yaml:"customProperties,omitempty" json:"customProperties,omitempty"`
 	CreateTimeSinceEpoch     *string                     `yaml:"createTimeSinceEpoch,omitempty" json:"createTimeSinceEpoch,omitempty"`
 	LastUpdateTimeSinceEpoch *string                     `yaml:"lastUpdateTimeSinceEpoch,omitempty" json:"lastUpdateTimeSinceEpoch,omitempty"`
@@ -152,6 +158,33 @@ func convertAgentMetadataToProperty(key string, value openapi.MetadataValue) dbm
 	}
 	return dbmodels.NewStringProperty(key, "", true)
 }
+
+func yamlTemplateToEntity(tmpl yamlAgentTemplate, agentName string, sourceID string) models.AgentTemplateArtifact {
+	name := "agent.yaml"
+	if tmpl.Name != nil && *tmpl.Name != "" {
+		name = *tmpl.Name
+	}
+	qualifiedName := sourceID + ":" + agentName + ":" + name
+
+	attrs := &models.AgentTemplateArtifactAttributes{
+		Name:         &qualifiedName,
+		Content:      &tmpl.Content,
+		ArtifactType: strPtr(models.AgentTemplateArtifactType),
+	}
+
+	entity := &models.AgentTemplateArtifactImpl{
+		Attributes: attrs,
+	}
+
+	properties := []dbmodels.Properties{
+		dbmodels.NewStringProperty("content", tmpl.Content, false),
+	}
+	entity.Properties = &properties
+
+	return entity
+}
+
+func strPtr(s string) *string { return &s }
 
 func resolveYAMLPath(source basecatalog.PluginSource) (string, error) {
 	yamlPath, ok := source.Properties["yamlCatalogPath"].(string)

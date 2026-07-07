@@ -74,6 +74,14 @@ func (r *AgentTemplateArtifactRepositoryImpl) List(listOptions models.AgentTempl
 	return r.GenericRepository.List(&listOptions)
 }
 
+func (r *AgentTemplateArtifactRepositoryImpl) DeleteByParentID(parentID int32) error {
+	config := r.GetConfig()
+	return config.DB.Exec(
+		`DELETE FROM "Artifact" WHERE id IN (SELECT artifact_id FROM "Attribution" INNER JOIN "Artifact" ON "Artifact".id = artifact_id WHERE context_id = ? AND type_id = ?)`,
+		parentID, config.TypeID,
+	).Error
+}
+
 func (r *AgentTemplateArtifactRepositoryImpl) lookupByName(name string) (*schema.Artifact, error) {
 	config := r.GetConfig()
 	var entity schema.Artifact
