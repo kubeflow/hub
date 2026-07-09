@@ -45,7 +45,7 @@ func init() {
 				AddString("metricsType"),
 		},
 		plugin.DatastoreEntry{
-			TypeName: "kf.Agent",
+			TypeName: agentcatalogservice.AgentTypeName,
 			Category: "context",
 			Spec: datastore.NewSpecType(agentcatalogservice.NewAgentRepository).
 				AddString("source_id").

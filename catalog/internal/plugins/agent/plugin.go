@@ -32,7 +32,7 @@ func (p *Plugin) Migrations() []plugin.Migration { return nil }
 func (p *Plugin) DatastoreEntries() []plugin.DatastoreEntry {
 	return []plugin.DatastoreEntry{
 		{
-			TypeName: "kf.Agent",
+			TypeName: agentservice.AgentTypeName,
 			Category: "context",
 			Spec: datastore.NewSpecType(agentservice.NewAgentRepository).
 				AddString("source_id").

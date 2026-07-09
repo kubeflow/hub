@@ -11,9 +11,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// AgentTypeName is the context type name used for agents in the catalog.
-const AgentTypeName = "kf.Agent"
-
 // MustDatastoreSpec calls service.DatastoreSpec and fails the test on error.
 func MustDatastoreSpec(t *testing.T) *datastore.Spec {
 	t.Helper()
@@ -73,7 +70,7 @@ func GetMCPServerToolTypeIDForDBTest(t *testing.T, db *gorm.DB) int32 {
 // GetAgentTypeIDForDBTest retrieves the Agent type ID for testing
 func GetAgentTypeIDForDBTest(t *testing.T, db *gorm.DB) int32 {
 	var typeRecord schema.Type
-	err := db.Where("name = ?", AgentTypeName).First(&typeRecord).Error
+	err := db.Where("name = ?", agentcatalogservice.AgentTypeName).First(&typeRecord).Error
 	require.NoError(t, err, "Failed to query Agent type")
 	return typeRecord.ID
 }

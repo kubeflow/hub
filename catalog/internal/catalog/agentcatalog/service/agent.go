@@ -16,6 +16,8 @@ import (
 	"gorm.io/gorm"
 )
 
+const AgentTypeName = "kf.Agent"
+
 var ErrAgentNotFound = errors.New("agent not found")
 
 // AgentRepositoryImpl implements AgentRepository using GORM.
