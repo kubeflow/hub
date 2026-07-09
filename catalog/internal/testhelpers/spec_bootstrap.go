@@ -60,6 +60,12 @@ func init() {
 				AddStruct("artifacts"),
 		},
 		plugin.DatastoreEntry{
+			TypeName: agentcatalogservice.AgentTemplateArtifactTypeName,
+			Category: "artifact",
+			Spec: datastore.NewSpecType(agentcatalogservice.NewAgentTemplateArtifactRepository).
+				AddString("content"),
+		},
+		plugin.DatastoreEntry{
 			TypeName: service.MCPServerTypeName,
 			Category: "context",
 			Spec: datastore.NewSpecType(mcpcatalogservice.NewMCPServerRepository).

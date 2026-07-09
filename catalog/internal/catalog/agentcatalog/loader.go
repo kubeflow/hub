@@ -142,7 +142,7 @@ func (l *AgentLoader) loadFromYAML(ctx context.Context, sourceID string, source 
 				return
 			}
 
-			if l.services.AgentTemplateArtifactRepository != nil && len(ya.Templates) > 0 {
+			if l.services.AgentTemplateArtifactRepository != nil {
 				if err := l.services.AgentTemplateArtifactRepository.DeleteByParentID(*agentID); err != nil {
 					glog.Errorf("error deleting existing template artifacts for agent %s: %v", ya.Name, err)
 				}

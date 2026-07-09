@@ -31,16 +31,27 @@ func testDatastoreSpec() *datastore.Spec {
 			AddString("repositoryUrl").
 			AddStruct("env").
 			AddStruct("artifacts"),
+		).
+		AddArtifact(AgentTemplateArtifactTypeName, datastore.NewSpecType(NewAgentTemplateArtifactRepository).
+			AddString("content"),
 		)
 }
 
 func getAgentTypeID(t *testing.T, db *gorm.DB) int32 {
+	return getTypeIDByName(t, db, testAgentTypeName)
+}
+
+func getAgentTemplateArtifactTypeID(t *testing.T, db *gorm.DB) int32 {
+	return getTypeIDByName(t, db, AgentTemplateArtifactTypeName)
+}
+
+func getTypeIDByName(t *testing.T, db *gorm.DB, name string) int32 {
 	var typeRecord schema.Type
-	err := db.Where("name = ?", testAgentTypeName).First(&typeRecord).Error
+	err := db.Where("name = ?", name).First(&typeRecord).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			typeRecord = schema.Type{
-				Name: testAgentTypeName,
+				Name: name,
 			}
 			err = db.Create(&typeRecord).Error
 			require.NoError(t, err)
