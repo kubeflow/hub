@@ -46,8 +46,13 @@ export const McpCatalogSettingsContextProvider: React.FC<
 > = ({ children }) => {
   const hostPath = `${URL_PREFIX}/api/${BFF_API_VERSION}/settings/mcp_catalog`;
   const mcpCatalogHostPath = `${URL_PREFIX}/api/${BFF_API_VERSION}/model_catalog`;
+  const previewHostPath = `${URL_PREFIX}/api/${BFF_API_VERSION}/settings/model_catalog`;
   const queryParams = useQueryParamNamespaces();
-  const [apiState, refreshAPIState] = useMcpCatalogSettingsAPIState(hostPath, queryParams);
+  const [apiState, refreshAPIState] = useMcpCatalogSettingsAPIState(
+    hostPath,
+    queryParams,
+    previewHostPath,
+  );
   const mcpCatalogQueryParams = React.useMemo(
     () => ({ ...queryParams, assetType: 'mcp_servers' }),
     [queryParams],

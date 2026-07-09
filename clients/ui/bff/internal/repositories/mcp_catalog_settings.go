@@ -28,6 +28,9 @@ func (r *McpCatalogSettingsRepository) GetAllMcpCatalogSourceConfigs(_ context.C
 	enabled := true
 	disabled := false
 	isDefault := true
+	communityYaml := "source: community_mcp_servers\nmcp_servers:\n  - name: Prometheus MCP Server\n    description: Query Prometheus metrics and alerts directly from your agent\n  - name: Kubernetes MCP Server\n    description: Manage Kubernetes resources and query cluster state\n  - name: Grafana MCP Server\n    description: Query Grafana dashboards, data sources and annotations\n  - name: Git MCP Server\n    description: Interact with Git repositories, branches, commits and diffs\n"
+	orgYaml := "source: organization_mcp_servers\nmcp_servers:\n  - name: Elasticsearch MCP Server\n    description: Search and analyze data in Elasticsearch clusters\n  - name: Dynatrace MCP Server\n    description: Access Dynatrace observability data and perform actions\n  - name: PostgreSQL MCP Server\n    description: Query and manage PostgreSQL databases\n  - name: Redis MCP Server\n    description: Manage Redis key-value stores, caches and pub/sub channels\n"
+	standaloneYaml := "source: other\nmcp_servers:\n  - name: Standalone MCP Server\n    description: MCP server with no category, available for use\n"
 	return &models.McpCatalogSourceConfigList{
 		Catalogs: []models.McpCatalogSourceConfig{
 			{
@@ -44,6 +47,7 @@ func (r *McpCatalogSettingsRepository) GetAllMcpCatalogSourceConfigs(_ context.C
 				Type:    "yaml",
 				Enabled: &enabled,
 				Labels:  []string{"organization_mcp_servers"},
+				Yaml:    &orgYaml,
 			},
 			{
 				Id:      "standalone-mcp-source",
@@ -51,6 +55,7 @@ func (r *McpCatalogSettingsRepository) GetAllMcpCatalogSourceConfigs(_ context.C
 				Type:    "yaml",
 				Enabled: &enabled,
 				Labels:  []string{},
+				Yaml:    &standaloneYaml,
 			},
 			{
 				Id:      "disabled-mcp-source",
@@ -58,6 +63,7 @@ func (r *McpCatalogSettingsRepository) GetAllMcpCatalogSourceConfigs(_ context.C
 				Type:    "yaml",
 				Enabled: &disabled,
 				Labels:  []string{"disabled_servers"},
+				Yaml:    &communityYaml,
 			},
 		},
 	}, nil

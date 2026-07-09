@@ -1,0 +1,56 @@
+# MCP catalog source YAML format
+#
+# Upload via Settings > MCP resources > MCP catalog sources > Add a source.
+# The top-level `source` label describes the container; each item under `mcp_servers`
+# becomes a catalog entry when this source is enabled.
+#
+# SOURCE (optional metadata — you also set the source name in the Add source form)
+#   source        Short label for this catalog source file
+#
+# MCP SERVER FIELDS (each list item under `mcp_servers`)
+#   Required: name, provider, description, version
+#   Optional: license, license_link, readme, transports, deploymentMode, tools,
+#             repositoryUrl, documentationUrl, publishedDate
+#
+#   transports     — list of supported transports (for example: stdio, http, SSE)
+#   deploymentMode — local or remote
+#   tools          — list of tool definitions with name, description, accessType
+#
+# TIPS
+#   - Add multiple servers under `mcp_servers` to publish a bundle from one source file
+#   - Server names appear in the MCP catalog preview after upload
+
+source: Organization MCP servers
+
+mcp_servers:
+  - name: Prometheus
+    provider: Prometheus Community
+    version: "0.9.2"
+    license: apache-2.0
+    description: >-
+      Query Prometheus metrics and alerts directly from your agent using PromQL.
+    transports:
+      - http
+    deploymentMode: local
+    tools:
+      - name: query
+        description: Execute PromQL queries
+        accessType: read_only
+
+  - name: Kubernetes
+    provider: CNCF
+    version: "1.2.0"
+    license: apache-2.0
+    description: >-
+      Interact with Kubernetes clusters through natural language for pods,
+      deployments, and logs.
+    transports:
+      - stdio
+    deploymentMode: local
+    tools:
+      - name: get_pods
+        description: List pods in a namespace
+        accessType: read_only
+      - name: scale_deployment
+        description: Scale a deployment
+        accessType: read_write

@@ -6,7 +6,8 @@ export const MCP_ADD_SOURCE_TITLE = 'Add a source';
 export const MCP_ADD_SOURCE_DESCRIPTION = 'Add a new MCP catalog source to your organization.';
 
 export const MCP_MANAGE_SOURCE_TITLE = 'Manage source';
-export const MCP_MANAGE_SOURCE_DESCRIPTION = 'Manage the selected MCP catalog source.';
+export const MCP_MANAGE_SOURCE_DESCRIPTION =
+  'Configure which MCP servers from this pre-loaded catalog source are visible in the MCP catalog.';
 
 export const mcpCatalogSettingsUrl = (): string => '/mcp-catalog-settings';
 

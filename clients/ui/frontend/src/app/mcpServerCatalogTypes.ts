@@ -254,4 +254,5 @@ export type McpCatalogSettingsAPIs = {
   getMcpCatalogSourceConfig: GetMcpCatalogSourceConfig;
   updateMcpCatalogSourceConfig: UpdateMcpCatalogSourceConfig;
   deleteMcpCatalogSourceConfig: DeleteMcpCatalogSourceConfig;
+  previewMcpCatalogSource: PreviewMcpCatalogSource;
 };
