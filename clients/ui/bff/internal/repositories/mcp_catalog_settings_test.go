@@ -46,6 +46,27 @@ var _ = Describe("McpCatalogSettingsRepository", func() {
 			Expect(defaultCatalog).NotTo(BeNil())
 			Expect(*defaultCatalog.IsDefault).To(BeTrue())
 		})
+
+		It("should merge, if user overrides the default source", func() {
+			payload := models.McpCatalogSourceConfigPayload{
+				Enabled: mcpBoolPtr(false),
+			}
+			_, err := repo.UpdateMcpCatalogSourceConfig(ctx, k8sClient, "kubeflow", "community_mcp_servers", payload)
+			Expect(err).NotTo(HaveOccurred())
+
+			catalogs, err := repo.GetAllMcpCatalogSourceConfigs(ctx, k8sClient, "kubeflow")
+			Expect(err).NotTo(HaveOccurred())
+			var mergedCatalog *models.McpCatalogSourceConfig
+			for _, c := range catalogs.Catalogs {
+				if c.Id == "community_mcp_servers" {
+					mergedCatalog = &c
+					break
+				}
+			}
+			Expect(mergedCatalog).NotTo(BeNil())
+			Expect(*mergedCatalog.Enabled).To(BeFalse())
+			Expect(mergedCatalog.Name).To(Equal("Community MCP Servers"))
+		})
 	})
 
 	Describe("GetMcpCatalogSourceConfig", func() {
@@ -69,6 +90,20 @@ var _ = Describe("McpCatalogSettingsRepository", func() {
 			catalog, err := repo.GetMcpCatalogSourceConfig(ctx, k8sClient, "kubeflow", "custom_mcp_servers")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(*catalog.IsDefault).To(BeFalse())
+		})
+
+		It("should return merged data for user override default source config", func() {
+			payload := models.McpCatalogSourceConfigPayload{
+				Enabled: mcpBoolPtr(false),
+			}
+			_, err := repo.UpdateMcpCatalogSourceConfig(ctx, k8sClient, "kubeflow", "community_mcp_servers", payload)
+			Expect(err).NotTo(HaveOccurred())
+
+			catalog, err := repo.GetMcpCatalogSourceConfig(ctx, k8sClient, "kubeflow", "community_mcp_servers")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(catalog.Name).To(Equal("Community MCP Servers"))
+			Expect(*catalog.IsDefault).To(BeTrue())
+			Expect(*catalog.Enabled).To(BeFalse())
 		})
 	})
 
@@ -202,6 +237,30 @@ var _ = Describe("McpCatalogSettingsRepository", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("invalid catalog ID"))
 		})
+
+		It("should reject catalog ID with path traversal attempt", func() {
+			payload := models.McpCatalogSourceConfigPayload{
+				Id:   "../../../etc/passwd",
+				Name: "Malicious",
+				Type: "yaml",
+				Yaml: mcpStringPtr("servers: []"),
+			}
+			_, err := repo.CreateMcpCatalogSourceConfig(ctx, k8sClient, "kubeflow", payload)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("invalid catalog ID"))
+		})
+
+		It("should reject catalog ID with forward slash", func() {
+			payload := models.McpCatalogSourceConfigPayload{
+				Id:   "test/malicious",
+				Name: "Malicious",
+				Type: "yaml",
+				Yaml: mcpStringPtr("servers: []"),
+			}
+			_, err := repo.CreateMcpCatalogSourceConfig(ctx, k8sClient, "kubeflow", payload)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("invalid catalog ID"))
+		})
 	})
 
 	Describe("UpdateMcpCatalogSourceConfig", func() {
@@ -278,6 +337,15 @@ var _ = Describe("McpCatalogSettingsRepository", func() {
 			Expect(result.IncludedServers).To(ConsistOf("server-a", "server-b"))
 		})
 
+		It("should allow updating excludedServers on default catalog", func() {
+			payload := models.McpCatalogSourceConfigPayload{
+				ExcludedServers: []string{"blocked-*"},
+			}
+			result, err := repo.UpdateMcpCatalogSourceConfig(ctx, k8sClient, "kubeflow", "community_mcp_servers", payload)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result.ExcludedServers).To(ConsistOf("blocked-*"))
+		})
+
 		It("should allow updating default twice", func() {
 			payload1 := models.McpCatalogSourceConfigPayload{
 				Enabled: mcpBoolPtr(false),
@@ -293,6 +361,54 @@ var _ = Describe("McpCatalogSettingsRepository", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(*result.Enabled).To(BeTrue())
 			Expect(result.IncludedServers).To(ConsistOf("updated-server"))
+		})
+
+		It("should clear includedServers when empty array is provided", func() {
+			initialPayload := models.McpCatalogSourceConfigPayload{
+				Id:              "test_clear_mcp_servers",
+				Name:            "Test Clear MCP Servers",
+				Type:            "yaml",
+				IncludedServers: []string{"server-*"},
+				ExcludedServers: []string{"old-*"},
+				Yaml:            mcpStringPtr("servers: []"),
+			}
+			_, err := repo.CreateMcpCatalogSourceConfig(ctx, k8sClient, "kubeflow", initialPayload)
+			Expect(err).NotTo(HaveOccurred())
+
+			emptyServers := []string{}
+			updatePayload := models.McpCatalogSourceConfigPayload{
+				IncludedServers: emptyServers,
+				ExcludedServers: []string{"*"},
+			}
+
+			result, err := repo.UpdateMcpCatalogSourceConfig(ctx, k8sClient, "kubeflow", "test_clear_mcp_servers", updatePayload)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result.IncludedServers).To(BeEmpty())
+			Expect(result.ExcludedServers).To(Equal([]string{"*"}))
+		})
+
+		It("should clear excludedServers when empty array is provided", func() {
+			initialPayload := models.McpCatalogSourceConfigPayload{
+				Id:              "test_clear_excluded_mcp_servers",
+				Name:            "Test Clear Excluded MCP Servers",
+				Type:            "yaml",
+				IncludedServers: []string{"server-*"},
+				ExcludedServers: []string{"old-*"},
+				Yaml:            mcpStringPtr("servers: []"),
+			}
+			_, err := repo.CreateMcpCatalogSourceConfig(ctx, k8sClient, "kubeflow", initialPayload)
+			Expect(err).NotTo(HaveOccurred())
+
+			emptyServers := []string{}
+			updatePayload := models.McpCatalogSourceConfigPayload{
+				IncludedServers: []string{"*"},
+				ExcludedServers: emptyServers,
+			}
+
+			result, err := repo.UpdateMcpCatalogSourceConfig(ctx, k8sClient, "kubeflow", "test_clear_excluded_mcp_servers", updatePayload)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result.ExcludedServers).To(BeEmpty())
+			Expect(result.IncludedServers).To(Equal([]string{"*"}))
 		})
 
 		It("should return conflict error when concurrent updates occur with stale resourceVersion", func() {
