@@ -1,6 +1,6 @@
 # Kubeflow Hub
 
-![build checks status](https://github.com/kubeflow/hub/actions/workflows/build.yml/badge.svg?branch=main)
+[![build checks status](https://github.com/kubeflow/hub/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/kubeflow/hub/actions/workflows/build.yml)
 [![codecov](https://codecov.io/github/kubeflow/hub/graph/badge.svg?token=61URLQA3VS)](https://codecov.io/github/kubeflow/hub)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkubeflow%2Fmodel-registry.svg?type=shield&issueType=license)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkubeflow%2Fmodel-registry?ref=badge_shield&issueType=license)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/9937/badge)](https://www.bestpractices.dev/projects/9937)
