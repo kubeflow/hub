@@ -37,16 +37,12 @@ type McpManageSourceFormProps = {
   existingSourceConfig?: McpCatalogSourceConfig;
   isEditMode: boolean;
   onToggleExpectedFormatDrawer?: () => void;
-  serverCount?: number;
-  sourceLabel?: string;
 };
 
 const McpManageSourceForm: React.FC<McpManageSourceFormProps> = ({
   existingSourceConfig,
   isEditMode,
   onToggleExpectedFormatDrawer,
-  serverCount,
-  sourceLabel,
 }) => {
   const navigate = useNavigate();
   const existingData = existingSourceConfig
@@ -109,8 +105,7 @@ const McpManageSourceForm: React.FC<McpManageSourceFormProps> = ({
                   setData={setData}
                   isEditMode={isEditMode}
                   existingSourceConfig={existingSourceConfig}
-                  serverCount={serverCount}
-                  sourceLabel={sourceLabel}
+                  serverCount={preview.previewState.summary?.totalAssets}
                 />
               </StackItem>
 

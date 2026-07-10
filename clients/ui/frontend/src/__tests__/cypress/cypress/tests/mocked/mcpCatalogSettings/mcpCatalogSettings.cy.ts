@@ -685,6 +685,71 @@ describe('MCP Manage Source Page - Manage Source Mode', () => {
       });
     });
 
+    it('should display catalog YAML file and server count for default source', () => {
+      cy.intercept(
+        'GET',
+        '/model-registry/api/v1/settings/mcp_catalog/source_configs/default_source',
+        {
+          data: mockMcpCatalogSourceConfig({
+            id: 'default_source',
+            name: 'Red Hat validated MCP servers',
+            isDefault: true,
+            enabled: true,
+            yamlCatalogPath: 'redhat-mcp-servers-catalog.yaml',
+            includedServers: [],
+            excludedServers: [],
+          }),
+        },
+      );
+
+      cy.intercept('POST', '/model-registry/api/v1/settings/model_catalog/source_preview*', {
+        data: {
+          items: [
+            { name: 'Kubernetes', included: true },
+            { name: 'GitHub', included: true },
+            { name: 'PostgreSQL', included: true },
+          ],
+          summary: { totalAssets: 3, includedAssets: 3, excludedAssets: 0 },
+          nextPageToken: '',
+          pageSize: 10,
+          size: 3,
+        },
+      }).as('previewDefaultSource');
+
+      cy.visit('/mcp-catalog-settings/manage-source/default_source');
+      cy.wait('@previewDefaultSource');
+      cy.findByTestId('app-page-title').should('exist');
+
+      cy.findByTestId('mcp-catalog-yaml-file').should(
+        'have.value',
+        'redhat-mcp-servers-catalog.yaml',
+      );
+      cy.findByTestId('mcp-servers-count').should('contain.text', '3 servers');
+    });
+
+    it('should not display catalog YAML file for non-default source', () => {
+      cy.intercept(
+        'GET',
+        '/model-registry/api/v1/settings/mcp_catalog/source_configs/user_source',
+        {
+          data: mockMcpCatalogSourceConfig({
+            id: 'user_source',
+            name: 'My Custom Source',
+            isDefault: false,
+            enabled: true,
+            yaml: 'source: custom\nmcp_servers:\n  - name: Custom Server',
+            yamlCatalogPath: undefined,
+            includedServers: [],
+            excludedServers: [],
+          }),
+        },
+      );
+
+      mcpManageSourcePage.visitManageSource('user_source');
+
+      cy.findByTestId('mcp-catalog-yaml-file').should('not.exist');
+    });
+
     it('should navigate to settings page after successful update', () => {
       cy.intercept(
         'GET',

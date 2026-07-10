@@ -38,6 +38,7 @@ export const transformMcpFormDataToConfig = (
   enabled: formData.enabled,
   isDefault: formData.isDefault,
   yaml: formData.yamlContent || undefined,
+  yamlCatalogPath: existingSourceConfig?.yamlCatalogPath,
   includedServers: parseServerList(formData.includedServers),
   excludedServers: parseServerList(formData.excludedServers),
 });

@@ -27,7 +27,6 @@ type McpSourceDetailsSectionProps = {
   isEditMode: boolean;
   existingSourceConfig?: McpCatalogSourceConfig;
   serverCount?: number;
-  sourceLabel?: string;
 };
 
 const McpSourceDetailsSection: React.FC<McpSourceDetailsSectionProps> = ({
@@ -36,7 +35,6 @@ const McpSourceDetailsSection: React.FC<McpSourceDetailsSectionProps> = ({
   isEditMode,
   existingSourceConfig,
   serverCount,
-  sourceLabel,
 }) => {
   const [isNameTouched, setIsNameTouched] = React.useState(false);
   const isNameValid = validateMcpSourceName(formData.name);
@@ -83,26 +81,27 @@ const McpSourceDetailsSection: React.FC<McpSourceDetailsSectionProps> = ({
         {nameInput}
       </ThemeAwareFormGroupWrapper>
 
-      {isEditMode && existingSourceConfig && (
-        <>
+      {isEditMode &&
+        existingSourceConfig &&
+        formData.isDefault &&
+        existingSourceConfig.yamlCatalogPath && (
           <FormGroup label={MCP_FORM_LABELS.CATALOG_YAML_FILE} fieldId="mcp-catalog-yaml-file">
             <TextInput
               readOnlyVariant="plain"
               type="text"
               id="mcp-catalog-yaml-file"
               data-testid="mcp-catalog-yaml-file"
-              value={existingSourceConfig.id ? `${existingSourceConfig.id}.yaml` : ''}
+              value={existingSourceConfig.yamlCatalogPath}
             />
           </FormGroup>
+        )}
 
-          {serverCount !== undefined && (
-            <FormGroup label={MCP_FORM_LABELS.MCP_SERVERS} fieldId="mcp-servers-count">
-              <Content component="p" data-testid="mcp-servers-count">
-                {serverCount} servers{sourceLabel ? ` from ${sourceLabel}` : ''}
-              </Content>
-            </FormGroup>
-          )}
-        </>
+      {isEditMode && formData.isDefault && serverCount !== undefined && (
+        <FormGroup label={MCP_FORM_LABELS.MCP_SERVERS} fieldId="mcp-servers-count">
+          <Content component="p" data-testid="mcp-servers-count">
+            {serverCount} servers
+          </Content>
+        </FormGroup>
       )}
     </FormSection>
   );

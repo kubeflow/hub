@@ -14,6 +14,7 @@ export const mockMcpCatalogSourceConfig = (
   includedServers: [],
   excludedServers: [],
   isDefault: true,
+  yamlCatalogPath: 'community-mcp-servers.yaml',
   ...partial,
 });
 
@@ -25,6 +26,7 @@ export const mockMcpCatalogSourceConfigList = (
       id: 'sample_mcp_source_1',
       name: 'Sample MCP source 1',
       isDefault: true,
+      yamlCatalogPath: 'community-mcp-servers.yaml',
       includedServers: [],
       excludedServers: [],
     }),
