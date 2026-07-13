@@ -1,10 +1,12 @@
 package models
 
 type CatalogSourcePreviewRequest struct {
-	Type           string                 `json:"type"`
-	IncludedModels []string               `json:"includedModels,omitempty"`
-	ExcludedModels []string               `json:"excludedModels,omitempty"`
-	Properties     map[string]interface{} `json:"properties,omitempty"`
+	Type            string                 `json:"type"`
+	IncludedModels  []string               `json:"includedModels,omitempty"`
+	ExcludedModels  []string               `json:"excludedModels,omitempty"`
+	IncludedServers []string               `json:"includedServers,omitempty"`
+	ExcludedServers []string               `json:"excludedServers,omitempty"`
+	Properties      map[string]interface{} `json:"properties,omitempty"`
 }
 
 type CatalogSourcePreviewModel struct {
