@@ -21,12 +21,15 @@ export type FormTrackingEventProperties = {
 };
 
 export type LinkTrackingEventProperties = {
-  from?: string;
+  /** Destination URL or route path. */
   href?: string;
-  to?: string;
+  /** Kind of element clicked (e.g., "project", "model", "external"). */
   type?: string;
+  /** UI region where the click occurred (e.g., "Model Catalog", "Sidebar"). */
   section?: string;
+  /** Display label of the clicked element. */
   name?: string;
+  [key: string]: string | number | boolean | undefined;
 };
 
 export type SimpleTrackingEventProperties = {

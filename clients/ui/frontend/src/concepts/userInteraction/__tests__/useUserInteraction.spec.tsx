@@ -52,7 +52,7 @@ describe('useUserInteraction', () => {
 
     act(() => {
       result.current.trackLinkEvent('Model Card Clicked', {
-        to: '/catalog/source1/granite-3b',
+        href: '/catalog/source1/granite-3b',
         section: 'Model Catalog',
       });
       result.current.trackSimpleEvent('Performance View Toggled');
@@ -60,7 +60,7 @@ describe('useUserInteraction', () => {
     });
 
     expect(mockApi.trackLinkEvent).toHaveBeenCalledWith('Model Card Clicked', {
-      to: '/catalog/source1/granite-3b',
+      href: '/catalog/source1/granite-3b',
       section: 'Model Catalog',
     });
     expect(mockApi.trackSimpleEvent).toHaveBeenCalledWith('Performance View Toggled');
