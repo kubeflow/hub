@@ -37,6 +37,10 @@ func (a CatalogSourcePreview) CreateCatalogSourcePreview(client httpclient.HTTPC
 		"type": sourcePreviewPayload.Type,
 	}
 
+	if assetType := pageValues.Get("assetType"); assetType != "" {
+		configData["assetType"] = assetType
+	}
+
 	if len(sourcePreviewPayload.IncludedModels) > 0 {
 		configData["includedModels"] = sourcePreviewPayload.IncludedModels
 	}

@@ -58,11 +58,11 @@ var _ = Describe("CreateCatalogSourcePreviewHandler", func() {
 				Data models.CatalogSourcePreviewRequest `json:"data"`
 			}{
 				Data: models.CatalogSourcePreviewRequest{
-					Type:           "yaml",
-					IncludedModels: []string{},
-					ExcludedModels: []string{},
+					Type:            "yaml",
+					IncludedServers: []string{"*"},
+					ExcludedServers: []string{},
 					Properties: map[string]interface{}{
-						"yaml": "servers:\n  - name: test-server",
+						"yaml": "mcp_servers:\n  - name: test-server",
 					},
 				},
 			}
