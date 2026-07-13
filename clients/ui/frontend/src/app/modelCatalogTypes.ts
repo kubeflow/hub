@@ -362,7 +362,6 @@ export type CatalogFilterOptionsList = {
 
 export type PerformanceArtifactsParams = {
   targetRPS?: number;
-  recommendations?: boolean;
   rpsProperty?: string;
   latencyProperty?: string;
   hardwareCountProperty?: string;

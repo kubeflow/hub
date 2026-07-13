@@ -13,7 +13,6 @@ const useNormalizedPerformanceParams = (params?: PerformanceArtifactsParams) =>
   React.useMemo(
     (): PerformanceArtifactsParams => ({
       targetRPS: params?.targetRPS,
-      recommendations: params?.recommendations ?? true,
       rpsProperty: params?.rpsProperty,
       latencyProperty: params?.latencyProperty,
       hardwareCountProperty: params?.hardwareCountProperty,
@@ -26,7 +25,6 @@ const useNormalizedPerformanceParams = (params?: PerformanceArtifactsParams) =>
     }),
     [
       params?.targetRPS,
-      params?.recommendations,
       params?.rpsProperty,
       params?.latencyProperty,
       params?.hardwareCountProperty,
@@ -46,7 +44,7 @@ const useNormalizedPerformanceParams = (params?: PerformanceArtifactsParams) =>
  *
  * @param sourceId - The catalog source ID
  * @param modelName - The model name
- * @param params - Performance-specific parameters (targetRPS, latencyProperty, recommendations, pagination)
+ * @param params - Performance-specific parameters (targetRPS, latencyProperty, orderBy, pagination)
  * @param filterData - Current filter state for building filterQuery
  * @param filterOptions - Filter options from the API for validation
  * @param enabled - Whether to enable fetching (default: true)

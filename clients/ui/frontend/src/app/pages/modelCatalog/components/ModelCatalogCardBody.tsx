@@ -27,6 +27,8 @@ import {
   latencyMetricDescriptions,
   parseLatencyFilterKey,
   SortOrder,
+  ModelCatalogSortOption,
+  SortField,
 } from '~/concepts/modelCatalog/const';
 import { useCatalogPerformanceArtifacts } from '~/app/hooks/modelCatalog/useCatalogPerformanceArtifacts';
 import {
@@ -49,7 +51,8 @@ const ModelCatalogCardBody: React.FC<ModelCatalogCardBodyProps> = ({
   source,
 }) => {
   const [currentPerformanceIndex, setCurrentPerformanceIndex] = useState(0);
-  const { filters, filterOptions, performanceViewEnabled } = React.useContext(ModelCatalogContext);
+  const { filters, filterOptions, performanceViewEnabled, sortBy } =
+    React.useContext(ModelCatalogContext);
   const notification = useNotification();
   const errorNotificationShown = React.useRef(false);
 
@@ -81,15 +84,22 @@ const ModelCatalogCardBody: React.FC<ModelCatalogCardBodyProps> = ({
       {
         targetRPS,
         latencyProperty,
-        recommendations: true,
         // TODO this is a temporary workaround to avoid capping performance artifacts with a default page size of 20.
         //      we need to implement proper cursor-based pagination as the user clicks through artifacts on a card.
         pageSize: '999',
-        // If a latency filter is applied, sort artifacts on the card by lowest latency.
-        ...(latencyFieldName && {
-          orderBy: stripArtifactsPrefix(latencyFieldName),
-          sortOrder: SortOrder.ASC,
-        }),
+        ...(latencyFieldName
+          ? {
+              orderBy: stripArtifactsPrefix(latencyFieldName),
+              sortOrder: SortOrder.ASC,
+            }
+          : sortBy === ModelCatalogSortOption.LOWEST_COLD_START
+            ? {
+                orderBy: SortField.COLD_START_TIME_TO_LOAD,
+                sortOrder: SortOrder.ASC,
+              }
+            : {
+                orderBy: SortField.RECOMMENDED,
+              }),
       },
       filters,
       filterOptions,

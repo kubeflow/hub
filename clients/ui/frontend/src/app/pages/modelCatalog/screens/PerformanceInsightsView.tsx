@@ -104,7 +104,6 @@ const PerformanceInsightsView: React.FC<PerformanceInsightsViewProps> = ({ model
     {
       targetRPS,
       latencyProperty,
-      recommendations: true,
       pageSize: String(HARDWARE_CONFIG_PAGE_SIZE),
       orderBy: tableSort.orderBy,
       sortOrder: tableSort.sortOrder,

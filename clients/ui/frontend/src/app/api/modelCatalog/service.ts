@@ -128,7 +128,6 @@ export const getPerformanceArtifacts =
     const allParams: Record<string, unknown> = {
       ...queryParams,
       ...(params?.targetRPS !== undefined && { targetRPS: params.targetRPS }),
-      ...(params?.recommendations !== undefined && { recommendations: params.recommendations }),
       ...(params?.rpsProperty && { rpsProperty: params.rpsProperty }),
       ...(params?.latencyProperty && { latencyProperty: params.latencyProperty }),
       ...(params?.hardwareCountProperty && { hardwareCountProperty: params.hardwareCountProperty }),
