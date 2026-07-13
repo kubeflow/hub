@@ -441,7 +441,7 @@ var _ = Describe("McpCatalogSettingsRepository", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(cmAfterA.ResourceVersion).NotTo(Equal(resourceVersionA))
 
-			cmB.Data[k8s.McpCatalogSourceKey] = "catalogs:\n  - id: mcp_concurrency_test\n    name: Updated by Request B\n    type: yaml\n    enabled: true"
+			cmB.Data[k8s.McpCatalogSourceKey] = "mcp_catalogs:\n  - id: mcp_concurrency_test\n    name: Updated by Request B\n    type: yaml\n    enabled: true"
 			err = k8sClient.UpdateMcpCatalogSourceConfig(ctx, "kubeflow", &cmB)
 			Expect(err).To(HaveOccurred())
 			Expect(apierrors.IsConflict(err)).To(BeTrue(), "Expected conflict error due to stale resourceVersion, got: %v", err)

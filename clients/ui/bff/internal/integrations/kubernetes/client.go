@@ -16,7 +16,7 @@ const CatalogSourceDefaultConfigMapName = "default-catalog-sources"
 const CatalogSourceUserConfigMapName = "model-catalog-sources"
 
 const McpCatalogSourceKey = "sources.yaml"
-const McpCatalogSourceDefaultConfigMapName = "default-mcp-catalog-sources"
+const McpCatalogSourceDefaultConfigMapName = CatalogSourceDefaultConfigMapName
 const McpCatalogSourceUserConfigMapName = "mcp-catalog-sources"
 
 type KubernetesClientInterface interface {

@@ -266,7 +266,7 @@ func setupMock(mockK8sClient kubernetes.Interface, ctx context.Context) error {
 		return err
 	}
 
-	err = createMcpCatalogDefaultSourcesConfigMap(mockK8sClient, ctx, "kubeflow")
+	err = addMcpDataToDefaultCatalogSourcesConfigMap(mockK8sClient, ctx, "kubeflow")
 	if err != nil {
 		return err
 	}
@@ -276,7 +276,7 @@ func setupMock(mockK8sClient kubernetes.Interface, ctx context.Context) error {
 		return err
 	}
 
-	err = createMcpCatalogDefaultSourcesConfigMap(mockK8sClient, ctx, "bella-namespace")
+	err = addMcpDataToDefaultCatalogSourcesConfigMap(mockK8sClient, ctx, "bella-namespace")
 	if err != nil {
 		return err
 	}
@@ -1437,13 +1437,18 @@ func createTransferJobPodEvents(k8sClient kubernetes.Interface, ctx context.Cont
 	return nil
 }
 
-func createMcpCatalogDefaultSourcesConfigMap(
+func addMcpDataToDefaultCatalogSourcesConfigMap(
 	k8sClient kubernetes.Interface,
 	ctx context.Context,
 	namespace string,
 ) error {
-	raw := strings.TrimSpace(`
-catalogs:
+	cm, err := k8sClient.CoreV1().ConfigMaps(namespace).Get(ctx, k8s.CatalogSourceDefaultConfigMapName, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to get default-catalog-sources configmap for MCP data: %w", err)
+	}
+
+	mcpRaw := strings.TrimSpace(`
+mcp_catalogs:
   - name: Community MCP Servers
     id: community_mcp_servers
     type: yaml
@@ -1463,19 +1468,12 @@ catalogs:
       - Verified
 `)
 
-	cm := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      k8s.McpCatalogSourceDefaultConfigMapName,
-			Namespace: namespace,
-		},
-		Data: map[string]string{
-			k8s.McpCatalogSourceKey:      raw,
-			"community_mcp_servers.yaml": "servers:\n - name: community_server_1",
-		},
-	}
+	existingSources := cm.Data[k8s.McpCatalogSourceKey]
+	cm.Data[k8s.McpCatalogSourceKey] = existingSources + "\n" + mcpRaw
+	cm.Data["community_mcp_servers.yaml"] = "servers:\n - name: community_server_1"
 
-	if _, err := k8sClient.CoreV1().ConfigMaps(namespace).Create(ctx, cm, metav1.CreateOptions{}); err != nil {
-		return fmt.Errorf("failed to create default-mcp-catalog-sources configmap: %w", err)
+	if _, err := k8sClient.CoreV1().ConfigMaps(namespace).Update(ctx, cm, metav1.UpdateOptions{}); err != nil {
+		return fmt.Errorf("failed to update default-catalog-sources configmap with MCP data: %w", err)
 	}
 
 	return nil
@@ -1487,7 +1485,7 @@ func createMcpCatalogSourcesConfigMap(
 	namespace string,
 ) error {
 	raw := strings.TrimSpace(`
-catalogs:
+mcp_catalogs:
   - name: Custom MCP Servers
     id: custom_mcp_servers
     type: yaml

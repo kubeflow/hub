@@ -22,7 +22,7 @@ func ParseMcpCatalogYaml(raw string, isDefault bool) ([]models.McpCatalogSourceC
 			Labels          []string               `yaml:"labels"`
 			IncludedServers []string               `yaml:"includedServers"`
 			ExcludedServers []string               `yaml:"excludedServers"`
-		} `yaml:"catalogs"`
+		} `yaml:"mcp_catalogs"`
 	}
 
 	if err := yaml.Unmarshal([]byte(raw), &parsed); err != nil {
@@ -61,7 +61,7 @@ func FindMcpCatalogSourceById(sourceYAML string, catalogId string, isDefault boo
 			Labels          []string `yaml:"labels"`
 			IncludedServers []string `yaml:"includedServers"`
 			ExcludedServers []string `yaml:"excludedServers"`
-		} `yaml:"catalogs"`
+		} `yaml:"mcp_catalogs"`
 	}
 
 	if err := yaml.Unmarshal([]byte(sourceYAML), &parsed); err != nil {
@@ -92,7 +92,7 @@ func FindMcpCatalogSourceProperties(sourceYAML string, sourceId string) (yamlPat
 		Catalogs []struct {
 			Id         string                 `yaml:"id"`
 			Properties map[string]interface{} `yaml:"properties"`
-		} `yaml:"catalogs"`
+		} `yaml:"mcp_catalogs"`
 	}
 
 	if err := yaml.Unmarshal([]byte(sourceYAML), &parsed); err != nil {
@@ -106,6 +106,53 @@ func FindMcpCatalogSourceProperties(sourceYAML string, sourceId string) (yamlPat
 		}
 	}
 	return ""
+}
+
+func AppendMcpCatalogSourceToYaml(existingConfigMapEntry string, newEntry map[string]interface{}) (string, error) {
+	var parsed struct {
+		Catalogs []map[string]interface{} `yaml:"mcp_catalogs"`
+	}
+
+	if existingConfigMapEntry != "" {
+		if err := yaml.Unmarshal([]byte(existingConfigMapEntry), &parsed); err != nil {
+			return "", fmt.Errorf("failed to parse existing MCP sources.yaml: %w", err)
+		}
+	} else {
+		parsed.Catalogs = []map[string]interface{}{}
+	}
+	parsed.Catalogs = append(parsed.Catalogs, newEntry)
+
+	updatedBytes, err := yaml.Marshal(parsed)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal updated MCP sources.yaml: %w", err)
+	}
+
+	return string(updatedBytes), nil
+}
+
+func RemoveMcpCatalogSourceFromYAML(existingYAML string, sourceId string) (string, error) {
+	var parsed struct {
+		Catalogs []map[string]interface{} `yaml:"mcp_catalogs"`
+	}
+
+	if err := yaml.Unmarshal([]byte(existingYAML), &parsed); err != nil {
+		return "", fmt.Errorf("failed to parse MCP sources.yaml: %w", err)
+	}
+
+	filteredCatalogs := make([]map[string]interface{}, 0)
+	for _, catalogSource := range parsed.Catalogs {
+		if id, ok := catalogSource["id"].(string); ok && id != sourceId {
+			filteredCatalogs = append(filteredCatalogs, catalogSource)
+		}
+	}
+
+	parsed.Catalogs = filteredCatalogs
+	updatedBytes, err := yaml.Marshal(parsed)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal updated MCP sources.yaml: %w", err)
+	}
+
+	return string(updatedBytes), nil
 }
 
 func ConvertMcpSourceConfigToYamlEntry(payload models.McpCatalogSourceConfigPayload, yamlFileName string) map[string]interface{} {
@@ -145,7 +192,7 @@ func UpdateMcpCatalogSourceInYAML(
 	yamlFilePath string,
 ) (string, error) {
 	var parsed struct {
-		Catalogs []map[string]interface{} `yaml:"catalogs"`
+		Catalogs []map[string]interface{} `yaml:"mcp_catalogs"`
 	}
 
 	if existingYAML == "" {

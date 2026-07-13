@@ -154,7 +154,7 @@ func (r *McpCatalogSettingsRepository) CreateMcpCatalogSourceConfig(
 
 	existingConfigMapEntry := userCM.Data[k8s.McpCatalogSourceKey]
 
-	updatedConfigMapEntry, err := AppendCatalogSourceToYaml(existingConfigMapEntry, newEntry)
+	updatedConfigMapEntry, err := AppendMcpCatalogSourceToYaml(existingConfigMapEntry, newEntry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to append MCP catalog to yaml: %w", err)
 	}
@@ -256,7 +256,7 @@ func (r *McpCatalogSettingsRepository) UpdateMcpCatalogSourceConfig(
 		userCM.Data[k8s.McpCatalogSourceKey] = updatedYAML
 	} else {
 		overrideEntry := BuildOverrideEntryForDefaultMcpSource(sourceID, payload)
-		updatedYAML, err := AppendCatalogSourceToYaml(userCM.Data[k8s.McpCatalogSourceKey], overrideEntry)
+		updatedYAML, err := AppendMcpCatalogSourceToYaml(userCM.Data[k8s.McpCatalogSourceKey], overrideEntry)
 		if err != nil {
 			return nil, fmt.Errorf("failed to append override entry: %w", err)
 		}
@@ -299,7 +299,7 @@ func (r *McpCatalogSettingsRepository) DeleteMcpCatalogSourceConfig(
 		delete(userCM.Data, yamlFilePath)
 	}
 
-	updatedYAML, err := RemoveCatalogSourceFromYAML(userCM.Data[k8s.McpCatalogSourceKey], sourceID)
+	updatedYAML, err := RemoveMcpCatalogSourceFromYAML(userCM.Data[k8s.McpCatalogSourceKey], sourceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to remove MCP catalog from sources.yaml: %w", err)
 	}
