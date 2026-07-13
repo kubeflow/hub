@@ -37,17 +37,14 @@ type McpPreviewPanelProps = {
 const McpPreviewPanel: React.FC<McpPreviewPanelProps> = ({ preview }) => {
   const {
     previewState,
-    handlePreview,
+    handlePreview: onPreview,
     handleTabChange,
-    handleLoadMore,
+    handleLoadMore: onLoadMore,
     hasFormChanged,
     canPreview,
   } = preview;
   const { isLoadingInitial, isLoadingMore, activeTab, summary, tabStates, error } = previewState;
   const { items, hasMore } = tabStates[activeTab];
-
-  const onPreview = () => handlePreview();
-  const onLoadMore = () => handleLoadMore();
 
   const handleTabSelect = (_event: React.MouseEvent, tabIndex: string | number) => {
     handleTabChange(tabIndex === 0 ? McpPreviewTab.INCLUDED : McpPreviewTab.EXCLUDED);

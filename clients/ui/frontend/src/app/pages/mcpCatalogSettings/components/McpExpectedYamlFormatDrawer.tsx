@@ -21,10 +21,14 @@ export const McpExpectedYamlFormatDrawerPanel: React.FC<McpExpectedYamlFormatDra
 }) => {
   const [copied, setCopied] = React.useState(false);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(sampleMcpCatalogYamlContent);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(sampleMcpCatalogYamlContent);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // clipboard API unavailable (insecure context or permission denied)
+    }
   };
 
   return (

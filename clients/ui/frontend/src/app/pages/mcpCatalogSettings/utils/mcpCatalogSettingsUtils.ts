@@ -57,7 +57,6 @@ export const getMcpPayloadForConfig = (
 
   if (isEditMode) {
     return {
-      id: sourceConfig.id,
       name: sourceConfig.name,
       type: sourceConfig.type,
       enabled: sourceConfig.enabled,

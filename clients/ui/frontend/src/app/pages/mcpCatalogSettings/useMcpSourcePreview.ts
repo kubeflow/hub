@@ -83,6 +83,9 @@ export const useMcpSourcePreview = ({
     activeTab: McpPreviewTab.INCLUDED,
   });
 
+  const previewStateRef = React.useRef(previewState);
+  previewStateRef.current = previewState;
+
   const canPreview = isMcpPreviewReady(formData);
 
   const buildPreviewRequest = React.useCallback((): McpCatalogSourcePreviewRequest => {
@@ -109,7 +112,8 @@ export const useMcpSourcePreview = ({
     async (options?: { loadMore?: boolean; switchToTab?: McpPreviewTab }) => {
       const { loadMore = false, switchToTab } = options ?? {};
       const isFreshPreview = !loadMore && !switchToTab;
-      const targetTab = getTargetTab(isFreshPreview, switchToTab, previewState.activeTab);
+      const currentState = previewStateRef.current;
+      const targetTab = getTargetTab(isFreshPreview, switchToTab, currentState.activeTab);
 
       if (!apiState.apiAvailable) {
         setPreviewState((prev) => ({
@@ -142,13 +146,13 @@ export const useMcpSourcePreview = ({
       let requestData: McpCatalogSourcePreviewRequest;
       if (isFreshPreview) {
         requestData = buildPreviewRequest();
-      } else if (previewState.lastPreviewedData) {
-        requestData = previewState.lastPreviewedData;
+      } else if (currentState.lastPreviewedData) {
+        requestData = currentState.lastPreviewedData;
       } else {
         return handlePreviewInternal();
       }
 
-      const nextPageToken = loadMore ? previewState.tabStates[targetTab].nextPageToken : undefined;
+      const nextPageToken = loadMore ? currentState.tabStates[targetTab].nextPageToken : undefined;
 
       try {
         const result = await apiState.api.previewMcpCatalogSource({}, requestData, {
@@ -188,13 +192,7 @@ export const useMcpSourcePreview = ({
         }));
       }
     },
-    [
-      apiState,
-      buildPreviewRequest,
-      previewState.activeTab,
-      previewState.lastPreviewedData,
-      previewState.tabStates,
-    ],
+    [apiState, buildPreviewRequest],
   );
 
   const handlePreview = React.useCallback(async () => {
@@ -203,17 +201,18 @@ export const useMcpSourcePreview = ({
 
   const handleTabChange = React.useCallback(
     (newTab: McpPreviewTab) => {
-      if (newTab === previewState.activeTab) {
+      const currentState = previewStateRef.current;
+      if (newTab === currentState.activeTab) {
         return;
       }
-      const tabState = previewState.tabStates[newTab];
+      const tabState = currentState.tabStates[newTab];
       if (tabState.items.length === 0) {
         handlePreviewInternal({ switchToTab: newTab });
       } else {
         setPreviewState((prev) => ({ ...prev, activeTab: newTab }));
       }
     },
-    [handlePreviewInternal, previewState.activeTab, previewState.tabStates],
+    [handlePreviewInternal],
   );
 
   const handleLoadMore = React.useCallback(() => {

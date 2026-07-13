@@ -6,6 +6,7 @@ import {
   mockMcpCatalogSourceConfigList,
   mockMcpCatalogSourceConfig,
 } from '~/__mocks__/mockMcpCatalogSourceConfigList';
+import type { McpCatalogSourceConfig } from '~/app/mcpServerCatalogTypes';
 import { McpCatalogSourceType } from '~/app/mcpServerCatalogTypes';
 
 const NAMESPACE = 'kubeflow';
@@ -23,6 +24,12 @@ const setupMocks = () => {
   cy.intercept('GET', '/model-registry/api/v1/user', userMock);
   cy.intercept('GET', '/model-registry/api/v1/settings/mcp_catalog/source_configs', {
     data: { catalogs: [] },
+  });
+};
+
+const interceptSourceConfig = (id: string, overrides: Partial<McpCatalogSourceConfig> = {}) => {
+  cy.intercept('GET', `/model-registry/api/v1/settings/mcp_catalog/source_configs/${id}`, {
+    data: mockMcpCatalogSourceConfig({ id, isDefault: false, yaml: 'source: test', ...overrides }),
   });
 };
 
@@ -428,18 +435,7 @@ describe('MCP Manage Source Page - Manage Source Mode', () => {
 
   describe('Page layout', () => {
     it('should display manage source page with correct breadcrumb', () => {
-      cy.intercept(
-        'GET',
-        '/model-registry/api/v1/settings/mcp_catalog/source_configs/mcp_source_2',
-        {
-          data: mockMcpCatalogSourceConfig({
-            id: 'mcp_source_2',
-            name: 'MCP Source 2',
-            isDefault: false,
-            yaml: 'source: test',
-          }),
-        },
-      );
+      interceptSourceConfig('mcp_source_2', { name: 'MCP Source 2' });
 
       mcpManageSourcePage.visitManageSource('mcp_source_2');
       mcpManageSourcePage.findManageSourceTitle();
@@ -448,36 +444,14 @@ describe('MCP Manage Source Page - Manage Source Mode', () => {
     });
 
     it('should show correct description for manage mode', () => {
-      cy.intercept(
-        'GET',
-        '/model-registry/api/v1/settings/mcp_catalog/source_configs/mcp_source_2',
-        {
-          data: mockMcpCatalogSourceConfig({
-            id: 'mcp_source_2',
-            name: 'MCP Source 2',
-            isDefault: false,
-            yaml: 'source: test',
-          }),
-        },
-      );
+      interceptSourceConfig('mcp_source_2', { name: 'MCP Source 2' });
 
       mcpManageSourcePage.visitManageSource('mcp_source_2');
       mcpManageSourcePage.findManageSourceDescription();
     });
 
     it('should show Save button instead of Add button', () => {
-      cy.intercept(
-        'GET',
-        '/model-registry/api/v1/settings/mcp_catalog/source_configs/mcp_source_2',
-        {
-          data: mockMcpCatalogSourceConfig({
-            id: 'mcp_source_2',
-            name: 'MCP Source 2',
-            isDefault: false,
-            yaml: 'source: test',
-          }),
-        },
-      );
+      interceptSourceConfig('mcp_source_2', { name: 'MCP Source 2' });
 
       mcpManageSourcePage.visitManageSource('mcp_source_2');
       mcpManageSourcePage.findSubmitButton().should('exist');
@@ -487,21 +461,13 @@ describe('MCP Manage Source Page - Manage Source Mode', () => {
 
   describe('Pre-populated form data', () => {
     it('should pre-populate form with existing source data', () => {
-      cy.intercept(
-        'GET',
-        '/model-registry/api/v1/settings/mcp_catalog/source_configs/mcp_source_2',
-        {
-          data: mockMcpCatalogSourceConfig({
-            id: 'mcp_source_2',
-            name: 'MCP Source 2',
-            isDefault: false,
-            enabled: true,
-            yaml: 'source: my-source\nmcp_servers:\n  - name: Kubernetes',
-            includedServers: ['Kubernetes', 'GitHub'],
-            excludedServers: ['*preview*'],
-          }),
-        },
-      );
+      interceptSourceConfig('mcp_source_2', {
+        name: 'MCP Source 2',
+        enabled: true,
+        yaml: 'source: my-source\nmcp_servers:\n  - name: Kubernetes',
+        includedServers: ['Kubernetes', 'GitHub'],
+        excludedServers: ['*preview*'],
+      });
 
       mcpManageSourcePage.visitManageSource('mcp_source_2');
       mcpManageSourcePage.findNameInput().should('have.value', 'MCP Source 2');
@@ -509,20 +475,11 @@ describe('MCP Manage Source Page - Manage Source Mode', () => {
     });
 
     it('should expand server visibility when existing filters present', () => {
-      cy.intercept(
-        'GET',
-        '/model-registry/api/v1/settings/mcp_catalog/source_configs/mcp_source_2',
-        {
-          data: mockMcpCatalogSourceConfig({
-            id: 'mcp_source_2',
-            name: 'MCP Source 2',
-            isDefault: false,
-            includedServers: ['Kubernetes'],
-            excludedServers: [],
-            yaml: 'source: test',
-          }),
-        },
-      );
+      interceptSourceConfig('mcp_source_2', {
+        name: 'MCP Source 2',
+        includedServers: ['Kubernetes'],
+        excludedServers: [],
+      });
 
       mcpManageSourcePage.visitManageSource('mcp_source_2');
       mcpManageSourcePage.findIncludedServersInput().should('exist');
@@ -530,18 +487,7 @@ describe('MCP Manage Source Page - Manage Source Mode', () => {
     });
 
     it('should have Save button enabled for valid existing data', () => {
-      cy.intercept(
-        'GET',
-        '/model-registry/api/v1/settings/mcp_catalog/source_configs/mcp_source_2',
-        {
-          data: mockMcpCatalogSourceConfig({
-            id: 'mcp_source_2',
-            name: 'MCP Source 2',
-            isDefault: false,
-            yaml: 'source: test',
-          }),
-        },
-      );
+      interceptSourceConfig('mcp_source_2', { name: 'MCP Source 2' });
 
       mcpManageSourcePage.visitManageSource('mcp_source_2');
       mcpManageSourcePage.findSubmitButton().should('be.enabled');
@@ -550,20 +496,13 @@ describe('MCP Manage Source Page - Manage Source Mode', () => {
 
   describe('Default source management', () => {
     it('should allow managing default source (Save button enabled)', () => {
-      cy.intercept(
-        'GET',
-        '/model-registry/api/v1/settings/mcp_catalog/source_configs/default_source',
-        {
-          data: mockMcpCatalogSourceConfig({
-            id: 'default_source',
-            name: 'Red Hat validated MCP servers',
-            isDefault: true,
-            enabled: true,
-            includedServers: [],
-            excludedServers: [],
-          }),
-        },
-      );
+      interceptSourceConfig('default_source', {
+        name: 'Red Hat validated MCP servers',
+        isDefault: true,
+        enabled: true,
+        includedServers: [],
+        excludedServers: [],
+      });
 
       mcpManageSourcePage.visitManageSource('default_source');
       mcpManageSourcePage.findNameInput().should('have.value', 'Red Hat validated MCP servers');
@@ -572,17 +511,10 @@ describe('MCP Manage Source Page - Manage Source Mode', () => {
     });
 
     it('should not show YAML section for default sources', () => {
-      cy.intercept(
-        'GET',
-        '/model-registry/api/v1/settings/mcp_catalog/source_configs/default_source',
-        {
-          data: mockMcpCatalogSourceConfig({
-            id: 'default_source',
-            name: 'Red Hat validated MCP servers',
-            isDefault: true,
-          }),
-        },
-      );
+      interceptSourceConfig('default_source', {
+        name: 'Red Hat validated MCP servers',
+        isDefault: true,
+      });
 
       mcpManageSourcePage.visitManageSource('default_source');
       mcpManageSourcePage.findYamlSection().should('not.exist');
@@ -591,21 +523,13 @@ describe('MCP Manage Source Page - Manage Source Mode', () => {
 
   describe('Form submission (edit mode)', () => {
     it('should successfully update a non-default source', () => {
-      cy.intercept(
-        'GET',
-        '/model-registry/api/v1/settings/mcp_catalog/source_configs/mcp_source_2',
-        {
-          data: mockMcpCatalogSourceConfig({
-            id: 'mcp_source_2',
-            name: 'MCP Source 2',
-            isDefault: false,
-            includedServers: ['server1'],
-            excludedServers: [],
-            enabled: false,
-            yaml: 'source: test\nmcp_servers:\n  - name: server1',
-          }),
-        },
-      );
+      interceptSourceConfig('mcp_source_2', {
+        name: 'MCP Source 2',
+        includedServers: ['server1'],
+        excludedServers: [],
+        enabled: false,
+        yaml: 'source: test\nmcp_servers:\n  - name: server1',
+      });
 
       cy.intercept('PATCH', '/model-registry/api/v1/settings/mcp_catalog/source_configs/*', {
         statusCode: 200,
@@ -630,7 +554,6 @@ describe('MCP Manage Source Page - Manage Source Mode', () => {
       cy.wait('@updateMcpSource').then((interception) => {
         expect(interception.request.body).to.eql({
           data: {
-            id: 'mcp_source_2',
             name: 'MCP Source 2',
             type: McpCatalogSourceType.YAML,
             includedServers: ['server1', 'Kubernetes*'],
@@ -644,20 +567,13 @@ describe('MCP Manage Source Page - Manage Source Mode', () => {
     });
 
     it('should submit only allowed fields for default source', () => {
-      cy.intercept(
-        'GET',
-        '/model-registry/api/v1/settings/mcp_catalog/source_configs/default_source',
-        {
-          data: mockMcpCatalogSourceConfig({
-            id: 'default_source',
-            name: 'Red Hat validated MCP servers',
-            isDefault: true,
-            enabled: true,
-            includedServers: [],
-            excludedServers: [],
-          }),
-        },
-      );
+      interceptSourceConfig('default_source', {
+        name: 'Red Hat validated MCP servers',
+        isDefault: true,
+        enabled: true,
+        includedServers: [],
+        excludedServers: [],
+      });
 
       cy.intercept('PATCH', '/model-registry/api/v1/settings/mcp_catalog/source_configs/*', {
         statusCode: 200,
@@ -686,21 +602,14 @@ describe('MCP Manage Source Page - Manage Source Mode', () => {
     });
 
     it('should display catalog YAML file and server count for default source', () => {
-      cy.intercept(
-        'GET',
-        '/model-registry/api/v1/settings/mcp_catalog/source_configs/default_source',
-        {
-          data: mockMcpCatalogSourceConfig({
-            id: 'default_source',
-            name: 'Red Hat validated MCP servers',
-            isDefault: true,
-            enabled: true,
-            yamlCatalogPath: 'redhat-mcp-servers-catalog.yaml',
-            includedServers: [],
-            excludedServers: [],
-          }),
-        },
-      );
+      interceptSourceConfig('default_source', {
+        name: 'Red Hat validated MCP servers',
+        isDefault: true,
+        enabled: true,
+        yamlCatalogPath: 'redhat-mcp-servers-catalog.yaml',
+        includedServers: [],
+        excludedServers: [],
+      });
 
       cy.intercept('POST', '/model-registry/api/v1/settings/model_catalog/source_preview*', {
         data: {
@@ -728,22 +637,12 @@ describe('MCP Manage Source Page - Manage Source Mode', () => {
     });
 
     it('should not display catalog YAML file for non-default source', () => {
-      cy.intercept(
-        'GET',
-        '/model-registry/api/v1/settings/mcp_catalog/source_configs/user_source',
-        {
-          data: mockMcpCatalogSourceConfig({
-            id: 'user_source',
-            name: 'My Custom Source',
-            isDefault: false,
-            enabled: true,
-            yaml: 'source: custom\nmcp_servers:\n  - name: Custom Server',
-            yamlCatalogPath: undefined,
-            includedServers: [],
-            excludedServers: [],
-          }),
-        },
-      );
+      interceptSourceConfig('user_source', {
+        name: 'My Custom Source',
+        enabled: true,
+        yaml: 'source: custom\nmcp_servers:\n  - name: Custom Server',
+        yamlCatalogPath: undefined,
+      });
 
       mcpManageSourcePage.visitManageSource('user_source');
 
@@ -751,18 +650,7 @@ describe('MCP Manage Source Page - Manage Source Mode', () => {
     });
 
     it('should navigate to settings page after successful update', () => {
-      cy.intercept(
-        'GET',
-        '/model-registry/api/v1/settings/mcp_catalog/source_configs/mcp_source_2',
-        {
-          data: mockMcpCatalogSourceConfig({
-            id: 'mcp_source_2',
-            name: 'MCP Source 2',
-            isDefault: false,
-            yaml: 'source: test',
-          }),
-        },
-      );
+      interceptSourceConfig('mcp_source_2', { name: 'MCP Source 2' });
 
       cy.intercept('PATCH', '/model-registry/api/v1/settings/mcp_catalog/source_configs/*', {
         statusCode: 200,
@@ -776,18 +664,7 @@ describe('MCP Manage Source Page - Manage Source Mode', () => {
     });
 
     it('should show error when update fails', () => {
-      cy.intercept(
-        'GET',
-        '/model-registry/api/v1/settings/mcp_catalog/source_configs/mcp_source_2',
-        {
-          data: mockMcpCatalogSourceConfig({
-            id: 'mcp_source_2',
-            name: 'MCP Source 2',
-            isDefault: false,
-            yaml: 'source: test',
-          }),
-        },
-      );
+      interceptSourceConfig('mcp_source_2', { name: 'MCP Source 2' });
 
       cy.intercept('PATCH', '/model-registry/api/v1/settings/mcp_catalog/source_configs/*', {
         statusCode: 500,

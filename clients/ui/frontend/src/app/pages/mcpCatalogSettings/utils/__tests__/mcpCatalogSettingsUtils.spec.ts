@@ -193,10 +193,9 @@ describe('getMcpPayloadForConfig', () => {
     });
   });
 
-  it('should return full config for non-default source (edit mode)', () => {
+  it('should omit id for non-default source (edit mode)', () => {
     const config = transformMcpFormDataToConfig(nonDefaultFormData);
     expect(getMcpPayloadForConfig(config, true)).toEqual({
-      id: 'mcp_source_2',
       name: 'MCP Source 2',
       type: McpCatalogSourceType.YAML,
       enabled: false,
@@ -207,18 +206,9 @@ describe('getMcpPayloadForConfig', () => {
     });
   });
 
-  it('should return only allowed fields for default source (create mode)', () => {
+  it('should return only allowed fields for default source', () => {
     const config = transformMcpFormDataToConfig(defaultFormData);
     expect(getMcpPayloadForConfig(config, false)).toEqual({
-      enabled: true,
-      includedServers: [],
-      excludedServers: [],
-    });
-  });
-
-  it('should return only allowed fields for default source (edit mode)', () => {
-    const config = transformMcpFormDataToConfig(defaultFormData);
-    expect(getMcpPayloadForConfig(config, true)).toEqual({
       enabled: true,
       includedServers: [],
       excludedServers: [],
