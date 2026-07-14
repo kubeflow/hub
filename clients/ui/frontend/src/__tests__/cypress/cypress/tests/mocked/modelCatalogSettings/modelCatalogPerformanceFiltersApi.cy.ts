@@ -154,7 +154,8 @@ describe('Model Catalog Performance Filters API Behavior', () => {
 
       cy.wait('@getPerformanceArtifactsWithFilter').then((interception) => {
         const { url } = interception.request;
-        expect(url).to.not.include('recommendations=true');
+        expect(url).to.include('orderBy=');
+        expect(url).to.not.include('recommendations=');
       });
     });
 

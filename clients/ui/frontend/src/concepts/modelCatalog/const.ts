@@ -639,7 +639,6 @@ export enum SortOrder {
 export enum SortField {
   LAST_UPDATE_TIME = 'LAST_UPDATE_TIME',
   RECOMMENDED = 'RECOMMENDED',
-  COLD_START_TIME_TO_LOAD = 'artifacts.cold_start_time_to_load_seconds.double_value',
 }
 
 export const RESET_ALL_FILTERS_LABEL = 'Reset all filters';

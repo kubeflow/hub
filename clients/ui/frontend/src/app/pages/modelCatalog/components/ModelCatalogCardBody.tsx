@@ -89,7 +89,7 @@ const ModelCatalogCardBody: React.FC<ModelCatalogCardBodyProps> = ({
         pageSize: '999',
         ...(sortBy === ModelCatalogSortOption.LOWEST_COLD_START
           ? {
-              orderBy: stripArtifactsPrefix(SortField.COLD_START_TIME_TO_LOAD),
+              orderBy: stripArtifactsPrefix(ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME),
               sortOrder: SortOrder.ASC,
             }
           : latencyFieldName

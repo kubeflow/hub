@@ -228,7 +228,7 @@ export const mockCatalogPerformanceMetricsArtifactWithRPS = (
   };
 };
 
-// Mock for Pareto-filtered (recommendations=true) performance artifacts
+// Mock for Pareto-filtered (orderBy=RECOMMENDED) performance artifacts
 export const mockParetoFilteredPerformanceArtifactList = (
   targetRPS?: number,
 ): CatalogPerformanceArtifactList => ({

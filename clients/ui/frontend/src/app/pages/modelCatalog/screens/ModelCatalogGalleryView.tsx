@@ -92,7 +92,7 @@ const ModelCatalogGalleryView: React.FC<ModelCatalogPageProps> = ({
 
     const orderBy =
       sortBy === ModelCatalogSortOption.LOWEST_COLD_START
-        ? SortField.COLD_START_TIME_TO_LOAD
+        ? ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME
         : SortField.RECOMMENDED;
 
     return {
