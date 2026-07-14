@@ -87,14 +87,14 @@ const ModelCatalogCardBody: React.FC<ModelCatalogCardBodyProps> = ({
         // TODO this is a temporary workaround to avoid capping performance artifacts with a default page size of 20.
         //      we need to implement proper cursor-based pagination as the user clicks through artifacts on a card.
         pageSize: '999',
-        ...(latencyFieldName
+        ...(sortBy === ModelCatalogSortOption.LOWEST_COLD_START
           ? {
-              orderBy: stripArtifactsPrefix(latencyFieldName),
+              orderBy: stripArtifactsPrefix(SortField.COLD_START_TIME_TO_LOAD),
               sortOrder: SortOrder.ASC,
             }
-          : sortBy === ModelCatalogSortOption.LOWEST_COLD_START
+          : latencyFieldName
             ? {
-                orderBy: SortField.COLD_START_TIME_TO_LOAD,
+                orderBy: stripArtifactsPrefix(latencyFieldName),
                 sortOrder: SortOrder.ASC,
               }
             : {
