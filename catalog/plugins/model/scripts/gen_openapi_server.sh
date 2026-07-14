@@ -20,7 +20,7 @@ trap 'rm -rf "$SPEC" "$GENDIR"' EXIT
 # Generate into an isolated temp directory so we never touch other plugins' files.
 "$OPENAPI_GENERATOR" generate \
     -i "$SPEC" -g go-server -o "$GENDIR" --package-name openapi \
-    --additional-properties=outputAsLibrary=true,enumClassPrefix=true,router=chi,sourceFolder=,onlyInterfaces=true,isGoSubmodule=true,enumClassPrefix=true,useOneOfDiscriminatorLookup=true,featureCORS=true \
+    --additional-properties=outputAsLibrary=true,enumClassPrefix=true,router=chi,sourceFolder=,onlyInterfaces=true,isGoSubmodule=true,enumClassPrefix=true,useOneOfDiscriminatorLookup=true \
     --template-dir "$REPO_ROOT/templates/go-server"
 
 # Python-based regex replace function

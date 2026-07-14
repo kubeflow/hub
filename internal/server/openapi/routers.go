@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/cors"
 	"net/http"
 )
 
@@ -39,14 +38,6 @@ type Router interface {
 func NewRouter(routers ...Router) chi.Router {
 	router := chi.NewRouter()
 	router.Use(Logger)
-	router.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"https://*", "http://*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-PINGOTHER"},
-		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: false,
-		MaxAge:           300, // Maximum value not ignored by any of major browsers
-	}))
 	for _, api := range routers {
 		for _, route := range api.OrderedRoutes() {
 			var handler http.Handler = route.HandlerFunc

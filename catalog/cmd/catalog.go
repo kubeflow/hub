@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -30,6 +31,7 @@ var catalogCfg = struct {
 	ListenAddress          string
 	ConfigPath             []string
 	PerformanceMetricsPath []string
+	CORSAllowedOrigins     []string
 }{
 	ListenAddress:          "0.0.0.0:8080",
 	ConfigPath:             []string{"sources.yaml"},
@@ -89,9 +91,21 @@ func init() {
 	fs.StringVarP(&catalogCfg.ListenAddress, "listen", "l", catalogCfg.ListenAddress, "Address to listen on")
 	fs.StringSliceVar(&catalogCfg.ConfigPath, "catalogs-path", catalogCfg.ConfigPath, "Path to catalog source configuration file")
 	fs.StringSliceVar(&catalogCfg.PerformanceMetricsPath, "performance-metrics", catalogCfg.PerformanceMetricsPath, "Path to performance metrics data directory")
+	fs.StringSliceVar(&catalogCfg.CORSAllowedOrigins, "cors-allowed-origins", nil,
+		"Comma-separated list of allowed CORS origins. If empty (default), CORS is disabled. Can also be set via CATALOG_CORS_ALLOWED_ORIGINS environment variable.")
 }
 
-func runCatalogServer(_ *cobra.Command, _ []string) error {
+func runCatalogServer(cmd *cobra.Command, _ []string) error {
+	if !cmd.Flags().Changed("cors-allowed-origins") {
+		if envVal := os.Getenv("CATALOG_CORS_ALLOWED_ORIGINS"); envVal != "" {
+			for _, origin := range strings.Split(envVal, ",") {
+				if o := strings.TrimSpace(origin); o != "" {
+					catalogCfg.CORSAllowedOrigins = append(catalogCfg.CORSAllowedOrigins, o)
+				}
+			}
+		}
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -168,6 +182,7 @@ func runCatalogServer(_ *cobra.Command, _ []string) error {
 		ConfigPaths:            catalogCfg.ConfigPath,
 		PerformanceMetricsPath: catalogCfg.PerformanceMetricsPath,
 		RepoSet:                repoSet,
+		CORSAllowedOrigins:     catalogCfg.CORSAllowedOrigins,
 	})
 
 	pluginServer.AddReadinessCheck("leader_election", elector.Healthy)

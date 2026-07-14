@@ -11,10 +11,10 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
 	"gorm.io/gorm"
 
 	"github.com/kubeflow/hub/internal/platform/datastore"
+	platformmw "github.com/kubeflow/hub/internal/platform/server/middleware"
 )
 
 // ServerConfig holds the dependencies needed to create a plugin Server.
@@ -24,6 +24,7 @@ type ServerConfig struct {
 	PerformanceMetricsPath []string
 	RepoSet                datastore.RepoSet
 	Logger                 *slog.Logger
+	CORSAllowedOrigins     []string
 }
 
 // readinessCheck is a named readiness check evaluated by the /readyz handler.
@@ -103,14 +104,7 @@ func (s *Server) MountRoutes() (chi.Router, error) {
 
 	s.router = chi.NewRouter()
 	s.router.Use(middleware.Logger)
-	s.router.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"https://*", "http://*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-PINGOTHER"},
-		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: false,
-		MaxAge:           300,
-	}))
+	s.router.Use(platformmw.CORSMiddleware(s.cfg.CORSAllowedOrigins))
 
 	for _, p := range s.plugins {
 		s.cfg.Logger.Info("mounting plugin routes", "plugin", p.Name())

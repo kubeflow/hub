@@ -7,11 +7,12 @@ import (
 	"github.com/kubeflow/hub/internal/server/openapi"
 )
 
-// WrapWithValidation wraps the auto-generated router with custom validation middleware
-func WrapWithValidation(routers ...openapi.Router) http.Handler {
-	// Create the auto-generated router
+// WrapWithValidation wraps the auto-generated router with CORS and validation middleware.
+// If corsAllowedOrigins is empty, CORS is disabled (no cross-origin headers are added).
+func WrapWithValidation(corsAllowedOrigins []string, routers ...openapi.Router) http.Handler {
 	baseRouter := openapi.NewRouter(routers...)
 
-	// Wrap it with our custom validation middleware
-	return platformmw.ValidationMiddleware(baseRouter)
+	handler := platformmw.CORSMiddleware(corsAllowedOrigins)(baseRouter)
+
+	return platformmw.ValidationMiddleware(handler)
 }

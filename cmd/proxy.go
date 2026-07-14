@@ -171,7 +171,7 @@ func runProxyServer(cmd *cobra.Command, args []string) error {
 		ModelRegistryServiceAPIService := openapi.NewModelRegistryServiceAPIService(conn)
 		ModelRegistryServiceAPIController := openapi.NewModelRegistryServiceAPIController(ModelRegistryServiceAPIService)
 
-		router.SetRouter(middleware.WrapWithValidation(ModelRegistryServiceAPIController))
+		router.SetRouter(middleware.WrapWithValidation(cfg.CORSAllowedOrigins, ModelRegistryServiceAPIController))
 
 		// Set the model registry service in the holder for health checks AFTER router is ready
 		// This ensures the readiness probe only passes when the router can serve actual requests
@@ -250,4 +250,7 @@ func init() {
 	proxyCmd.Flags().BoolVar(&proxyCfg.EmbedMD.TLSConfig.VerifyServerCert, "embedmd-database-ssl-verify-server-cert", false, "EmbedMD SSL verify server cert")
 
 	proxyCmd.Flags().StringVar(&proxyCfg.DatastoreType, "datastore-type", proxyCfg.DatastoreType, "Datastore type")
+
+	proxyCmd.Flags().StringSliceVar(&cfg.CORSAllowedOrigins, "cors-allowed-origins", nil,
+		"Comma-separated list of allowed CORS origins. If empty (default), CORS is disabled.")
 }

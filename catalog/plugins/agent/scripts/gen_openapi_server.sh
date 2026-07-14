@@ -21,7 +21,7 @@ trap 'rm -rf "$SPEC" "$GENDIR"' EXIT
 # No .openapi-generator-ignore cross-plugin entries needed.
 "$OPENAPI_GENERATOR" generate \
     -i "$SPEC" -g go-server -o "$GENDIR" --package-name openapi \
-    --additional-properties=outputAsLibrary=true,enumClassPrefix=true,router=chi,sourceFolder=,onlyInterfaces=true,isGoSubmodule=true,enumClassPrefix=true,useOneOfDiscriminatorLookup=true,featureCORS=true \
+    --additional-properties=outputAsLibrary=true,enumClassPrefix=true,router=chi,sourceFolder=,onlyInterfaces=true,isGoSubmodule=true,enumClassPrefix=true,useOneOfDiscriminatorLookup=true \
     --template-dir "$REPO_ROOT/templates/go-server"
 
 # Python-based regex replace function
