@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/kubeflow/hub/ui/bff/internal/constants"
+	"github.com/kubeflow/hub/ui/bff/internal/integrations/kubernetes"
 	"github.com/kubeflow/hub/ui/bff/internal/models"
 	"github.com/kubeflow/hub/ui/bff/internal/repositories"
 )
@@ -38,7 +40,7 @@ func (app *App) GetAllModelTransferJobsHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	jobNamespace := r.URL.Query().Get("jobNamespace")
-	if err := ensureNamespaceMatch(namespace, jobNamespace); err != nil {
+	if err := app.authorizeJobNamespace(ctx, client, jobNamespace); err != nil {
 		app.forbiddenResponse(w, r, err.Error())
 		return
 	}
@@ -89,7 +91,7 @@ func (app *App) GetModelTransferJobHandler(w http.ResponseWriter, r *http.Reques
 		app.badRequestResponse(w, r, err)
 		return
 	}
-	if err := ensureNamespaceMatch(namespace, jobNamespace); err != nil {
+	if err := app.authorizeJobNamespace(ctx, client, jobNamespace); err != nil {
 		app.forbiddenResponse(w, r, err.Error())
 		return
 	}
@@ -150,13 +152,10 @@ func (app *App) CreateModelTransferJobHandler(w http.ResponseWriter, r *http.Req
 
 	payload := *envelope.Data
 
-	// The transfer-job resources are created in payload.Namespace, so it must
-	// stay inside the namespace authorized by RequireAccessToMRService. Default
-	// an unset namespace to the authorized one and reject any other.
 	if payload.Namespace == "" {
 		payload.Namespace = namespace
 	}
-	if err := ensureNamespaceMatch(namespace, payload.Namespace); err != nil {
+	if err := app.authorizeJobNamespace(ctx, client, payload.Namespace); err != nil {
 		app.forbiddenResponse(w, r, err.Error())
 		return
 	}
@@ -218,12 +217,10 @@ func (app *App) UpdateModelTransferJobHandler(w http.ResponseWriter, r *http.Req
 	}
 	payload := *envelope.Data
 
-	// Keep the update inside the authorized namespace: the destination Secret and
-	// Job the repository reads and writes use payload.Namespace.
 	if payload.Namespace == "" {
 		payload.Namespace = namespace
 	}
-	if err := ensureNamespaceMatch(namespace, payload.Namespace); err != nil {
+	if err := app.authorizeJobNamespace(ctx, client, payload.Namespace); err != nil {
 		app.forbiddenResponse(w, r, err.Error())
 		return
 	}
@@ -292,7 +289,7 @@ func (app *App) DeleteModelTransferJobHandler(w http.ResponseWriter, r *http.Req
 		app.badRequestResponse(w, r, err)
 		return
 	}
-	if err := ensureNamespaceMatch(namespace, jobNamespace); err != nil {
+	if err := app.authorizeJobNamespace(ctx, client, jobNamespace); err != nil {
 		app.forbiddenResponse(w, r, err.Error())
 		return
 	}
@@ -353,7 +350,7 @@ func (app *App) GetModelTransferJobEventsHandler(w http.ResponseWriter, r *http.
 		app.badRequestResponse(w, r, err)
 		return
 	}
-	if err := ensureNamespaceMatch(namespace, jobNamespace); err != nil {
+	if err := app.authorizeJobNamespace(ctx, client, jobNamespace); err != nil {
 		app.forbiddenResponse(w, r, err.Error())
 		return
 	}
@@ -387,16 +384,26 @@ func getRequiredJobNamespace(r *http.Request) (string, error) {
 	return jobNamespace, nil
 }
 
-// ensureNamespaceMatch closes the model-transfer-job BOLA. RequireAccessToMRService
-// runs the SubjectAccessReview against the `namespace` query parameter, but the
-// handlers operate on a namespace taken from `jobNamespace` (read/list/events/delete)
-// or the request body (create/update). If that operated namespace differs from the
-// authorized one, the caller could act on another tenant's namespace. Requiring the
-// two to match keeps every operation inside the namespace the caller was authorized
-// for. An empty operated namespace is left to the caller's existing handling.
-func ensureNamespaceMatch(authorized, operated string) error {
-	if operated != "" && operated != authorized {
-		return fmt.Errorf("namespace %q does not match the authorized namespace %q", operated, authorized)
+// authorizeJobNamespace verifies the caller has service-level access in the
+// namespace where the transfer-job handler will operate. The middleware
+// (RequireAccessToMRService) authorizes the model-registry service namespace,
+// but jobs legitimately run in a different namespace (the user's project), so
+// a separate access check is required for that namespace. An empty namespace
+// is left to the caller's existing handling (e.g. cluster-wide list).
+func (app *App) authorizeJobNamespace(ctx context.Context, client kubernetes.KubernetesClientInterface, jobNamespace string) error {
+	if jobNamespace == "" {
+		return nil
+	}
+	identity, ok := ctx.Value(constants.RequestIdentityKey).(*kubernetes.RequestIdentity)
+	if !ok || identity == nil {
+		return fmt.Errorf("missing request identity")
+	}
+	allowed, err := client.CanListServicesInNamespace(ctx, identity, jobNamespace)
+	if err != nil {
+		return fmt.Errorf("authorization check failed for namespace %q: %w", jobNamespace, err)
+	}
+	if !allowed {
+		return fmt.Errorf("access denied to namespace %q", jobNamespace)
 	}
 	return nil
 }
