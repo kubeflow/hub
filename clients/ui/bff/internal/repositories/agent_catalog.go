@@ -16,6 +16,7 @@ type AgentCatalogInterface interface {
 	GetAllAgents(client httpclient.HTTPClientInterface, pageValues url.Values) (*models.AgentList, error)
 	GetAgentsFilter(client httpclient.HTTPClientInterface) (*models.FilterOptionsList, error)
 	GetAgent(client httpclient.HTTPClientInterface, agentId string) (*models.Agent, error)
+	GetAgentArtifacts(client httpclient.HTTPClientInterface, agentId string, pageValues url.Values) (*models.AgentArtifactList, error)
 }
 
 type AgentCatalog struct {
@@ -73,4 +74,26 @@ func (a *AgentCatalog) GetAgent(client httpclient.HTTPClientInterface, agentId s
 	}
 
 	return &agent, nil
+}
+
+func (a *AgentCatalog) GetAgentArtifacts(client httpclient.HTTPClientInterface, agentId string, pageValues url.Values) (*models.AgentArtifactList, error) {
+	basePath, err := url.JoinPath(agentPath, agentId, "artifacts")
+
+	if err != nil {
+		return nil, err
+	}
+
+	responseData, err := client.GET(UrlWithPageParams(basePath, pageValues))
+
+	if err != nil {
+		return nil, fmt.Errorf("error fetching agent artifacts: %w", err)
+	}
+
+	var artifacts models.AgentArtifactList
+
+	if err := json.Unmarshal(responseData, &artifacts); err != nil {
+		return nil, fmt.Errorf("error decoding response data: %w", err)
+	}
+
+	return &artifacts, nil
 }

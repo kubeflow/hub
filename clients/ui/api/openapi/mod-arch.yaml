@@ -1201,6 +1201,33 @@ paths:
           $ref: "#/components/responses/InternalServerError"
       operationId: getAgent
       description: Gets a single `Agent` by ID.
+  /api/v1/agent_catalog/agents/{agentId}/artifacts:
+    description: >-
+      The REST endpoint/path used to list artifacts for a specific agent.
+    get:
+      summary: List artifacts for an agent
+      tags:
+        - AgentCatalogService
+      parameters:
+        - $ref: "#/components/parameters/kubeflowUserId"
+        - $ref: "#/components/parameters/namespace"
+        - $ref: "#/components/parameters/agentId"
+        - $ref: "#/components/parameters/agentArtifactType"
+        - $ref: "#/components/parameters/pageSize"
+        - $ref: "#/components/parameters/orderBy"
+        - $ref: "#/components/parameters/sortOrder"
+        - $ref: "#/components/parameters/nextPageToken"
+      responses:
+        "200":
+          $ref: "#/components/responses/AgentArtifactListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      operationId: getAgentArtifacts
+      description: Lists artifacts for a specific agent.
 
   # MCP catalog settings endpoints
   /api/v1/settings/mcp_catalog/source_configs:
@@ -2694,8 +2721,8 @@ components:
         artifacts:
           type: array
           items:
-            $ref: "#/components/schemas/AgentArtifact"
-          description: OCI artifacts for agent deployment.
+            $ref: "#/components/schemas/AgentImageArtifact"
+          description: OCI image artifacts for agent deployment.
         customProperties:
           description: User provided custom properties which are not defined by its type.
           type: object
@@ -2712,25 +2739,64 @@ components:
           type: string
           readOnly: true
     AgentArtifact:
-      description: OCI artifact for agent deployment.
-      type: object
-      required:
-        - uri
-      properties:
-        uri:
-          type: string
-          format: uri
-          description: URI of the artifact (e.g., OCI image reference).
-        createTimeSinceEpoch:
-          format: int64
-          description: Output only. Create time of the resource in millisecond since epoch.
-          type: string
-          readOnly: true
-        lastUpdateTimeSinceEpoch:
-          format: int64
-          description: Output only. Last update time of the resource since epoch in millisecond since epoch.
-          type: string
-          readOnly: true
+      description: A single artifact in the agent catalog API.
+      oneOf:
+        - $ref: "#/components/schemas/AgentTemplateArtifact"
+      discriminator:
+        propertyName: artifactType
+        mapping:
+          template-artifact: "#/components/schemas/AgentTemplateArtifact"
+    AgentArtifactList:
+      description: A list of agent artifact entities.
+      allOf:
+        - type: object
+          properties:
+            items:
+              description: Array of `AgentArtifact` entities.
+              type: array
+              items:
+                $ref: "#/components/schemas/AgentArtifact"
+          required:
+            - items
+        - $ref: "#/components/schemas/BaseResourceList"
+    AgentArtifactTypeQueryParam:
+      description: Supported artifact types for querying agent artifacts.
+      enum:
+        - template-artifact
+      type: string
+    AgentImageArtifact:
+      description: OCI image artifact for agent deployment.
+      allOf:
+        - $ref: "#/components/schemas/BaseResourceDates"
+        - type: object
+          required:
+            - artifactType
+            - uri
+          properties:
+            artifactType:
+              type: string
+              default: image-artifact
+            uri:
+              type: string
+              format: uri
+              description: URI of the artifact (e.g., OCI image reference).
+    AgentTemplateArtifact:
+      description: >-
+        Agent deployment template artifact. Contains the full agent.yaml specification as a JSON-encoded string.
+      allOf:
+        - $ref: "#/components/schemas/BaseResourceDates"
+        - type: object
+          required:
+            - artifactType
+            - content
+          properties:
+            artifactType:
+              type: string
+              default: template-artifact
+            content:
+              type: string
+              description: >-
+                The agent.yaml specification as a JSON-encoded string. Describes the agent's deployment configuration including name, framework, environment variables, and other metadata.
     AgentEnvVar:
       description: An environment variable required by an agent.
       type: object
@@ -4183,6 +4249,12 @@ components:
           schema:
             $ref: "#/components/schemas/Agent"
       description: A response containing a single `Agent` entity.
+    AgentArtifactListResponse:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AgentArtifactList"
+      description: A response containing a list of agent artifact entities.
     AgentFilterOptionsResponse:
       content:
         application/json:
@@ -4624,6 +4696,20 @@ components:
         type: string
       in: path
       required: true
+    agentArtifactType:
+      style: form
+      explode: true
+      examples:
+        agentArtifactType:
+          value: template-artifact
+      name: artifactType
+      description: Filter artifacts by type.
+      schema:
+        type: array
+        items:
+          $ref: "#/components/schemas/AgentArtifactTypeQueryParam"
+      in: query
+      required: false
     serverId:
       name: server_id
       description: A unique identifier for an `McpServer`.

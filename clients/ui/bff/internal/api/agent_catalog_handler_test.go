@@ -130,5 +130,64 @@ var _ = Describe("TestAgentCatalogHandler", func() {
 			By("should return bad request")
 			Expect(rs.StatusCode).To(Equal(http.StatusBadRequest))
 		})
+
+		It("should retrieve agent artifacts by agent id", func() {
+			By("fetching artifacts for agent 1")
+			requestIdentity := kubernetes.RequestIdentity{
+				UserID: "user@example.com",
+			}
+
+			actual, rs, err := setupApiTest[AgentArtifactListEnvelope](http.MethodGet, "/api/v1/agent_catalog/agents/1/artifacts?namespace=kubeflow", nil, kubernetesMockedStaticClientFactory, requestIdentity, "kubeflow")
+			Expect(err).NotTo(HaveOccurred())
+
+			By("should return artifacts")
+			Expect(rs.StatusCode).To(Equal(http.StatusOK))
+			Expect(actual.Data).NotTo(BeNil())
+			Expect(actual.Data.Size).To(Equal(int32(1)))
+			Expect(len(actual.Data.Items)).To(Equal(1))
+			Expect(actual.Data.Items[0].ArtifactType).To(Equal("template-artifact"))
+		})
+
+		It("should return empty artifacts for agent without templates", func() {
+			By("fetching artifacts for agent 3 (no template artifacts)")
+			requestIdentity := kubernetes.RequestIdentity{
+				UserID: "user@example.com",
+			}
+
+			actual, rs, err := setupApiTest[AgentArtifactListEnvelope](http.MethodGet, "/api/v1/agent_catalog/agents/3/artifacts?namespace=kubeflow", nil, kubernetesMockedStaticClientFactory, requestIdentity, "kubeflow")
+			Expect(err).NotTo(HaveOccurred())
+
+			By("should return empty list")
+			Expect(rs.StatusCode).To(Equal(http.StatusOK))
+			Expect(actual.Data).NotTo(BeNil())
+			Expect(actual.Data.Size).To(Equal(int32(0)))
+			Expect(len(actual.Data.Items)).To(Equal(0))
+		})
+
+		It("should return 404 when fetching artifacts for non-existent agent", func() {
+			By("fetching artifacts for a non-existent agent")
+			requestIdentity := kubernetes.RequestIdentity{
+				UserID: "user@example.com",
+			}
+
+			_, rs, err := setupApiTest[ErrorEnvelope](http.MethodGet, "/api/v1/agent_catalog/agents/non-existent-id/artifacts?namespace=kubeflow", nil, kubernetesMockedStaticClientFactory, requestIdentity, "kubeflow")
+			Expect(err).NotTo(HaveOccurred())
+
+			By("should return not found")
+			Expect(rs.StatusCode).To(Equal(http.StatusNotFound))
+		})
+
+		It("should return 400 when namespace is missing for agent artifacts", func() {
+			By("fetching agent artifacts without namespace")
+			requestIdentity := kubernetes.RequestIdentity{
+				UserID: "user@example.com",
+			}
+
+			_, rs, err := setupApiTest[ErrorEnvelope](http.MethodGet, "/api/v1/agent_catalog/agents/1/artifacts", nil, kubernetesMockedStaticClientFactory, requestIdentity, "")
+			Expect(err).NotTo(HaveOccurred())
+
+			By("should return bad request")
+			Expect(rs.StatusCode).To(Equal(http.StatusBadRequest))
+		})
 	})
 })

@@ -3639,8 +3639,9 @@ func GetAgentMocks() []models.Agent {
 				{Name: "OPENAI_API_KEY", Required: true, Description: stringToPointer("API key for the LLM provider")},
 				{Name: "LOG_LEVEL", Required: false, Description: stringToPointer("Logging verbosity (debug, info, warn, error)")},
 			},
-			Artifacts: []models.AgentArtifact{
+			Artifacts: []models.AgentImageArtifact{
 				{
+					ArtifactType:             "image-artifact",
 					URI:                      "ghcr.io/example/code-review-agent:v1.2.0",
 					CreateTimeSinceEpoch:     &createTime,
 					LastUpdateTimeSinceEpoch: &updateTime,
@@ -3666,8 +3667,8 @@ func GetAgentMocks() []models.Agent {
 				{Name: "OPENAI_API_KEY", Required: true},
 				{Name: "ARXIV_RATE_LIMIT", Required: false},
 			},
-			Artifacts: []models.AgentArtifact{
-				{URI: "ghcr.io/example/research-assistant:v2.0.1"},
+			Artifacts: []models.AgentImageArtifact{
+				{ArtifactType: "image-artifact", URI: "ghcr.io/example/research-assistant:v2.0.1"},
 			},
 			CreateTimeSinceEpoch:     &createTime,
 			LastUpdateTimeSinceEpoch: &updateTime,
@@ -3687,8 +3688,8 @@ func GetAgentMocks() []models.Agent {
 				{Name: "KUBECONFIG", Required: true},
 				{Name: "SLACK_WEBHOOK_URL", Required: false},
 			},
-			Artifacts: []models.AgentArtifact{
-				{URI: "ghcr.io/example/deploy-bot:v3.1.0"},
+			Artifacts: []models.AgentImageArtifact{
+				{ArtifactType: "image-artifact", URI: "ghcr.io/example/deploy-bot:v3.1.0"},
 			},
 			CreateTimeSinceEpoch:     &createTime,
 			LastUpdateTimeSinceEpoch: &updateTime,
@@ -3709,8 +3710,8 @@ func GetAgentMocks() []models.Agent {
 				{Name: "AIRFLOW_API_KEY", Required: true},
 				{Name: "SLACK_WEBHOOK_URL", Required: false},
 			},
-			Artifacts: []models.AgentArtifact{
-				{URI: "ghcr.io/example/data-pipeline-agent:v1.0.0"},
+			Artifacts: []models.AgentImageArtifact{
+				{ArtifactType: "image-artifact", URI: "ghcr.io/example/data-pipeline-agent:v1.0.0"},
 			},
 			CreateTimeSinceEpoch:     &createTime,
 			LastUpdateTimeSinceEpoch: &updateTime,
@@ -3723,8 +3724,8 @@ func GetAgentMocks() []models.Agent {
 			Description: stringToPointer("Web search agent built with the CrewAI framework. Uses a ReAct-style crew with a web search tool to answer user questions."),
 			Framework:   &crewaiFramework,
 			Labels:      []string{"Web search", "MCP"},
-			Artifacts: []models.AgentArtifact{
-				{URI: "ghcr.io/example/websearch-agent:v1.0.0"},
+			Artifacts: []models.AgentImageArtifact{
+				{ArtifactType: "image-artifact", URI: "ghcr.io/example/websearch-agent:v1.0.0"},
 			},
 			CreateTimeSinceEpoch:     &createTime,
 			LastUpdateTimeSinceEpoch: &updateTime,
@@ -3737,8 +3738,8 @@ func GetAgentMocks() []models.Agent {
 			Description: stringToPointer("General-purpose agent using Google Agent Development Kit (ADK) 2.0 with a web search tool, routing inference through a LiteLLM OpenAI-compatible API."),
 			Framework:   stringToPointer("google-adk"),
 			Labels:      []string{"Web search", "General purpose"},
-			Artifacts: []models.AgentArtifact{
-				{URI: "ghcr.io/example/google-adk-agent:v2.0.0"},
+			Artifacts: []models.AgentImageArtifact{
+				{ArtifactType: "image-artifact", URI: "ghcr.io/example/google-adk-agent:v2.0.0"},
 			},
 			CreateTimeSinceEpoch:     &createTime,
 			LastUpdateTimeSinceEpoch: &updateTime,
@@ -3751,8 +3752,8 @@ func GetAgentMocks() []models.Agent {
 			Description: stringToPointer("Tool-calling agent built with Langflow's visual flow builder. It calls external APIs as tools (weather forecasts, national park data) and reasons over the results to answer user questions."),
 			Framework:   stringToPointer("claude-code"),
 			Labels:      []string{"Tool use", "MCP"},
-			Artifacts: []models.AgentArtifact{
-				{URI: "ghcr.io/example/simple-tool-calling-agent:v1.0.0"},
+			Artifacts: []models.AgentImageArtifact{
+				{ArtifactType: "image-artifact", URI: "ghcr.io/example/simple-tool-calling-agent:v1.0.0"},
 			},
 			CreateTimeSinceEpoch:     &createTime,
 			LastUpdateTimeSinceEpoch: &updateTime,
@@ -3765,8 +3766,8 @@ func GetAgentMocks() []models.Agent {
 			Description: stringToPointer("ReAct agent with PostgreSQL-based conversation memory. It reasons and calls tools step by step, storing conversation history by thread ID so sessions persist across requests."),
 			Framework:   &langgraphFramework,
 			Labels:      []string{"General purpose", "Tool use"},
-			Artifacts: []models.AgentArtifact{
-				{URI: "ghcr.io/example/react-database-agent:v1.1.0"},
+			Artifacts: []models.AgentImageArtifact{
+				{ArtifactType: "image-artifact", URI: "ghcr.io/example/react-database-agent:v1.1.0"},
 			},
 			CreateTimeSinceEpoch:     &createTime,
 			LastUpdateTimeSinceEpoch: &updateTime,
@@ -3779,8 +3780,8 @@ func GetAgentMocks() []models.Agent {
 			Description: stringToPointer("Agent built on LlamaIndex that uses a web search tool to query the internet and use the results in its answers."),
 			Framework:   stringToPointer("llamaindex"),
 			Labels:      []string{"Web search", "Multi-agent"},
-			Artifacts: []models.AgentArtifact{
-				{URI: "ghcr.io/example/llamaindex-websearch:v1.0.0"},
+			Artifacts: []models.AgentImageArtifact{
+				{ArtifactType: "image-artifact", URI: "ghcr.io/example/llamaindex-websearch:v1.0.0"},
 			},
 			CreateTimeSinceEpoch:     &createTime,
 			LastUpdateTimeSinceEpoch: &updateTime,
@@ -3793,8 +3794,8 @@ func GetAgentMocks() []models.Agent {
 			Description: stringToPointer("OpenClaw agent deployment templates for Red Hat OpenShift AI, including container images and Helm-based deployment patterns."),
 			Framework:   stringToPointer("openclaw"),
 			Labels:      []string{"Deployment", "General purpose"},
-			Artifacts: []models.AgentArtifact{
-				{URI: "ghcr.io/example/openclaw:v2.0.0"},
+			Artifacts: []models.AgentImageArtifact{
+				{ArtifactType: "image-artifact", URI: "ghcr.io/example/openclaw:v2.0.0"},
 			},
 			CreateTimeSinceEpoch:     &createTime,
 			LastUpdateTimeSinceEpoch: &updateTime,
@@ -3807,8 +3808,8 @@ func GetAgentMocks() []models.Agent {
 			Description: stringToPointer("Orchestrates multiple sub-agents using a planning-based approach. Decomposes complex tasks and routes to specialized agents."),
 			Framework:   &crewaiFramework,
 			Labels:      []string{"Multi-agent", "General purpose"},
-			Artifacts: []models.AgentArtifact{
-				{URI: "ghcr.io/example/multi-agent-orchestrator:v1.3.0"},
+			Artifacts: []models.AgentImageArtifact{
+				{ArtifactType: "image-artifact", URI: "ghcr.io/example/multi-agent-orchestrator:v1.3.0"},
 			},
 			CreateTimeSinceEpoch:     &createTime,
 			LastUpdateTimeSinceEpoch: &updateTime,
@@ -3821,8 +3822,8 @@ func GetAgentMocks() []models.Agent {
 			Description: stringToPointer("A2A example where a CrewAI pod exposes an A2A JSON-RPC server and a LangGraph pod orchestrates calls to the Crew specialist over HTTP/A2A, locally or on OpenShift."),
 			Framework:   &crewaiFramework,
 			Labels:      []string{"Multi-agent", "MCP"},
-			Artifacts: []models.AgentArtifact{
-				{URI: "ghcr.io/example/a2a-langgraph-crewai:v1.0.0"},
+			Artifacts: []models.AgentImageArtifact{
+				{ArtifactType: "image-artifact", URI: "ghcr.io/example/a2a-langgraph-crewai:v1.0.0"},
 			},
 			CreateTimeSinceEpoch:     &createTime,
 			LastUpdateTimeSinceEpoch: &updateTime,
@@ -3882,6 +3883,55 @@ func GetAgentFilterOptionsListMock() models.FilterOptionsList {
 
 	return models.FilterOptionsList{
 		Filters: &filters,
+	}
+}
+
+func GetAgentArtifactsMock(agentID string) map[string][]models.AgentArtifact {
+	createTime := "1706745600000"
+	updateTime := "1709424000000"
+
+	agentTemplates := map[string][]models.AgentArtifact{
+		"1": {
+			{
+				ArtifactType:             "template-artifact",
+				Content:                  stringToPointer(`{"name":"code-review-agent","framework":"langgraph","env":[{"name":"GITHUB_TOKEN","required":true},{"name":"OPENAI_API_KEY","required":true}]}`),
+				CreateTimeSinceEpoch:     &createTime,
+				LastUpdateTimeSinceEpoch: &updateTime,
+			},
+		},
+		"2": {
+			{
+				ArtifactType:             "template-artifact",
+				Content:                  stringToPointer(`{"name":"research-assistant","framework":"crewai","env":[{"name":"SEMANTIC_SCHOLAR_API_KEY","required":true},{"name":"OPENAI_API_KEY","required":true}]}`),
+				CreateTimeSinceEpoch:     &createTime,
+				LastUpdateTimeSinceEpoch: &updateTime,
+			},
+		},
+		"5": {
+			{
+				ArtifactType:             "template-artifact",
+				Content:                  stringToPointer(`{"name":"websearch-agent","framework":"crewai","env":[{"name":"OPENAI_API_KEY","required":true}]}`),
+				CreateTimeSinceEpoch:     &createTime,
+				LastUpdateTimeSinceEpoch: &updateTime,
+			},
+		},
+	}
+
+	return agentTemplates
+}
+
+func GetAgentArtifactListMock(agentID string) *models.AgentArtifactList {
+	allArtifacts := GetAgentArtifactsMock(agentID)
+	items, ok := allArtifacts[agentID]
+	if !ok {
+		items = []models.AgentArtifact{}
+	}
+
+	return &models.AgentArtifactList{
+		Items:         items,
+		Size:          int32(len(items)),
+		PageSize:      int32(10),
+		NextPageToken: "",
 	}
 }
 

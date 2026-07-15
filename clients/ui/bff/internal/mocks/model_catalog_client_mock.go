@@ -676,3 +676,25 @@ func (m *ModelCatalogClientMock) GetAgent(client httpclient.HTTPClientInterface,
 		},
 	}
 }
+
+func (m *ModelCatalogClientMock) GetAgentArtifacts(client httpclient.HTTPClientInterface, agentId string, _ url.Values) (*models.AgentArtifactList, error) {
+	allMocks := GetAgentMocks()
+	found := false
+	for i := range allMocks {
+		if allMocks[i].ID == agentId {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil, &httpclient.HTTPError{
+			StatusCode: 404,
+			ErrorResponse: httpclient.ErrorResponse{
+				Code:    "404",
+				Message: fmt.Sprintf("agent not found: %s", agentId),
+			},
+		}
+	}
+
+	return GetAgentArtifactListMock(agentId), nil
+}

@@ -138,3 +138,46 @@ func TestGetAgent_ClientError(t *testing.T) {
 	assert.Error(t, err)
 	mockClient.AssertExpectations(t)
 }
+
+func TestGetAgentArtifacts_Success(t *testing.T) {
+	mockClient := &mocks.MockHTTPClient{}
+	responseJSON := `{"size": 1, "pageSize": 10, "nextPageToken": "", "items": [{"artifactType": "template-artifact", "content": "{\"name\":\"test\"}"}]}`
+	mockClient.On("GET", "/agents/1/artifacts").Return([]byte(responseJSON), nil)
+
+	repo := AgentCatalog{}
+	result, err := repo.GetAgentArtifacts(mockClient, "1", url.Values{})
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, int32(1), result.Size)
+	assert.Len(t, result.Items, 1)
+	assert.Equal(t, "template-artifact", result.Items[0].ArtifactType)
+	mockClient.AssertExpectations(t)
+}
+
+func TestGetAgentArtifacts_ClientError(t *testing.T) {
+	mockClient := &mocks.MockHTTPClient{}
+	expectedErr := &httpclient.HTTPError{StatusCode: 404}
+	mockClient.On("GET", "/agents/missing/artifacts").Return([]byte(nil), expectedErr)
+
+	repo := AgentCatalog{}
+	result, err := repo.GetAgentArtifacts(mockClient, "missing", url.Values{})
+
+	assert.Nil(t, result)
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, expectedErr)
+	mockClient.AssertExpectations(t)
+}
+
+func TestGetAgentArtifacts_InvalidJSON(t *testing.T) {
+	mockClient := &mocks.MockHTTPClient{}
+	mockClient.On("GET", "/agents/1/artifacts").Return([]byte("invalid"), nil)
+
+	repo := AgentCatalog{}
+	result, err := repo.GetAgentArtifacts(mockClient, "1", url.Values{})
+
+	assert.Nil(t, result)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "decoding")
+	mockClient.AssertExpectations(t)
+}

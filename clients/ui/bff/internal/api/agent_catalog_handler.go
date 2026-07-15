@@ -14,6 +14,7 @@ import (
 type AgentListEnvelope Envelope[*models.AgentList, None]
 type AgentFilterOptionsListEnvelope Envelope[*models.FilterOptionsList, None]
 type AgentEnvelope Envelope[*models.Agent, None]
+type AgentArtifactListEnvelope Envelope[*models.AgentArtifactList, None]
 
 func (app *App) GetAllAgentsHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	client, ok := r.Context().Value(constants.ModelCatalogHttpClientKey).(httpclient.HTTPClientInterface)
@@ -107,6 +108,43 @@ func (app *App) GetAgentHandler(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 
 	err = app.WriteJSON(w, http.StatusOK, agentEnvelope, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+func (app *App) GetAgentArtifactsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	client, ok := r.Context().Value(constants.ModelCatalogHttpClientKey).(httpclient.HTTPClientInterface)
+
+	if !ok {
+		app.serverErrorResponse(w, r, errors.New("catalog REST client not found"))
+		return
+	}
+
+	agentId := ps.ByName(AgentId)
+
+	if agentId == "" {
+		app.badRequestResponse(w, r, fmt.Errorf("agent_id is required"))
+		return
+	}
+
+	artifacts, err := app.repositories.ModelCatalogClient.GetAgentArtifacts(client, agentId, r.URL.Query())
+
+	if err != nil {
+		var httpErr *httpclient.HTTPError
+		if errors.As(err, &httpErr) {
+			app.errorResponse(w, r, httpErr)
+		} else {
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	artifactListEnvelope := AgentArtifactListEnvelope{
+		Data: artifacts,
+	}
+
+	err = app.WriteJSON(w, http.StatusOK, artifactListEnvelope, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}

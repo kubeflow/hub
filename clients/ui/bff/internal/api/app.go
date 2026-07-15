@@ -89,6 +89,7 @@ const (
 	AgentListPath             = AgentCatalogPathPrefix + "/agents"
 	AgentFilterOptionListPath = AgentCatalogPathPrefix + "/agents_filter_options"
 	AgentPath                 = AgentListPath + "/:" + AgentId
+	AgentArtifactsPath        = AgentPath + "/artifacts"
 
 	// MCP server catalog
 	McpServerId                   = "server_id"
@@ -344,6 +345,7 @@ func (app *App) Routes() http.Handler {
 		// Agent catalog endpoints
 		apiRouter.GET(AgentListPath, app.AttachNamespace(app.AttachModelCatalogRESTClient(app.GetAllAgentsHandler)))
 		apiRouter.GET(AgentFilterOptionListPath, app.AttachNamespace(app.AttachModelCatalogRESTClient(app.GetAgentsFiltersHandler)))
+		apiRouter.GET(AgentArtifactsPath, app.AttachNamespace(app.AttachModelCatalogRESTClient(app.GetAgentArtifactsHandler)))
 		apiRouter.GET(AgentPath, app.AttachNamespace(app.AttachModelCatalogRESTClient(app.GetAgentHandler)))
 
 		// MCP server catalog endpoints
