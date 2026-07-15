@@ -12,6 +12,7 @@ const (
 	ModelCatalogServiceName = "model-catalog"
 	ModelCatalogAPIPath     = "/api/model_catalog/v1alpha1"
 	McpCatalogAPIPath       = "/api/mcp_catalog/v1alpha1"
+	AgentCatalogAPIPath     = "/api/agent_catalog/v1alpha1"
 )
 
 type ModelCatalogRepository struct {

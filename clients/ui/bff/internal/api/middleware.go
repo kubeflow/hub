@@ -112,6 +112,8 @@ func (app *App) AttachModelCatalogRESTClient(next func(http.ResponseWriter, *htt
 		apiPath := repositories.ModelCatalogAPIPath
 		if strings.HasPrefix(r.URL.Path, McpServerCatalogPathPrefix) {
 			apiPath = repositories.McpCatalogAPIPath
+		} else if strings.HasPrefix(r.URL.Path, AgentCatalogPathPrefix) {
+			apiPath = repositories.AgentCatalogAPIPath
 		}
 
 		modelCatalogBaseURL := modelCatalog.ServerAddress
