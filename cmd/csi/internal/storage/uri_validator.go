@@ -17,6 +17,7 @@ var blockedHosts = []string{
 	"169.254.169.254",
 	"fd00:ec2::254",
 	"metadata.google.internal",
+	"metadata.goog",
 }
 
 type URIValidator struct {
@@ -72,6 +73,8 @@ func isBlockedHost(host string) bool {
 		hostname = h
 	}
 	hostname = strings.TrimPrefix(strings.TrimSuffix(hostname, "]"), "[")
+	hostname = strings.TrimSuffix(hostname, ".")
+	hostname = strings.ToLower(hostname)
 
 	for _, blocked := range blockedHosts {
 		if hostname == blocked {
