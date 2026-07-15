@@ -3894,7 +3894,9 @@ func GetAgentArtifactsMock(agentID string) map[string][]models.AgentArtifact {
 		"1": {
 			{
 				ArtifactType:             "template-artifact",
-				Content:                  stringToPointer(`{"name":"code-review-agent","framework":"langgraph","env":[{"name":"GITHUB_TOKEN","required":true},{"name":"OPENAI_API_KEY","required":true}]}`),
+				ID:                       stringToPointer("101"),
+				Name:                     stringToPointer("sample_agents:code-review-agent:agent.yaml"),
+				Content:                  stringToPointer("name: code-review-agent\ndisplayName: \"Code Review Agent\"\nframework: langgraph\ndescription: \"An intelligent code review agent that analyzes pull requests.\"\nenv:\n  required:\n    - GITHUB_TOKEN\n    - OPENAI_API_KEY\n  optional:\n    - LOG_LEVEL\n"),
 				CreateTimeSinceEpoch:     &createTime,
 				LastUpdateTimeSinceEpoch: &updateTime,
 			},
@@ -3902,7 +3904,9 @@ func GetAgentArtifactsMock(agentID string) map[string][]models.AgentArtifact {
 		"2": {
 			{
 				ArtifactType:             "template-artifact",
-				Content:                  stringToPointer(`{"name":"research-assistant","framework":"crewai","env":[{"name":"SEMANTIC_SCHOLAR_API_KEY","required":true},{"name":"OPENAI_API_KEY","required":true}]}`),
+				ID:                       stringToPointer("102"),
+				Name:                     stringToPointer("sample_agents:research-assistant:agent.yaml"),
+				Content:                  stringToPointer("name: research-assistant\ndisplayName: \"Research Assistant\"\nframework: crewai\ndescription: \"A research assistant agent that searches academic papers.\"\nenv:\n  required:\n    - SEMANTIC_SCHOLAR_API_KEY\n    - OPENAI_API_KEY\n  optional:\n    - ARXIV_RATE_LIMIT\n"),
 				CreateTimeSinceEpoch:     &createTime,
 				LastUpdateTimeSinceEpoch: &updateTime,
 			},
@@ -3910,7 +3914,9 @@ func GetAgentArtifactsMock(agentID string) map[string][]models.AgentArtifact {
 		"5": {
 			{
 				ArtifactType:             "template-artifact",
-				Content:                  stringToPointer(`{"name":"websearch-agent","framework":"crewai","env":[{"name":"OPENAI_API_KEY","required":true}]}`),
+				ID:                       stringToPointer("105"),
+				Name:                     stringToPointer("sample_agents:websearch-agent:agent.yaml"),
+				Content:                  stringToPointer("name: websearch-agent\ndisplayName: \"Websearch Agent\"\nframework: crewai\ndescription: \"Web search agent built with CrewAI.\"\nenv:\n  required:\n    - OPENAI_API_KEY\n"),
 				CreateTimeSinceEpoch:     &createTime,
 				LastUpdateTimeSinceEpoch: &updateTime,
 			},

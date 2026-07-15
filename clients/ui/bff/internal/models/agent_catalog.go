@@ -5,6 +5,8 @@ import "github.com/kubeflow/hub/pkg/openapi"
 type AgentImageArtifact struct {
 	ArtifactType             string  `json:"artifactType"`
 	URI                      string  `json:"uri"`
+	ID                       *string `json:"id,omitempty"`
+	Name                     *string `json:"name,omitempty"`
 	CreateTimeSinceEpoch     *string `json:"createTimeSinceEpoch,omitempty"`
 	LastUpdateTimeSinceEpoch *string `json:"lastUpdateTimeSinceEpoch,omitempty"`
 }
@@ -12,6 +14,8 @@ type AgentImageArtifact struct {
 type AgentTemplateArtifact struct {
 	ArtifactType             string  `json:"artifactType"`
 	Content                  string  `json:"content"`
+	ID                       *string `json:"id,omitempty"`
+	Name                     *string `json:"name,omitempty"`
 	CreateTimeSinceEpoch     *string `json:"createTimeSinceEpoch,omitempty"`
 	LastUpdateTimeSinceEpoch *string `json:"lastUpdateTimeSinceEpoch,omitempty"`
 }
@@ -20,6 +24,8 @@ type AgentArtifact struct {
 	ArtifactType             string  `json:"artifactType"`
 	URI                      *string `json:"uri,omitempty"`
 	Content                  *string `json:"content,omitempty"`
+	ID                       *string `json:"id,omitempty"`
+	Name                     *string `json:"name,omitempty"`
 	CreateTimeSinceEpoch     *string `json:"createTimeSinceEpoch,omitempty"`
 	LastUpdateTimeSinceEpoch *string `json:"lastUpdateTimeSinceEpoch,omitempty"`
 }
