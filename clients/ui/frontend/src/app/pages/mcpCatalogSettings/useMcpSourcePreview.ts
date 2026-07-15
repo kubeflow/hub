@@ -96,6 +96,7 @@ export const useMcpSourcePreview = ({
       excludedServers: config.excludedServers,
       properties: {
         yaml: config.yaml,
+        yamlCatalogPath: config.yamlCatalogPath,
       },
     };
   }, [formData, existingSourceConfig]);
