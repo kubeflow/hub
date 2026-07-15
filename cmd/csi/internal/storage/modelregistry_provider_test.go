@@ -13,7 +13,8 @@ func TestParseModelVersion(t *testing.T) {
 	client := openapi.NewAPIClient(cfg)
 
 	provider := &ModelRegistryProvider{
-		Client: client,
+		Client:       client,
+		URIValidator: NewURIValidator(nil),
 	}
 
 	tests := []struct {
@@ -114,6 +115,72 @@ func TestParseModelVersion(t *testing.T) {
 					assert.NotNil(t, version)
 					assert.Equal(t, *tt.expectedVersion, *version)
 				}
+			}
+		})
+	}
+}
+
+func TestExtractProtocol(t *testing.T) {
+	provider := &ModelRegistryProvider{}
+
+	tests := []struct {
+		name        string
+		storageURI  string
+		expected    string
+		expectError bool
+		expectedErr error
+	}{
+		{
+			name:       "s3 protocol",
+			storageURI: "s3://bucket/key",
+			expected:   "s3://",
+		},
+		{
+			name:       "gs protocol",
+			storageURI: "gs://bucket/key",
+			expected:   "gs://",
+		},
+		{
+			name:       "https protocol",
+			storageURI: "https://example.com/model",
+			expected:   "https://",
+		},
+		{
+			name:       "http protocol",
+			storageURI: "http://example.com/model",
+			expected:   "http://",
+		},
+		{
+			name:        "empty string",
+			storageURI:  "",
+			expectError: true,
+			expectedErr: ErrNoStorageURI,
+		},
+		{
+			name:        "unsupported protocol",
+			storageURI:  "ftp://example.com/model",
+			expectError: true,
+			expectedErr: ErrProtocolNotSupported,
+		},
+		{
+			name:        "no protocol",
+			storageURI:  "just-a-string",
+			expectError: true,
+			expectedErr: ErrNoProtocolInSTorageURI,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			protocol, err := provider.extractProtocol(tt.storageURI)
+			if tt.expectError {
+				assert.Error(t, err)
+				if tt.expectedErr != nil {
+					assert.ErrorIs(t, err, tt.expectedErr)
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, string(protocol))
 			}
 		})
 	}

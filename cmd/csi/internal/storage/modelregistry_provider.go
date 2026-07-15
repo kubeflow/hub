@@ -28,14 +28,16 @@ var (
 )
 
 type ModelRegistryProvider struct {
-	Client    *openapi.APIClient
-	Providers map[kserve.Protocol]kserve.Provider
+	Client       *openapi.APIClient
+	Providers    map[kserve.Protocol]kserve.Provider
+	URIValidator *URIValidator
 }
 
-func NewModelRegistryProvider(client *openapi.APIClient) (*ModelRegistryProvider, error) {
+func NewModelRegistryProvider(client *openapi.APIClient, allowedURIPrefixes []string) (*ModelRegistryProvider, error) {
 	return &ModelRegistryProvider{
-		Client:    client,
-		Providers: map[kserve.Protocol]kserve.Provider{},
+		Client:       client,
+		Providers:    map[kserve.Protocol]kserve.Provider{},
+		URIValidator: NewURIValidator(allowedURIPrefixes),
 	}, nil
 }
 
@@ -103,6 +105,11 @@ func (p *ModelRegistryProvider) DownloadModel(modelDir string, modelName string,
 	protocol, err := p.extractProtocol(*modelArtifact.Uri)
 	if err != nil {
 		return err
+	}
+
+	log.Printf("Validating artifact URI against allowlist: %s", safeString(modelArtifact.Uri))
+	if err := p.URIValidator.Validate(*modelArtifact.Uri); err != nil {
+		return fmt.Errorf("artifact URI validation failed: %w", err)
 	}
 
 	log.Printf("Getting KServe provider for protocol: %s", protocol)
