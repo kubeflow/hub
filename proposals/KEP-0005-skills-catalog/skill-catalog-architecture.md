@@ -117,44 +117,20 @@ Custom metadata lives in the source files and is stamped at sync; it is never st
 
 The skill detail page renders all three with environment-correct, copy-paste-ready URLs.
 
-## 8. Agent Delivery - Sparse Checkout Assembly
-
-10 skills out of a 2000-skill catalog transfer ~0.5% of the data: one init container, one shared volume, seconds at pod start. Identical in Part II; only fetch URLs differ.
-
-```mermaid
-sequenceDiagram
-    participant UI as Agent-creation UI / operator
-    participant CAT as Catalog API
-    participant ASM as skill-assembler (init container)
-    participant GIT as Git source
-    participant POD as Agent container
-    UI->>CAT: browse / select skills
-    CAT-->>UI: identities (repository, path, ref) + fetchUrl
-    UI->>ASM: config (repository, path, ref, fetchUrl, output layout)
-    loop each unique repo
-        ASM->>GIT: shallow blobless sparse clone, sparse-checkout set paths, pinned ref
-        ASM->>ASM: copy into layout (flat / .agents/skills / .claude/skills / custom)
-    end
-    ASM->>ASM: write /output/.skill-manifest.yaml (repository, path, name, resolvedRef)
-    ASM-->>POD: shared emptyDir ready, harness loads skills
-```
-
-Any requested skill missing means the init container fails loudly (never half-assembled). The manifest answers "which skill versions is this agent running" from the pod alone, in canonical terms.
-
 ---
 
 # Part II - Optional Disconnected Support (Self-Serving Skills-Content Image)
 
-> Optional: deploy only when the cluster cannot reach the source repos (air-gapped/disconnected); not part of the upstream Hub proposal. The air gap changes one thing: both planes need an in-cluster git server. The **skills-content image serves itself**: it carries the bare repo clones and a built-in smart-HTTP git server entrypoint, so one Deployment covers both planes (Hub resolves repos on it, the assembler checks out of it), preserving the no-drift invariant. Hub's only delta is configuration (the disconnected source-file variant + `skill_content_mirror`).
+> Optional: deploy only when the cluster cannot reach the source repos (air-gapped/disconnected); The air gap changes one thing: both planes need an in-cluster git server. The **skills-content image serves itself**: it carries the bare repo clones and a built-in smart-HTTP git server entrypoint, so one Deployment covers both planes (Hub resolves repos on it, the assembler checks out of it), preserving the no-drift invariant. Hub's only delta is configuration (the disconnected source-file variant + `skill_content_mirror`).
 
-## 9. Content Pipeline (model-metadata-collection)
+## 9. Content Pipeline
 
-m-m-c owns the **default source files** (the same role it plays for models/MCP/agents) and builds the **skills-content image**. No SKILL.md parsing here. Two artifacts, deliberately separate:
+A separate pipeline owns the **default source files from git repos** and builds a **skills-content image** that contains all the different skills repos.
 
-- **Source files** (small) ride in the existing shared data image, pulled by every deployment.
-- **Bare repo clones + the git server** go in a separate immutable `skills-content` image, pulled only in disconnected deployments. Its entrypoint is `skills-git-server`, a small stdlib-only Go binary (in m-m-c) that serves `/content/repos` over git's smart HTTP protocol via `git http-backend`. Run it and it is the git server; mount/copy it and it is data.
+- **Source files** these are same YAML configuration files from Phase I the define metadata and git repo locations about the skills.
+- **Bare repo clones + the git server** go in a separate immutable `skills-content` image, pulled only in disconnected deployments. Its entrypoint is `skills-git-server`, a small stdlib-only Go binary that serves `/content/repos` over git's smart HTTP protocol via `git http-backend`. Run it and it is the git server; mount/copy it and it is data.
 
-The `{org}/{repo}` clone layout is load-bearing: it makes the canonical-to-mirror rewrite (diagram 5) deterministic, and it maps one-to-one to the served URLs (`/{org}/{repo}.git`).
+Clones keep their upstream {org}/{repo} names, so everything lines up by construction: the mirror URL is just the canonical URL with its host swapped (github.com/acme/skills.git → {mirrorBase}/acme/skills.git), and the server serves each repo at that same path (/acme/skills.git → /content/repos/acme/skills.git). No lookup tables anywhere, and the org prefix keeps two repos with the same name from colliding.
 
 ```mermaid
 flowchart LR

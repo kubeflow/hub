@@ -8,7 +8,7 @@ Skill sources are git repositories, listed in a YAML source file (ConfigMap-moun
 
 ## Motivation
 
-Agent skills have an open specification, growing public repositories, and installation tooling (`npx skills add`, Claude Code marketplaces). Organizations need what Hub already provides for models, MCP servers, and agents: a curated, filterable catalog with provenance and a governed acquisition path. Skills complete the catalog family.
+Agent skills have an open specification, growing public repositories, and installation tooling (`npx skills add`, Claude Code marketplaces). Organizations need what Hub already provides for models, MCP servers, and agents: a curated, filterable catalog with provenance and a governed acquisition path. Skills extend the catalog family.
 
 ### Goals
 
@@ -56,7 +56,7 @@ repositories:
     skillOverrides: [{name: deploy, category: SRE}]
 ```
 
-At sync, the plugin reads each listed repository at each listed ref directly (a temporary shallow clone used only for parsing, then discarded), finds and parses `SKILL.md` files per the specification, and rebuilds the index. A skill's `version` is the ref, with the resolved commit SHA recorded. Removed skills, refs, repos, or sources are cleaned up.
+At sync, the plugin reads each listed repository at each listed ref directly (a temporary shallow clone used only for parsing, then discarded), finds and parses `SKILL.md` files per the specification, and rebuilds the index. A skill's `version` is the ref, with the resolved commit SHA recorded. Removed skills, refs, repos, or sources are cleaned up. Capability to pull from private git repositories with safe credential configuration will be supported.
 
 ### 3. Custom metadata
 
@@ -69,11 +69,11 @@ Permanent identity is `(repository, path)` - the upstream repo URL plus the skil
 ### 5. API surface
 
 ```
-GET  /skills                    # name, q, source, sourceLabel, filterQuery, paging
+GET  /skills    # name, q, source, sourceLabel, filterQuery, paging
 GET  /skills/{id}
 GET  /skills/filter_options
-GET  /marketplace.json
-POST .../sources/preview        # existing endpoint, assetType: skills
+GET  /claude/marketplace.json
+POST .../sources/preview  # existing endpoint, assetType: skills
 ```
 
 The `Skill` resource carries the SKILL.md fields (including the body as `readme`), the identity (`repository`, `path`, `version`, `resolvedCommit`), and the catalog metadata (tier, provider, category, labels, supporting-file paths). Supporting-file contents are not stored - they are linked to the repo.
