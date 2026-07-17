@@ -10,8 +10,11 @@ const AgentsCatalogRoutes: React.FC = () => (
     <Routes>
       <Route path="/*" element={<AgentsCatalogCoreLoader />}>
         <Route index element={<AgentsCatalog />} />
-        <Route path=":agentId" element={<Navigate to="overview" replace />} />
-        <Route path=":agentId/overview" element={<AgentDetailsPage />} />
+        <Route path=":agentId">
+          <Route index element={<Navigate to="overview" replace />} />
+          <Route path="overview" element={<AgentDetailsPage />} />
+          <Route path="*" element={<Navigate to="." />} />
+        </Route>
         <Route path="*" element={<Navigate to="." />} />
       </Route>
     </Routes>

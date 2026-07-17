@@ -217,7 +217,8 @@ describe('Agents Catalog Gallery', () => {
     initAgentsCatalogIntercepts({ agentsPerCategory: 1 });
     agentsCatalog.visit();
     agentsCatalog.findCardDetailLink('agent_templates-agent-1').click();
-    cy.url().should('include', '/agents-catalog/');
+    cy.url().should('include', '/agents-catalog/agent_templates-agent-1/overview');
+    cy.findByTestId('app-page-title').should('exist');
   });
 
   it('should display labels on agent cards with mapped display names', () => {

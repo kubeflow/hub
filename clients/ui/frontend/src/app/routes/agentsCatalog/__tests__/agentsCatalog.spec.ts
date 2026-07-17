@@ -9,9 +9,9 @@ describe('agentsCatalog routes', () => {
   });
 
   it('should build encoded agent details path', () => {
-    expect(getAgentsCatalogDetailsRoute('my-agent')).toBe('/agents-catalog/my-agent');
+    expect(getAgentsCatalogDetailsRoute('my-agent')).toBe('/agents-catalog/my-agent/overview');
     expect(getAgentsCatalogDetailsRoute('agent/with/slashes')).toBe(
-      '/agents-catalog/agent%2Fwith%2Fslashes',
+      '/agents-catalog/agent%2Fwith%2Fslashes/overview',
     );
   });
 });
