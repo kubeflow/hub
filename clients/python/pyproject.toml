@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "model-registry"
-version = "0.3.12"
+version = "0.3.13"
 description = "Client for Kubeflow Model Registry"
 authors = ["Isabella Basso do Amaral <idoamara@redhat.com>"]
 license = "Apache-2.0"
