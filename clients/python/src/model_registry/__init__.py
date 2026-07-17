@@ -1,6 +1,6 @@
 """Main package for the Kubeflow model registry."""
 
-__version__ = "0.3.12"
+__version__ = "0.3.14"
 
 from ._client import ModelRegistry
 
