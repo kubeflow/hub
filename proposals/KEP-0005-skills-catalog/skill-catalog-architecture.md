@@ -14,7 +14,7 @@
 ```mermaid
 flowchart TB
     AUTHOR["Skill authors<br/>SKILL.md in git repos"] --> GIT[("Git repos<br/>GitHub / GitLab / any smart-HTTP server")]
-    ADMIN["Admins<br/>edit source files (repo lists, refs,<br/>tier/provider/category) via kubectl / GitOps"] --> HUB["Kubeflow Hub skill plugin<br/>resolve, parse, index, serve"]
+    ADMIN["Admins<br/>manage source files (repo lists, refs,<br/>tier/provider/category) via Admin UI / GitOps"] --> HUB["Kubeflow Hub skill plugin<br/>resolve, parse, index, serve"]
     GIT -->|"read at sync per ref<br/>temp shallow clone, parse-only"| HUB
     DEV["Agent developer"] -->|"browse / select"| HUB
     HUB -->|"API: skill selection"| AGENT["Agent pods<br/>skill-assembler init container"]
@@ -58,7 +58,7 @@ flowchart TB
     end
     LOADER --> RES --> PARSER --> DB[("shared GORM DB<br/>skill index")]
     SVC --> DB
-    UI["Catalog UI<br/>gallery, detail, read-only settings"] --> BFF["BFF"] --> SVC & MKT
+    UI["Catalog UI<br/>gallery, detail, settings (source management)", and add the write edge"] --> BFF["BFF"] --> SVC & MKT
 ```
 
 ## 4. Sync Flow - Rebuilding the Ephemeral Index
@@ -98,12 +98,12 @@ flowchart TB
 
 ## 6. Custom Metadata - Who Sets Tier / Provider / Category
 
-Custom metadata lives in the source files and is stamped at sync; it is never stored in the wipeable index and never read from repo content. There is no API write path: sources change by editing the mounted files. `trustTier` is simply a label (`platformProvided`, `partnerVerified`, `organizationApproved`, or `communityContributed`) shown as a badge and filterable, with no ordering or special semantics.
+Custom metadata lives in the source files and is stamped at sync; it is never stored in the wipeable index and never read from repo content. Sources change by editing the mounted files directly (kubectl / GitOps) or through the admin settings page, whose edits persist to a ConfigMap-backed source file (hot-reloaded); immutably mounted files render read-only in the UI. `trustTier` is simply a label (`platformProvided`, `partnerVerified`, `organizationApproved`, or `communityContributed`) shown as a badge and filterable, with no ordering or special semantics.
 
 | Entry path | Who | Sets |
 |---|---|---|
-| Platform-shipped source files (PR-reviewed; Part II: authored in m-m-c) | Platform team | All fields |
-| Deployment-edited source files (kubectl / GitOps) | Cluster admins | All fields; admin = whoever holds ConfigMap access |
+| Platform-shipped source files (PR-reviewed; Part II) | Platform team | All fields |
+| Deployment-managed source files (admin settings UI or kubectl / GitOps) | Catalog admins | All fields; UI edits persist to a ConfigMap-backed file" |
 | `skillOverrides` on a repo entry | Either | Per-skill category/labels |
 | SKILL.md `metadata` frontmatter | Skill authors | `customProperties` only, never tier/provider |
 
@@ -178,7 +178,7 @@ One canonical identity, three URLs by audience: in-cluster consumers use the Ser
 | Git is the only durable store of content and source of metadata | I | Postgres droppable/rebuildable anytime; repos never stored in Hub |
 | One parser (Hub), fed by source files | I | Spec changes implemented once; metadata refreshes from repos at every sync |
 | Canonical identity `(repository, path)` + ref-based versions | I | Audit/pinning comparable across rebuilds, deployments, environments |
-| Custom metadata = source files; no API write path | I | Labels are exactly as trustworthy as ConfigMap RBAC |
+| "Custom metadata = source files; UI edits persist to the same files | One durable format regardless of entry path; labels as trustworthy as admin/ConfigMap access |
 | Catalog never writes to sources | I | One-way, source-authoritative |
 | Assembler is harness-agnostic (layout config) | I | New harnesses need a layout entry, not a delivery system |
 | Disconnected support = the self-serving content image + configuration, zero plugin code | II | Upstream carries no deployment concerns; the gap is crossed by an immutable image that is also the server |

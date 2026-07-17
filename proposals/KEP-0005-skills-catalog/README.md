@@ -13,17 +13,16 @@ Agent skills have an open specification, growing public repositories, and instal
 ### Goals
 
 - `skill` plugin; API base `/api/skill_catalog/v1alpha1`.
-- A `git` source type - named per the existing convention of naming source types for what they read (`yaml`, `hf`) - configured via a YAML file listing repositories; SKILL.md parsed per the specification at sync.
+- A `git-skills-plugin` source type - named per the existing convention of naming source types for what they read (`yaml`, `hf`) - configured via a YAML file listing repositories; SKILL.md parsed per the specification at sync.
 - Versioned entries: repo entries may list refs (tags, releases, branches, commits); each ref yields its own catalog entries, with the version shown in the UI.
 - Custom metadata (trust tier, provider, category, labels) assigned in the source file; per-skill overrides; include/exclude filtering.
-- Catalog UI: gallery, detail with rendered SKILL.md, filters, install instructions; a read-only admin settings page (source status, preview, manual sync).
+- Catalog UI: gallery, detail with rendered SKILL.md, filters, install instructions; an admin settings page that manages sources (add/modify/delete source files and repo entries, with include/exclude preview before save) alongside sync status and manual sync.
 - `marketplace.json` endpoint, with optional URL rewriting for deployments fronting repos with an internal git mirror.
 
 ### Non-Goals
 
 - Skill delivery into agent pods - consumes this API; needs no plugin changes.
 - Mirroring / air-gapped distribution - deployment packaging; reading a mirror instead of GitHub is a config change.
-- Writable source management (API or UI) - sources are managed by editing the mounted files; configuration access is the trust boundary.
 - Security scanning of skill content - deferred.
 - Skill authoring/editing - read-only, one-way, source-authoritative.
 - Usage analytics - deferred.
@@ -37,7 +36,7 @@ A standard Hub catalog plugin, following the existing plugin architecture.
 
 ### 2. Skill sources
 
-Registered like any other catalog source, as `type: git`; the source's configured file lists git repositories and their catalog metadata:
+Registered like any other catalog source, as `type: git-skills-plugin`; the source's configured file lists git repositories and their catalog metadata:
 
 ```yaml
 source: Community Skills
@@ -58,9 +57,11 @@ repositories:
 
 At sync, the plugin reads each listed repository at each listed ref directly (a temporary shallow clone used only for parsing, then discarded), finds and parses `SKILL.md` files per the specification, and rebuilds the index. A skill's `version` is the ref, with the resolved commit SHA recorded. Removed skills, refs, repos, or sources are cleaned up. Capability to pull from private git repositories with safe credential configuration will be supported.
 
+ConfigMap-backed source file picked up by hot-reload; immutably mounted files render read-only in the UI.
+
 ### 3. Custom metadata
 
-Trust tier, provider, category, and labels come from the source file and are applied to its skills at sync - never read from repo content. `trustTier` is simply a label - one of `platformProvided`, `partnerVerified`, `organizationApproved`, `communityContributed` (downstream products may map display names) - shown as a badge and filterable, with no ordering or special semantics. Sources are only manageable by editing the mounted files.
+Trust tier, provider, category, and labels come from the source file and are applied to its skills at sync - never read from repo content. `trustTier` is simply a label - one of `platformProvided`, `partnerVerified`, `organizationApproved`, `communityContributed` (downstream products may map display names) - shown as a badge and filterable, with no ordering or special semantics.
 
 ### 4. Skill identity
 
