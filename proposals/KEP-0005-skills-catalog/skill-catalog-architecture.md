@@ -130,7 +130,7 @@ A separate pipeline owns the **default source files from git repositories** and 
 - **Source files** are the same YAML configuration files from Part I - the ones that define each skill's metadata and git repository location.
 - **The repository copies plus the git server** go into a separate, immutable `skills-content` image, pulled only in disconnected deployments. Its entrypoint is `skills-git-server`, a small Go binary (standard library only) that serves `/content/repos` over git's HTTP protocol via `git http-backend`. Run the image and it is a git server; mount or copy from it and it is just data.
 
-The copies keep their upstream `{org}/{repo}` names, so everything lines up automatically: the mirror URL is just the canonical URL with its host swapped (github.com/acme/skills.git → {mirrorBase}/acme/skills.git), and the server serves each repository at that same path (/acme/skills.git → /content/repos/acme/skills.git). There are no lookup tables anywhere, and the org prefix keeps two repositories with the same name from colliding.
+The clones keep their upstream `{org}/{repo}` names, so everything lines up automatically: the mirror URL is just the canonical URL with its host swapped (github.com/acme/skills.git → {mirrorBase}/acme/skills.git), and the server serves each repository at that same path (/acme/skills.git → /content/repos/acme/skills.git). There are no lookup tables anywhere, and the org prefix keeps two repositories with the same name from colliding.
 
 ```mermaid
 flowchart LR
@@ -147,7 +147,7 @@ flowchart LR
 
 ## 10. Serving the Mirror - Stateless by Construction
 
-No persistent volume, no database, no loader Job, no admin credentials: the running image **is** the content it serves. To update the content, you roll the Deployment to a new image tag. The server is read-only by design: anonymous push is disabled in `git http-backend` by default, and the container filesystem is an immutable image layer. The attack surface is small - a minimal UBI base plus `git-core` plus a standard-library-only Go wrapper - with no web UI, auth system, or persistent state to attack.
+No PVC, no database, no loader Job, no admin credentials: the running image **is** the content it serves. To update the content, you roll the Deployment to a new image tag. The server is read-only by design: anonymous push is disabled in `git http-backend` by default, and the container filesystem is an immutable image layer. The attack surface is small - a minimal UBI base plus `git-core` plus a standard-library-only Go wrapper - with no web UI, auth system, or persistent state to attack.
 
 ```mermaid
 flowchart TB
@@ -165,7 +165,7 @@ flowchart TB
     SRV -->|"npx / git clone via Route"| LAPTOP
 ```
 
-One canonical identity, three URLs depending on the audience: in-cluster consumers use the Service URL, laptops use the Route URL, and all records (the assembly manifest and audit logs) keep the canonical upstream URL, so they stay comparable with connected deployments. Git's HTTP protocol fully supports the operations the system needs: shallow clones, partial clones, sparse checkout, and npx.
+One canonical identity, three URLs depending on the audience: in-cluster consumers use the Service URL, laptops use the Route URL, and all records (the assembly manifest and audit logs) keep the canonical upstream URL, so they stay comparable with connected deployments. Smart HTTP fully supports the operations the system needs: shallow clones, partial clones, sparse checkout, and npx.
 
 *Note:* because the Hub plugin only ever sees URLs, any git host the cluster can reach (an internal GitLab, Gitea, and so on) can serve as the mirror instead. The self-serving image is simply the default when nothing else is available. Trade-offs accepted: no web UI for browsing repositories (the catalog UI handles skill browsing) and no way to push (the mirror is read-only by design).
 
