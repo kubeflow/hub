@@ -1,9 +1,9 @@
 # Skill Catalog - High-Level Architecture
 
-- **Part I - Core (upstream Kubeflow Hub, connected model).** Everything in the Hub KEP; self-sufficient wherever git sources are reachable.
-- **Part II - Optional disconnected support.** Default source files + a self-serving skills-content image (built-in smart-HTTP git server), deployed only when the cluster cannot reach the source repos. Adds **zero code** to the Hub plugin: disconnected support is configuration plus one optional Deployment.
+- **Part I - Core (upstream Kubeflow Hub, connected setup).** Everything in the Hub KEP. It works on its own anywhere the git sources can be reached.
+- **Part II - Optional disconnected support.** A set of default source files plus a self-serving skills-content image (a container with a built-in git server). This is deployed only when the cluster cannot reach the source repositories. It adds **no code** to the Hub plugin: disconnected support is just configuration plus one optional Deployment.
 
-**Governing principle:** git repos are the only place skills live; everything else is a view. Postgres is an ephemeral cache rebuilt by reading git (temporary shallow clones for parsing only; repos are never stored); the agent assembler checks skills out of the same repos the catalog reads. One SKILL.md parser exists (in Hub): Hub is the only component needing skill *metadata*; every other consumer takes *content* directly from git.
+**Governing principle:** git repositories are the only place skills actually live; everything else is a view onto them. Postgres is a temporary cache, rebuilt by reading git (temporary lightweight copies for parsing only; the repositories are never stored). The agent assembler checks skills out of the same repositories the catalog reads. There is exactly one SKILL.md parser, and it lives in Hub: Hub is the only component that needs skill *metadata*, while every other consumer takes skill *content* directly from git.
 
 ---
 
@@ -15,7 +15,7 @@
 flowchart TB
     AUTHOR["Skill authors<br/>SKILL.md in git repos"] --> GIT[("Git repos<br/>GitHub / GitLab / any smart-HTTP server")]
     ADMIN["Admins<br/>manage source files (repo lists, refs,<br/>tier/provider/category) via Admin UI / GitOps"] --> HUB["Kubeflow Hub skill plugin<br/>resolve, parse, index, serve"]
-    GIT -->|"read at sync per ref<br/>temp shallow clone, parse-only"| HUB
+    GIT -->|"read at sync per ref<br/>temporary copy, parse-only"| HUB
     DEV["Agent developer"] -->|"browse / select"| HUB
     HUB -->|"API: skill selection"| AGENT["Agent pods<br/>skill-assembler init container"]
     GIT -->|"sparse checkout"| AGENT
@@ -25,13 +25,13 @@ flowchart TB
 
 ## 2. Two Planes, One Meeting Point
 
-Metadata (browse/choose) and content (obtain/run) travel separately and meet only at the canonical identity `(repository, path)`. Both planes read the same repos, so they can never drift.
+Metadata (for browsing and choosing) and content (for obtaining and running) travel separately, and meet only at the canonical identity `(repository, path)`. Both planes read the same repositories, so they can never drift apart.
 
 ```mermaid
 flowchart LR
     REPOS[("Git repos<br/>single source of truth")]
     subgraph meta["Metadata plane"]
-        SCAN["resolve, scan, parse<br/>temp clone, discarded"] --> PG[("Postgres<br/>ephemeral, rebuilt each sync")] --> API["REST API, UI, marketplace.json"]
+        SCAN["resolve, scan, parse<br/>temporary copy, discarded"] --> PG[("Postgres<br/>temporary, rebuilt each sync")] --> API["REST API, UI, marketplace.json"]
     end
     subgraph content["Content plane"]
         SPARSE["git sparse checkout / clone"] --> CONS["assembler, npx, manual copy"]
@@ -43,25 +43,25 @@ flowchart LR
 
 ## 3. Hub Skill Plugin - Components
 
-A new source type `git`, named per Hub's convention of naming source types for what they read (`yaml`, `hf`). Its configured file lists git repositories, refs, and custom metadata, not pre-parsed skill data.
+A new source type `git`, named after what it reads, following Hub's convention (`yaml`, `hf`). Its configured file lists git repositories, refs, and custom metadata - not pre-parsed skill data.
 
 ```mermaid
 flowchart TB
     CFG[/"catalog-sources.yaml, skill_catalogs section<br/>type git, yamlCatalogPath, hot-reloaded"/] --> LOADER
     SF[/"source files (data image or ConfigMap)<br/>repos + refs + tier, provider, category, labels"/] --> LOADER
     subgraph plugin["skill plugin"]
-        LOADER["loader<br/>leader-elected sync, orphans, source status"]
-        RES["repo resolver<br/>temp shallow clone per repo and ref<br/>parse-only, discarded after indexing"]
+        LOADER["loader<br/>sync (single leader), stale-entry cleanup, source status"]
+        RES["repo resolver<br/>temporary copy per repo and ref<br/>parse-only, deleted after indexing"]
         PARSER["SKILL.md parser<br/>THE one parser"]
         SVC["service<br/>list, get, filterQuery"]
         MKT["marketplace.json renderer<br/>optional mirror URL rewrite"]
     end
     LOADER --> RES --> PARSER --> DB[("shared GORM DB<br/>skill index")]
     SVC --> DB
-    UI["Catalog UI<br/>gallery, detail, settings (source management)", and add the write edge"] --> BFF["BFF"] --> SVC & MKT
+    UI["Catalog UI<br/>gallery, detail, settings (source management)"] -->|"read + write"| BFF["BFF"] --> SVC & MKT
 ```
 
-## 4. Sync Flow - Rebuilding the Ephemeral Index
+## 4. Sync Flow - Rebuilding the Temporary Index
 
 ```mermaid
 sequenceDiagram
@@ -70,15 +70,15 @@ sequenceDiagram
     participant R as resolver + parser
     participant DB as Postgres
     C->>L: sync
-    L->>L: remove skills of deleted sources
+    L->>L: remove skills from deleted sources
     loop each source file, each repo and ref
         L->>R: resolve(repo, ref)
-        R->>R: temp shallow clone at ref (Secret auth, limits)
-        R->>R: scan for SKILL.md, parse + validate (lenient)
+        R->>R: make a temporary copy at ref (Secret auth, limits)
+        R->>R: find SKILL.md, parse + validate (lenient)
         R->>R: version = ref, resolvedCommit = SHA
-        R->>R: stamp custom metadata (tier, provider, category, labels, overrides)
-        R->>DB: upsert by (repository, path, version), delete orphans
-        R->>R: discard temp clone
+        R->>R: apply custom metadata (tier, provider, category, labels, overrides)
+        R->>DB: insert or update by (repository, path, version), remove stale entries
+        R->>R: delete the temporary copy
         L->>DB: status available / partially-available / error
     end
     L->>DB: refresh filter options
@@ -86,7 +86,7 @@ sequenceDiagram
 
 ## 5. Identity - Canonical vs Fetch URL
 
-Internal IDs are not durable (the index is a cache); the canonical identity is the only permanent reference, unchanged even when a deployment reads through a different URL. `version` (the ref) distinguishes entries.
+Internal IDs are not stable, since the index is just a cache. The canonical identity is the only permanent reference, and it stays the same even when a deployment reads through a different URL. `version` (the ref) tells entries apart.
 
 ```mermaid
 flowchart TB
@@ -98,12 +98,12 @@ flowchart TB
 
 ## 6. Custom Metadata - Who Sets Tier / Provider / Category
 
-Custom metadata lives in the source files and is stamped at sync; it is never stored in the wipeable index and never read from repo content. Sources change by editing the mounted files directly (kubectl / GitOps) or through the admin settings page, whose edits persist to a ConfigMap-backed source file (hot-reloaded); immutably mounted files render read-only in the UI. `trustTier` is simply a label (`platformProvided`, `partnerVerified`, `organizationApproved`, or `communityContributed`) shown as a badge and filterable, with no ordering or special semantics.
+Custom metadata lives in the source files and is applied at sync time. It is never kept in the rebuildable index and never read from repository content. Sources are changed either by editing the mounted files directly (kubectl / GitOps) or through the admin settings page, whose edits are saved to a ConfigMap-backed source file (and picked up automatically). Files mounted as read-only appear read-only in the UI. `trustTier` is simply a label (`platformProvided`, `partnerVerified`, `organizationApproved`, or `communityContributed`), shown as a badge and available as a filter, with no ordering or special meaning.
 
 | Entry path | Who | Sets |
 |---|---|---|
 | Platform-shipped source files (PR-reviewed; Part II) | Platform team | All fields |
-| Deployment-managed source files (admin settings UI or kubectl / GitOps) | Catalog admins | All fields; UI edits persist to a ConfigMap-backed file" |
+| Deployment-managed source files (admin settings UI or kubectl / GitOps) | Catalog admins | All fields; UI edits are saved to a ConfigMap-backed file |
 | `skillOverrides` on a repo entry | Either | Per-skill category/labels |
 | SKILL.md `metadata` frontmatter | Skill authors | `customProperties` only, never tier/provider |
 
@@ -121,16 +121,16 @@ The skill detail page renders all three with environment-correct, copy-paste-rea
 
 # Part II - Optional Disconnected Support (Self-Serving Skills-Content Image)
 
-> Optional: deploy only when the cluster cannot reach the source repos (air-gapped/disconnected); The air gap changes one thing: both planes need an in-cluster git server. The **skills-content image serves itself**: it carries the bare repo clones and a built-in smart-HTTP git server entrypoint, so one Deployment covers both planes (Hub resolves repos on it, the assembler checks out of it), preserving the no-drift invariant. Hub's only delta is configuration (the disconnected source-file variant + `skill_content_mirror`).
+> Optional: deploy this only when the cluster cannot reach the source repositories (an air-gapped or disconnected setup). The air gap changes just one thing: both planes now need a git server running inside the cluster. The **skills-content image serves itself**: it carries copies of the repositories together with a built-in git server, so a single Deployment covers both planes (Hub resolves repositories from it, and the assembler checks skills out of it), keeping the no-drift guarantee intact. Hub's only change is configuration (the disconnected variant of the source files, plus `skill_content_mirror`).
 
 ## 9. Content Pipeline
 
-A separate pipeline owns the **default source files from git repos** and builds a **skills-content image** that contains all the different skills repos.
+A separate pipeline owns the **default source files from git repositories** and builds a **skills-content image** that contains copies of all the skills repositories.
 
-- **Source files** these are same YAML configuration files from Phase I the define metadata and git repo locations about the skills.
-- **Bare repo clones + the git server** go in a separate immutable `skills-content` image, pulled only in disconnected deployments. Its entrypoint is `skills-git-server`, a small stdlib-only Go binary that serves `/content/repos` over git's smart HTTP protocol via `git http-backend`. Run it and it is the git server; mount/copy it and it is data.
+- **Source files** are the same YAML configuration files from Part I - the ones that define each skill's metadata and git repository location.
+- **The repository copies plus the git server** go into a separate, immutable `skills-content` image, pulled only in disconnected deployments. Its entrypoint is `skills-git-server`, a small Go binary (standard library only) that serves `/content/repos` over git's HTTP protocol via `git http-backend`. Run the image and it is a git server; mount or copy from it and it is just data.
 
-Clones keep their upstream {org}/{repo} names, so everything lines up by construction: the mirror URL is just the canonical URL with its host swapped (github.com/acme/skills.git → {mirrorBase}/acme/skills.git), and the server serves each repo at that same path (/acme/skills.git → /content/repos/acme/skills.git). No lookup tables anywhere, and the org prefix keeps two repos with the same name from colliding.
+The copies keep their upstream `{org}/{repo}` names, so everything lines up automatically: the mirror URL is just the canonical URL with its host swapped (github.com/acme/skills.git → {mirrorBase}/acme/skills.git), and the server serves each repository at that same path (/acme/skills.git → /content/repos/acme/skills.git). There are no lookup tables anywhere, and the org prefix keeps two repositories with the same name from colliding.
 
 ```mermaid
 flowchart LR
@@ -147,7 +147,7 @@ flowchart LR
 
 ## 10. Serving the Mirror - Stateless by Construction
 
-No PVC, no database, no loader Job, no admin credentials: the running image **is** the served content. Content update = roll the Deployment to the new image tag. The server is read-only by construction: anonymous push is disabled in `git http-backend` by default, and the container filesystem is an immutable image layer. CVE surface is UBI-minimal + `git-core` + a stdlib-only Go wrapper; there is no web UI, auth system, or persistent state to attack.
+No persistent volume, no database, no loader Job, no admin credentials: the running image **is** the content it serves. To update the content, you roll the Deployment to a new image tag. The server is read-only by design: anonymous push is disabled in `git http-backend` by default, and the container filesystem is an immutable image layer. The attack surface is small - a minimal UBI base plus `git-core` plus a standard-library-only Go wrapper - with no web UI, auth system, or persistent state to attack.
 
 ```mermaid
 flowchart TB
@@ -165,9 +165,9 @@ flowchart TB
     SRV -->|"npx / git clone via Route"| LAPTOP
 ```
 
-One canonical identity, three URLs by audience: in-cluster consumers use the Service URL, laptops the Route URL, and all records (assembly manifest, audit) keep the canonical upstream URL, comparable with connected deployments. Smart HTTP fully supports the operations the system needs: shallow clones, blobless/partial clones, sparse checkout, npx.
+One canonical identity, three URLs depending on the audience: in-cluster consumers use the Service URL, laptops use the Route URL, and all records (the assembly manifest and audit logs) keep the canonical upstream URL, so they stay comparable with connected deployments. Git's HTTP protocol fully supports the operations the system needs: shallow clones, partial clones, sparse checkout, and npx.
 
-*Note:* because the Hub plugin only sees URLs, any git hosting reachable from the cluster (an internal GitLab, Gitea, etc.) can serve as the mirror instead; the self-serving image is simply the zero-state default. Trade-off accepted: no repo-browsing web UI (the catalog UI covers skill browsing) and no push path (the mirror is read-only by design).
+*Note:* because the Hub plugin only ever sees URLs, any git host the cluster can reach (an internal GitLab, Gitea, and so on) can serve as the mirror instead. The self-serving image is simply the default when nothing else is available. Trade-offs accepted: no web UI for browsing repositories (the catalog UI handles skill browsing) and no way to push (the mirror is read-only by design).
 
 ---
 
@@ -175,10 +175,10 @@ One canonical identity, three URLs by audience: in-cluster consumers use the Ser
 
 | Invariant | Part | Consequence |
 |---|---|---|
-| Git is the only durable store of content and source of metadata | I | Postgres droppable/rebuildable anytime; repos never stored in Hub |
-| One parser (Hub), fed by source files | I | Spec changes implemented once; metadata refreshes from repos at every sync |
-| Canonical identity `(repository, path)` + ref-based versions | I | Audit/pinning comparable across rebuilds, deployments, environments |
-| "Custom metadata = source files; UI edits persist to the same files | One durable format regardless of entry path; labels as trustworthy as admin/ConfigMap access |
-| Catalog never writes to sources | I | One-way, source-authoritative |
-| Assembler is harness-agnostic (layout config) | I | New harnesses need a layout entry, not a delivery system |
-| Disconnected support = the self-serving content image + configuration, zero plugin code | II | Upstream carries no deployment concerns; the gap is crossed by an immutable image that is also the server |
+| Git is the only lasting store of content and source of metadata | I | Postgres can be dropped and rebuilt anytime; repositories are never stored in Hub |
+| One parser (in Hub), fed by source files | I | Spec changes are implemented once; metadata refreshes from the repositories on every sync |
+| Canonical identity `(repository, path)` plus ref-based versions | I | Audit and pinning stay comparable across rebuilds, deployments, and environments |
+| Custom metadata comes from source files; UI edits are saved back to those same files | I | One durable format no matter how it was entered; labels are as trustworthy as admin/ConfigMap access |
+| The catalog never writes to sources | I | One-way; the source repositories are authoritative |
+| The assembler is harness-agnostic (driven by layout config) | I | New harnesses need only a layout entry, not a whole delivery system |
+| Disconnected support = the self-serving content image plus configuration, with no plugin code | II | Upstream carries no deployment concerns; the gap is crossed by an immutable image that is also the server |
