@@ -2262,23 +2262,23 @@ files = [
 
 [[package]]
 name = "olot"
-version = "0.1.17"
+version = "1.0.0"
 description = "oci layers on top"
 optional = true
-python-versions = "<4.0,>=3.9"
+python-versions = ">=3.10"
 groups = ["main"]
 markers = "extra == \"olot\""
 files = [
-    {file = "olot-0.1.17-py3-none-any.whl", hash = "sha256:32e5251a447f82a1f0a854c5c6642ccfaa99e5a431251e21340f13508fbfb743"},
-    {file = "olot-0.1.17.tar.gz", hash = "sha256:0e55538df2fa4cc386a71338ede415266e60fcc2a19c42bfcf435ba38cf786c4"},
+    {file = "olot-1.0.0-py3-none-any.whl", hash = "sha256:58a7a542496153c59538132b72f76f33d90a9563f88a3adcd8e132a51a679a74"},
+    {file = "olot-1.0.0.tar.gz", hash = "sha256:154fdb82707fdd252c93172c60f1522b241784a32b315cff4601732c53b2900a"},
 ]
 
 [package.dependencies]
-click = ">=8.1.7,<9.0.0"
-pydantic = ">=2.10.3,<3.0.0"
+click = ">=8.1.7,<9"
+pydantic = ">=2.10.3,<3"
 
 [package.extras]
-modelcar-base-image = ["modelcar-base-image (>=0.1.0,<0.2.0)"]
+modelcar-base-image = ["modelcar-base-image (>=0.1.0,<0.2)"]
 oras-py = ["oras (>=0.2.42)"]
 
 [[package]]
@@ -4384,4 +4384,4 @@ signing = ["platformdirs", "rh-model-signing"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.10, < 4.0"
-content-hash = "5e76dabb5dc9ef80d06e0664ac4d24b46ba42826fbe18b3114896b428d7e906c"
+content-hash = "7904e995100b7eb83f20f25da7477475bf8c49f16858163761f406fba4fe0a8b"
