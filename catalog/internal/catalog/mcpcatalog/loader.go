@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"sync"
+	"time"
 
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/golang/glog"
@@ -24,14 +25,6 @@ type MCPPartiallyAvailableError struct {
 func (e *MCPPartiallyAvailableError) Error() string {
 	return fmt.Sprintf("Failed to load some MCP servers: %v", e.FailedServers)
 }
-
-func (e *MCPPartiallyAvailableError) Is(target error) bool {
-	_, ok := target.(*MCPPartiallyAvailableError)
-	return ok
-}
-
-// ErrMCPPartiallyAvailable is used with errors.Is() to check for this error type.
-var ErrMCPPartiallyAvailable error = &MCPPartiallyAvailableError{}
 
 // MCPLoaderEventHandler is called after an MCP server is successfully loaded
 type MCPLoaderEventHandler func(ctx context.Context, record MCPServerProviderRecord) error
@@ -105,22 +98,24 @@ func (ml *MCPLoader) ParseAllConfigs() error {
 // allKnownSourceIDs is the union of model and MCP source IDs, used to prevent
 // cross-contamination when cleaning up shared CatalogSource records.
 // This is called by the unified loader when becoming leader.
+// It returns immediately after launching background goroutines; those goroutines
+// continue watching for file changes until ctx is cancelled.
 func (ml *MCPLoader) PerformLeaderOperations(ctx context.Context, allKnownSourceIDs mapset.Set[string]) error {
 	glog.Info("MCP loader performing leader operations")
 
 	ctx, cancel := context.WithCancel(ctx)
 	ml.setCloser(cancel)
+	// Drain in-flight writes from the previous invocation before running cleanup,
+	// so a concurrent write from an old goroutine cannot re-insert data that
+	// cleanup is about to remove.
+	ml.state.WaitForInflightWrites(30 * time.Second)
 
 	// Get all sources from the collection
 	allSources := ml.Sources.AllSources()
 
-	// Load servers from all sources
-	err := ml.loadAllServers(ctx, allSources, allKnownSourceIDs)
-	if err != nil {
-		return fmt.Errorf("failed to load MCP servers: %w", err)
-	}
+	ml.loadAllServers(ctx, allSources, allKnownSourceIDs)
 
-	glog.Info("MCP loader leader operations complete")
+	glog.Info("MCP loader leader operations launched")
 	return nil
 }
 
@@ -184,11 +179,20 @@ func (ml *MCPLoader) updateSources(path string, config *basecatalog.SourceConfig
 	return ml.Sources.Merge(path, sources)
 }
 
-// loadAllServers loads MCP servers from all configured sources
-func (ml *MCPLoader) loadAllServers(ctx context.Context, sources map[string]basecatalog.MCPSource, allKnownSourceIDs mapset.Set[string]) error {
-	// Track enabled and all source IDs separately for cleanup logic.
+// loadAllServers loads MCP servers from all configured sources.
+// It returns immediately after launching per-source goroutines. Each goroutine
+// continues watching for file changes until ctx is cancelled.
+func (ml *MCPLoader) loadAllServers(ctx context.Context, sources map[string]basecatalog.MCPSource, allKnownSourceIDs mapset.Set[string]) {
+	// First pass: classify sources and handle disabled/unknown types synchronously.
 	enabledSourceIDs := mapset.NewSet[string]()
 	allSourceIDs := mapset.NewSet[string]()
+
+	type providerEntry struct {
+		source   basecatalog.MCPSource
+		provider MCPProvider
+		filter   *ServerFilter
+	}
+	var toLoad []providerEntry
 
 	for _, source := range sources {
 		allSourceIDs.Add(source.ID)
@@ -199,9 +203,6 @@ func (ml *MCPLoader) loadAllServers(ctx context.Context, sources map[string]base
 			continue
 		}
 
-		glog.Infof("Loading MCP servers from source: %s (id: %s)", source.Name, source.ID)
-
-		// Get the provider function for this source type
 		providerFunc, ok := GetMCPProvider(source.Type)
 		if !ok {
 			glog.Warningf("Unknown MCP provider type: %s (source: %s)", source.Type, source.Name)
@@ -209,7 +210,6 @@ func (ml *MCPLoader) loadAllServers(ctx context.Context, sources map[string]base
 			continue
 		}
 
-		// Create the provider
 		provider, err := providerFunc(source)
 		if err != nil {
 			glog.Errorf("Error creating MCP provider for source %s: %v", source.Name, err)
@@ -217,7 +217,6 @@ func (ml *MCPLoader) loadAllServers(ctx context.Context, sources map[string]base
 			continue
 		}
 
-		// Build server name filter from source include/exclude config
 		filter, err := NewServerFilterFromSource(&source)
 		if err != nil {
 			glog.Errorf("Error building server filter for source %s: %v", source.Name, err)
@@ -225,67 +224,110 @@ func (ml *MCPLoader) loadAllServers(ctx context.Context, sources map[string]base
 			continue
 		}
 
-		// Load servers from this provider
-		err = ml.loadServersFromProvider(ctx, source.ID, provider, filter)
-		if err != nil {
-			if errors.Is(err, ErrMCPPartiallyAvailable) {
-				glog.Warningf("Partial error loading servers from source %s: %v", source.Name, err)
-				if ctx.Err() == nil {
-					basecatalog.SaveSourceStatus(ml.services.CatalogSourceRepository, source.ID, basecatalog.SourceStatusPartiallyAvailable, err.Error())
-				}
-				// Still count as active for cleanup purposes (some servers are loaded)
-				enabledSourceIDs.Add(source.ID)
-			} else {
-				glog.Errorf("Error loading servers from source %s: %v", source.Name, err)
-				basecatalog.SaveSourceStatus(ml.services.CatalogSourceRepository, source.ID, basecatalog.SourceStatusError, err.Error())
-			}
-			continue
-		}
-
+		// Mark as enabled before launching goroutines, so removeServersFromMissingSources
+		// does not bulk-delete this source's data before the goroutine has a chance to
+		// load it. If all servers fail, finalizeBatch calls removeOrphanedServersFromSource
+		// which cleans up individual stale entries.
 		enabledSourceIDs.Add(source.ID)
-
-		// Mark source as available if context is still valid
-		if ctx.Err() == nil {
-			basecatalog.SaveSourceStatus(ml.services.CatalogSourceRepository, source.ID, basecatalog.SourceStatusAvailable, "")
-		}
+		toLoad = append(toLoad, providerEntry{source, provider, filter})
 	}
 
-	// Clean up servers from sources that are no longer configured or enabled
-	err := ml.removeServersFromMissingSources(enabledSourceIDs, allSourceIDs, allKnownSourceIDs)
-	if err != nil {
-		return fmt.Errorf("failed to remove servers from missing sources: %w", err)
+	// Clean up servers from sources that are no longer configured or enabled.
+	if err := ml.removeServersFromMissingSources(enabledSourceIDs, allSourceIDs, allKnownSourceIDs); err != nil {
+		glog.Errorf("failed to remove servers from missing sources: %v", err)
 	}
 
-	return nil
+	// Launch a goroutine per source. Each goroutine gets its own child context so
+	// it can cancel the provider (closing the channel) instead of draining it.
+	// TrackWrite is called before launching so that WaitForInflightWrites cannot
+	// return before the goroutine's initial batch is done.
+	for _, entry := range toLoad {
+		source := entry.source
+		provider := entry.provider
+		filter := entry.filter
+		sourceCtx, sourceCancel := context.WithCancel(ctx)
+		ml.state.TrackWrite()
+		glog.Infof("Loading MCP servers from source: %s (id: %s)", source.Name, source.ID)
+		go ml.loadServersFromProvider(sourceCtx, sourceCancel, source.ID, provider, filter)
+	}
 }
 
-// loadServersFromProvider loads all servers from a single provider.
-// Returns MCPPartiallyAvailableError if some servers loaded successfully but others failed.
-// Returns a regular error if all servers failed to load.
-func (ml *MCPLoader) loadServersFromProvider(ctx context.Context, sourceID string, provider MCPProvider, filter *ServerFilter) error {
+// loadServersFromProvider consumes records from provider until the channel closes
+// or ctx is cancelled. A zero-value record (sentinel) marks the end of a batch:
+// orphan cleanup and source status are updated at that point, and batch state
+// resets for the next batch. This allows the provider to be long-lived and
+// re-emit records when the underlying file changes.
+//
+// The caller must have called ml.state.TrackWrite() before launching this as a
+// goroutine. This function calls ml.state.WriteComplete() exactly once, when the
+// initial batch is done, so that WaitForInflightWrites can unblock tests that
+// call it after PerformLeaderOperations returns.
+//
+// cancel is the CancelFunc for ctx. Calling it stops the provider goroutine
+// (which selects on ctx.Done()) and causes the provider channel to close,
+// allowing this function to return without draining the channel.
+func (ml *MCPLoader) loadServersFromProvider(ctx context.Context, cancel context.CancelFunc, sourceID string, provider MCPProvider, filter *ServerFilter) {
+	defer cancel() // ensure the provider goroutine exits when this function returns
+
 	recordChan := provider.Servers(ctx)
 
 	validServerNames := mapset.NewSet[string]()
 	var failedServers []string
 	successCount := 0
 
+	// releaseInitialBatch is called exactly once to release the TrackWrite slot
+	// reserved by the caller. It fires on the first sentinel or channel-close,
+	// signalling that the initial batch of writes is complete.
+	releaseInitialBatch := sync.OnceFunc(ml.state.WriteComplete)
+	defer releaseInitialBatch() // ensure TrackWrite is released even on panic or unexpected return
+
+	finalizeBatch := func() {
+		if ctx.Err() != nil {
+			return
+		}
+		ml.state.TrackWrite()
+		err := ml.removeOrphanedServersFromSource(sourceID, validServerNames)
+		ml.state.WriteComplete()
+		if err != nil {
+			glog.Warningf("Failed to remove orphaned servers from source %s: %v", sourceID, err)
+		}
+		if len(failedServers) > 0 {
+			if successCount > 0 {
+				basecatalog.SaveSourceStatus(ml.services.CatalogSourceRepository, sourceID, basecatalog.SourceStatusPartiallyAvailable,
+					(&MCPPartiallyAvailableError{FailedServers: failedServers}).Error())
+			} else {
+				basecatalog.SaveSourceStatus(ml.services.CatalogSourceRepository, sourceID, basecatalog.SourceStatusError,
+					fmt.Sprintf("all MCP servers failed to load from source %s (failed: %v)", sourceID, failedServers))
+			}
+		} else {
+			basecatalog.SaveSourceStatus(ml.services.CatalogSourceRepository, sourceID, basecatalog.SourceStatusAvailable, "")
+		}
+	}
+
 	for record := range recordChan {
-		// Check context cancellation before processing each record
 		if ctx.Err() != nil {
 			glog.Info("Context cancelled, stopping MCP server processing")
-			//nolint:revive
-			for range recordChan {
-			}
-			return ctx.Err()
+			releaseInitialBatch()
+			return
 		}
 
-		// Check if we're still the leader before each write
 		if !ml.state.ShouldWriteDatabase() {
 			glog.Info("No longer leader, stopping MCP server processing")
-			//nolint:revive
-			for range recordChan {
-			}
-			return nil
+			releaseInitialBatch()
+			// cancel() via defer will close ctx, which causes the provider to exit
+			// and close the channel — no need to drain here.
+			return
+		}
+
+		// Sentinel: end of a batch. Finalize, reset state, and continue watching.
+		if record.Server == nil && record.Error == nil {
+			glog.Infof("%s: loaded %d MCP servers", sourceID, successCount)
+			finalizeBatch()
+			releaseInitialBatch() // signal that the initial batch of writes is done
+			validServerNames = mapset.NewSet[string]()
+			failedServers = nil
+			successCount = 0
+			continue
 		}
 
 		if record.Error != nil {
@@ -294,20 +336,13 @@ func (ml *MCPLoader) loadServersFromProvider(ctx context.Context, sourceID strin
 			continue
 		}
 
-		if record.Server == nil {
-			continue
-		}
-
-		// Set the source_id property
 		ml.setServerSourceID(record.Server, sourceID)
 
-		// Track valid server names for cleanup
 		serverName := ""
 		if record.Server.GetAttributes() != nil && record.Server.GetAttributes().Name != nil {
 			serverName = *record.Server.GetAttributes().Name
 		}
 
-		// Apply include/exclude filter
 		if !filter.Allows(serverName) {
 			if serverName == "" {
 				glog.Warningf("MCP server with no name was dropped by includedServers/excludedServers filter; check includedServers/excludedServers configuration")
@@ -321,8 +356,7 @@ func (ml *MCPLoader) loadServersFromProvider(ctx context.Context, sourceID strin
 			validServerNames.Add(serverName)
 		}
 
-		// Save server to database
-		if err := ml.updateDatabase(ctx, record); err != nil {
+		if err := ml.updateDatabase(record); err != nil {
 			glog.Errorf("Error saving MCP server: %v", err)
 			if serverName != "" {
 				failedServers = append(failedServers, serverName)
@@ -334,7 +368,6 @@ func (ml *MCPLoader) loadServersFromProvider(ctx context.Context, sourceID strin
 
 		successCount++
 
-		// Call event handlers
 		for _, handler := range ml.handlers {
 			if err := handler(ctx, record); err != nil {
 				glog.Warningf("Event handler error: %v", err)
@@ -342,22 +375,12 @@ func (ml *MCPLoader) loadServersFromProvider(ctx context.Context, sourceID strin
 		}
 	}
 
-	// Only clean up orphans if context is still valid
-	if ctx.Err() == nil {
-		if err := ml.removeOrphanedServersFromSource(sourceID, validServerNames); err != nil {
-			glog.Warningf("Failed to remove orphaned servers from source %s: %v", sourceID, err)
-		}
+	// Channel closed without a sentinel (one-shot provider or context cancelled).
+	// Finalize the current batch if any records were processed.
+	if successCount > 0 || len(failedServers) > 0 {
+		finalizeBatch()
 	}
-
-	// Report partial or full failure
-	if len(failedServers) > 0 {
-		if successCount > 0 {
-			return &MCPPartiallyAvailableError{FailedServers: failedServers}
-		}
-		return fmt.Errorf("all MCP servers failed to load from source %s (failed: %v)", sourceID, failedServers)
-	}
-
-	return nil
+	releaseInitialBatch()
 }
 
 // setServerSourceID sets the source_id property on an MCP server
@@ -386,7 +409,7 @@ func (ml *MCPLoader) setServerSourceID(server *models.MCPServerImpl, sourceID st
 }
 
 // updateDatabase saves an MCP server and its tools to the database
-func (ml *MCPLoader) updateDatabase(ctx context.Context, record MCPServerProviderRecord) error {
+func (ml *MCPLoader) updateDatabase(record MCPServerProviderRecord) error {
 	ml.state.TrackWrite()
 	defer ml.state.WriteComplete()
 

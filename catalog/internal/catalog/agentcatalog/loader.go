@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"sync"
+	"time"
 
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/golang/glog"
@@ -61,39 +62,33 @@ func (l *AgentLoader) PerformLeaderOperations(ctx context.Context, allKnownSourc
 
 	ctx, cancel := context.WithCancel(ctx)
 	l.setCloser(cancel)
+	// Drain in-flight writes from the previous invocation before running cleanup,
+	// so a concurrent write from an old goroutine cannot re-insert data that
+	// cleanup is about to remove.
+	l.state.WaitForInflightWrites(30 * time.Second)
 
 	if err := l.removeAgentsFromMissingSources(allKnownSourceIDs); err != nil {
 		glog.Errorf("error removing agents from missing sources: %v", err)
 	}
 
 	allSources := l.Sources.AllSources()
-
 	for id, source := range allSources {
 		if !source.IsEnabled() {
 			basecatalog.SaveSourceStatus(l.services.CatalogSourceRepository, id, basecatalog.SourceStatusDisabled, "")
 			continue
 		}
-
 		if source.Type != "yaml" {
 			glog.Warningf("unknown %s provider type: %s", "agent", source.Type)
 			basecatalog.SaveSourceStatus(l.services.CatalogSourceRepository, id, basecatalog.SourceStatusError, "unknown provider type: "+source.Type)
 			continue
 		}
-
-		if err := l.loadFromYAML(ctx, id, source); err != nil {
-			glog.Errorf("error loading %s from source %s: %v", "agent", id, err)
-			basecatalog.SaveSourceStatus(l.services.CatalogSourceRepository, id, basecatalog.SourceStatusError, err.Error())
-			continue
-		}
-
-		basecatalog.SaveSourceStatus(l.services.CatalogSourceRepository, id, basecatalog.SourceStatusAvailable, "")
+		sourceID := id
+		src := source
+		l.state.TrackWrite() // released after the initial load completes
+		go l.watchAndLoadFromYAML(ctx, sourceID, src)
 	}
 
-	if err := l.services.PropertyOptionsRepository.Refresh(models.ContextPropertyOptionType); err != nil {
-		glog.Errorf("error refreshing property options after agent load: %v", err)
-	}
-
-	glog.Infof("%s loader leader operations complete", "agent")
+	glog.Infof("%s loader leader operations launched", "agent")
 	return nil
 }
 
@@ -163,6 +158,61 @@ func (l *AgentLoader) loadFromYAML(ctx context.Context, sourceID string, source 
 	}
 
 	return nil
+}
+
+// watchAndLoadFromYAML performs the initial load from a YAML source, then watches
+// the data file for changes and reloads on each change until ctx is cancelled.
+// The caller must have called l.state.TrackWrite() before launching this as a goroutine;
+// this function calls l.state.WriteComplete() once the initial load is done.
+func (l *AgentLoader) watchAndLoadFromYAML(ctx context.Context, sourceID string, source basecatalog.PluginSource) {
+	releaseInitialLoad := sync.OnceFunc(l.state.WriteComplete)
+	defer releaseInitialLoad() // safety net: ensures TrackWrite is released even on panic
+
+	// Set up the watcher before the initial load so that changes arriving
+	// during or just after the read are not missed.
+	yamlPath, err := resolveYAMLPath(source)
+	if err != nil {
+		glog.Errorf("unable to resolve YAML path for agent source %s: %v", sourceID, err)
+		return
+	}
+
+	ch, watchErr := basecatalog.GetMonitor().Path(ctx, yamlPath)
+	if watchErr != nil {
+		glog.Errorf("unable to watch agent catalog file %s: %v", yamlPath, watchErr)
+	}
+
+	doLoad := func() {
+		if err := l.loadFromYAML(ctx, sourceID, source); err != nil {
+			glog.Errorf("error loading agent from source %s: %v", sourceID, err)
+			basecatalog.SaveSourceStatus(l.services.CatalogSourceRepository, sourceID, basecatalog.SourceStatusError, err.Error())
+			return
+		}
+		basecatalog.SaveSourceStatus(l.services.CatalogSourceRepository, sourceID, basecatalog.SourceStatusAvailable, "")
+		if err := l.services.PropertyOptionsRepository.Refresh(models.ContextPropertyOptionType); err != nil {
+			glog.Errorf("error refreshing property options after agent load: %v", err)
+		}
+	}
+
+	doLoad()
+	releaseInitialLoad() // release the TrackWrite slot after the initial load
+
+	if ch == nil {
+		// Watcher setup failed; no live updates possible.
+		return
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case _, ok := <-ch:
+			if !ok {
+				return
+			}
+			glog.Infof("Reloading agent catalog from %s (file changed)", yamlPath)
+			doLoad()
+		}
+	}
 }
 
 func (l *AgentLoader) ReloadParsing() error {

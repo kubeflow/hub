@@ -73,7 +73,7 @@ func TestMCPLoaderBasicLoad(t *testing.T) {
 	// Create and start the loader
 	baseLoader := basecatalog.NewBaseLoader([]string{sourcesFile})
 	loader := NewMCPLoaderWithState(services, baseLoader)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Parse configs
 	err = loader.ParseAllConfigs()
@@ -181,7 +181,7 @@ func TestMCPLoaderToolAccessTypeAndParameters(t *testing.T) {
 
 	baseLoader := basecatalog.NewBaseLoader([]string{sourcesFile})
 	loader := NewMCPLoaderWithState(services, baseLoader)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	err = loader.ParseAllConfigs()
 	require.NoError(t, err)
@@ -285,7 +285,7 @@ func TestMCPLoaderDisabledSource(t *testing.T) {
 	// Create and start the loader
 	baseLoader := basecatalog.NewBaseLoader([]string{sourcesFile})
 	loader := NewMCPLoaderWithState(services, baseLoader)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Parse configs
 	err = loader.ParseAllConfigs()
@@ -357,7 +357,7 @@ func TestMCPLoaderEventHandlers(t *testing.T) {
 		return nil
 	})
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Parse configs
 	err = loader.ParseAllConfigs()
@@ -423,7 +423,7 @@ func TestMCPLoaderRemoveOrphans(t *testing.T) {
 	baseLoader := basecatalog.NewBaseLoader([]string{sourcesFile})
 	loader := NewMCPLoaderWithState(services, baseLoader)
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Parse configs
 	err = loader.ParseAllConfigs()
@@ -533,7 +533,7 @@ func TestMCPLoaderRespectsContextCancellation(t *testing.T) {
 	baseLoader := basecatalog.NewBaseLoader([]string{sourcesFile})
 	loader := NewMCPLoaderWithState(services, baseLoader)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 
 	// Track how many servers were processed via event handler
 	serverCount := 0
@@ -600,7 +600,7 @@ func TestMCPLoaderSavesSourceStatus(t *testing.T) {
 
 	baseLoader := basecatalog.NewBaseLoader([]string{sourcesFile})
 	loader := NewMCPLoaderWithState(services, baseLoader)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	err = loader.ParseAllConfigs()
 	require.NoError(t, err)
@@ -665,7 +665,7 @@ func TestMCPLoaderSavesDisabledSourceStatus(t *testing.T) {
 
 	baseLoader := basecatalog.NewBaseLoader([]string{sourcesFile})
 	loader := NewMCPLoaderWithState(services, baseLoader)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	err = loader.ParseAllConfigs()
 	require.NoError(t, err)
@@ -723,7 +723,7 @@ func TestMCPLoaderSavesErrorSourceStatus(t *testing.T) {
 
 	baseLoader := basecatalog.NewBaseLoader([]string{sourcesFile})
 	loader := NewMCPLoaderWithState(services, baseLoader)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	err = loader.ParseAllConfigs()
 	require.NoError(t, err)
@@ -905,7 +905,7 @@ func TestMCPLoaderExcludedServersNotSaved(t *testing.T) {
 
 	baseLoader := basecatalog.NewBaseLoader([]string{sourcesFile})
 	loader := NewMCPLoaderWithState(services, baseLoader)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	err = loader.ParseAllConfigs()
 	require.NoError(t, err)
@@ -966,7 +966,7 @@ func TestMCPLoaderIncludedServersOnly(t *testing.T) {
 
 	baseLoader := basecatalog.NewBaseLoader([]string{sourcesFile})
 	loader := NewMCPLoaderWithState(services, baseLoader)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	err = loader.ParseAllConfigs()
 	require.NoError(t, err)
@@ -1025,7 +1025,7 @@ func TestMCPLoaderNoFilterAllowsAll(t *testing.T) {
 
 	baseLoader := basecatalog.NewBaseLoader([]string{sourcesFile})
 	loader := NewMCPLoaderWithState(services, baseLoader)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	err = loader.ParseAllConfigs()
 	require.NoError(t, err)
@@ -1078,4 +1078,98 @@ func TestMCPLoaderInvalidServerFilterRejected(t *testing.T) {
 	err = loader.ParseAllConfigs()
 	require.Error(t, err, "empty includedServers pattern should be rejected at config load time")
 	assert.Contains(t, err.Error(), "includedServers")
+}
+
+func runMCPLeaderOperations(ctx context.Context, t *testing.T, baseLoader *basecatalog.BaseLoader, loader *MCPLoader) {
+	t.Helper()
+	require.NoError(t, loader.ParseAllConfigs())
+	baseLoader.SetLeader(true)
+	leaderDone := make(chan error, 1)
+	go func() {
+		leaderDone <- loader.PerformLeaderOperations(ctx, mapset.NewSet[string]())
+	}()
+	select {
+	case err := <-leaderDone:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("timeout waiting for leader operations")
+	}
+	baseLoader.WaitForInflightWrites(5 * time.Second)
+}
+
+// TestMCPLoaderFileWatchReload verifies that modifying a YAML data file while the
+// loader is running triggers a live reload: the new server appears in the DB
+// and the stale server from the previous load is removed by orphan cleanup.
+func TestMCPLoaderFileWatchReload(t *testing.T) {
+	_, services, cleanup := setupMCPLoaderTest(t)
+	defer cleanup()
+
+	tmpDir := t.TempDir()
+
+	serversFile := filepath.Join(tmpDir, "servers.yaml")
+	require.NoError(t, os.WriteFile(serversFile, []byte(`mcp_servers:
+  - name: "watch-server-old"
+    version: "1.0.0"
+    description: "Initial server"
+`), 0644))
+
+	sourcesFile := filepath.Join(tmpDir, "sources.yaml")
+	require.NoError(t, os.WriteFile(sourcesFile, []byte(`mcp_catalogs:
+  - name: "File Watch MCP Catalog"
+    id: file_watch_mcp_catalog
+    type: yaml
+    enabled: true
+    properties:
+      yamlCatalogPath: `+serversFile+`
+`), 0644))
+
+	baseLoader := basecatalog.NewBaseLoader([]string{sourcesFile})
+	loader := NewMCPLoaderWithState(services, baseLoader)
+
+	// Keep ctx alive so the file-watch goroutines continue running during the test.
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	runMCPLeaderOperations(ctx, t, baseLoader, loader)
+
+	// Verify initial state: the original server is in the DB.
+	server, err := services.MCPServerRepository.GetByNameAndVersion("watch-server-old", "1.0.0")
+	require.NoError(t, err)
+	require.NotNil(t, server)
+
+	// Update the YAML file with a different server name — the file-watch path
+	// should trigger a live reload that adds the new server and (via orphan cleanup
+	// in finalizeBatch) removes the old one.
+	require.NoError(t, os.WriteFile(serversFile, []byte(`mcp_servers:
+  - name: "watch-server-new"
+    version: "2.0.0"
+    description: "Updated server"
+`), 0644))
+
+	// Wait for the file-watcher to detect the change and commit the reload to DB.
+	// The monitor pauses 1 second after an fsnotify event before dispatching, so
+	// we allow a generous timeout.
+	assert.Eventually(t, func() bool {
+		s, err := services.MCPServerRepository.GetByNameAndVersion("watch-server-new", "2.0.0")
+		return err == nil && s != nil
+	}, 15*time.Second, 100*time.Millisecond, "file-watch reload should add the new MCP server to the catalog")
+
+	// finalizeBatch runs orphan cleanup after the sentinel — which arrives after
+	// the new server is already committed, so poll until cleanup finishes.
+	assert.Eventually(t, func() bool {
+		result, err := services.MCPServerRepository.List(mcpmodels.MCPServerListOptions{
+			SourceIDs: &[]string{"file_watch_mcp_catalog"},
+		})
+		if err != nil || result == nil {
+			return false
+		}
+		for _, s := range result.Items {
+			if attrs := s.GetAttributes(); attrs != nil && attrs.Name != nil {
+				if *attrs.Name == "watch-server-old" {
+					return false
+				}
+			}
+		}
+		return true
+	}, 15*time.Second, 100*time.Millisecond, "orphaned server from previous load should be removed")
 }

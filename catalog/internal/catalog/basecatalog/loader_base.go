@@ -17,6 +17,7 @@ type LoaderState interface {
 	ShouldWriteDatabase() bool
 	TrackWrite()
 	WriteComplete()
+	WaitForInflightWrites(timeout time.Duration)
 	SetCloser(closer func())
 	Paths() []string
 }

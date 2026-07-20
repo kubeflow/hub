@@ -103,7 +103,7 @@ func TestYamlMCPProviderEmitWithDisplayNameKey(t *testing.T) {
 	provider, err := NewYamlMCPProvider(source)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	recordChan := provider.Servers(ctx)
 
 	record, ok := <-recordChan
@@ -216,13 +216,16 @@ func TestYamlMCPProviderEmit(t *testing.T) {
 	provider, err := NewYamlMCPProvider(source)
 	require.NoError(t, err)
 
-	ctx := context.Background()
-	recordChan := provider.Servers(ctx)
+	recordChan := provider.Servers(t.Context())
 
 	servers := make([]string, 0)
 	for record := range recordChan {
+		// Sentinel marks end of the initial batch; stop reading.
+		if record.Server == nil && record.Error == nil {
+			break
+		}
 		assert.Nil(t, record.Error)
-		assert.NotNil(t, record.Server)
+		require.NotNil(t, record.Server)
 		attrs := record.Server.GetAttributes()
 		require.NotNil(t, attrs)
 		servers = append(servers, *attrs.Name)
@@ -258,7 +261,7 @@ func TestYamlMCPProviderEmitWithCancellation(t *testing.T) {
 	provider, err := NewYamlMCPProvider(source)
 	require.NoError(t, err)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	recordChan := provider.Servers(ctx)
 
@@ -312,12 +315,13 @@ func TestYamlMCPProviderInvalidFile(t *testing.T) {
 	provider, err := NewYamlMCPProvider(source)
 	require.NoError(t, err)
 
-	ctx := context.Background()
-	recordChan := provider.Servers(ctx)
-
 	// Should emit exactly one error record so the caller can mark the source as errored.
 	var records []MCPServerProviderRecord
-	for record := range recordChan {
+	for record := range provider.Servers(t.Context()) {
+		// Skip sentinels (end-of-batch markers).
+		if record.Server == nil && record.Error == nil {
+			continue
+		}
 		records = append(records, record)
 	}
 	require.Len(t, records, 1, "expected one error record for unreadable file")
@@ -976,11 +980,12 @@ func TestYamlMCPProviderEmitWithRuntimeMetadata(t *testing.T) {
 	provider, err := NewYamlMCPProvider(source)
 	require.NoError(t, err)
 
-	ctx := context.Background()
-	recordChan := provider.Servers(ctx)
-
 	var record MCPServerProviderRecord
-	for r := range recordChan {
+	for r := range provider.Servers(t.Context()) {
+		// Sentinel marks end of batch; stop and use last real record.
+		if r.Server == nil && r.Error == nil {
+			break
+		}
 		record = r
 	}
 

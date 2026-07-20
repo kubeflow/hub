@@ -40,7 +40,7 @@ func setupAgentLoaderTest(t *testing.T) (*gorm.DB, Services, func()) {
 	return sharedDB, services, cleanup
 }
 
-func runAgentLeaderOperations(t *testing.T, baseLoader *basecatalog.BaseLoader, loader *AgentLoader) {
+func runAgentLeaderOperations(ctx context.Context, t *testing.T, baseLoader *basecatalog.BaseLoader, loader *AgentLoader) {
 	t.Helper()
 
 	require.NoError(t, loader.ParseAllConfigs())
@@ -49,7 +49,7 @@ func runAgentLeaderOperations(t *testing.T, baseLoader *basecatalog.BaseLoader, 
 
 	leaderDone := make(chan error, 1)
 	go func() {
-		leaderDone <- loader.PerformLeaderOperations(context.Background(), mapset.NewSet[string]())
+		leaderDone <- loader.PerformLeaderOperations(ctx, mapset.NewSet[string]())
 	}()
 
 	select {
@@ -108,7 +108,7 @@ func TestAgentLoaderTemplateSaveFlow_InitialLoad(t *testing.T) {
 
 	baseLoader := basecatalog.NewBaseLoader([]string{sourcesFile})
 	loader := NewAgentLoader(services, baseLoader)
-	runAgentLeaderOperations(t, baseLoader, loader)
+	runAgentLeaderOperations(t.Context(), t, baseLoader, loader)
 
 	agent, err := services.AgentRepository.GetByName("test_agent_catalog:test-agent")
 	require.NoError(t, err)
@@ -150,11 +150,17 @@ func TestAgentLoaderTemplateSaveFlow_ReloadReplacesTemplates(t *testing.T) {
 
 	baseLoader := basecatalog.NewBaseLoader([]string{sourcesFile})
 	loader := NewAgentLoader(services, baseLoader)
-	runAgentLeaderOperations(t, baseLoader, loader)
+	ctx1, cancel1 := context.WithCancel(t.Context())
+	defer cancel1()
+	runAgentLeaderOperations(ctx1, t, baseLoader, loader)
 
 	agentBefore, err := services.AgentRepository.GetByName("test_agent_catalog:test-agent")
 	require.NoError(t, err)
 	agentIDBefore := *agentBefore.GetID()
+
+	// Cancel loader1's watcher goroutines before modifying the file to avoid
+	// concurrent writes from the old loader during the reload.
+	cancel1()
 
 	// Reload with a completely different template set for the same agent.
 	require.NoError(t, os.WriteFile(agentsFile, []byte(`agents:
@@ -167,7 +173,7 @@ func TestAgentLoaderTemplateSaveFlow_ReloadReplacesTemplates(t *testing.T) {
 
 	baseLoader2 := basecatalog.NewBaseLoader([]string{sourcesFile})
 	loader2 := NewAgentLoader(services, baseLoader2)
-	runAgentLeaderOperations(t, baseLoader2, loader2)
+	runAgentLeaderOperations(t.Context(), t, baseLoader2, loader2)
 
 	agentAfter, err := services.AgentRepository.GetByName("test_agent_catalog:test-agent")
 	require.NoError(t, err)
@@ -181,6 +187,81 @@ func TestAgentLoaderTemplateSaveFlow_ReloadReplacesTemplates(t *testing.T) {
 	assert.Equal(t, "test_agent_catalog:test-agent:template-c.yaml", *attrs.Name)
 	require.NotNil(t, attrs.Content)
 	assert.Equal(t, "content-c", *attrs.Content)
+}
+
+// TestAgentLoaderFileWatchReload verifies that modifying a YAML data file while
+// the loader is running triggers a live reload: the new agent appears in the DB
+// and the stale agent from the previous load is removed by orphan cleanup.
+func TestAgentLoaderFileWatchReload(t *testing.T) {
+	_, services, cleanup := setupAgentLoaderTest(t)
+	defer cleanup()
+
+	tmpDir := t.TempDir()
+
+	agentsFile := filepath.Join(tmpDir, "agents.yaml")
+	require.NoError(t, os.WriteFile(agentsFile, []byte(`agents:
+  - name: "watch-agent-old"
+    description: "Initial agent"
+`), 0644))
+
+	sourcesFile := filepath.Join(tmpDir, "sources.yaml")
+	require.NoError(t, os.WriteFile(sourcesFile, []byte(`agent_catalogs:
+  - name: "File Watch Agent Catalog"
+    id: file_watch_agent_catalog
+    type: yaml
+    enabled: true
+    properties:
+      yamlCatalogPath: `+agentsFile+`
+`), 0644))
+
+	baseLoader := basecatalog.NewBaseLoader([]string{sourcesFile})
+	loader := NewAgentLoader(services, baseLoader)
+
+	// Keep ctx alive so the file-watch goroutines continue running during the test.
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	runAgentLeaderOperations(ctx, t, baseLoader, loader)
+
+	// Verify initial state: the original agent is in the DB.
+	agent, err := services.AgentRepository.GetByName("file_watch_agent_catalog:watch-agent-old")
+	require.NoError(t, err)
+	require.NotNil(t, agent.GetID())
+
+	// Update the YAML file with a different agent name — the file-watch path
+	// should trigger a live reload that adds the new agent and (via orphan cleanup
+	// in removeOrphanedAgentsFromSource) removes the old one.
+	require.NoError(t, os.WriteFile(agentsFile, []byte(`agents:
+  - name: "watch-agent-new"
+    description: "Updated agent"
+`), 0644))
+
+	// Wait for the file-watcher to detect the change and commit the reload to DB.
+	// The monitor pauses 1 second after an fsnotify event before dispatching, so
+	// we allow a generous timeout.
+	assert.Eventually(t, func() bool {
+		a, err := services.AgentRepository.GetByName("file_watch_agent_catalog:watch-agent-new")
+		return err == nil && a != nil
+	}, 15*time.Second, 100*time.Millisecond, "file-watch reload should add the new agent to the catalog")
+
+	// removeOrphanedAgentsFromSource runs after the sentinel — which arrives after
+	// the new agent is already committed, so poll until cleanup finishes.
+	assert.Eventually(t, func() bool {
+		result, err := services.AgentRepository.List(&models.AgentListOptions{
+			SourceIDs: &[]string{"file_watch_agent_catalog"},
+		})
+		if err != nil {
+			return false
+		}
+		for _, a := range result.Items {
+			if attrs := a.GetAttributes(); attrs != nil && attrs.Name != nil {
+				if *attrs.Name == "file_watch_agent_catalog:watch-agent-old" {
+					return false
+				}
+			}
+		}
+		return true
+	}, 15*time.Second, 100*time.Millisecond, "orphaned agent from previous load should be removed")
 }
 
 // TestAgentLoaderTemplateSaveFlow_ReloadWithNoTemplatesRemovesAll verifies
@@ -201,7 +282,9 @@ func TestAgentLoaderTemplateSaveFlow_ReloadWithNoTemplatesRemovesAll(t *testing.
 
 	baseLoader := basecatalog.NewBaseLoader([]string{sourcesFile})
 	loader := NewAgentLoader(services, baseLoader)
-	runAgentLeaderOperations(t, baseLoader, loader)
+	ctx1, cancel1 := context.WithCancel(t.Context())
+	defer cancel1()
+	runAgentLeaderOperations(ctx1, t, baseLoader, loader)
 
 	agent, err := services.AgentRepository.GetByName("test_agent_catalog:test-agent")
 	require.NoError(t, err)
@@ -209,6 +292,10 @@ func TestAgentLoaderTemplateSaveFlow_ReloadWithNoTemplatesRemovesAll(t *testing.
 
 	templatesBefore := listTemplatesForParent(t, services, agentID)
 	require.Len(t, templatesBefore, 1)
+
+	// Cancel loader1's watcher goroutines before modifying the file to avoid
+	// concurrent writes from the old loader during the reload.
+	cancel1()
 
 	// Reload the same agent with its templates list removed entirely.
 	require.NoError(t, os.WriteFile(agentsFile, []byte(`agents:
@@ -218,7 +305,7 @@ func TestAgentLoaderTemplateSaveFlow_ReloadWithNoTemplatesRemovesAll(t *testing.
 
 	baseLoader2 := basecatalog.NewBaseLoader([]string{sourcesFile})
 	loader2 := NewAgentLoader(services, baseLoader2)
-	runAgentLeaderOperations(t, baseLoader2, loader2)
+	runAgentLeaderOperations(t.Context(), t, baseLoader2, loader2)
 
 	templatesAfter := listTemplatesForParent(t, services, agentID)
 	assert.Empty(t, templatesAfter, "stale template artifacts must be cleared when the reloaded agent declares no templates")

@@ -30,21 +30,21 @@ type yamlAgentTemplate struct {
 }
 
 type yamlAgent struct {
-	Name             string                              `yaml:"name" json:"name"`
-	ExternalID       *string                             `yaml:"externalId,omitempty" json:"externalId,omitempty"`
-	DisplayName      *string                             `yaml:"displayName,omitempty" json:"displayName,omitempty"`
-	Description      *string                             `yaml:"description,omitempty" json:"description,omitempty"`
-	Readme           *string                             `yaml:"readme,omitempty" json:"readme,omitempty"`
-	Framework        *string                             `yaml:"framework,omitempty" json:"framework,omitempty"`
-	Labels           []string                            `yaml:"labels,omitempty" json:"labels,omitempty"`
-	Logo             *string                             `yaml:"logo,omitempty" json:"logo,omitempty"`
-	RepositoryUrl    *string                             `yaml:"repositoryUrl,omitempty" json:"repositoryUrl,omitempty"`
-	Env              []yamlAgentEnvVar                   `yaml:"env,omitempty" json:"env,omitempty"`
-	Artifacts        []yamlAgentArtifact                 `yaml:"artifacts,omitempty" json:"artifacts,omitempty"`
-	Templates        []yamlAgentTemplate                 `yaml:"templates,omitempty" json:"templates,omitempty"`
-	CustomProperties *map[string]openapi.MetadataValue   `yaml:"customProperties,omitempty" json:"customProperties,omitempty"`
-	CreateTimeSinceEpoch     *string                     `yaml:"createTimeSinceEpoch,omitempty" json:"createTimeSinceEpoch,omitempty"`
-	LastUpdateTimeSinceEpoch *string                     `yaml:"lastUpdateTimeSinceEpoch,omitempty" json:"lastUpdateTimeSinceEpoch,omitempty"`
+	Name                     string                            `yaml:"name" json:"name"`
+	ExternalID               *string                           `yaml:"externalId,omitempty" json:"externalId,omitempty"`
+	DisplayName              *string                           `yaml:"displayName,omitempty" json:"displayName,omitempty"`
+	Description              *string                           `yaml:"description,omitempty" json:"description,omitempty"`
+	Readme                   *string                           `yaml:"readme,omitempty" json:"readme,omitempty"`
+	Framework                *string                           `yaml:"framework,omitempty" json:"framework,omitempty"`
+	Labels                   []string                          `yaml:"labels,omitempty" json:"labels,omitempty"`
+	Logo                     *string                           `yaml:"logo,omitempty" json:"logo,omitempty"`
+	RepositoryUrl            *string                           `yaml:"repositoryUrl,omitempty" json:"repositoryUrl,omitempty"`
+	Env                      []yamlAgentEnvVar                 `yaml:"env,omitempty" json:"env,omitempty"`
+	Artifacts                []yamlAgentArtifact               `yaml:"artifacts,omitempty" json:"artifacts,omitempty"`
+	Templates                []yamlAgentTemplate               `yaml:"templates,omitempty" json:"templates,omitempty"`
+	CustomProperties         *map[string]openapi.MetadataValue `yaml:"customProperties,omitempty" json:"customProperties,omitempty"`
+	CreateTimeSinceEpoch     *string                           `yaml:"createTimeSinceEpoch,omitempty" json:"createTimeSinceEpoch,omitempty"`
+	LastUpdateTimeSinceEpoch *string                           `yaml:"lastUpdateTimeSinceEpoch,omitempty" json:"lastUpdateTimeSinceEpoch,omitempty"`
 }
 
 type yamlAgentCatalog struct {
@@ -169,7 +169,7 @@ func yamlTemplateToEntity(tmpl yamlAgentTemplate, agentName string, sourceID str
 	attrs := &models.AgentTemplateArtifactAttributes{
 		Name:         &qualifiedName,
 		Content:      &tmpl.Content,
-		ArtifactType: strPtr(models.AgentTemplateArtifactType),
+		ArtifactType: new(models.AgentTemplateArtifactType),
 	}
 
 	entity := &models.AgentTemplateArtifactImpl{
@@ -183,8 +183,6 @@ func yamlTemplateToEntity(tmpl yamlAgentTemplate, agentName string, sourceID str
 
 	return entity
 }
-
-func strPtr(s string) *string { return &s }
 
 func resolveYAMLPath(source basecatalog.PluginSource) (string, error) {
 	yamlPath, ok := source.Properties["yamlCatalogPath"].(string)

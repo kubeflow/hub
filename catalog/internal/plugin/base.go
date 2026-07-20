@@ -97,6 +97,9 @@ func (pb *PluginBase) watchFile(ctx context.Context, path string) {
 				pb.healthy.Store(false)
 				glog.Errorf("unable to perform %s leader writes on reload: %v", pb.cfg.Name, err)
 			} else {
+				// Wait for the initial load batch to finish before marking healthy,
+				// so API clients don't see stale data after a config reload.
+				pb.cfg.State.WaitForInflightWrites(30 * time.Second)
 				pb.healthy.Store(true)
 			}
 		}
@@ -120,6 +123,9 @@ func (pb *PluginBase) OnBecomeLeader(ctx context.Context) error {
 		pb.cfg.State.SetLeader(false)
 		return fmt.Errorf("%s leader operations: %w", pb.cfg.Name, err)
 	}
+	// Wait for the initial load batch to finish before calling OnLeaderReady and
+	// marking healthy, so the plugin is fully populated when readiness probes fire.
+	pb.cfg.State.WaitForInflightWrites(30 * time.Second)
 
 	if pb.cfg.OnLeaderReady != nil {
 		if err := pb.cfg.OnLeaderReady(ctx); err != nil {
