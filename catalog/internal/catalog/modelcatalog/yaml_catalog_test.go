@@ -1062,3 +1062,147 @@ func modelNameFromRecord(t *testing.T, record ModelProviderRecord) string {
 	require.NotNil(t, attrs.Name)
 	return *attrs.Name
 }
+
+// TestModels_InitialReadFailure verifies that when the YAML file is initially
+// invalid, Models() still returns a channel (no error), and the channel emits
+// an error record followed by a sentinel.
+func TestModels_InitialReadFailure(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "catalog.yaml")
+	require.NoError(t, os.WriteFile(path, []byte("!!invalid: yaml: :::"), 0600))
+
+	p := &yamlModelProvider{path: path, filter: &ModelFilter{}}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	ch, err := p.Models(ctx)
+	require.NoError(t, err, "Models() should not return an error for a bad data file")
+	require.NotNil(t, ch)
+
+	// First record: error record (Model nil, Error non-nil)
+	r1 := <-ch
+	assert.Nil(t, r1.Model)
+	assert.Error(t, r1.Error)
+
+	// Second record: sentinel (both nil)
+	r2 := <-ch
+	assert.Nil(t, r2.Model)
+	assert.Nil(t, r2.Error)
+}
+
+// TestModels_RecoveryAfterInitialFailure verifies that when the initial YAML
+// file is invalid but then fixed, the file watcher detects the fix and emits
+// valid model records.
+//
+// The watcher is set up BEFORE the initial read, so by the time the test reads
+// the error+sentinel and writes the fixed file, the watcher is guaranteed to
+// already be watching.
+func TestModels_RecoveryAfterInitialFailure(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "catalog.yaml")
+	require.NoError(t, os.WriteFile(path, []byte("!!invalid yaml"), 0600))
+
+	p := &yamlModelProvider{path: path, filter: &ModelFilter{}}
+	// Use t.Context() so the context stays alive for the full test lifetime.
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	ch, err := p.Models(ctx)
+	require.NoError(t, err)
+
+	// Drain the initial error + sentinel. Because Models() sets up the watcher
+	// before the initial read, by the time we finish reading these two records
+	// the watcher is already registered and watching the file.
+	r1 := <-ch
+	assert.Nil(t, r1.Model)
+	assert.Error(t, r1.Error)
+	r2 := <-ch
+	assert.Nil(t, r2.Model)
+
+	// Fix the file. The watcher is already running at this point.
+	validYAML := `source: test
+models:
+  - name: recovered-model
+    artifacts:
+      - uri: "https://example.com/model.bin"
+`
+	require.NoError(t, os.WriteFile(path, []byte(validYAML), 0600))
+
+	// Wait for the watcher to fire and emit the recovered model. The monitor
+	// pauses 1 second after an fsnotify event before dispatching, so we allow
+	// a generous timeout.
+	var gotModel bool
+	assert.Eventually(t, func() bool {
+		select {
+		case r, ok := <-ch:
+			if !ok {
+				return false
+			}
+			if r.Model != nil {
+				gotModel = true
+				return true
+			}
+		default:
+		}
+		return false
+	}, 15*time.Second, 100*time.Millisecond, "file-watch reload should emit a valid model after the file is fixed")
+	assert.True(t, gotModel)
+}
+
+// TestModels_ReloadErrorEmitsSentinel verifies that when a valid YAML file is
+// replaced with an invalid one, the reload emits an error record + sentinel
+// instead of silently continuing, so the consumer can update the source status.
+//
+// The watcher is set up BEFORE the initial read, so the file write happens
+// after the watcher is already watching — no race.
+func TestModels_ReloadErrorEmitsSentinel(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "catalog.yaml")
+
+	validYAML := `source: test
+models:
+  - name: my-model
+    artifacts:
+      - uri: "https://example.com/model.bin"
+`
+	require.NoError(t, os.WriteFile(path, []byte(validYAML), 0600))
+
+	p := &yamlModelProvider{path: path, filter: &ModelFilter{}}
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	ch, err := p.Models(ctx)
+	require.NoError(t, err)
+
+	// Drain the initial successful batch (model + sentinel). Because Models()
+	// sets up the watcher before the initial read, the watcher is already
+	// running once we finish reading these records.
+	for {
+		r := <-ch
+		if r.Model == nil {
+			break
+		}
+	}
+
+	// Overwrite with invalid YAML. The watcher is already watching.
+	require.NoError(t, os.WriteFile(path, []byte("!!!not: valid: yaml"), 0600))
+
+	// Wait for the reload to emit an error record. The monitor pauses 1 second
+	// after an fsnotify event before dispatching, so we allow a generous timeout.
+	var gotErr bool
+	assert.Eventually(t, func() bool {
+		select {
+		case r, ok := <-ch:
+			if !ok {
+				return false
+			}
+			if r.Model == nil && r.Error != nil {
+				gotErr = true
+				return true
+			}
+		default:
+		}
+		return false
+	}, 15*time.Second, 100*time.Millisecond, "file-watch reload should emit an error record after invalid YAML is written")
+	assert.True(t, gotErr)
+}

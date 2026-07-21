@@ -285,11 +285,16 @@ func (ml *MCPLoader) loadServersFromProvider(ctx context.Context, cancel context
 		if ctx.Err() != nil {
 			return
 		}
-		ml.state.TrackWrite()
-		err := ml.removeOrphanedServersFromSource(sourceID, validServerNames)
-		ml.state.WriteComplete()
-		if err != nil {
-			glog.Warningf("Failed to remove orphaned servers from source %s: %v", sourceID, err)
+		// Skip orphan cleanup on complete failure to preserve stale-but-functional
+		// data until the error is fixed.
+		completeFailure := validServerNames.Cardinality() == 0 && len(failedServers) > 0
+		if !completeFailure {
+			ml.state.TrackWrite()
+			err := ml.removeOrphanedServersFromSource(sourceID, validServerNames)
+			ml.state.WriteComplete()
+			if err != nil {
+				glog.Warningf("Failed to remove orphaned servers from source %s: %v", sourceID, err)
+			}
 		}
 		if len(failedServers) > 0 {
 			if successCount > 0 {

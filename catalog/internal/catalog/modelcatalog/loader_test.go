@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog/models"
 	sharedmodels "github.com/kubeflow/hub/catalog/internal/db/models"
 	apimodels "github.com/kubeflow/hub/catalog/pkg/openapi"
+	mrmodels "github.com/kubeflow/hub/internal/platform/db/entity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -556,4 +558,303 @@ func TestSourceStatusPartialVsFull(t *testing.T) {
 			assert.Contains(t, st.Error, tt.wantErrContain)
 		})
 	}
+}
+
+// TestSourceStatusOnReloadError verifies that when the provider emits only an
+// error record + sentinel (as yamlModelProvider now does on read failure), the
+// source status is set to "error" rather than staying "available".
+func TestSourceStatusOnReloadError(t *testing.T) {
+	const sourceID = "reload-error-source"
+
+	providerName := "reload-error-provider"
+	require.NoError(t, RegisterModelProvider(providerName, func(ctx context.Context, source *basecatalog.ModelSource, reldir string) (<-chan ModelProviderRecord, error) {
+		ch := make(chan ModelProviderRecord, 2)
+		go func() {
+			defer close(ch)
+			ch <- ModelProviderRecord{Error: fmt.Errorf("YAML parse error: unexpected token")}
+			ch <- ModelProviderRecord{} // sentinel
+		}()
+		return ch, nil
+	}))
+
+	mockSourceRepo := &MockCatalogSourceRepository{}
+	services := Services{
+		CatalogModelRepository:           &MockCatalogModelRepository{},
+		CatalogArtifactRepository:        &MockCatalogArtifactRepository{},
+		CatalogModelArtifactRepository:   &MockCatalogModelArtifactRepository{},
+		CatalogMetricsArtifactRepository: &MockCatalogMetricsArtifactRepository{},
+		CatalogSourceRepository:          mockSourceRepo,
+		PropertyOptionsRepository:        &MockPropertyOptionsRepository{},
+	}
+
+	baseLoader := basecatalog.NewBaseLoader([]string{})
+	baseLoader.SetLeader(true)
+	loader := NewModelLoader(services, baseLoader)
+
+	cfg := &basecatalog.SourceConfig{
+		ModelCatalogs: []basecatalog.ModelSource{
+			{
+				CatalogSource: apimodels.CatalogSource{
+					Id:      sourceID,
+					Name:    "Test",
+					Enabled: new(true),
+				},
+				Type: providerName,
+			},
+		},
+	}
+	require.NoError(t, loader.updateSources("test-path", cfg))
+
+	ctx := context.Background()
+	require.NoError(t, loader.PerformLeaderOperations(ctx, mapset.NewSet(sourceID)))
+
+	var st sharedmodels.SourceStatus
+	assert.Eventually(t, func() bool {
+		statuses, err := mockSourceRepo.GetAllStatuses()
+		if err != nil {
+			return false
+		}
+		var ok bool
+		st, ok = statuses[sourceID]
+		return ok && st.Status != ""
+	}, 3*time.Second, 10*time.Millisecond)
+
+	assert.Equal(t, basecatalog.SourceStatusError, st.Status, "expected error status when all models fail to load")
+}
+
+// TestSourceStatusRecoveryAfterError verifies that when a provider first emits
+// an error batch and then a successful batch (simulating a file fix), the source
+// status transitions from "error" to "available".
+func TestSourceStatusRecoveryAfterError(t *testing.T) {
+	const sourceID = "recovery-source"
+
+	// Use a channel to control what the provider emits. First batch is an error,
+	// second batch is a successful model.
+	sendBatch := make(chan bool, 2)
+	sendBatch <- false // first batch: error
+	sendBatch <- true  // second batch: success
+
+	providerName := "recovery-provider-" + sourceID
+	require.NoError(t, RegisterModelProvider(providerName, func(ctx context.Context, source *basecatalog.ModelSource, reldir string) (<-chan ModelProviderRecord, error) {
+		ch := make(chan ModelProviderRecord, 4)
+		go func() {
+			defer close(ch)
+			for success := range sendBatch {
+				if !success {
+					ch <- ModelProviderRecord{Error: fmt.Errorf("YAML parse error")}
+					ch <- ModelProviderRecord{} // sentinel
+				} else {
+					name := "ok-model"
+					ch <- ModelProviderRecord{
+						Model: &models.CatalogModelImpl{
+							Attributes: &models.CatalogModelAttributes{Name: &name},
+						},
+					}
+					ch <- ModelProviderRecord{} // sentinel
+					return
+				}
+			}
+		}()
+		return ch, nil
+	}))
+
+	mockSourceRepo := &MockCatalogSourceRepository{}
+	services := Services{
+		CatalogModelRepository:           &MockCatalogModelRepository{},
+		CatalogArtifactRepository:        &MockCatalogArtifactRepository{},
+		CatalogModelArtifactRepository:   &MockCatalogModelArtifactRepository{},
+		CatalogMetricsArtifactRepository: &MockCatalogMetricsArtifactRepository{},
+		CatalogSourceRepository:          mockSourceRepo,
+		PropertyOptionsRepository:        &MockPropertyOptionsRepository{},
+	}
+
+	baseLoader := basecatalog.NewBaseLoader([]string{})
+	baseLoader.SetLeader(true)
+	loader := NewModelLoader(services, baseLoader)
+
+	cfg := &basecatalog.SourceConfig{
+		ModelCatalogs: []basecatalog.ModelSource{
+			{
+				CatalogSource: apimodels.CatalogSource{
+					Id:      sourceID,
+					Name:    "Test",
+					Enabled: new(true),
+				},
+				Type: providerName,
+			},
+		},
+	}
+	require.NoError(t, loader.updateSources("test-path", cfg))
+
+	ctx := context.Background()
+	require.NoError(t, loader.PerformLeaderOperations(ctx, mapset.NewSet(sourceID)))
+
+	// Eventually the source should recover to "available".
+	var st sharedmodels.SourceStatus
+	assert.Eventually(t, func() bool {
+		statuses, err := mockSourceRepo.GetAllStatuses()
+		if err != nil {
+			return false
+		}
+		var ok bool
+		st, ok = statuses[sourceID]
+		return ok && st.Status == basecatalog.SourceStatusAvailable
+	}, 3*time.Second, 10*time.Millisecond, "expected status to recover to available")
+
+	assert.Equal(t, basecatalog.SourceStatusAvailable, st.Status)
+}
+
+// TestFailedModelsResetBetweenBatches verifies that a validation error in one
+// batch does not pollute the status calculation in subsequent batches.
+func TestFailedModelsResetBetweenBatches(t *testing.T) {
+	const sourceID = "batch-reset-source"
+
+	providerName := "batch-reset-provider"
+	require.NoError(t, RegisterModelProvider(providerName, func(ctx context.Context, source *basecatalog.ModelSource, reldir string) (<-chan ModelProviderRecord, error) {
+		ch := make(chan ModelProviderRecord, 8)
+		go func() {
+			defer close(ch)
+			// Batch 1: one validation error + one good model + sentinel → partially-available
+			ch <- ModelProviderRecord{Error: fmt.Errorf("model %q artifact 0: URI invalid", "bad-model")}
+			goodName := "good-model"
+			ch <- ModelProviderRecord{
+				Model: &models.CatalogModelImpl{
+					Attributes: &models.CatalogModelAttributes{Name: &goodName},
+				},
+			}
+			ch <- ModelProviderRecord{} // sentinel
+
+			// Batch 2: only good model + sentinel → should be available (not partially-available)
+			good2 := "good-model-2"
+			ch <- ModelProviderRecord{
+				Model: &models.CatalogModelImpl{
+					Attributes: &models.CatalogModelAttributes{Name: &good2},
+				},
+			}
+			ch <- ModelProviderRecord{} // sentinel
+		}()
+		return ch, nil
+	}))
+
+	mockSourceRepo := &MockCatalogSourceRepository{}
+	services := Services{
+		CatalogModelRepository:           &MockCatalogModelRepository{},
+		CatalogArtifactRepository:        &MockCatalogArtifactRepository{},
+		CatalogModelArtifactRepository:   &MockCatalogModelArtifactRepository{},
+		CatalogMetricsArtifactRepository: &MockCatalogMetricsArtifactRepository{},
+		CatalogSourceRepository:          mockSourceRepo,
+		PropertyOptionsRepository:        &MockPropertyOptionsRepository{},
+	}
+
+	baseLoader := basecatalog.NewBaseLoader([]string{})
+	baseLoader.SetLeader(true)
+	loader := NewModelLoader(services, baseLoader)
+
+	cfg := &basecatalog.SourceConfig{
+		ModelCatalogs: []basecatalog.ModelSource{
+			{
+				CatalogSource: apimodels.CatalogSource{
+					Id:      sourceID,
+					Name:    "Test",
+					Enabled: new(true),
+				},
+				Type: providerName,
+			},
+		},
+	}
+	require.NoError(t, loader.updateSources("test-path", cfg))
+
+	ctx := context.Background()
+	require.NoError(t, loader.PerformLeaderOperations(ctx, mapset.NewSet(sourceID)))
+
+	// The final status should be "available" (batch 2 was clean), not
+	// "partially-available" (which would mean failedModels leaked from batch 1).
+	var st sharedmodels.SourceStatus
+	assert.Eventually(t, func() bool {
+		statuses, err := mockSourceRepo.GetAllStatuses()
+		if err != nil {
+			return false
+		}
+		var ok bool
+		st, ok = statuses[sourceID]
+		// Wait until we've seen at least two status saves (partially-available then available)
+		return ok && st.Status == basecatalog.SourceStatusAvailable
+	}, 3*time.Second, 10*time.Millisecond, "expected final status to be available, not partially-available from previous batch")
+
+	assert.Equal(t, basecatalog.SourceStatusAvailable, st.Status)
+}
+
+// TestOrphanCleanupSkippedOnCompleteFailure verifies that existing models are
+// preserved in the database when a reload fails completely. The List method is
+// used by removeOrphanedModelsFromSource; we verify it is NOT called.
+func TestOrphanCleanupSkippedOnCompleteFailure(t *testing.T) {
+	const sourceID = "orphan-skip-source"
+
+	providerName := "orphan-skip-provider"
+	require.NoError(t, RegisterModelProvider(providerName, func(ctx context.Context, source *basecatalog.ModelSource, reldir string) (<-chan ModelProviderRecord, error) {
+		ch := make(chan ModelProviderRecord, 2)
+		go func() {
+			defer close(ch)
+			ch <- ModelProviderRecord{Error: fmt.Errorf("read error")}
+			ch <- ModelProviderRecord{} // sentinel: total failure
+		}()
+		return ch, nil
+	}))
+
+	trackingRepo := &MockCatalogModelRepositoryWithListTracking{
+		MockCatalogModelRepository: MockCatalogModelRepository{},
+	}
+	services := Services{
+		CatalogModelRepository:           trackingRepo,
+		CatalogArtifactRepository:        &MockCatalogArtifactRepository{},
+		CatalogModelArtifactRepository:   &MockCatalogModelArtifactRepository{},
+		CatalogMetricsArtifactRepository: &MockCatalogMetricsArtifactRepository{},
+		CatalogSourceRepository:          &MockCatalogSourceRepository{},
+		PropertyOptionsRepository:        &MockPropertyOptionsRepository{},
+	}
+
+	baseLoader := basecatalog.NewBaseLoader([]string{})
+	baseLoader.SetLeader(true)
+	loader := NewModelLoader(services, baseLoader)
+
+	cfg := &basecatalog.SourceConfig{
+		ModelCatalogs: []basecatalog.ModelSource{
+			{
+				CatalogSource: apimodels.CatalogSource{
+					Id:      sourceID,
+					Name:    "Test",
+					Enabled: new(true),
+				},
+				Type: providerName,
+			},
+		},
+	}
+	require.NoError(t, loader.updateSources("test-path", cfg))
+
+	ctx := context.Background()
+	require.NoError(t, loader.PerformLeaderOperations(ctx, mapset.NewSet(sourceID)))
+
+	assert.Never(t, func() bool {
+		return trackingRepo.ListCalled()
+	}, 500*time.Millisecond, 10*time.Millisecond, "orphan cleanup (List) should not be called when all models fail to load")
+}
+
+// MockCatalogModelRepositoryWithListTracking tracks whether List was called.
+type MockCatalogModelRepositoryWithListTracking struct {
+	MockCatalogModelRepository
+	mu         sync.Mutex
+	listCalled bool
+}
+
+func (m *MockCatalogModelRepositoryWithListTracking) List(opts models.CatalogModelListOptions) (*mrmodels.ListWrapper[models.CatalogModel], error) {
+	m.mu.Lock()
+	m.listCalled = true
+	m.mu.Unlock()
+	return m.MockCatalogModelRepository.List(opts)
+}
+
+func (m *MockCatalogModelRepositoryWithListTracking) ListCalled() bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.listCalled
 }

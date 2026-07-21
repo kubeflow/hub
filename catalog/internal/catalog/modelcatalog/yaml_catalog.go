@@ -326,31 +326,41 @@ type yamlCatalog struct {
 	Models []yamlModel `yaml:"models"`
 }
 
+// SourceReadError wraps a file-level read or parse failure so the consumer can
+// distinguish it from per-model validation errors.
+type SourceReadError struct {
+	err error
+}
+
+func (e *SourceReadError) Error() string { return e.err.Error() }
+func (e *SourceReadError) Unwrap() error { return e.err }
+
 type yamlModelProvider struct {
 	path   string
 	filter *ModelFilter
 }
 
 func (p *yamlModelProvider) Models(ctx context.Context) (<-chan ModelProviderRecord, error) {
-	// read the catalog and report errors
-	catalog, err := p.read()
-	if err != nil {
-		return nil, err
-	}
-
 	ch := make(chan ModelProviderRecord)
 	go func() {
 		defer close(ch)
 
-		// Send the initial list right away.
-		p.emit(ctx, catalog, ch)
+		// Set up the watcher before the initial read so that changes arriving
+		// during or just after the read are not missed.
+		changes, watchErr := basecatalog.GetMonitor().Path(ctx, p.path)
+		if watchErr != nil {
+			glog.Errorf("unable to watch YAML catalog file: %v", watchErr)
+		}
 
-		// Watch for changes
-		changes, err := basecatalog.GetMonitor().Path(ctx, p.path)
+		catalog, err := p.read()
 		if err != nil {
-			// Not fatal, we still have the inital load, but there
-			// won't be any updates.
-			glog.Errorf("unable to watch YAML catalog file: %v", err)
+			p.emitError(ctx, err, ch)
+		} else {
+			p.emit(ctx, catalog, ch)
+		}
+
+		if changes == nil {
+			// Watcher setup failed; no live updates possible.
 			return
 		}
 
@@ -358,21 +368,39 @@ func (p *yamlModelProvider) Models(ctx context.Context) (<-chan ModelProviderRec
 			select {
 			case <-ctx.Done():
 				return
-			case <-changes:
+			case _, ok := <-changes:
+				if !ok {
+					return
+				}
 				glog.Infof("Reloading YAML catalog %s", p.path)
-
 				catalog, err = p.read()
 				if err != nil {
 					glog.Errorf("unable to load YAML catalog: %v", err)
+					p.emitError(ctx, err, ch)
 					continue
 				}
-
 				p.emit(ctx, catalog, ch)
 			}
 		}
 	}()
 
 	return ch, nil
+}
+
+// emitError wraps readErr as a SourceReadError and sends it followed by a
+// sentinel so the consumer can update the source status to "error" while
+// keeping the channel alive for future reload attempts.
+func (p *yamlModelProvider) emitError(ctx context.Context, readErr error, out chan<- ModelProviderRecord) {
+	done := ctx.Done()
+	select {
+	case out <- ModelProviderRecord{Error: &SourceReadError{err: readErr}}:
+	case <-done:
+		return
+	}
+	select {
+	case out <- ModelProviderRecord{}:
+	case <-done:
+	}
 }
 
 func (p *yamlModelProvider) read() (*yamlCatalog, error) {

@@ -413,14 +413,17 @@ func (l *ModelLoader) readProviderRecords(ctx context.Context) <-chan ModelProvi
 
 			modelNames := []string{}
 			failedModels := []string{}
-			statusSaved := false
 
 			for r := range records {
-				// Per-model validation errors (Error set, no Model). The Hugging Face
-				// provider also sends a nil-Model completion record with
+				// Per-model validation errors or source read errors (Error set, no Model).
+				// The Hugging Face provider also sends a nil-Model completion record with
 				// ErrPartiallyAvailable; that is handled below as batch completion, not here.
 				if r.Error != nil && r.Model == nil && !errors.Is(r.Error, ErrPartiallyAvailable) {
-					glog.Errorf("%s: model validation error: %v", sourceID, r.Error)
+					if _, ok := errors.AsType[*SourceReadError](r.Error); ok {
+						glog.Errorf("%s: source read error: %v", sourceID, r.Error)
+					} else {
+						glog.Errorf("%s: model validation error: %v", sourceID, r.Error)
+					}
 					failedModels = append(failedModels, r.Error.Error())
 					continue
 				}
@@ -433,13 +436,19 @@ func (l *ModelLoader) readProviderRecords(ctx context.Context) <-chan ModelProvi
 					modelNameSet := mapset.NewSet(modelNames...)
 					modelNames = modelNames[:0]
 
-					go func() {
+					// Skip orphan cleanup on complete failure to preserve stale-but-functional
+					// data until the error is fixed. An empty catalog (no models, no errors)
+					// is a valid state and still runs cleanup.
+					completeFailure := modelNameSet.Cardinality() == 0 && len(failedModels) > 0
+					if !completeFailure {
+						l.state.TrackWrite()
 						count, err := l.removeOrphanedModelsFromSource(sourceID, modelNameSet)
+						l.state.WriteComplete()
 						if err != nil {
 							glog.Errorf("error removing orphaned models: %v", err)
 						}
 						glog.Infof("%s: cleaned up %d models", sourceID, count)
-					}()
+					}
 
 					// Only save status if context is still valid (no reload in progress)
 					if ctx.Err() == nil {
@@ -470,8 +479,11 @@ func (l *ModelLoader) readProviderRecords(ctx context.Context) <-chan ModelProvi
 						} else {
 							basecatalog.SaveSourceStatus(l.services.CatalogSourceRepository, sourceID, basecatalog.SourceStatusAvailable, "")
 						}
-						statusSaved = true
 					}
+
+					// Reset batch state for the next reload cycle.
+					failedModels = failedModels[:0]
+
 					continue
 				}
 
@@ -486,9 +498,9 @@ func (l *ModelLoader) readProviderRecords(ctx context.Context) <-chan ModelProvi
 				ch <- r
 			}
 
-			// If the channel closed without a nil Model marker and status wasn't already saved,
-			// save available status if context is still valid and we processed some models
-			if !statusSaved && ctx.Err() == nil && len(modelNames) > 0 {
+			// If the channel closed without a nil Model marker (one-shot provider),
+			// save available status if context is still valid and we processed some models.
+			if ctx.Err() == nil && len(modelNames) > 0 {
 				basecatalog.SaveSourceStatus(l.services.CatalogSourceRepository, sourceID, basecatalog.SourceStatusAvailable, "")
 			}
 		}(ctx, source.Id)

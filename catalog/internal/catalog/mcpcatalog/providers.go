@@ -218,31 +218,16 @@ func (yp *yamlMCPProvider) Servers(ctx context.Context) <-chan MCPServerProvider
 	go func() {
 		defer close(recordChan)
 
-		// Emit the initial batch.
-		for _, path := range yp.paths {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				yp.emit(ctx, path, recordChan)
-			}
-		}
-
-		// Signal that the initial batch is done.
-		select {
-		case recordChan <- MCPServerProviderRecord{}:
-		case <-ctx.Done():
-			return
-		}
-
-		// Watch each path for changes and re-emit on any file change.
-		// If monitoring setup fails, log and return — the initial load succeeded.
+		// Set up watchers before the initial emit so that changes arriving
+		// during or just after the read are not missed.
 		merged := make(chan struct{}, 1)
+		watchFailed := false
 		for _, path := range yp.paths {
 			ch, err := basecatalog.GetMonitor().Path(ctx, path)
 			if err != nil {
 				glog.Errorf("unable to watch MCP catalog file %s: %v", path, err)
-				return
+				watchFailed = true
+				break
 			}
 			go func(c <-chan struct{}) {
 				for {
@@ -261,6 +246,28 @@ func (yp *yamlMCPProvider) Servers(ctx context.Context) <-chan MCPServerProvider
 					}
 				}
 			}(ch)
+		}
+
+		// Emit the initial batch.
+		for _, path := range yp.paths {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				yp.emit(ctx, path, recordChan)
+			}
+		}
+
+		// Signal that the initial batch is done.
+		select {
+		case recordChan <- MCPServerProviderRecord{}:
+		case <-ctx.Done():
+			return
+		}
+
+		if watchFailed {
+			// Watcher setup failed; no live updates possible.
+			return
 		}
 
 		for {
