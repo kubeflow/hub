@@ -99,7 +99,7 @@
     "@patternfly/react-table": "^6.4.3",
     "@patternfly/react-templates": "^6.4.0",
     "classnames": "^2.2.6",
-    "dompurify": "^3.4.11",
+    "dompurify": "^3.4.12",
     "lodash-es": "^4.18.1",
     "mod-arch-core": "~1.21.0",
     "mod-arch-kubeflow": "~1.21.0",
