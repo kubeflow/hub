@@ -33,7 +33,7 @@
     "cypress:server": "serve ./public-cypress -p 9001 -s -L"
   },
   "devDependencies": {
-    "@module-federation/enhanced": "^0.21.6",
+    "@module-federation/enhanced": "^2.8.0",
     "@mui/icons-material": "^7.3.4",
     "@mui/material": "^7.3.4",
     "@mui/types": "^7.4.7",
