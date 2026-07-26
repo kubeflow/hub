@@ -405,6 +405,7 @@ components:
         - models
         - mcp_servers
         - agents
+        - skills
       default: models
     CatalogSourcePreviewResponse:
       description: Response containing models and their inclusion/exclusion status.

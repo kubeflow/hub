@@ -23,6 +23,7 @@ const (
 	CATALOGASSETTYPE_MODELS      CatalogAssetType = "models"
 	CATALOGASSETTYPE_MCP_SERVERS CatalogAssetType = "mcp_servers"
 	CATALOGASSETTYPE_AGENTS      CatalogAssetType = "agents"
+	CATALOGASSETTYPE_SKILLS      CatalogAssetType = "skills"
 )
 
 // All allowed values of CatalogAssetType enum
@@ -30,6 +31,7 @@ var AllowedCatalogAssetTypeEnumValues = []CatalogAssetType{
 	"models",
 	"mcp_servers",
 	"agents",
+	"skills",
 }
 
 func (v *CatalogAssetType) UnmarshalJSON(src []byte) error {

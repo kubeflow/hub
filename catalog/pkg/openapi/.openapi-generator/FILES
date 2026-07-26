@@ -1,6 +1,7 @@
 api_agent_catalog_service.go
 api_mcp_catalog_service.go
 api_model_catalog_service.go
+api_skill_catalog_service.go
 client.go
 configuration.go
 model_agent.go
@@ -71,6 +72,9 @@ model_model_preview_result.go
 model_order_by_field.go
 model_preview_catalog_source_response.go
 model_serving_config.go
+model_skill.go
+model_skill_list.go
+model_skill_trust_tier.go
 model_sort_order.go
 model_tool_calling_config.go
 response.go

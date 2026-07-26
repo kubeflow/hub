@@ -1469,6 +1469,67 @@ func AssertServingConfigRequired(obj model.ServingConfig) error {
 	return nil
 }
 
+// AssertSkillConstraints checks if the values respects the defined constraints
+func AssertSkillConstraints(obj model.Skill) error {
+	return nil
+}
+
+// AssertSkillListConstraints checks if the values respects the defined constraints
+func AssertSkillListConstraints(obj model.SkillList) error {
+	for _, el := range obj.Items {
+		if err := AssertSkillConstraints(el); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// AssertSkillListRequired checks if the required fields are not zero-ed
+func AssertSkillListRequired(obj model.SkillList) error {
+	elements := map[string]interface{}{
+		"nextPageToken": obj.NextPageToken,
+		"pageSize":      obj.PageSize,
+		"size":          obj.Size,
+		"items":         obj.Items,
+	}
+	for name, el := range elements {
+		if isZero := IsZeroValue(el); isZero {
+			return &RequiredError{Field: name}
+		}
+	}
+
+	for _, el := range obj.Items {
+		if err := AssertSkillRequired(el); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// AssertSkillRequired checks if the required fields are not zero-ed
+func AssertSkillRequired(obj model.Skill) error {
+	elements := map[string]interface{}{
+		"name": obj.Name,
+	}
+	for name, el := range elements {
+		if isZero := IsZeroValue(el); isZero {
+			return &RequiredError{Field: name}
+		}
+	}
+
+	return nil
+}
+
+// AssertSkillTrustTierConstraints checks if the values respects the defined constraints
+func AssertSkillTrustTierConstraints(obj model.SkillTrustTier) error {
+	return nil
+}
+
+// AssertSkillTrustTierRequired checks if the required fields are not zero-ed
+func AssertSkillTrustTierRequired(obj model.SkillTrustTier) error {
+	return nil
+}
+
 // AssertSortOrderConstraints checks if the values respects the defined constraints
 func AssertSortOrderConstraints(obj model.SortOrder) error {
 	return nil

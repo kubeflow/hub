@@ -1,0 +1,4 @@
+# Generated plugins use temp-dir isolation so no cross-plugin entries are needed.
+# This file is kept for reference only — the gen script copies selectively
+# from a temp directory instead of generating in-place.
+*
