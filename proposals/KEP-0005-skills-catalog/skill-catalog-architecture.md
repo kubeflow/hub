@@ -47,18 +47,20 @@ A new source type `git`, named after what it reads, following Hub's convention (
 
 ```mermaid
 flowchart TB
-    CFG[/"catalog-sources.yaml, skill_catalogs section<br/>type git, yamlCatalogPath, hot-reloaded"/] --> LOADER
-    SF[/"source files (data image or ConfigMap)<br/>repos + refs + tier, provider, category, labels"/] --> LOADER
+    CFG[/"catalog-sources.yaml, skill_catalogs section<br/>type git-skills-plugin, hot-reloaded"/] --> LOADER
+    DEF[/"default sources (read-only ConfigMap)<br/>repos via file (yamlCatalogPath) or inline"/] --> LOADER
+    USER[/"user-managed sources (ConfigMap)<br/>UI-written, repos inline, merged over defaults"/] --> LOADER
     subgraph plugin["skill plugin"]
-        LOADER["loader<br/>sync (single leader), stale-entry cleanup, source status"]
-        RES["repo resolver<br/>temporary copy per repo and ref<br/>parse-only, deleted after indexing"]
+        LOADER["loader<br/>sync (single leader), stale-entry cleanup, source status<br/>debounced triggers, in-flight-clone cap"]
+        RES["repo resolver<br/>temporary copy per repo and ref<br/>parse-only, deleted; timeout/size/max-refs"]
         PARSER["SKILL.md parser<br/>THE one parser"]
         SVC["service<br/>list, get, filterQuery"]
-        MKT["marketplace.json renderer<br/>optional mirror URL rewrite"]
+        MKT["marketplace.json renderer<br/>all refs, pinned to resolvedCommit"]
     end
     LOADER --> RES --> PARSER --> DB[("shared GORM DB<br/>skill index")]
     SVC --> DB
-    UI["Catalog UI<br/>gallery, detail, settings (source management)"] -->|"read + write"| BFF["BFF"] --> SVC & MKT
+    UI["Catalog UI<br/>gallery, detail, settings (source management)"] --> BFF["BFF"] --> SVC & MKT
+    BFF -->|"add/edit/delete via existing catalog-settings pattern"| USER
 ```
 
 ## 4. Sync Flow - Rebuilding the Temporary Index
@@ -86,7 +88,7 @@ sequenceDiagram
 
 ## 5. Identity - Canonical vs Fetch URL
 
-Internal IDs are not stable, since the index is just a cache. The canonical identity is the only permanent reference, and it stays the same even when a deployment reads through a different URL. `version` (the ref) tells entries apart.
+Internal IDs are not stable, since the index is just a cache. The canonical identity is the only permanent reference, and it stays the same even when a deployment reads through a different URL. `version` (the ref) tells entries apart - a branch surfaces as `latest`, and every entry records the commit it resolved to (`resolvedCommit`), which the marketplace pins to so installs are reproducible even for `latest`.
 
 ```mermaid
 flowchart TB
@@ -98,12 +100,12 @@ flowchart TB
 
 ## 6. Custom Metadata - Who Sets Tier / Provider / Category
 
-Custom metadata lives in the source files and is applied at sync time. It is never kept in the rebuildable index and never read from repository content. Sources are changed either by editing the mounted files directly (kubectl / GitOps) or through the admin settings page, whose edits are saved to a ConfigMap-backed source file (and picked up automatically). Files mounted as read-only appear read-only in the UI. `trustTier` is simply a label (`platformProvided`, `partnerVerified`, `organizationApproved`, or `communityContributed`), shown as a badge and available as a filter, with no ordering or special meaning.
+Custom metadata lives in the source files and is applied at sync time. It is never kept in the rebuildable index and never read from repository content. Source management reuses the existing model/MCP catalog-settings mechanism: read-only default sources merged with a user-managed ConfigMap that the settings UI writes via the BFF (auth as Secrets). Adding a skills git source through the UI works like adding a HuggingFace source for models; editing the ConfigMap directly (kubectl / GitOps) works too. `trustTier` is simply a label (`platformProvided`, `partnerVerified`, `organizationApproved`, or `communityContributed`), shown as a badge and available as a filter, with no ordering or special meaning.
 
 | Entry path | Who | Sets |
 |---|---|---|
-| Platform-shipped source files (PR-reviewed; Part II) | Platform team | All fields |
-| Deployment-managed source files (admin settings UI or kubectl / GitOps) | Catalog admins | All fields; UI edits are saved to a ConfigMap-backed file |
+| Default sources (read-only; Part II) | Platform team | All fields; read-only in the UI |
+| User-managed sources (admin settings UI or kubectl / GitOps) | Catalog admins | All fields; UI writes the user-managed ConfigMap |
 | `skillOverrides` on a repo entry | Either | Per-skill category/labels |
 | SKILL.md `metadata` frontmatter | Skill authors | `customProperties` only, never tier/provider |
 
