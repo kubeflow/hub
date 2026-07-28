@@ -38,8 +38,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/kubeflow/hub/catalog/internal/catalog/basecatalog"
 	apimodels "github.com/kubeflow/hub/catalog/pkg/openapi"
@@ -209,20 +211,41 @@ func validateTrustTier(tier string) error {
 }
 
 // validateRepositories checks the resolved repository list is non-empty, every
-// entry has a URL, and URLs are unique within the source.
+// entry has a URL, and URLs are unique within the source. Uniqueness is compared
+// on a normalized key (see normalizeRepoURL) so trivially-equivalent URLs are
+// rejected rather than indexed twice.
 func validateRepositories(repos []SkillRepository) error {
 	if len(repos) == 0 {
 		return fmt.Errorf("at least one repository is required")
 	}
-	seen := make(map[string]bool, len(repos))
+	seen := make(map[string]string, len(repos)) // normalized key -> original url
 	for i, r := range repos {
 		if r.URL == "" {
 			return fmt.Errorf("repository[%d]: url is required", i)
 		}
-		if seen[r.URL] {
-			return fmt.Errorf("duplicate repository url %q", r.URL)
+		key := normalizeRepoURL(r.URL)
+		if prev, dup := seen[key]; dup {
+			return fmt.Errorf("duplicate repository url %q (equivalent to %q)", r.URL, prev)
 		}
-		seen[r.URL] = true
+		seen[key] = r.URL
 	}
 	return nil
+}
+
+// normalizeRepoURL returns a comparison key for duplicate detection that treats
+// trivially-equivalent URLs as the same: the scheme and host are lowercased and a
+// trailing slash is trimmed. The path case is preserved (git paths can be
+// case-sensitive), and the original URL is kept verbatim as the canonical
+// identity — this key is used only for de-duplication.
+func normalizeRepoURL(raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil || u.Host == "" {
+		// Non-standard form (e.g. scp-like git@github.com:org/repo.git); fall
+		// back to a trailing-slash-trimmed comparison of the raw value.
+		return strings.TrimRight(raw, "/")
+	}
+	u.Scheme = strings.ToLower(u.Scheme)
+	u.Host = strings.ToLower(u.Host)
+	u.Path = strings.TrimRight(u.Path, "/")
+	return u.String()
 }

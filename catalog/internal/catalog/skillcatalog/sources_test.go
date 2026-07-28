@@ -211,14 +211,39 @@ repositories:
 }
 
 func TestParseSkillSource_DuplicateRepoURL(t *testing.T) {
+	// Exact, host-case, and trailing-slash variants are all trivially equivalent
+	// and must be rejected as duplicates.
+	dupCases := map[string][2]string{
+		"exact":          {"https://github.com/example/skills.git", "https://github.com/example/skills.git"},
+		"host case":      {"https://github.com/example/skills.git", "https://GitHub.com/example/skills.git"},
+		"trailing slash": {"https://github.com/example/skills.git", "https://github.com/example/skills.git/"},
+		"scheme case":    {"https://github.com/example/skills.git", "HTTPS://github.com/example/skills.git"},
+	}
+	for name, urls := range dupCases {
+		t.Run(name, func(t *testing.T) {
+			src := skillSource(mustProps(t, `
+repositories:
+  - url: `+urls[0]+`
+  - url: `+urls[1]+`
+`))
+			_, err := ParseSkillSource(src)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "duplicate")
+		})
+	}
+}
+
+func TestParseSkillSource_DistinctPathCaseAllowed(t *testing.T) {
+	// Path case is preserved (git paths can be case-sensitive), so these are two
+	// distinct repositories, not duplicates.
 	src := skillSource(mustProps(t, `
 repositories:
-  - url: https://github.com/example/skills.git
+  - url: https://github.com/Example/skills.git
   - url: https://github.com/example/skills.git
 `))
-	_, err := ParseSkillSource(src)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "duplicate")
+	spec, err := ParseSkillSource(src)
+	require.NoError(t, err)
+	assert.Len(t, spec.Repositories, 2)
 }
 
 func TestParseSkillSource_UnknownPropertyRejected(t *testing.T) {
