@@ -221,14 +221,14 @@ func (yp *yamlMCPProvider) Servers(ctx context.Context) <-chan MCPServerProvider
 		// Set up watchers before the initial emit so that changes arriving
 		// during or just after the read are not missed.
 		merged := make(chan struct{}, 1)
-		watchFailed := false
+		watchCount := 0
 		for _, path := range yp.paths {
 			ch, err := basecatalog.GetMonitor().Path(ctx, path)
 			if err != nil {
 				glog.Errorf("unable to watch MCP catalog file %s: %v", path, err)
-				watchFailed = true
-				break
+				continue
 			}
+			watchCount++
 			go func(c <-chan struct{}) {
 				for {
 					select {
@@ -265,8 +265,8 @@ func (yp *yamlMCPProvider) Servers(ctx context.Context) <-chan MCPServerProvider
 			return
 		}
 
-		if watchFailed {
-			// Watcher setup failed; no live updates possible.
+		if watchCount == 0 {
+			// All watcher setups failed; no live updates possible.
 			return
 		}
 

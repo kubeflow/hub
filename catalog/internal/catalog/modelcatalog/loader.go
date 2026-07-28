@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"sync"
+	"time"
 
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/golang/glog"
@@ -78,6 +79,20 @@ type ModelLoader struct {
 	services      Services
 	handlers      []LoaderEventHandler
 	loadedSources map[string]bool // tracks which source IDs have been loaded
+
+	closerMu sync.Mutex
+	closer   func()
+}
+
+// setCloser stores a cancel function that aborts the current leader operations.
+// If a previous cancel function exists it is called first, preempting the old run.
+func (l *ModelLoader) setCloser(closer func()) {
+	l.closerMu.Lock()
+	defer l.closerMu.Unlock()
+	if l.closer != nil {
+		l.closer()
+	}
+	l.closer = closer
 }
 
 // UpdateServices replaces the loader's repository references after a database
@@ -136,6 +151,12 @@ func (l *ModelLoader) ParseAllConfigs() error {
 // cross-contamination when cleaning up shared CatalogSource records.
 // This is called by the unified loader when becoming leader.
 func (l *ModelLoader) PerformLeaderOperations(ctx context.Context, allKnownSourceIDs mapset.Set[string]) error {
+	ctx, cancel := context.WithCancel(ctx)
+	l.setCloser(cancel)
+	// Drain in-flight writes from the previous invocation before running cleanup,
+	// so a concurrent write from an old goroutine cannot re-insert data that
+	// cleanup is about to remove.
+	l.state.WaitForInflightWrites(30 * time.Second)
 	return l.performLeaderWrites(ctx, allKnownSourceIDs)
 }
 
@@ -260,9 +281,6 @@ func (l *ModelLoader) updateLabels(path string, config *basecatalog.SourceConfig
 }
 
 func (l *ModelLoader) updateDatabase(ctx context.Context) error {
-	ctx, cancel := context.WithCancel(ctx)
-	l.state.SetCloser(cancel)
-
 	records := l.readProviderRecords(ctx)
 
 	go func() {
