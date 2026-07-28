@@ -194,6 +194,49 @@ func TestSourceConfig_Validate(t *testing.T) {
 			expectErr: true,
 			errMsg:    `id "shared" used in multiple catalog types`,
 		},
+		{
+			name: "valid config with skill catalogs",
+			config: &SourceConfig{
+				SkillCatalogs: []PluginSource{
+					{ID: "skill1", Name: "Skill 1", Type: "git-skills-plugin"},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "duplicate skill catalog IDs",
+			config: &SourceConfig{
+				SkillCatalogs: []PluginSource{
+					{ID: "dup", Name: "Skill 1", Type: "git-skills-plugin"},
+					{ID: "dup", Name: "Skill 2", Type: "git-skills-plugin"},
+				},
+			},
+			expectErr: true,
+			errMsg:    "duplicate skill catalog id: dup",
+		},
+		{
+			name: "missing skill catalog ID",
+			config: &SourceConfig{
+				SkillCatalogs: []PluginSource{
+					{Name: "Skill 1", Type: "git-skills-plugin"},
+				},
+			},
+			expectErr: true,
+			errMsg:    "skill catalog source missing id",
+		},
+		{
+			name: "cross-type ID collision between agent and skill catalogs",
+			config: &SourceConfig{
+				AgentCatalogs: []PluginSource{
+					{ID: "shared", Name: "Agent 1", Type: "yaml"},
+				},
+				SkillCatalogs: []PluginSource{
+					{ID: "shared", Name: "Skill 1", Type: "git-skills-plugin"},
+				},
+			},
+			expectErr: true,
+			errMsg:    `id "shared" used in multiple catalog types`,
+		},
 	}
 
 	for _, tt := range tests {

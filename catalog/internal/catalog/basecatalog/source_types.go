@@ -20,6 +20,7 @@ const (
 	AssetTypeModels     = "models"
 	AssetTypeMCPServers = "mcp_servers"
 	AssetTypeAgents     = "agents"
+	AssetTypeSkills     = "skills"
 )
 
 // CommonSourceFields holds the fields shared between ModelSource and MCPSource

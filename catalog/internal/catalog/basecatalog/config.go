@@ -57,6 +57,11 @@ type SourceConfig struct {
 	// AgentCatalogs contains agent catalog source definitions
 	AgentCatalogs []PluginSource `yaml:"agent_catalogs,omitempty" json:"agent_catalogs,omitempty"`
 
+	// SkillCatalogs contains skill catalog source definitions (type: git-skills-plugin).
+	// Skill-specific configuration (repositories, trustTier, syncIntervalMinutes,
+	// yamlCatalogPath) lives under each source's `properties`; see the skillcatalog package.
+	SkillCatalogs []PluginSource `yaml:"skill_catalogs,omitempty" json:"skill_catalogs,omitempty"`
+
 	// Labels contains label definitions for the catalogs
 	Labels []map[string]any `yaml:"labels,omitempty" json:"labels,omitempty"`
 
@@ -145,6 +150,9 @@ func (c *SourceConfig) Validate() error {
 	}
 
 	if err := validateSourceIDs("agent", c.AgentCatalogs, seen); err != nil {
+		return err
+	}
+	if err := validateSourceIDs("skill", c.SkillCatalogs, seen); err != nil {
 		return err
 	}
 	if err := ValidateNamedQueries(c.NamedQueries); err != nil {
