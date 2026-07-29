@@ -21,7 +21,7 @@ func CORSMiddleware(allowedOrigins []string) func(http.Handler) http.Handler {
 		AllowedOrigins:   allowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-		ExposedHeaders:   []string{"Link"},
+		ExposedHeaders:   []string{"Link", "Deprecation", "Sunset"},
 		AllowCredentials: false,
 		MaxAge:           300,
 	})

@@ -141,6 +141,21 @@ func TestCORSMiddleware_CredentialsDisabled(t *testing.T) {
 	assert.Empty(t, rr.Header().Get("Access-Control-Allow-Credentials"))
 }
 
+func TestCORSMiddleware_ExposesDeprecationHeaders(t *testing.T) {
+	handler := CORSMiddleware([]string{"https://dashboard.example.com"})(dummyHandler())
+
+	req := httptest.NewRequest("GET", "/test", nil)
+	req.Header.Set("Origin", "https://dashboard.example.com")
+	rr := httptest.NewRecorder()
+
+	handler.ServeHTTP(rr, req)
+
+	exposed := rr.Header().Get("Access-Control-Expose-Headers")
+	assert.Contains(t, exposed, "Deprecation")
+	assert.Contains(t, exposed, "Sunset")
+	assert.Contains(t, exposed, "Link")
+}
+
 func TestCORSMiddleware_PreflightPATCH(t *testing.T) {
 	handler := CORSMiddleware([]string{"https://dashboard.example.com"})(dummyHandler())
 

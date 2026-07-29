@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
@@ -179,6 +180,17 @@ func runProxyServer(cmd *cobra.Command, args []string) error {
 
 		mux := chi.NewRouter()
 		mux.Use(chimiddleware.Logger)
+
+		if cfg.AlphaSunsetDate != "" {
+			sunsetDate, err := time.Parse("2006-01-02", cfg.AlphaSunsetDate)
+			if err != nil {
+				errChan <- fmt.Errorf("invalid --alpha-sunset-date %q: must be YYYY-MM-DD: %w", cfg.AlphaSunsetDate, err)
+				return
+			}
+			mux.Use(middleware.DeprecationMiddleware(middleware.DeprecationConfig{SunsetDate: sunsetDate}))
+			glog.Infof("Alpha API (v1alpha3) deprecation headers enabled; sunset date: %s", cfg.AlphaSunsetDate)
+		}
+
 		for _, route := range v1alpha3Controller.OrderedRoutes() {
 			mux.Method(route.Method, route.Pattern, route.HandlerFunc)
 		}
@@ -268,4 +280,8 @@ func init() {
 
 	proxyCmd.Flags().StringSliceVar(&cfg.CORSAllowedOrigins, "cors-allowed-origins", nil,
 		"Comma-separated list of allowed CORS origins. If empty (default), CORS is disabled.")
+
+	proxyCmd.Flags().StringVar(&cfg.AlphaSunsetDate, "alpha-sunset-date", "",
+		"Sunset date (YYYY-MM-DD) for the deprecated v1alpha3 API, per RFC 8594. "+
+			"If empty (default), no deprecation headers are added to v1alpha3 responses.")
 }

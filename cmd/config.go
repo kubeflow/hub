@@ -6,6 +6,7 @@ type Config struct {
 	Port               int      `mapstructure:"port" yaml:"port"`
 	LibraryDirs        []string `mapstructure:"metadata-library-dir" yaml:"metadata-library-dir"`
 	CORSAllowedOrigins []string `mapstructure:"cors-allowed-origins" yaml:"cors-allowed-origins"`
+	AlphaSunsetDate    string   `mapstructure:"alpha-sunset-date" yaml:"alpha-sunset-date"`
 }
 
 var cfg = Config{DbFile: "metadata.sqlite.db", Hostname: "localhost", Port: 8080, LibraryDirs: []string(nil)}
