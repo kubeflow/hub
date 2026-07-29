@@ -22,9 +22,10 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
+	_ "github.com/kubeflow/hub/catalog/internal/plugins/agent"
 	_ "github.com/kubeflow/hub/catalog/internal/plugins/mcp"
 	_ "github.com/kubeflow/hub/catalog/internal/plugins/model"
-	_ "github.com/kubeflow/hub/catalog/internal/plugins/agent"
+	_ "github.com/kubeflow/hub/catalog/internal/plugins/skill"
 )
 
 var catalogCfg = struct {
