@@ -1,4 +1,4 @@
-package openapi
+package v1alpha3
 
 import (
 	"testing"

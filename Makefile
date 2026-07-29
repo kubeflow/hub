@@ -84,11 +84,14 @@ openapi/validate: bin/openapi-generator-cli bin/yq
 
 # generate the openapi server implementation
 .PHONY: gen/openapi-server
-gen/openapi-server: bin/openapi-generator-cli api/openapi/model-registry.yaml api/openapi/catalog.yaml openapi/validate internal/server/openapi/api_model_registry_service.go bin/goimports
+gen/openapi-server: bin/openapi-generator-cli api/openapi/model-registry.yaml api/openapi/model-registry-v1.yaml api/openapi/catalog.yaml openapi/validate internal/server/openapi/v1alpha3/api_model_registry_service.go internal/server/openapi/v1/api_model_registry_service.go bin/goimports
 	make -C catalog $@
 
-internal/server/openapi/api_model_registry_service.go: bin/openapi-generator-cli api/openapi/model-registry.yaml
-	./scripts/gen_openapi_server.sh
+internal/server/openapi/v1alpha3/api_model_registry_service.go: bin/openapi-generator-cli api/openapi/model-registry.yaml
+	./scripts/gen_openapi_server.sh api/openapi/model-registry.yaml internal/server/openapi/v1alpha3 v1alpha3
+
+internal/server/openapi/v1/api_model_registry_service.go: bin/openapi-generator-cli api/openapi/model-registry-v1.yaml
+	./scripts/gen_openapi_server.sh api/openapi/model-registry-v1.yaml internal/server/openapi/v1 v1
 
 # generate the openapi schema model and client
 .PHONY: gen/openapi
@@ -165,7 +168,10 @@ clean-pkg-openapi:
 
 .PHONY: clean-internal-server-openapi
 clean-internal-server-openapi:
-	while IFS= read -r file; do rm -f "internal/server/openapi/$$file"; done < internal/server/openapi/.openapi-generator/FILES
+	while IFS= read -r file; do rm -f "internal/server/openapi/v1alpha3/$$file"; done < internal/server/openapi/v1alpha3/.openapi-generator/FILES
+	if [ -f internal/server/openapi/v1/.openapi-generator/FILES ]; then \
+		while IFS= read -r file; do rm -f "internal/server/openapi/v1/$$file"; done < internal/server/openapi/v1/.openapi-generator/FILES; \
+	fi
 	make -C catalog $@
 
 .PHONY: clean

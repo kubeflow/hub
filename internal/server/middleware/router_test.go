@@ -5,32 +5,18 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/kubeflow/hub/internal/server/openapi"
 	"github.com/stretchr/testify/assert"
 )
 
-type stubRouter struct{}
-
-func (s *stubRouter) Routes() openapi.Routes {
-	return openapi.Routes{
-		"test": {Name: "test", Method: "GET", Pattern: "/test", HandlerFunc: func(w http.ResponseWriter, _ *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte("OK"))
-		}},
-	}
-}
-
-func (s *stubRouter) OrderedRoutes() []openapi.Route {
-	routes := s.Routes()
-	result := make([]openapi.Route, 0, len(routes))
-	for _, r := range routes {
-		result = append(result, r)
-	}
-	return result
+func stubHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("OK"))
+	})
 }
 
 func TestWrapWithValidation_CORSDisabled(t *testing.T) {
-	handler := WrapWithValidation(nil, &stubRouter{})
+	handler := WrapWithValidation(nil, stubHandler())
 
 	req := httptest.NewRequest("GET", "/test", nil)
 	req.Header.Set("Origin", "https://evil.com")
@@ -43,7 +29,7 @@ func TestWrapWithValidation_CORSDisabled(t *testing.T) {
 }
 
 func TestWrapWithValidation_CORSEnabled(t *testing.T) {
-	handler := WrapWithValidation([]string{"https://dashboard.example.com"}, &stubRouter{})
+	handler := WrapWithValidation([]string{"https://dashboard.example.com"}, stubHandler())
 
 	req := httptest.NewRequest("GET", "/test", nil)
 	req.Header.Set("Origin", "https://dashboard.example.com")
@@ -56,7 +42,7 @@ func TestWrapWithValidation_CORSEnabled(t *testing.T) {
 }
 
 func TestWrapWithValidation_CORSAndValidation(t *testing.T) {
-	handler := WrapWithValidation([]string{"https://dashboard.example.com"}, &stubRouter{})
+	handler := WrapWithValidation([]string{"https://dashboard.example.com"}, stubHandler())
 
 	req := httptest.NewRequest("GET", "/test?name=test%00invalid", nil)
 	req.Header.Set("Origin", "https://dashboard.example.com")

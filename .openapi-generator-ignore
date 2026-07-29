@@ -37,10 +37,11 @@ pkg/openapi/**all_of.go
 pkg/openapi/go.mod
 pkg/openapi/go.sum
 
-# server files to ignore
-internal/server/openapi/api
-internal/server/openapi/api/**
-internal/server/openapi/.openapi-generator-ignore
-internal/server/openapi/api_model_registry_service_service.go
-internal/server/openapi/README.md
-internal/server/openapi/main.go
+# server files to ignore (generated separately per API version, e.g. v1alpha3, v1)
+internal/server/openapi/*/api
+internal/server/openapi/*/api/**
+internal/server/openapi/*/.openapi-generator-ignore
+internal/server/openapi/v1alpha3/api_model_registry_service_service.go
+internal/server/openapi/v1/api_model_registry_service_service.go
+internal/server/openapi/*/README.md
+internal/server/openapi/*/main.go

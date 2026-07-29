@@ -5,16 +5,13 @@
  *
  * REST API for Model Registry to create and manage ML model metadata
  *
- * API version: v1alpha3
+ * API version: v1
  */
 
-package openapi
+package v1
 
-import (
-	"github.com/go-chi/chi/v5/middleware"
-	"net/http"
-)
-
-func Logger(inner http.Handler) http.Handler {
-	return middleware.Logger(inner)
+// ImplResponse defines an implementation response with error code and the associated body
+type ImplResponse struct {
+	Code int
+	Body interface{}
 }

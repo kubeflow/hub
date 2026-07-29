@@ -5,10 +5,10 @@
  *
  * REST API for Model Registry to create and manage ML model metadata
  *
- * API version: v1alpha3
+ * API version: v1
  */
 
-package openapi
+package v1
 
 import (
 	"encoding/json"

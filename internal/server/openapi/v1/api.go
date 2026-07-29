@@ -5,10 +5,10 @@
  *
  * REST API for Model Registry to create and manage ML model metadata
  *
- * API version: v1alpha3
+ * API version: v1
  */
 
-package openapi
+package v1
 
 import (
 	"context"
@@ -26,22 +26,6 @@ type ModelRegistryServiceAPIRouter interface {
 	CreateArtifact(http.ResponseWriter, *http.Request)
 	GetArtifact(http.ResponseWriter, *http.Request)
 	UpdateArtifact(http.ResponseWriter, *http.Request)
-	FindExperiment(http.ResponseWriter, *http.Request)
-	FindExperimentRun(http.ResponseWriter, *http.Request)
-	GetExperimentRuns(http.ResponseWriter, *http.Request)
-	CreateExperimentRun(http.ResponseWriter, *http.Request)
-	GetExperimentRunsMetricHistory(http.ResponseWriter, *http.Request)
-	GetExperimentRun(http.ResponseWriter, *http.Request)
-	UpdateExperimentRun(http.ResponseWriter, *http.Request)
-	GetExperimentRunArtifacts(http.ResponseWriter, *http.Request)
-	UpsertExperimentRunArtifact(http.ResponseWriter, *http.Request)
-	GetExperimentRunMetricHistory(http.ResponseWriter, *http.Request)
-	GetExperiments(http.ResponseWriter, *http.Request)
-	CreateExperiment(http.ResponseWriter, *http.Request)
-	GetExperiment(http.ResponseWriter, *http.Request)
-	UpdateExperiment(http.ResponseWriter, *http.Request)
-	GetExperimentExperimentRuns(http.ResponseWriter, *http.Request)
-	CreateExperimentExperimentRun(http.ResponseWriter, *http.Request)
 	FindInferenceService(http.ResponseWriter, *http.Request)
 	GetInferenceServices(http.ResponseWriter, *http.Request)
 	CreateInferenceService(http.ResponseWriter, *http.Request)
@@ -89,22 +73,6 @@ type ModelRegistryServiceAPIServicer interface {
 	CreateArtifact(context.Context, model.ArtifactCreate) (ImplResponse, error)
 	GetArtifact(context.Context, string) (ImplResponse, error)
 	UpdateArtifact(context.Context, string, model.ArtifactUpdate) (ImplResponse, error)
-	FindExperiment(context.Context, string, string) (ImplResponse, error)
-	FindExperimentRun(context.Context, string, string, string) (ImplResponse, error)
-	GetExperimentRuns(context.Context, string, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
-	CreateExperimentRun(context.Context, model.ExperimentRunCreate) (ImplResponse, error)
-	GetExperimentRunsMetricHistory(context.Context, string, string, string, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
-	GetExperimentRun(context.Context, string) (ImplResponse, error)
-	UpdateExperimentRun(context.Context, string, model.ExperimentRunUpdate) (ImplResponse, error)
-	GetExperimentRunArtifacts(context.Context, string, string, string, string, model.ArtifactTypeQueryParam, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
-	UpsertExperimentRunArtifact(context.Context, string, model.Artifact) (ImplResponse, error)
-	GetExperimentRunMetricHistory(context.Context, string, string, string, string, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
-	GetExperiments(context.Context, string, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
-	CreateExperiment(context.Context, model.ExperimentCreate) (ImplResponse, error)
-	GetExperiment(context.Context, string) (ImplResponse, error)
-	UpdateExperiment(context.Context, string, model.ExperimentUpdate) (ImplResponse, error)
-	GetExperimentExperimentRuns(context.Context, string, string, string, string, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
-	CreateExperimentExperimentRun(context.Context, string, model.ExperimentRun) (ImplResponse, error)
 	FindInferenceService(context.Context, string, string, string) (ImplResponse, error)
 	GetInferenceServices(context.Context, string, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
 	CreateInferenceService(context.Context, model.InferenceServiceCreate) (ImplResponse, error)

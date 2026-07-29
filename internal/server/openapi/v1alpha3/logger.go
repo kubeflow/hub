@@ -8,10 +8,13 @@
  * API version: v1alpha3
  */
 
-package openapi
+package v1alpha3
 
-// ImplResponse defines an implementation response with error code and the associated body
-type ImplResponse struct {
-	Code int
-	Body interface{}
+import (
+	"github.com/go-chi/chi/v5/middleware"
+	"net/http"
+)
+
+func Logger(inner http.Handler) http.Handler {
+	return middleware.Logger(inner)
 }

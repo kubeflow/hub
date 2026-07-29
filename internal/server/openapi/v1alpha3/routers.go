@@ -8,7 +8,7 @@
  * API version: v1alpha3
  */
 
-package openapi
+package v1alpha3
 
 import (
 	"github.com/go-chi/chi/v5"
