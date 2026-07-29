@@ -388,5 +388,6 @@ When modifying the REST API:
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — DCO, code of conduct, ARM/Mac setup, Kind deployment
 - [clients/ui/CONTRIBUTING.md](./clients/ui/CONTRIBUTING.md) — UI-specific contribution guide
 - [docs/dev_kind_environment.md](./docs/dev_kind_environment.md) — Kind local dev environment setup and troubleshooting
+- [docs/writing-a-catalog-plugin.md](./docs/writing-a-catalog-plugin.md) — step-by-step guide to creating a new catalog plugin with the `catalog-gen` tool
 - [devenv/README.md](./devenv/README.md) — Tilt-based dev environment
 - [Model Registry documentation](https://www.kubeflow.org/docs/components/model-registry/overview/)
