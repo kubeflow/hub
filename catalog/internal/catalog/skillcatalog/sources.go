@@ -233,19 +233,20 @@ func validateRepositories(repos []SkillRepository) error {
 }
 
 // normalizeRepoURL returns a comparison key for duplicate detection that treats
-// trivially-equivalent URLs as the same: the scheme and host are lowercased and a
-// trailing slash is trimmed. The path case is preserved (git paths can be
-// case-sensitive), and the original URL is kept verbatim as the canonical
-// identity — this key is used only for de-duplication.
+// trivially-equivalent URLs as the same: the scheme and host are lowercased, a
+// trailing slash is trimmed, and an optional ".git" suffix is dropped (clone URLs
+// resolve to the same repo with or without it). The path case is preserved (git
+// paths can be case-sensitive), and the original URL is kept verbatim as the
+// canonical identity — this key is used only for de-duplication.
 func normalizeRepoURL(raw string) string {
 	u, err := url.Parse(raw)
 	if err != nil || u.Host == "" {
 		// Non-standard form (e.g. scp-like git@github.com:org/repo.git); fall
-		// back to a trailing-slash-trimmed comparison of the raw value.
-		return strings.TrimRight(raw, "/")
+		// back to a trailing-slash- and ".git"-trimmed comparison of the raw value.
+		return strings.TrimSuffix(strings.TrimRight(raw, "/"), ".git")
 	}
 	u.Scheme = strings.ToLower(u.Scheme)
 	u.Host = strings.ToLower(u.Host)
-	u.Path = strings.TrimRight(u.Path, "/")
+	u.Path = strings.TrimSuffix(strings.TrimRight(u.Path, "/"), ".git")
 	return u.String()
 }

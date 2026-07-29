@@ -214,10 +214,12 @@ func TestParseSkillSource_DuplicateRepoURL(t *testing.T) {
 	// Exact, host-case, and trailing-slash variants are all trivially equivalent
 	// and must be rejected as duplicates.
 	dupCases := map[string][2]string{
-		"exact":          {"https://github.com/example/skills.git", "https://github.com/example/skills.git"},
-		"host case":      {"https://github.com/example/skills.git", "https://GitHub.com/example/skills.git"},
-		"trailing slash": {"https://github.com/example/skills.git", "https://github.com/example/skills.git/"},
-		"scheme case":    {"https://github.com/example/skills.git", "HTTPS://github.com/example/skills.git"},
+		"exact":              {"https://github.com/example/skills.git", "https://github.com/example/skills.git"},
+		"host case":          {"https://github.com/example/skills.git", "https://GitHub.com/example/skills.git"},
+		"trailing slash":     {"https://github.com/example/skills.git", "https://github.com/example/skills.git/"},
+		"scheme case":        {"https://github.com/example/skills.git", "HTTPS://github.com/example/skills.git"},
+		"git suffix":         {"https://github.com/example/skills.git", "https://github.com/example/skills"},
+		"git suffix + slash": {"https://github.com/example/skills.git", "https://github.com/example/skills/"},
 	}
 	for name, urls := range dupCases {
 		t.Run(name, func(t *testing.T) {
