@@ -182,6 +182,63 @@ func TestParseSkillMD_NoClosingDelimiterSkipped(t *testing.T) {
 	assert.ErrorIs(t, err, ErrInvalidFrontmatter, "an opened-but-unclosed frontmatter is invalid, not absent")
 }
 
+func TestParseSkillMD_IndentedDashesInsideBlockScalarNotAFence(t *testing.T) {
+	// The `---` inside the `description` block scalar is indented, so it must not
+	// be treated as the closing fence — only the column-0 `---` closes frontmatter.
+	content := `---
+foo: bar
+description: |
+   blah
+   ---
+   blah
+baz: qux
+---
+Body
+`
+	skill, err := ParseSkillMD([]byte(content), "x")
+	require.NoError(t, err)
+	require.NotNil(t, skill)
+	assert.Contains(t, skill.Description, "---", "the indented --- belongs to the description")
+	assert.Contains(t, skill.Description, "blah")
+	assert.Equal(t, "Body", strings.TrimSpace(skill.Body), "frontmatter must not leak into the body")
+}
+
+func TestParseSkillMD_StripsLeadingBOM(t *testing.T) {
+	// Some editors save UTF-8 files with a leading BOM; it must not defeat
+	// frontmatter detection (Go's TrimSpace does not treat U+FEFF as whitespace).
+	content := append([]byte{0xEF, 0xBB, 0xBF}, []byte(validSkillMD)...)
+	skill, err := ParseSkillMD(content, "deploy")
+	require.NoError(t, err)
+	require.NotNil(t, skill)
+	assert.Equal(t, "deploy", skill.Name)
+	assert.Equal(t, "Deploy an application to the cluster.", skill.Description)
+}
+
+func TestParseSkillMD_AllowedToolsSpaceSeparatedString(t *testing.T) {
+	// The spec defines allowed-tools as a space-separated string.
+	content := "---\nname: t\ndescription: d\nallowed-tools: Bash(git:*) Bash(jq:*) Read\n---\nbody\n"
+	skill, err := ParseSkillMD([]byte(content), "t")
+	require.NoError(t, err)
+	require.NotNil(t, skill)
+	assert.Equal(t, []string{"Bash(git:*)", "Bash(jq:*)", "Read"}, skill.AllowedTools)
+}
+
+func TestParseSkillMD_DescriptionTooLongWarns(t *testing.T) {
+	content := "---\nname: d\ndescription: " + strings.Repeat("x", 1025) + "\n---\nbody\n"
+	skill, err := ParseSkillMD([]byte(content), "d")
+	require.NoError(t, err)
+	require.NotNil(t, skill)
+	assert.True(t, hasWarning(skill.Warnings, "description"), "expected a description-length warning, got %v", skill.Warnings)
+}
+
+func TestParseSkillMD_CompatibilityTooLongWarns(t *testing.T) {
+	content := "---\nname: c\ndescription: d\ncompatibility: " + strings.Repeat("y", 501) + "\n---\nbody\n"
+	skill, err := ParseSkillMD([]byte(content), "c")
+	require.NoError(t, err)
+	require.NotNil(t, skill)
+	assert.True(t, hasWarning(skill.Warnings, "compatibility"), "expected a compatibility-length warning, got %v", skill.Warnings)
+}
+
 func hasWarning(warnings []string, substr string) bool {
 	for _, w := range warnings {
 		if strings.Contains(w, substr) {
