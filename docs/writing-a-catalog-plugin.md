@@ -67,7 +67,7 @@ It also edits two shared files: registers the plugin in `catalog/cmd/catalog.go`
 (blank import) and wires configuration.
 
 The generated entity services contain `panic("TODO")` stubs — the plugin does not
-yet compile into working behaviour. The remaining steps replace them.
+yet compile into working behavior. The remaining steps replace them.
 
 ## Step 2 — Register the Asset Type
 
