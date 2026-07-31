@@ -2,11 +2,13 @@ package skillcatalog
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/kubeflow/hub/catalog/internal/catalog/skillcatalog/models"
+	skillservice "github.com/kubeflow/hub/catalog/internal/catalog/skillcatalog/service"
 	openapi "github.com/kubeflow/hub/catalog/pkg/openapi"
 	"github.com/kubeflow/hub/internal/platform/apiutils"
 	"github.com/kubeflow/hub/pkg/api"
@@ -95,7 +97,10 @@ func (d *DBSkillCatalog) GetSkill(_ context.Context, id string) (*openapi.Skill,
 
 	dbSkill, err := d.skillRepo.GetByID(skillID)
 	if err != nil {
-		return nil, fmt.Errorf("skill not found with ID %s: %w", id, api.ErrNotFound)
+		if errors.Is(err, skillservice.ErrSkillNotFound) {
+			return nil, fmt.Errorf("skill not found with ID %s: %w", id, api.ErrNotFound)
+		}
+		return nil, fmt.Errorf("error getting skill %s: %w", id, err)
 	}
 
 	return mapDBSkillToAPI(dbSkill), nil
