@@ -239,6 +239,37 @@ func TestParseSkillMD_CompatibilityTooLongWarns(t *testing.T) {
 	assert.True(t, hasWarning(skill.Warnings, "compatibility"), "expected a compatibility-length warning, got %v", skill.Warnings)
 }
 
+func TestParseSkillMD_WrongTypeMetadataDoesNotSkipSkill(t *testing.T) {
+	// metadata written as a string (not a map) must be ignored with a warning —
+	// the rest of the frontmatter still parses. (The whole skill must not be lost.)
+	content := `---
+name: deploy
+description: Deploy the app.
+metadata: not-a-map
+---
+Body.
+`
+	skill, err := ParseSkillMD([]byte(content), "deploy")
+	require.NoError(t, err)
+	require.NotNil(t, skill)
+	assert.Equal(t, "deploy", skill.Name)
+	assert.Equal(t, "Deploy the app.", skill.Description)
+	assert.Nil(t, skill.Metadata)
+	assert.True(t, hasWarning(skill.Warnings, "metadata"), "expected a metadata type warning, got %v", skill.Warnings)
+}
+
+func TestParseSkillMD_NonStringNameWarnsAndFallsBack(t *testing.T) {
+	// name written as a number is not a string; ignore it, fall back to the
+	// directory name, and still parse rather than failing.
+	content := "---\nname: 123\ndescription: Valid description.\nlicense: apache-2.0\n---\nbody\n"
+	skill, err := ParseSkillMD([]byte(content), "expected-dir")
+	require.NoError(t, err)
+	require.NotNil(t, skill)
+	assert.Equal(t, "expected-dir", skill.Name)
+	assert.Equal(t, "apache-2.0", skill.License, "other fields still parse")
+	assert.True(t, hasWarning(skill.Warnings, "name"), "expected a name type/fallback warning, got %v", skill.Warnings)
+}
+
 func hasWarning(warnings []string, substr string) bool {
 	for _, w := range warnings {
 		if strings.Contains(w, substr) {

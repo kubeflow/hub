@@ -49,20 +49,6 @@ type ParsedSkill struct {
 	Warnings []string
 }
 
-// skillFrontmatter is the YAML frontmatter schema. Parsing is lenient: unknown
-// keys are ignored (not strict) so authors can carry extra fields.
-type skillFrontmatter struct {
-	Name          string `json:"name,omitempty"`
-	Description   string `json:"description,omitempty"`
-	License       string `json:"license,omitempty"`
-	Compatibility string `json:"compatibility,omitempty"`
-	// AllowedTools is a space-separated string per the spec, e.g.
-	// "Bash(git:*) Read". A YAML list is also accepted for leniency, so this is
-	// decoded as `any` and normalized by parseAllowedTools.
-	AllowedTools any            `json:"allowed-tools,omitempty"`
-	Metadata     map[string]any `json:"metadata,omitempty"`
-}
-
 // ParseSkillMD parses SKILL.md content leniently per the Agent Skills spec.
 // expectedName is the skill's directory name, used for the name-match warning.
 //
@@ -74,33 +60,39 @@ func ParseSkillMD(content []byte, expectedName string) (*ParsedSkill, error) {
 		return nil, err
 	}
 
-	var fm skillFrontmatter
-	if err := yaml.Unmarshal([]byte(fmText), &fm); err != nil {
+	// Decode into a generic map rather than a typed struct so that a single
+	// field with the wrong type (e.g. metadata written as a string) is tolerated
+	// — warned and ignored — instead of failing the whole frontmatter. Only YAML
+	// that is malformed or not a mapping is fatal.
+	var raw map[string]any
+	if err := yaml.Unmarshal([]byte(fmText), &raw); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidFrontmatter, err)
 	}
 
-	if strings.TrimSpace(fm.Description) == "" {
-		return nil, ErrMissingDescription
-	}
-
 	skill := &ParsedSkill{
-		Name:          fm.Name,
-		Description:   fm.Description,
-		License:       fm.License,
-		Compatibility: fm.Compatibility,
-		AllowedTools:  parseAllowedTools(fm.AllowedTools),
-		Metadata:      fm.Metadata,
 		Body:          body,
 		BodyLineCount: countLines(body),
 	}
 
+	// description is required; missing, empty, or non-string skips the skill.
+	skill.Description = skill.stringField(raw, "description")
+	if strings.TrimSpace(skill.Description) == "" {
+		return nil, ErrMissingDescription
+	}
+
+	skill.Name = skill.stringField(raw, "name")
+	skill.License = skill.stringField(raw, "license")
+	skill.Compatibility = skill.stringField(raw, "compatibility")
+	skill.AllowedTools = parseAllowedTools(raw["allowed-tools"])
+	skill.Metadata = skill.mapField(raw, "metadata")
+
 	// Name (lenient: warn, never skip).
 	switch {
-	case fm.Name == "":
+	case skill.Name == "":
 		skill.Name = expectedName
 		skill.warnf("frontmatter is missing 'name'; using directory name %q", expectedName)
-	case fm.Name != expectedName:
-		skill.warnf("frontmatter name %q does not match directory %q", fm.Name, expectedName)
+	case skill.Name != expectedName:
+		skill.warnf("frontmatter name %q does not match directory %q", skill.Name, expectedName)
 	}
 
 	// Length limits from the spec (lenient: warn, never skip).
@@ -123,6 +115,38 @@ func ParseSkillMD(content []byte, expectedName string) (*ParsedSkill, error) {
 // warnf appends a formatted non-fatal warning.
 func (s *ParsedSkill) warnf(format string, args ...any) {
 	s.Warnings = append(s.Warnings, fmt.Sprintf(format, args...))
+}
+
+// stringField reads a string frontmatter field. An absent field yields ""; a
+// present field of the wrong type is warned and ignored (returns "") rather than
+// failing the whole parse.
+func (s *ParsedSkill) stringField(raw map[string]any, key string) string {
+	v, ok := raw[key]
+	if !ok || v == nil {
+		return ""
+	}
+	str, ok := v.(string)
+	if !ok {
+		s.warnf("frontmatter field %q is not a string and was ignored", key)
+		return ""
+	}
+	return str
+}
+
+// mapField reads a map frontmatter field. An absent field yields nil; a present
+// field of the wrong type is warned and ignored (returns nil) rather than
+// failing the whole parse.
+func (s *ParsedSkill) mapField(raw map[string]any, key string) map[string]any {
+	v, ok := raw[key]
+	if !ok || v == nil {
+		return nil
+	}
+	m, ok := v.(map[string]any)
+	if !ok {
+		s.warnf("frontmatter field %q is not a map and was ignored", key)
+		return nil
+	}
+	return m
 }
 
 // parseAllowedTools normalizes the frontmatter allowed-tools value into a slice.
