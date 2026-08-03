@@ -2247,15 +2247,15 @@ files = [
 
 [[package]]
 name = "olot"
-version = "1.0.0"
+version = "1.2.0"
 description = "oci layers on top"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
 markers = "extra == \"olot\""
 files = [
-    {file = "olot-1.0.0-py3-none-any.whl", hash = "sha256:58a7a542496153c59538132b72f76f33d90a9563f88a3adcd8e132a51a679a74"},
-    {file = "olot-1.0.0.tar.gz", hash = "sha256:154fdb82707fdd252c93172c60f1522b241784a32b315cff4601732c53b2900a"},
+    {file = "olot-1.2.0-py3-none-any.whl", hash = "sha256:50dc74ab70fac081bf77d660ecf25d0c779adbc21b234fd91a4e9242076aa92b"},
+    {file = "olot-1.2.0.tar.gz", hash = "sha256:7a04b3ae17259ca2de8ab9e99788d441eb9632122781b776fb50ce9287665355"},
 ]
 
 [package.dependencies]
@@ -4369,4 +4369,4 @@ signing = ["platformdirs", "rh-model-signing"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.10, < 4.0"
-content-hash = "7904e995100b7eb83f20f25da7477475bf8c49f16858163761f406fba4fe0a8b"
+content-hash = "7baf99d7a34708a8b1a3a5deda563909e3101da109ed53ddae6e4a3b9294c6fb"
