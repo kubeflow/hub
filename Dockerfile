@@ -34,6 +34,9 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} make build/compil
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 WORKDIR /
+# git is required by the catalog's skill plugin, which shallow-clones skill
+# repositories at sync time (see catalog/internal/catalog/skillcatalog).
+RUN microdnf install -y git-core && microdnf clean all
 # copy the registry binary
 COPY --from=builder /workspace/model-registry .
 USER 65532:65532

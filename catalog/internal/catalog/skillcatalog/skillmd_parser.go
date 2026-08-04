@@ -39,6 +39,7 @@ type ParsedSkill struct {
 	Name          string
 	Description   string
 	License       string
+	Author        string
 	Compatibility string
 	AllowedTools  []string
 	Metadata      map[string]any
@@ -85,6 +86,7 @@ func ParseSkillMD(content []byte, expectedName string) (*ParsedSkill, error) {
 	skill.Compatibility = skill.stringField(raw, "compatibility")
 	skill.AllowedTools = parseAllowedTools(raw["allowed-tools"])
 	skill.Metadata = skill.mapField(raw, "metadata")
+	skill.Author = skill.resolveAuthor(raw)
 
 	// Name (lenient: warn, never skip).
 	switch {
@@ -110,6 +112,26 @@ func ParseSkillMD(content []byte, expectedName string) (*ParsedSkill, error) {
 	}
 
 	return skill, nil
+}
+
+// resolveAuthor determines the skill's author. It prefers a top-level `author`
+// frontmatter field (like license); when absent it falls back to the spec's
+// canonical metadata.author. Either way `author` is removed from the metadata map
+// so it surfaces only as the dedicated Author field, not also as a custom property.
+func (s *ParsedSkill) resolveAuthor(raw map[string]any) string {
+	author, _ := raw["author"].(string)
+	if s.Metadata != nil {
+		if mdAuthor, ok := s.Metadata["author"]; ok {
+			if str, isStr := mdAuthor.(string); isStr && strings.TrimSpace(author) == "" {
+				author = str
+			}
+			// The "author" metadata key is reserved for the dedicated Author field;
+			// remove it (whatever its type) so it never also surfaces as a custom
+			// property.
+			delete(s.Metadata, "author")
+		}
+	}
+	return author
 }
 
 // warnf appends a formatted non-fatal warning.

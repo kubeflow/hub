@@ -2,15 +2,19 @@ package skillcatalog
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 
+	"github.com/golang/glog"
+
 	"github.com/kubeflow/hub/catalog/internal/catalog/skillcatalog/models"
 	skillservice "github.com/kubeflow/hub/catalog/internal/catalog/skillcatalog/service"
 	openapi "github.com/kubeflow/hub/catalog/pkg/openapi"
 	"github.com/kubeflow/hub/internal/platform/apiutils"
+	dbmodels "github.com/kubeflow/hub/internal/platform/db/entity"
 	"github.com/kubeflow/hub/pkg/api"
 )
 
@@ -37,11 +41,14 @@ type ListSkillsParams struct {
 	NextPageToken *string
 }
 
+// emptyFilterMap is the shared empty filter map returned until per-field
+// filters are implemented (SKC-108). The map must not be mutated by callers.
+var emptyFilterMap = map[string]openapi.FilterOption{}
+
 // GetFilterOptions returns the filterable fields for skills. Entity-specific
 // options are populated once fields are persisted (SKC-108).
 func (d *DBSkillCatalog) GetFilterOptions(_ context.Context) (*openapi.FilterOptionsList, error) {
-	options := make(map[string]openapi.FilterOption)
-	return &openapi.FilterOptionsList{Filters: &options}, nil
+	return &openapi.FilterOptionsList{Filters: &emptyFilterMap}, nil
 }
 
 // ListSkills returns a paginated list of skills.
@@ -106,9 +113,9 @@ func (d *DBSkillCatalog) GetSkill(_ context.Context, id string) (*openapi.Skill,
 	return mapDBSkillToAPI(dbSkill), nil
 }
 
-// mapDBSkillToAPI maps a datastore skill entity to the OpenAPI Skill model.
-// Only the identity fields persisted so far are mapped; full field propagation
-// through the datastore mappings lands with the query API (SKC-108).
+// mapDBSkillToAPI maps a datastore skill entity to the OpenAPI Skill model. The
+// entity's Name attribute holds the composite identity; the display name and all
+// other fields come from properties written by the loader.
 func mapDBSkillToAPI(dbSkill models.Skill) *openapi.Skill {
 	res := &openapi.Skill{}
 
@@ -116,16 +123,111 @@ func mapDBSkillToAPI(dbSkill models.Skill) *openapi.Skill {
 		s := strconv.FormatInt(int64(*id), 10)
 		res.Id = &s
 	}
-	if attrs := dbSkill.GetAttributes(); attrs != nil && attrs.Name != nil {
-		res.Name = *attrs.Name
-	}
 	if props := dbSkill.GetProperties(); props != nil {
-		for _, prop := range *props {
-			if prop.Name == "source_id" {
-				res.SourceId = prop.StringValue
+		for i := range *props {
+			p := (*props)[i]
+			switch p.Name {
+			case propSkillName:
+				if p.StringValue != nil {
+					res.Name = *p.StringValue
+				}
+			case propDescription:
+				res.Description = p.StringValue
+			case propRepository:
+				res.Repository = p.StringValue
+			case propPath:
+				res.Path = p.StringValue
+			case propSkillVersion:
+				res.Version = p.StringValue
+			case propResolvedCommit:
+				res.ResolvedCommit = p.StringValue
+			case propSourceID:
+				res.SourceId = p.StringValue
+			case propTrustTier:
+				if p.StringValue != nil {
+					tt := openapi.SkillTrustTier(*p.StringValue)
+					res.TrustTier = &tt
+				}
+			case propProvider:
+				res.Provider = p.StringValue
+			case propCategory:
+				res.Category = p.StringValue
+			case propLicense:
+				res.License = p.StringValue
+			case propAuthor:
+				res.Author = p.StringValue
+			case propCompatibility:
+				res.Compatibility = p.StringValue
+			case propReadme:
+				res.Readme = p.StringValue
+			case propLabels:
+				res.Labels = decodeStringSlice(p.StringValue)
+			case propAllowedTools:
+				res.AllowedTools = decodeStringSlice(p.StringValue)
+			case propSupportingFiles:
+				res.SupportingFiles = decodeStringSlice(p.StringValue)
+			case propBodyLineCount:
+				res.BodyLineCount = p.IntValue
+			default:
+				// Any property that isn't a pre-configured field is surfaced as a
+				// custom property rather than dropped.
+				addSkillCustomProperty(res, p)
 			}
 		}
 	}
 
+	// Properties flagged as custom (e.g. SKILL.md frontmatter metadata) are always
+	// surfaced as customProperties.
+	if custom := dbSkill.GetCustomProperties(); custom != nil {
+		for i := range *custom {
+			addSkillCustomProperty(res, (*custom)[i])
+		}
+	}
+
 	return res
+}
+
+// addSkillCustomProperty adds a datastore property to the Skill's customProperties.
+func addSkillCustomProperty(res *openapi.Skill, prop dbmodels.Properties) {
+	if res.CustomProperties == nil {
+		res.CustomProperties = map[string]openapi.MetadataValue{}
+	}
+	res.CustomProperties[prop.Name] = dbPropToMetadataValue(prop)
+}
+
+// dbPropToMetadataValue converts a datastore property to an OpenAPI MetadataValue,
+// mirroring the model/MCP converters.
+func dbPropToMetadataValue(prop dbmodels.Properties) openapi.MetadataValue {
+	mv := openapi.MetadataValue{}
+	switch {
+	case prop.StringValue != nil:
+		mv.MetadataStringValue = openapi.NewMetadataStringValueWithDefaults()
+		mv.MetadataStringValue.StringValue = *prop.StringValue
+	case prop.IntValue != nil:
+		mv.MetadataIntValue = openapi.NewMetadataIntValueWithDefaults()
+		mv.MetadataIntValue.IntValue = fmt.Sprintf("%d", *prop.IntValue)
+	case prop.DoubleValue != nil:
+		mv.MetadataDoubleValue = openapi.NewMetadataDoubleValueWithDefaults()
+		mv.MetadataDoubleValue.DoubleValue = *prop.DoubleValue
+	case prop.BoolValue != nil:
+		mv.MetadataBoolValue = openapi.NewMetadataBoolValueWithDefaults()
+		mv.MetadataBoolValue.BoolValue = *prop.BoolValue
+	}
+	return mv
+}
+
+// decodeStringSlice decodes a JSON string array stored in a string property.
+func decodeStringSlice(v *string) []string {
+	if v == nil || *v == "" {
+		return nil
+	}
+	var out []string
+	if err := json.Unmarshal([]byte(*v), &out); err != nil {
+		// The paired writer (addStringSlice) always stores valid JSON; a malformed
+		// value means external tampering/migration. Log and treat as empty rather
+		// than failing the response.
+		glog.Errorf("skill: ignoring malformed JSON array property: %v", err)
+		return nil
+	}
+	return out
 }

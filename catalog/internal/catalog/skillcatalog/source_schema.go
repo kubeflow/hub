@@ -71,8 +71,9 @@ type SkillRepository struct {
 	URL string `json:"url"`
 	// CanonicalURL is the upstream identity when URL points at a mirror.
 	CanonicalURL string `json:"canonicalUrl,omitempty"`
-	// Refs are the tags, releases, branches, or commit SHAs to index. When empty
-	// the repository's default branch is used.
+	// Refs are the immutable refs to index: tags or commit SHAs. Branches and HEAD
+	// are refused (skills must be reproducibly pinned), and a repository with no
+	// refs is a configuration error rather than a default-branch sync.
 	Refs []string `json:"refs,omitempty"`
 	// ScanPaths limits the SKILL.md scan to these subdirectories (default: whole repo).
 	ScanPaths []string `json:"scanPaths,omitempty"`

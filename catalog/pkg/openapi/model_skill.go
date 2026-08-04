@@ -35,6 +35,8 @@ type Skill struct {
 	LastUpdateTimeSinceEpoch *string `json:"lastUpdateTimeSinceEpoch,omitempty"`
 	// Short name of the skill's license (e.g., apache-2.0).
 	License *string `json:"license,omitempty"`
+	// Author of the skill, from the SKILL.md frontmatter (`author`, or `metadata.author`).
+	Author *string `json:"author,omitempty"`
 	// Compatibility information declared in the SKILL.md frontmatter (e.g., supported clients or versions).
 	Compatibility *string `json:"compatibility,omitempty"`
 	// Tools the skill is permitted to use (`allowed-tools` in the SKILL.md frontmatter).
@@ -330,6 +332,38 @@ func (o *Skill) HasLicense() bool {
 // SetLicense gets a reference to the given string and assigns it to the License field.
 func (o *Skill) SetLicense(v string) {
 	o.License = &v
+}
+
+// GetAuthor returns the Author field value if set, zero value otherwise.
+func (o *Skill) GetAuthor() string {
+	if o == nil || IsNil(o.Author) {
+		var ret string
+		return ret
+	}
+	return *o.Author
+}
+
+// GetAuthorOk returns a tuple with the Author field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *Skill) GetAuthorOk() (*string, bool) {
+	if o == nil || IsNil(o.Author) {
+		return nil, false
+	}
+	return o.Author, true
+}
+
+// HasAuthor returns a boolean if a field has been set.
+func (o *Skill) HasAuthor() bool {
+	if o != nil && !IsNil(o.Author) {
+		return true
+	}
+
+	return false
+}
+
+// SetAuthor gets a reference to the given string and assigns it to the Author field.
+func (o *Skill) SetAuthor(v string) {
+	o.Author = &v
 }
 
 // GetCompatibility returns the Compatibility field value if set, zero value otherwise.
@@ -811,6 +845,9 @@ func (o Skill) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.License) {
 		toSerialize["license"] = o.License
+	}
+	if !IsNil(o.Author) {
+		toSerialize["author"] = o.Author
 	}
 	if !IsNil(o.Compatibility) {
 		toSerialize["compatibility"] = o.Compatibility

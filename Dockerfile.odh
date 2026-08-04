@@ -28,6 +28,9 @@ RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 make clean/odh build/odh
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 WORKDIR /
+# git is required by the catalog's skill plugin, which shallow-clones skill
+# repositories at sync time (see catalog/internal/catalog/skillcatalog).
+RUN microdnf install -y git-core && microdnf clean all
 # copy the registry binary
 COPY --from=builder /workspace/model-registry .
 USER 65532:65532

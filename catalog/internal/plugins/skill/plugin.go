@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/golang/glog"
 
 	mapset "github.com/deckarep/golang-set/v2"
 
@@ -35,8 +36,11 @@ func (p *Plugin) DatastoreEntries() []plugin.DatastoreEntry {
 		{
 			TypeName: "kf.Skill",
 			Category: "context",
-			Spec: datastore.NewSpecType(skillservice.NewSkillRepository).
-				AddString("source_id"),
+			// Property names/kinds come from skillcatalog's shared field table so the
+			// datastore schema can't drift from the loader's writer and API mapper.
+			Spec: skillcatalog.AddSkillProperties(
+				datastore.NewSpecType(skillservice.NewSkillRepository),
+			),
 		},
 	}
 }
@@ -49,7 +53,14 @@ func (p *Plugin) Init(_ context.Context, cfg plugin.Config) error {
 	}
 
 	base := basecatalog.NewBaseLoader(cfg.ConfigPaths)
-	p.loader = skillcatalog.NewSkillLoader(p.services, base)
+
+	var loaderOpts []skillcatalog.LoaderOption
+	if secretResolver, err := skillcatalog.NewK8sSecretResolver(); err != nil {
+		glog.Warningf("skill plugin: no Kubernetes Secret access available (%v); private repositories (authSecretName) will fail to sync", err)
+	} else {
+		loaderOpts = append(loaderOpts, skillcatalog.WithSecretResolver(secretResolver))
+	}
+	p.loader = skillcatalog.NewSkillLoader(p.services, base, loaderOpts...)
 
 	p.PluginBase = plugin.NewPluginBase(plugin.PluginBaseConfig{
 		Name:        "skill",
@@ -58,7 +69,7 @@ func (p *Plugin) Init(_ context.Context, cfg plugin.Config) error {
 		FileWatcher: basecatalog.GetMonitor(),
 		SourceIDs: func() mapset.Set[string] {
 			ids := mapset.NewSet[string]()
-			for id := range p.loader.Sources.AllSources() {
+			for id := range p.loader.AllSources() {
 				ids.Add(id)
 			}
 			return ids
