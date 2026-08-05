@@ -1,9 +1,6 @@
 import { McpCatalogSourceConfig, McpCatalogSourceConfigPayload } from '~/app/mcpServerCatalogTypes';
 import { ManageMcpSourceFormData } from '~/app/pages/mcpCatalogSettings/useManageMcpSourceData';
-import {
-  generateSourceIdFromName,
-  parseCommaSeparatedList,
-} from '~/app/shared/catalogSettings';
+import { generateSourceIdFromName, parseCommaSeparatedList } from '~/app/shared/catalogSettings';
 
 export const mcpSourceConfigToFormData = (
   sourceConfig: McpCatalogSourceConfig,

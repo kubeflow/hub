@@ -124,7 +124,9 @@ describe('useMcpSourcePreview', () => {
         pageSize: 20,
       }),
     );
-    expect(result.current.previewState.tabStates[CatalogSettingsPreviewTab.INCLUDED].items).toHaveLength(2);
+    expect(
+      result.current.previewState.tabStates[CatalogSettingsPreviewTab.INCLUDED].items,
+    ).toHaveLength(2);
     expect(result.current.previewState.summary?.totalAssets).toBe(10);
   });
 
@@ -156,7 +158,9 @@ describe('useMcpSourcePreview', () => {
       expect(result.current.previewState.isLoadingMore).toBe(false);
     });
 
-    expect(result.current.previewState.tabStates[CatalogSettingsPreviewTab.INCLUDED].items).toHaveLength(3);
+    expect(
+      result.current.previewState.tabStates[CatalogSettingsPreviewTab.INCLUDED].items,
+    ).toHaveLength(3);
   });
 
   it('should lazy-load tab when switching to unloaded tab', async () => {

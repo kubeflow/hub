@@ -44,11 +44,11 @@ export type UseCatalogSourcePreviewCoreResult<TItem, TSummary, TRequest> = {
   hasFormChanged: boolean;
 };
 
-const createInitialPreviewState = <
+const createInitialPreviewState = <TItem, TSummary, TRequest>(): CatalogSettingsPreviewCoreState<
   TItem,
   TSummary,
-  TRequest,
->(): CatalogSettingsPreviewCoreState<TItem, TSummary, TRequest> => ({
+  TRequest
+> => ({
   isLoadingInitial: false,
   isLoadingMore: false,
   tabStates: {
@@ -64,12 +64,14 @@ export const useCatalogSourcePreviewCore = <TItem, TSummary, TRequest>({
   apiAvailable,
   buildPreviewRequest,
   previewApi,
-}: UseCatalogSourcePreviewCoreOptions<TItem, TSummary, TRequest>): UseCatalogSourcePreviewCoreResult<
+}: UseCatalogSourcePreviewCoreOptions<
   TItem,
   TSummary,
   TRequest
-> => {
-  const [previewState, setPreviewState] = React.useState(createInitialPreviewState<TItem, TSummary, TRequest>);
+>): UseCatalogSourcePreviewCoreResult<TItem, TSummary, TRequest> => {
+  const [previewState, setPreviewState] = React.useState(
+    createInitialPreviewState<TItem, TSummary, TRequest>,
+  );
 
   const previewStateRef = React.useRef(previewState);
   previewStateRef.current = previewState;

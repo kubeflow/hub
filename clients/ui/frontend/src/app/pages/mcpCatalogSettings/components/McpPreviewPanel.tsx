@@ -45,7 +45,9 @@ const McpPreviewPanel: React.FC<McpPreviewPanelProps> = ({ preview }) => {
   const { items, hasMore } = tabStates[activeTab];
 
   const handleTabSelect = (_event: React.MouseEvent, tabIndex: string | number) => {
-    handleTabChange(tabIndex === 0 ? CatalogSettingsPreviewTab.INCLUDED : CatalogSettingsPreviewTab.EXCLUDED);
+    handleTabChange(
+      tabIndex === 0 ? CatalogSettingsPreviewTab.INCLUDED : CatalogSettingsPreviewTab.EXCLUDED,
+    );
   };
 
   const renderEmptyState = () => {

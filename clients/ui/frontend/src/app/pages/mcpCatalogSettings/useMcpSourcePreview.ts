@@ -76,23 +76,18 @@ export const useMcpSourcePreview = ({
     [apiState.api],
   );
 
-  const {
-    previewState,
-    handlePreviewInternal,
-    handleTabChange,
-    handleLoadMore,
-    hasFormChanged,
-  } = useCatalogSourcePreviewCore<
-    McpCatalogSourcePreviewAsset,
-    McpCatalogSourcePreviewSummary,
-    McpCatalogSourcePreviewRequest
-  >({
-    canPreview,
-    isEditMode,
-    apiAvailable: apiState.apiAvailable,
-    buildPreviewRequest,
-    previewApi,
-  });
+  const { previewState, handlePreviewInternal, handleTabChange, handleLoadMore, hasFormChanged } =
+    useCatalogSourcePreviewCore<
+      McpCatalogSourcePreviewAsset,
+      McpCatalogSourcePreviewSummary,
+      McpCatalogSourcePreviewRequest
+    >({
+      canPreview,
+      isEditMode,
+      apiAvailable: apiState.apiAvailable,
+      buildPreviewRequest,
+      previewApi,
+    });
 
   const handlePreview = React.useCallback(async () => {
     await handlePreviewInternal();

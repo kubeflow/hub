@@ -54,7 +54,9 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({ preview }) => {
   const onLoadMore = () => handleLoadMore();
 
   const handleTabSelect = (_event: React.MouseEvent, tabIndex: string | number) => {
-    handleTabChange(tabIndex === 0 ? CatalogSettingsPreviewTab.INCLUDED : CatalogSettingsPreviewTab.EXCLUDED);
+    handleTabChange(
+      tabIndex === 0 ? CatalogSettingsPreviewTab.INCLUDED : CatalogSettingsPreviewTab.EXCLUDED,
+    );
   };
 
   const renderEmptyState = () => {

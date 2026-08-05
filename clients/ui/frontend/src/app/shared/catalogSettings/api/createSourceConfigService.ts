@@ -123,11 +123,17 @@ export const createSourceConfigService = <
       (hostPath, queryParams = {}) =>
       (opts, data, additionalQueryParams) =>
         handleRestFailures(
-          restCREATE(hostPath, '/source_preview', assembleModArchBody(data), {
-            ...queryParams,
-            ...additionalQueryParams,
-            ...previewExtraQueryParams,
-          }, opts),
+          restCREATE(
+            hostPath,
+            '/source_preview',
+            assembleModArchBody(data),
+            {
+              ...queryParams,
+              ...additionalQueryParams,
+              ...previewExtraQueryParams,
+            },
+            opts,
+          ),
         ).then((response) => {
           if (isModArchResponse<TPreviewResult>(response)) {
             return response.data;

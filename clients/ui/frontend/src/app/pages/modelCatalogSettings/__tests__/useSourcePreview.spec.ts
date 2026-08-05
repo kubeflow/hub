@@ -1,9 +1,6 @@
 import { act, waitFor } from '@testing-library/react';
 import { testHook } from '~/__tests__/unit/testUtils/hooks';
-import {
-  useSourcePreview,
-  PreviewMode,
-} from '~/app/pages/modelCatalogSettings/useSourcePreview';
+import { useSourcePreview, PreviewMode } from '~/app/pages/modelCatalogSettings/useSourcePreview';
 import { ManageSourceFormData } from '~/app/pages/modelCatalogSettings/useManageSourceData';
 import { CatalogSourceType } from '~/app/modelCatalogTypes';
 import { ModelCatalogSettingsAPIState } from '~/app/hooks/modelCatalogSettings/useModelCatalogSettingsAPIState';
@@ -130,7 +127,9 @@ describe('useSourcePreview', () => {
         pageSize: 20,
       }),
     );
-    expect(result.current.previewState.tabStates[CatalogSettingsPreviewTab.INCLUDED].items).toHaveLength(2);
+    expect(
+      result.current.previewState.tabStates[CatalogSettingsPreviewTab.INCLUDED].items,
+    ).toHaveLength(2);
     expect(result.current.previewState.summary?.totalModels).toBe(10);
   });
 
@@ -166,7 +165,9 @@ describe('useSourcePreview', () => {
     });
 
     // Should have 3 items now (2 from first load + 1 from load more)
-    expect(result.current.previewState.tabStates[CatalogSettingsPreviewTab.INCLUDED].items).toHaveLength(3);
+    expect(
+      result.current.previewState.tabStates[CatalogSettingsPreviewTab.INCLUDED].items,
+    ).toHaveLength(3);
   });
 
   it('should lazy-load tab when switching to unloaded tab', async () => {
