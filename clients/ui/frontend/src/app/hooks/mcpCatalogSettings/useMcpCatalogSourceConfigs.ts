@@ -6,12 +6,6 @@ import { McpCatalogSettingsAPIState } from './useMcpCatalogSettingsAPIState';
 export const useMcpCatalogSourceConfigs = (
   apiState: McpCatalogSettingsAPIState,
 ): FetchState<McpCatalogSourceConfigList> =>
-  useSourceConfigs(
-    {
-      apiAvailable: apiState.apiAvailable,
-      api: {
-        getSourceConfigs: apiState.api.getMcpCatalogSourceConfigs,
-      },
-    },
-    { catalogs: [] },
-  );
+  useSourceConfigs(apiState.apiAvailable, apiState.api.getMcpCatalogSourceConfigs, {
+    catalogs: [],
+  });

@@ -8,13 +8,5 @@ export const useCatalogSourceConfigBySourceId = (
   sourceId: string,
 ): FetchState<CatalogSourceConfig | null> => {
   const { apiState } = React.useContext(ModelCatalogSettingsContext);
-  return useSourceConfigById(
-    {
-      apiAvailable: apiState.apiAvailable,
-      api: {
-        getSourceConfig: apiState.api.getCatalogSourceConfig,
-      },
-    },
-    sourceId,
-  );
+  return useSourceConfigById(apiState.apiAvailable, apiState.api.getCatalogSourceConfig, sourceId);
 };

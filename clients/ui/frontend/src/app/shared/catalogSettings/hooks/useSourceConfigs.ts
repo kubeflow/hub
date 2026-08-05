@@ -1,26 +1,20 @@
 import { APIOptions, FetchState, FetchStateCallbackPromise, useFetchState } from 'mod-arch-core';
 import * as React from 'react';
 
-type SourceConfigsApiState<TConfigList> = {
-  apiAvailable: boolean;
-  api: {
-    getSourceConfigs: (opts: APIOptions) => Promise<TConfigList>;
-  };
-};
-
 export const useSourceConfigs = <TConfigList>(
-  apiState: SourceConfigsApiState<TConfigList>,
+  apiAvailable: boolean,
+  getSourceConfigs: (opts: APIOptions) => Promise<TConfigList>,
   initialValue: TConfigList,
 ): FetchState<TConfigList> => {
   const call = React.useCallback<FetchStateCallbackPromise<TConfigList>>(
     (opts) => {
-      if (!apiState.apiAvailable) {
+      if (!apiAvailable) {
         return Promise.reject(new Error('API not yet available'));
       }
 
-      return apiState.api.getSourceConfigs(opts);
+      return getSourceConfigs(opts);
     },
-    [apiState],
+    [apiAvailable, getSourceConfigs],
   );
   return useFetchState(call, initialValue, { initialPromisePurity: true });
 };

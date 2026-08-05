@@ -6,12 +6,4 @@ import { ModelCatalogSettingsAPIState } from './useModelCatalogSettingsAPIState'
 export const useCatalogSourceConfigs = (
   apiState: ModelCatalogSettingsAPIState,
 ): FetchState<CatalogSourceConfigList> =>
-  useSourceConfigs(
-    {
-      apiAvailable: apiState.apiAvailable,
-      api: {
-        getSourceConfigs: apiState.api.getCatalogSourceConfigs,
-      },
-    },
-    { catalogs: [] },
-  );
+  useSourceConfigs(apiState.apiAvailable, apiState.api.getCatalogSourceConfigs, { catalogs: [] });

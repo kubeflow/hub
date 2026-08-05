@@ -9,12 +9,8 @@ export const useMcpCatalogSourceConfigBySourceId = (
 ): FetchState<McpCatalogSourceConfig | null> => {
   const { apiState } = React.useContext(McpCatalogSettingsContext);
   return useSourceConfigById(
-    {
-      apiAvailable: apiState.apiAvailable,
-      api: {
-        getSourceConfig: apiState.api.getMcpCatalogSourceConfig,
-      },
-    },
+    apiState.apiAvailable,
+    apiState.api.getMcpCatalogSourceConfig,
     sourceId,
   );
 };
