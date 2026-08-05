@@ -3,7 +3,7 @@ import * as React from 'react';
 import { CatalogSourceList } from '~/app/shared/types/catalogTypes';
 import { ModelCatalogAPIState } from '~/app/hooks/modelCatalog/useModelCatalogAPIState';
 
-export const useMcpCatalogSourcesWithPolling = (
+export const useCatalogSourcesWithPolling = (
   apiState: ModelCatalogAPIState,
 ): FetchState<CatalogSourceList> => {
   const call = React.useCallback<FetchStateCallbackPromise<CatalogSourceList>>(

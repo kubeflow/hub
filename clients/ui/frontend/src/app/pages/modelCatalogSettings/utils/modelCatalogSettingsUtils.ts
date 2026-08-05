@@ -4,6 +4,12 @@ import {
   CatalogSourceType,
 } from '~/app/modelCatalogTypes';
 import { ManageSourceFormData } from '~/app/pages/modelCatalogSettings/useManageSourceData';
+import {
+  generateSourceIdFromName,
+  parseCommaSeparatedList,
+} from '~/app/shared/catalogSettings';
+
+export { generateSourceIdFromName };
 
 export const catalogSourceConfigToFormData = (
   sourceConfig: CatalogSourceConfig,
@@ -35,31 +41,17 @@ export const catalogSourceConfigToFormData = (
   };
 };
 
-export const generateSourceIdFromName = (name: string): string =>
-  name
-    .trim()
-    .replace(/\s+/g, '_')
-    .replace(/-/g, '_')
-    .replace(/[^a-zA-Z0-9_]/g, '')
-    .toLowerCase();
-
 export const transformFormDataToConfig = (
   formData: ManageSourceFormData,
   existingSourceConfig?: CatalogSourceConfig,
 ): CatalogSourceConfig => {
-  const parseModels = (models: string): string[] =>
-    models
-      .split(',')
-      .map((item) => item.trim())
-      .filter((item) => item.length > 0);
-
   const commonFields = {
     id: formData.id || generateSourceIdFromName(formData.name),
     name: formData.name,
     enabled: formData.enabled,
     isDefault: formData.isDefault,
-    includedModels: parseModels(formData.allowedModels),
-    excludedModels: parseModels(formData.excludedModels),
+    includedModels: parseCommaSeparatedList(formData.allowedModels),
+    excludedModels: parseCommaSeparatedList(formData.excludedModels),
   };
 
   if (formData.sourceType === CatalogSourceType.YAML) {

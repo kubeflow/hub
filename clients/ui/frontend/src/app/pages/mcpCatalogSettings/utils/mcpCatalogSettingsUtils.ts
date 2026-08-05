@@ -1,5 +1,11 @@
 import { McpCatalogSourceConfig, McpCatalogSourceConfigPayload } from '~/app/mcpServerCatalogTypes';
 import { ManageMcpSourceFormData } from '~/app/pages/mcpCatalogSettings/useManageMcpSourceData';
+import {
+  generateSourceIdFromName,
+  parseCommaSeparatedList,
+} from '~/app/shared/catalogSettings';
+
+export const generateMcpSourceIdFromName = generateSourceIdFromName;
 
 export const mcpSourceConfigToFormData = (
   sourceConfig: McpCatalogSourceConfig,
@@ -14,20 +20,6 @@ export const mcpSourceConfigToFormData = (
   isDefault: sourceConfig.isDefault ?? false,
 });
 
-export const generateMcpSourceIdFromName = (name: string): string =>
-  name
-    .trim()
-    .replace(/\s+/g, '_')
-    .replace(/-/g, '_')
-    .replace(/[^a-zA-Z0-9_]/g, '')
-    .toLowerCase();
-
-const parseServerList = (servers: string): string[] =>
-  servers
-    .split(',')
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0);
-
 export const transformMcpFormDataToConfig = (
   formData: ManageMcpSourceFormData,
   existingSourceConfig?: McpCatalogSourceConfig,
@@ -39,8 +31,8 @@ export const transformMcpFormDataToConfig = (
   isDefault: formData.isDefault,
   yaml: formData.yamlContent || undefined,
   yamlCatalogPath: existingSourceConfig?.yamlCatalogPath,
-  includedServers: parseServerList(formData.includedServers),
-  excludedServers: parseServerList(formData.excludedServers),
+  includedServers: parseCommaSeparatedList(formData.includedServers),
+  excludedServers: parseCommaSeparatedList(formData.excludedServers),
 });
 
 export const getMcpPayloadForConfig = (

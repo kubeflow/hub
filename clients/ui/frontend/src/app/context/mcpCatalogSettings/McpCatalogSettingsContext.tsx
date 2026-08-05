@@ -8,7 +8,7 @@ import type { McpCatalogSourceConfigList } from '~/app/mcpServerCatalogTypes';
 import type { CatalogSourceList } from '~/app/shared/types/catalogTypes';
 import { BFF_API_VERSION, URL_PREFIX } from '~/app/utilities/const';
 import useModelCatalogAPIState from '~/app/hooks/modelCatalog/useModelCatalogAPIState';
-import { useMcpCatalogSourcesWithPolling } from '~/app/hooks/mcpCatalogSettings/useMcpCatalogSourcesWithPolling';
+import { useCatalogSourcesWithPolling } from '~/app/shared/catalogSettings';
 
 export type McpCatalogSettingsContextType = {
   apiState: McpCatalogSettingsAPIState;
@@ -70,7 +70,7 @@ export const McpCatalogSettingsContextProvider: React.FC<
     mcpCatalogSourcesLoaded,
     mcpCatalogSourcesLoadError,
     refreshMcpCatalogSources,
-  ] = useMcpCatalogSourcesWithPolling(mcpCatalogAPIState);
+  ] = useCatalogSourcesWithPolling(mcpCatalogAPIState);
 
   const contextValue = React.useMemo(
     () => ({

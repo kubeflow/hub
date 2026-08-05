@@ -1,18 +1,22 @@
 import { CatalogSourceType } from '~/app/modelCatalogTypes';
 import { ManageSourceFormData } from '~/app/pages/modelCatalogSettings/useManageSourceData';
 import { SOURCE_NAME_CHARACTER_LIMIT } from '~/app/pages/modelCatalogSettings/constants';
-
-const isNonEmptyString = (value: string): boolean => value.trim().length > 0;
+import {
+  isNonEmptyString,
+  isSourceNameEmpty as isSharedSourceNameEmpty,
+  validateSourceName as validateSharedSourceName,
+  validateYamlContent as validateSharedYamlContent,
+} from '~/app/shared/catalogSettings';
 
 export const validateSourceName = (name: string): boolean =>
-  isNonEmptyString(name) && name.length <= SOURCE_NAME_CHARACTER_LIMIT;
+  validateSharedSourceName(name, SOURCE_NAME_CHARACTER_LIMIT);
 
-export const isSourceNameEmpty = (name: string): boolean => !isNonEmptyString(name);
+export const isSourceNameEmpty = isSharedSourceNameEmpty;
 
 export const validateOrganization = (organization: string): boolean =>
   isNonEmptyString(organization);
 
-export const validateYamlContent = (yamlContent: string): boolean => isNonEmptyString(yamlContent);
+export const validateYamlContent = validateSharedYamlContent;
 
 export const validateHuggingFaceCredentials = (data: ManageSourceFormData): boolean => {
   if (data.sourceType !== CatalogSourceType.HUGGING_FACE) {
