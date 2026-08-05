@@ -9,8 +9,6 @@ import {
   parseCommaSeparatedList,
 } from '~/app/shared/catalogSettings';
 
-export { generateSourceIdFromName };
-
 export const catalogSourceConfigToFormData = (
   sourceConfig: CatalogSourceConfig,
 ): Partial<ManageSourceFormData> => {

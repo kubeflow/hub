@@ -35,9 +35,6 @@ export type UseCatalogSourcePreviewCoreOptions<TItem, TSummary, TRequest> = {
 
 export type UseCatalogSourcePreviewCoreResult<TItem, TSummary, TRequest> = {
   previewState: CatalogSettingsPreviewCoreState<TItem, TSummary, TRequest>;
-  setPreviewState: React.Dispatch<
-    React.SetStateAction<CatalogSettingsPreviewCoreState<TItem, TSummary, TRequest>>
-  >;
   handlePreviewInternal: (options?: {
     loadMore?: boolean;
     switchToTab?: CatalogSettingsPreviewTab;
@@ -45,7 +42,6 @@ export type UseCatalogSourcePreviewCoreResult<TItem, TSummary, TRequest> = {
   handleTabChange: (tab: CatalogSettingsPreviewTab) => void;
   handleLoadMore: () => void;
   hasFormChanged: boolean;
-  canPreview: boolean;
 };
 
 const createInitialPreviewState = <
@@ -200,11 +196,9 @@ export const useCatalogSourcePreviewCore = <TItem, TSummary, TRequest>({
 
   return {
     previewState,
-    setPreviewState,
     handlePreviewInternal,
     handleTabChange,
     handleLoadMore,
     hasFormChanged,
-    canPreview,
   };
 };

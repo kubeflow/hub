@@ -5,8 +5,6 @@ import {
   parseCommaSeparatedList,
 } from '~/app/shared/catalogSettings';
 
-export const generateMcpSourceIdFromName = generateSourceIdFromName;
-
 export const mcpSourceConfigToFormData = (
   sourceConfig: McpCatalogSourceConfig,
 ): Partial<ManageMcpSourceFormData> => ({
@@ -24,7 +22,7 @@ export const transformMcpFormDataToConfig = (
   formData: ManageMcpSourceFormData,
   existingSourceConfig?: McpCatalogSourceConfig,
 ): McpCatalogSourceConfig => ({
-  id: formData.id || existingSourceConfig?.id || generateMcpSourceIdFromName(formData.name),
+  id: formData.id || existingSourceConfig?.id || generateSourceIdFromName(formData.name),
   name: formData.name,
   type: formData.sourceType,
   enabled: formData.enabled,

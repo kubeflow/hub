@@ -2,12 +2,12 @@ import { act, waitFor } from '@testing-library/react';
 import { testHook } from '~/__tests__/unit/testUtils/hooks';
 import {
   useSourcePreview,
-  PreviewTab,
   PreviewMode,
 } from '~/app/pages/modelCatalogSettings/useSourcePreview';
 import { ManageSourceFormData } from '~/app/pages/modelCatalogSettings/useManageSourceData';
 import { CatalogSourceType } from '~/app/modelCatalogTypes';
 import { ModelCatalogSettingsAPIState } from '~/app/hooks/modelCatalogSettings/useModelCatalogSettingsAPIState';
+import { CatalogSettingsPreviewTab } from '~/app/shared/catalogSettings';
 
 // Mock the validation utility
 jest.mock('~/app/pages/modelCatalogSettings/utils/validation', () => ({
@@ -82,7 +82,7 @@ describe('useSourcePreview', () => {
 
     expect(result.current.previewState.isLoadingInitial).toBe(false);
     expect(result.current.previewState.isLoadingMore).toBe(false);
-    expect(result.current.previewState.activeTab).toBe(PreviewTab.INCLUDED);
+    expect(result.current.previewState.activeTab).toBe(CatalogSettingsPreviewTab.INCLUDED);
     expect(result.current.canPreview).toBe(true);
     expect(result.current.hasFormChanged).toBe(false);
   });
@@ -126,11 +126,11 @@ describe('useSourcePreview', () => {
       {},
       expect.any(Object),
       expect.objectContaining({
-        filterStatus: PreviewTab.INCLUDED,
+        filterStatus: CatalogSettingsPreviewTab.INCLUDED,
         pageSize: 20,
       }),
     );
-    expect(result.current.previewState.tabStates[PreviewTab.INCLUDED].items).toHaveLength(2);
+    expect(result.current.previewState.tabStates[CatalogSettingsPreviewTab.INCLUDED].items).toHaveLength(2);
     expect(result.current.previewState.summary?.totalModels).toBe(10);
   });
 
@@ -166,7 +166,7 @@ describe('useSourcePreview', () => {
     });
 
     // Should have 3 items now (2 from first load + 1 from load more)
-    expect(result.current.previewState.tabStates[PreviewTab.INCLUDED].items).toHaveLength(3);
+    expect(result.current.previewState.tabStates[CatalogSettingsPreviewTab.INCLUDED].items).toHaveLength(3);
   });
 
   it('should lazy-load tab when switching to unloaded tab', async () => {
@@ -186,11 +186,11 @@ describe('useSourcePreview', () => {
 
     // Switch to excluded tab (should trigger a fetch)
     await act(async () => {
-      result.current.handleTabChange(PreviewTab.EXCLUDED);
+      result.current.handleTabChange(CatalogSettingsPreviewTab.EXCLUDED);
     });
 
     await waitFor(() => {
-      expect(result.current.previewState.activeTab).toBe(PreviewTab.EXCLUDED);
+      expect(result.current.previewState.activeTab).toBe(CatalogSettingsPreviewTab.EXCLUDED);
     });
 
     // Should have called previewCatalogSource twice (once for included, once for excluded)
@@ -199,7 +199,7 @@ describe('useSourcePreview', () => {
       {},
       expect.any(Object),
       expect.objectContaining({
-        filterStatus: PreviewTab.EXCLUDED,
+        filterStatus: CatalogSettingsPreviewTab.EXCLUDED,
       }),
     );
   });

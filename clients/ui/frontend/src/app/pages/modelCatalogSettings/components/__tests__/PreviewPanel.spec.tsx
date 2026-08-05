@@ -8,9 +8,9 @@ import PreviewPanel from '~/app/pages/modelCatalogSettings/components/PreviewPan
 import {
   UseSourcePreviewResult,
   PreviewState,
-  PreviewTab,
   PreviewMode,
 } from '~/app/pages/modelCatalogSettings/useSourcePreview';
+import { CatalogSettingsPreviewTab } from '~/app/shared/catalogSettings';
 
 const mockSummary: CatalogSourcePreviewSummary = {
   totalModels: 20,
@@ -35,12 +35,12 @@ const createMockPreviewState = (overrides: Partial<PreviewState> = {}): PreviewS
   isLoadingMore: false,
   summary: mockSummary,
   tabStates: {
-    [PreviewTab.INCLUDED]: { items: mockIncludedItems, hasMore: false },
-    [PreviewTab.EXCLUDED]: { items: mockExcludedItems, hasMore: false },
+    [CatalogSettingsPreviewTab.INCLUDED]: { items: mockIncludedItems, hasMore: false },
+    [CatalogSettingsPreviewTab.EXCLUDED]: { items: mockExcludedItems, hasMore: false },
   },
   error: undefined,
   resultDismissed: false,
-  activeTab: PreviewTab.INCLUDED,
+  activeTab: CatalogSettingsPreviewTab.INCLUDED,
   ...overrides,
 });
 
@@ -73,8 +73,8 @@ describe('PreviewPanel', () => {
       {
         summary: undefined,
         tabStates: {
-          [PreviewTab.INCLUDED]: { items: [], hasMore: false },
-          [PreviewTab.EXCLUDED]: { items: [], hasMore: false },
+          [CatalogSettingsPreviewTab.INCLUDED]: { items: [], hasMore: false },
+          [CatalogSettingsPreviewTab.EXCLUDED]: { items: [], hasMore: false },
         },
       },
     );
@@ -92,8 +92,8 @@ describe('PreviewPanel', () => {
       {
         isLoadingInitial: true,
         tabStates: {
-          [PreviewTab.INCLUDED]: { items: [], hasMore: false },
-          [PreviewTab.EXCLUDED]: { items: [], hasMore: false },
+          [CatalogSettingsPreviewTab.INCLUDED]: { items: [], hasMore: false },
+          [CatalogSettingsPreviewTab.EXCLUDED]: { items: [], hasMore: false },
         },
       },
     );
@@ -109,8 +109,8 @@ describe('PreviewPanel', () => {
         error: new Error('Failed to fetch preview'),
         mode: PreviewMode.PREVIEW,
         tabStates: {
-          [PreviewTab.INCLUDED]: { items: [], hasMore: false },
-          [PreviewTab.EXCLUDED]: { items: [], hasMore: false },
+          [CatalogSettingsPreviewTab.INCLUDED]: { items: [], hasMore: false },
+          [CatalogSettingsPreviewTab.EXCLUDED]: { items: [], hasMore: false },
         },
       },
     );
@@ -138,18 +138,18 @@ describe('PreviewPanel', () => {
 
     await user.click(screen.getByText('Models excluded'));
 
-    expect(handleTabChange).toHaveBeenCalledWith(PreviewTab.EXCLUDED);
+    expect(handleTabChange).toHaveBeenCalledWith(CatalogSettingsPreviewTab.EXCLUDED);
   });
 
   it('displays correct count text for included tab', () => {
-    const preview = createMockPreview({}, { activeTab: PreviewTab.INCLUDED });
+    const preview = createMockPreview({}, { activeTab: CatalogSettingsPreviewTab.INCLUDED });
     render(<PreviewPanel preview={preview} />);
 
     expect(screen.getByText('15 of 20 models included:')).toBeInTheDocument();
   });
 
   it('displays correct count text for excluded tab', () => {
-    const preview = createMockPreview({}, { activeTab: PreviewTab.EXCLUDED });
+    const preview = createMockPreview({}, { activeTab: CatalogSettingsPreviewTab.EXCLUDED });
     render(<PreviewPanel preview={preview} />);
 
     expect(screen.getByText('5 of 20 models excluded:')).toBeInTheDocument();
@@ -160,8 +160,8 @@ describe('PreviewPanel', () => {
       {},
       {
         tabStates: {
-          [PreviewTab.INCLUDED]: { items: mockIncludedItems, hasMore: true },
-          [PreviewTab.EXCLUDED]: { items: mockExcludedItems, hasMore: false },
+          [CatalogSettingsPreviewTab.INCLUDED]: { items: mockIncludedItems, hasMore: true },
+          [CatalogSettingsPreviewTab.EXCLUDED]: { items: mockExcludedItems, hasMore: false },
         },
       },
     );
@@ -184,8 +184,8 @@ describe('PreviewPanel', () => {
       { handleLoadMore },
       {
         tabStates: {
-          [PreviewTab.INCLUDED]: { items: mockIncludedItems, hasMore: true },
-          [PreviewTab.EXCLUDED]: { items: mockExcludedItems, hasMore: false },
+          [CatalogSettingsPreviewTab.INCLUDED]: { items: mockIncludedItems, hasMore: true },
+          [CatalogSettingsPreviewTab.EXCLUDED]: { items: mockExcludedItems, hasMore: false },
         },
       },
     );
@@ -203,8 +203,8 @@ describe('PreviewPanel', () => {
       {
         isLoadingMore: true,
         tabStates: {
-          [PreviewTab.INCLUDED]: { items: mockIncludedItems, hasMore: true },
-          [PreviewTab.EXCLUDED]: { items: mockExcludedItems, hasMore: false },
+          [CatalogSettingsPreviewTab.INCLUDED]: { items: mockIncludedItems, hasMore: true },
+          [CatalogSettingsPreviewTab.EXCLUDED]: { items: mockExcludedItems, hasMore: false },
         },
       },
     );
@@ -239,11 +239,11 @@ describe('PreviewPanel', () => {
     const preview = createMockPreview(
       {},
       {
-        activeTab: PreviewTab.INCLUDED,
+        activeTab: CatalogSettingsPreviewTab.INCLUDED,
         summary: { ...mockSummary, includedModels: 0 },
         tabStates: {
-          [PreviewTab.INCLUDED]: { items: [], hasMore: false },
-          [PreviewTab.EXCLUDED]: { items: mockExcludedItems, hasMore: false },
+          [CatalogSettingsPreviewTab.INCLUDED]: { items: [], hasMore: false },
+          [CatalogSettingsPreviewTab.EXCLUDED]: { items: mockExcludedItems, hasMore: false },
         },
       },
     );
@@ -261,11 +261,11 @@ describe('PreviewPanel', () => {
     const preview = createMockPreview(
       {},
       {
-        activeTab: PreviewTab.EXCLUDED,
+        activeTab: CatalogSettingsPreviewTab.EXCLUDED,
         summary: { ...mockSummary, excludedModels: 0 },
         tabStates: {
-          [PreviewTab.INCLUDED]: { items: mockIncludedItems, hasMore: false },
-          [PreviewTab.EXCLUDED]: { items: [], hasMore: false },
+          [CatalogSettingsPreviewTab.INCLUDED]: { items: mockIncludedItems, hasMore: false },
+          [CatalogSettingsPreviewTab.EXCLUDED]: { items: [], hasMore: false },
         },
       },
     );
@@ -292,8 +292,8 @@ describe('PreviewPanel', () => {
       {
         summary: undefined,
         tabStates: {
-          [PreviewTab.INCLUDED]: { items: [], hasMore: false },
-          [PreviewTab.EXCLUDED]: { items: [], hasMore: false },
+          [CatalogSettingsPreviewTab.INCLUDED]: { items: [], hasMore: false },
+          [CatalogSettingsPreviewTab.EXCLUDED]: { items: [], hasMore: false },
         },
       },
     );

@@ -1,17 +1,17 @@
 import { ManageMcpSourceFormData } from '~/app/pages/mcpCatalogSettings/useManageMcpSourceData';
-import { MCP_SOURCE_NAME_CHARACTER_LIMIT } from '~/app/pages/mcpCatalogSettings/constants';
 import {
-  isSourceNameEmpty as isSharedSourceNameEmpty,
+  isSourceNameEmpty,
+  SOURCE_NAME_CHARACTER_LIMIT,
   validateSourceName as validateSharedSourceName,
-  validateYamlContent as validateSharedYamlContent,
+  validateYamlContent,
 } from '~/app/shared/catalogSettings';
 
 export const validateMcpSourceName = (name: string): boolean =>
-  validateSharedSourceName(name, MCP_SOURCE_NAME_CHARACTER_LIMIT);
+  validateSharedSourceName(name, SOURCE_NAME_CHARACTER_LIMIT);
 
-export const isMcpSourceNameEmpty = isSharedSourceNameEmpty;
+export const isMcpSourceNameEmpty = isSourceNameEmpty;
 
-export const validateMcpYamlContent = validateSharedYamlContent;
+export const validateMcpYamlContent = validateYamlContent;
 
 export const isMcpFormValid = (data: ManageMcpSourceFormData): boolean => {
   if (data.isDefault) {

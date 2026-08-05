@@ -1,12 +1,10 @@
 import { act, waitFor } from '@testing-library/react';
 import { testHook } from '~/__tests__/unit/testUtils/hooks';
-import {
-  useMcpSourcePreview,
-  McpPreviewTab,
-} from '~/app/pages/mcpCatalogSettings/useMcpSourcePreview';
+import { useMcpSourcePreview } from '~/app/pages/mcpCatalogSettings/useMcpSourcePreview';
 import { ManageMcpSourceFormData } from '~/app/pages/mcpCatalogSettings/useManageMcpSourceData';
 import { McpCatalogSourceType } from '~/app/mcpServerCatalogTypes';
 import { McpCatalogSettingsAPIState } from '~/app/hooks/mcpCatalogSettings/useMcpCatalogSettingsAPIState';
+import { CatalogSettingsPreviewTab } from '~/app/shared/catalogSettings';
 
 jest.mock('~/app/pages/mcpCatalogSettings/utils/validation', () => ({
   isPreviewReady: jest.fn(() => true),
@@ -78,7 +76,7 @@ describe('useMcpSourcePreview', () => {
 
     expect(result.current.previewState.isLoadingInitial).toBe(false);
     expect(result.current.previewState.isLoadingMore).toBe(false);
-    expect(result.current.previewState.activeTab).toBe(McpPreviewTab.INCLUDED);
+    expect(result.current.previewState.activeTab).toBe(CatalogSettingsPreviewTab.INCLUDED);
     expect(result.current.canPreview).toBe(true);
     expect(result.current.hasFormChanged).toBe(false);
   });
@@ -122,11 +120,11 @@ describe('useMcpSourcePreview', () => {
       {},
       expect.any(Object),
       expect.objectContaining({
-        filterStatus: McpPreviewTab.INCLUDED,
+        filterStatus: CatalogSettingsPreviewTab.INCLUDED,
         pageSize: 20,
       }),
     );
-    expect(result.current.previewState.tabStates[McpPreviewTab.INCLUDED].items).toHaveLength(2);
+    expect(result.current.previewState.tabStates[CatalogSettingsPreviewTab.INCLUDED].items).toHaveLength(2);
     expect(result.current.previewState.summary?.totalAssets).toBe(10);
   });
 
@@ -158,7 +156,7 @@ describe('useMcpSourcePreview', () => {
       expect(result.current.previewState.isLoadingMore).toBe(false);
     });
 
-    expect(result.current.previewState.tabStates[McpPreviewTab.INCLUDED].items).toHaveLength(3);
+    expect(result.current.previewState.tabStates[CatalogSettingsPreviewTab.INCLUDED].items).toHaveLength(3);
   });
 
   it('should lazy-load tab when switching to unloaded tab', async () => {
@@ -176,11 +174,11 @@ describe('useMcpSourcePreview', () => {
     });
 
     await act(async () => {
-      result.current.handleTabChange(McpPreviewTab.EXCLUDED);
+      result.current.handleTabChange(CatalogSettingsPreviewTab.EXCLUDED);
     });
 
     await waitFor(() => {
-      expect(result.current.previewState.activeTab).toBe(McpPreviewTab.EXCLUDED);
+      expect(result.current.previewState.activeTab).toBe(CatalogSettingsPreviewTab.EXCLUDED);
     });
 
     expect(apiState.api.previewMcpCatalogSource).toHaveBeenCalledTimes(2);
@@ -188,7 +186,7 @@ describe('useMcpSourcePreview', () => {
       {},
       expect.any(Object),
       expect.objectContaining({
-        filterStatus: McpPreviewTab.EXCLUDED,
+        filterStatus: CatalogSettingsPreviewTab.EXCLUDED,
       }),
     );
   });

@@ -16,4 +16,12 @@ describe('generateSourceIdFromName', () => {
   it('should convert upper case to lower case', () => {
     expect(generateSourceIdFromName('TestName')).toBe('testname');
   });
+
+  it('should replace multiple spaces with underscores', () => {
+    expect(generateSourceIdFromName('My MCP Source')).toBe('my_mcp_source');
+  });
+
+  it('should handle special characters', () => {
+    expect(generateSourceIdFromName('Source #1 (test)')).toBe('source_1_test');
+  });
 });

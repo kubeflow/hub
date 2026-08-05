@@ -1,0 +1,1 @@
+export const SOURCE_NAME_CHARACTER_LIMIT = 238;

@@ -26,9 +26,9 @@ import {
 } from '~/app/pages/modelCatalogSettings/constants';
 import {
   UseSourcePreviewResult,
-  PreviewTab,
   PreviewMode,
 } from '~/app/pages/modelCatalogSettings/useSourcePreview';
+import { CatalogSettingsPreviewTab } from '~/app/shared/catalogSettings';
 import PreviewButton from './PreviewButton';
 
 type PreviewPanelProps = {
@@ -54,7 +54,7 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({ preview }) => {
   const onLoadMore = () => handleLoadMore();
 
   const handleTabSelect = (_event: React.MouseEvent, tabIndex: string | number) => {
-    handleTabChange(tabIndex === 0 ? PreviewTab.INCLUDED : PreviewTab.EXCLUDED);
+    handleTabChange(tabIndex === 0 ? CatalogSettingsPreviewTab.INCLUDED : CatalogSettingsPreviewTab.EXCLUDED);
   };
 
   const renderEmptyState = () => {
@@ -119,7 +119,7 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({ preview }) => {
     return (
       <>
         <Tabs
-          activeKey={activeTab === PreviewTab.INCLUDED ? 0 : 1}
+          activeKey={activeTab === CatalogSettingsPreviewTab.INCLUDED ? 0 : 1}
           onSelect={handleTabSelect}
           aria-label="Preview tabs"
         >
@@ -143,7 +143,7 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({ preview }) => {
           {items.length > 0 ? (
             <>
               <strong>
-                {activeTab === PreviewTab.INCLUDED
+                {activeTab === CatalogSettingsPreviewTab.INCLUDED
                   ? `${summary?.includedModels ?? 0} of ${summary?.totalModels ?? 0} models included:`
                   : `${summary?.excludedModels ?? 0} of ${summary?.totalModels ?? 0} models excluded:`}
               </strong>
@@ -180,13 +180,13 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({ preview }) => {
             <EmptyState
               variant={EmptyStateVariant.sm}
               titleText={
-                activeTab === PreviewTab.INCLUDED
+                activeTab === CatalogSettingsPreviewTab.INCLUDED
                   ? EMPTY_STATE_TEXT.NO_MODELS_INCLUDED
                   : EMPTY_STATE_TEXT.NO_MODELS_EXCLUDED
               }
             >
               <EmptyStateBody>
-                {activeTab === PreviewTab.INCLUDED
+                {activeTab === CatalogSettingsPreviewTab.INCLUDED
                   ? EMPTY_STATE_TEXT.NO_MODELS_INCLUDED_BODY
                   : EMPTY_STATE_TEXT.NO_MODELS_EXCLUDED_BODY}
               </EmptyStateBody>

@@ -14,7 +14,6 @@ import {
 } from '~/app/shared/catalogSettings';
 import { ManageMcpSourceFormData } from './useManageMcpSourceData';
 
-export const McpPreviewTab = CatalogSettingsPreviewTab;
 export type McpPreviewTabState = {
   items: McpCatalogSourcePreviewAsset[];
   nextPageToken?: string;

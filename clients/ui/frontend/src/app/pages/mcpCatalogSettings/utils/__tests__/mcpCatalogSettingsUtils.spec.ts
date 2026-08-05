@@ -2,7 +2,6 @@ import { mockMcpCatalogSourceConfig } from '~/__mocks__';
 import { McpCatalogSourceType } from '~/app/mcpServerCatalogTypes';
 import {
   mcpSourceConfigToFormData,
-  generateMcpSourceIdFromName,
   getMcpPayloadForConfig,
   transformMcpFormDataToConfig,
 } from '~/app/pages/mcpCatalogSettings/utils/mcpCatalogSettingsUtils';
@@ -40,32 +39,6 @@ const nonDefaultFormData: ManageMcpSourceFormData = {
   enabled: false,
   isDefault: false,
 };
-
-describe('generateMcpSourceIdFromName', () => {
-  it('should trim extra spaces', () => {
-    expect(generateMcpSourceIdFromName('  testname')).toBe('testname');
-  });
-
-  it('should replace hyphens with underscores', () => {
-    expect(generateMcpSourceIdFromName('test-name')).toBe('test_name');
-  });
-
-  it('should remove non-alphanumeric characters except underscores', () => {
-    expect(generateMcpSourceIdFromName('Test-Name!')).toBe('test_name');
-  });
-
-  it('should convert to lowercase', () => {
-    expect(generateMcpSourceIdFromName('TestName')).toBe('testname');
-  });
-
-  it('should replace multiple spaces with underscores', () => {
-    expect(generateMcpSourceIdFromName('My MCP Source')).toBe('my_mcp_source');
-  });
-
-  it('should handle special characters', () => {
-    expect(generateMcpSourceIdFromName('Source #1 (test)')).toBe('source_1_test');
-  });
-});
 
 describe('mcpSourceConfigToFormData', () => {
   it('should convert default source config to form data', () => {

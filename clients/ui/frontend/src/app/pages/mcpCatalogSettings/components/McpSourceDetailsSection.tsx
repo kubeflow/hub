@@ -14,12 +14,9 @@ import {
   validateMcpSourceName,
   isMcpSourceNameEmpty,
 } from '~/app/pages/mcpCatalogSettings/utils/validation';
-import {
-  MCP_FORM_LABELS,
-  MCP_VALIDATION_MESSAGES,
-  MCP_SOURCE_NAME_CHARACTER_LIMIT,
-} from '~/app/pages/mcpCatalogSettings/constants';
+import { MCP_FORM_LABELS, MCP_VALIDATION_MESSAGES } from '~/app/pages/mcpCatalogSettings/constants';
 import { McpCatalogSourceConfig } from '~/app/mcpServerCatalogTypes';
+import { SOURCE_NAME_CHARACTER_LIMIT } from '~/app/shared/catalogSettings';
 
 type McpSourceDetailsSectionProps = {
   formData: ManageMcpSourceFormData;
@@ -61,8 +58,8 @@ const McpSourceDetailsSection: React.FC<McpSourceDetailsSectionProps> = ({
         <HelperTextItem variant="error" data-testid="mcp-source-name-error">
           {isMcpSourceNameEmpty(formData.name)
             ? MCP_VALIDATION_MESSAGES.NAME_REQUIRED
-            : formData.name.length > MCP_SOURCE_NAME_CHARACTER_LIMIT
-              ? `Cannot exceed ${MCP_SOURCE_NAME_CHARACTER_LIMIT} characters`
+            : formData.name.length > SOURCE_NAME_CHARACTER_LIMIT
+              ? `Cannot exceed ${SOURCE_NAME_CHARACTER_LIMIT} characters`
               : null}
         </HelperTextItem>
       </HelperText>

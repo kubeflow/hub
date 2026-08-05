@@ -16,8 +16,6 @@ export const MCP_BUTTON_LABELS = {
   CANCEL: 'Cancel',
 } as const;
 
-export const MCP_SOURCE_NAME_CHARACTER_LIMIT = 238;
-
 export const MCP_VALIDATION_MESSAGES = {
   NAME_REQUIRED: 'Name is required',
   YAML_CONTENT_REQUIRED: 'YAML content is required',

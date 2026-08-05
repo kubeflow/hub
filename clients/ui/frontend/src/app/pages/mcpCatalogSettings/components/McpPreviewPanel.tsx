@@ -25,10 +25,8 @@ import {
   MCP_EMPTY_STATE_TEXT,
   MCP_BUTTON_LABELS,
 } from '~/app/pages/mcpCatalogSettings/constants';
-import {
-  UseMcpSourcePreviewResult,
-  McpPreviewTab,
-} from '~/app/pages/mcpCatalogSettings/useMcpSourcePreview';
+import { UseMcpSourcePreviewResult } from '~/app/pages/mcpCatalogSettings/useMcpSourcePreview';
+import { CatalogSettingsPreviewTab } from '~/app/shared/catalogSettings';
 
 type McpPreviewPanelProps = {
   preview: UseMcpSourcePreviewResult;
@@ -47,7 +45,7 @@ const McpPreviewPanel: React.FC<McpPreviewPanelProps> = ({ preview }) => {
   const { items, hasMore } = tabStates[activeTab];
 
   const handleTabSelect = (_event: React.MouseEvent, tabIndex: string | number) => {
-    handleTabChange(tabIndex === 0 ? McpPreviewTab.INCLUDED : McpPreviewTab.EXCLUDED);
+    handleTabChange(tabIndex === 0 ? CatalogSettingsPreviewTab.INCLUDED : CatalogSettingsPreviewTab.EXCLUDED);
   };
 
   const renderEmptyState = () => {
@@ -115,7 +113,7 @@ const McpPreviewPanel: React.FC<McpPreviewPanelProps> = ({ preview }) => {
     return (
       <>
         <Tabs
-          activeKey={activeTab === McpPreviewTab.INCLUDED ? 0 : 1}
+          activeKey={activeTab === CatalogSettingsPreviewTab.INCLUDED ? 0 : 1}
           onSelect={handleTabSelect}
           aria-label="MCP preview tabs"
         >
@@ -139,7 +137,7 @@ const McpPreviewPanel: React.FC<McpPreviewPanelProps> = ({ preview }) => {
           {items.length > 0 ? (
             <>
               <strong>
-                {activeTab === McpPreviewTab.INCLUDED
+                {activeTab === CatalogSettingsPreviewTab.INCLUDED
                   ? `${summary?.includedAssets ?? 0} of ${summary?.totalAssets ?? 0} MCP servers included:`
                   : `${summary?.excludedAssets ?? 0} of ${summary?.totalAssets ?? 0} MCP servers excluded:`}
               </strong>
@@ -176,13 +174,13 @@ const McpPreviewPanel: React.FC<McpPreviewPanelProps> = ({ preview }) => {
             <EmptyState
               variant={EmptyStateVariant.sm}
               titleText={
-                activeTab === McpPreviewTab.INCLUDED
+                activeTab === CatalogSettingsPreviewTab.INCLUDED
                   ? MCP_EMPTY_STATE_TEXT.NO_SERVERS_INCLUDED
                   : MCP_EMPTY_STATE_TEXT.NO_SERVERS_EXCLUDED
               }
             >
               <EmptyStateBody>
-                {activeTab === McpPreviewTab.INCLUDED
+                {activeTab === CatalogSettingsPreviewTab.INCLUDED
                   ? MCP_EMPTY_STATE_TEXT.NO_SERVERS_INCLUDED_BODY
                   : MCP_EMPTY_STATE_TEXT.NO_SERVERS_EXCLUDED_BODY}
               </EmptyStateBody>

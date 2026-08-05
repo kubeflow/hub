@@ -20,8 +20,6 @@ export enum PreviewMode {
   VALIDATE = 'validate',
 }
 
-export const PreviewTab = CatalogSettingsPreviewTab;
-
 export type PreviewTabState = {
   items: CatalogSourcePreviewModel[];
   nextPageToken?: string;
