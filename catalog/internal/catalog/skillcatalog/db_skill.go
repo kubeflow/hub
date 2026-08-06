@@ -41,14 +41,11 @@ type ListSkillsParams struct {
 	NextPageToken *string
 }
 
-// emptyFilterMap is the shared empty filter map returned until per-field
-// filters are implemented (SKC-108). The map must not be mutated by callers.
-var emptyFilterMap = map[string]openapi.FilterOption{}
-
 // GetFilterOptions returns the filterable fields for skills. Entity-specific
 // options are populated once fields are persisted (SKC-108).
 func (d *DBSkillCatalog) GetFilterOptions(_ context.Context) (*openapi.FilterOptionsList, error) {
-	return &openapi.FilterOptionsList{Filters: &emptyFilterMap}, nil
+	options := make(map[string]openapi.FilterOption)
+	return &openapi.FilterOptionsList{Filters: &options}, nil
 }
 
 // ListSkills returns a paginated list of skills.

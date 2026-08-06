@@ -129,6 +129,27 @@ func TestParseSkillMD_LongBodyWarns(t *testing.T) {
 	assert.True(t, hasWarning(skill.Warnings, "500"), "expected a body-length warning, got %v", skill.Warnings)
 }
 
+func TestParseSkillMD_TrimsSingleLineFields(t *testing.T) {
+	// A description authored as a literal block scalar keeps a trailing newline in
+	// YAML; single-line fields must not carry that (or stray whitespace) through.
+	content := "---\n" +
+		"name: deploy\n" +
+		"description: |\n  Deploy the app.\n" +
+		"license: apache-2.0   \n" +
+		"author: |\n  Jane Doe\n" +
+		"compatibility: claude-code\n" +
+		"---\nbody\n"
+	skill, err := ParseSkillMD([]byte(content), "deploy")
+	require.NoError(t, err)
+	require.NotNil(t, skill)
+
+	assert.Equal(t, "Deploy the app.", skill.Description, "block-scalar description has no trailing newline")
+	assert.Equal(t, "apache-2.0", skill.License, "trailing whitespace trimmed")
+	assert.Equal(t, "Jane Doe", skill.Author, "block-scalar author trimmed")
+	assert.Equal(t, "deploy", skill.Name)
+	assert.Equal(t, "claude-code", skill.Compatibility)
+}
+
 func TestParseSkillMD_TopLevelAuthorField(t *testing.T) {
 	// author at the frontmatter top level populates the Author field (like license).
 	content := "---\nname: m\ndescription: d\nauthor: Jane Doe\n---\nbody\n"

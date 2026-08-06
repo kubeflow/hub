@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -13,9 +14,9 @@ import (
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/golang/glog"
 	"golang.org/x/sync/semaphore"
-	"golang.org/x/sync/singleflight"
 
 	"github.com/kubeflow/hub/catalog/internal/catalog/basecatalog"
+	"github.com/kubeflow/hub/catalog/internal/catalog/skillcatalog/models"
 )
 
 // Defaults for SyncLimits.
@@ -24,6 +25,10 @@ const (
 	defaultMaxRefsPerRepo    = 10
 	defaultMaxResolveWorkers = 10
 )
+
+// defaultGitCredentialsDir is where a git-credentials Secret is expected to be
+// mounted. Each file in it is a token, named by a repository's credentialRef.
+const defaultGitCredentialsDir = "/etc/skill-catalog/git-credentials"
 
 // SyncLimits bound the loader's sync fan-out so a large or misconfigured source
 // list cannot saturate the pod.
@@ -46,13 +51,15 @@ type SyncLimits struct {
 // tests inject a fake to control concurrency and error behavior without git.
 type refResolver interface {
 	Resolve(ctx context.Context, repo SkillRepository, ref string, creds *Credentials) ([]ResolvedSkill, error)
+	// RemoteCommit returns the commit a ref currently points to, without cloning,
+	// so an unchanged ref can be skipped.
+	RemoteCommit(ctx context.Context, repo SkillRepository, ref string, creds *Credentials) (string, error)
 }
 
-// SecretResolver fetches git credentials referenced by a repository entry's
-// authSecretName.
-type SecretResolver interface {
-	GetCredentials(ctx context.Context, secretName string) (*Credentials, error)
-}
+// gitTokenUsername is the username paired with a token when authenticating to a
+// git host. Hosts that accept a PAT as the password (GitHub, GitLab, …) ignore or
+// accept this placeholder, so a per-source username is not needed.
+const gitTokenUsername = "x-access-token"
 
 // LoaderOption configures a SkillLoader.
 type LoaderOption func(*SkillLoader)
@@ -73,11 +80,32 @@ func WithSyncLimits(limits SyncLimits) LoaderOption {
 	}
 }
 
-// WithSecretResolver configures how the loader resolves authSecretName into
-// git credentials for private repositories. Without one, a repository entry
-// that sets authSecretName fails to sync with a clear error.
-func WithSecretResolver(r SecretResolver) LoaderOption {
-	return func(l *SkillLoader) { l.secretResolver = r }
+// WithResolveLimits overrides the per-clone resolver limits (clone timeout and
+// maximum checked-out repository size). Any non-default allowed protocols on the
+// current resolver are preserved so this option does not silently discard a
+// transport allowlist that was set by a prior option.
+func WithResolveLimits(limits ResolveLimits) LoaderOption {
+	return func(l *SkillLoader) {
+		var opts []Option
+		if r, ok := l.resolver.(*RepoResolver); ok && len(r.allowedProtocols) > 0 {
+			protocols := make([]string, 0, len(r.allowedProtocols))
+			for p := range r.allowedProtocols {
+				protocols = append(protocols, p)
+			}
+			opts = append(opts, WithAllowedProtocols(protocols...))
+		}
+		l.resolver = NewRepoResolver(limits, opts...)
+	}
+}
+
+// WithCredentialsDir overrides the directory holding per-repository git tokens
+// (the mounted git-credentials Secret). An empty dir keeps the default.
+func WithCredentialsDir(dir string) LoaderOption {
+	return func(l *SkillLoader) {
+		if dir != "" {
+			l.credentialsDir = dir
+		}
+	}
 }
 
 // SkillLoader syncs skills from git repositories into the datastore.
@@ -89,10 +117,17 @@ type SkillLoader struct {
 	resolver       refResolver
 	limits         SyncLimits
 	sem            *semaphore.Weighted
-	secretResolver SecretResolver
+	credentialsDir string
 
 	closerMu sync.Mutex
 	closer   func()
+
+	// termMu serializes PerformLeaderOperations. Leadership acquisition and the
+	// config-reload watcher call it from separate goroutines, and the
+	// swapWG/prevWG.Wait() handoff is only sound for one term at a time: two
+	// concurrent terms could have one calling Add on the very WaitGroup the other
+	// is already waiting on, which panics the process.
+	termMu sync.Mutex
 
 	// tickerMu guards tickerWG so PerformLeaderOperations can swap it per term
 	// while schedulePeriodicSync reads it concurrently.
@@ -158,7 +193,8 @@ func NewSkillLoader(services Services, state basecatalog.LoaderState, opts ...Lo
 			MaxRefsPerRepo:    defaultMaxRefsPerRepo,
 			MaxResolveWorkers: defaultMaxResolveWorkers,
 		},
-		tickerWG: &sync.WaitGroup{},
+		credentialsDir: defaultGitCredentialsDir,
+		tickerWG:       &sync.WaitGroup{},
 	}
 	l.sem = semaphore.NewWeighted(l.limits.MaxInFlightClones)
 	for _, opt := range opts {
@@ -181,12 +217,19 @@ func (l *SkillLoader) ParseAllConfigs() error {
 func (l *SkillLoader) PerformLeaderOperations(ctx context.Context, allKnownSourceIDs mapset.Set[string]) error {
 	glog.Info("skill loader performing leader operations")
 
+	// One term at a time: see termMu. Every WaitGroup.Add for this term happens
+	// before this call returns and releases the lock, so the next term's
+	// prevWG.Wait() can never observe an Add in flight.
+	l.termMu.Lock()
+	defer l.termMu.Unlock()
+
 	ctx, cancel := context.WithCancel(ctx)
 
 	// Swap in a fresh WaitGroup for this term and cancel the previous context so
 	// old ticker goroutines stop. prevWG.Wait() then drains them before we begin
 	// writing, preventing a stale goroutine from racing with the new sync.
 	prevWG := l.swapWG()
+	termWG := l.currentWG()
 	l.setCloser(cancel)
 
 	// Drain in-flight DB writes from the previous term first, then wait for the
@@ -217,11 +260,28 @@ func (l *SkillLoader) PerformLeaderOperations(ctx context.Context, allKnownSourc
 			basecatalog.SaveSourceStatus(l.services.CatalogSourceRepository, id, basecatalog.SourceStatusError, err.Error())
 			continue
 		}
-		l.syncSource(ctx, id, spec)
-		l.schedulePeriodicSync(ctx, id, spec.SyncIntervalMinutes)
+		// Sync each source concurrently rather than serially, so one large or slow
+		// source does not delay the rest. The outer TrackWrite/WriteComplete spans
+		// the whole source sync so the base's WaitForInflightWrites blocks until
+		// every source's initial index is built before readiness is signalled;
+		// clone concurrency across sources stays bounded by the global in-flight
+		// clone semaphore.
+		l.state.TrackWrite()
+		go func(id string, spec *SkillSourceSpec) {
+			defer l.state.WriteComplete()
+			l.syncSource(ctx, id, spec)
+		}(id, spec)
+
+		// Register the resync ticker synchronously, not from the goroutine above:
+		// its WaitGroup.Add must happen before this term returns. Deferring it until
+		// after syncSource would let a slow sync outlive the 30s inflight-write
+		// drain and call Add on a WaitGroup the next term is already waiting on.
+		// A tick that fires while the initial sync is still running is skipped by
+		// runSyncExclusive's TryLock, so starting the ticker early is harmless.
+		l.schedulePeriodicSync(ctx, id, spec.SyncIntervalMinutes, termWG)
 	}
 
-	glog.Info("skill loader leader operations complete")
+	glog.Info("skill loader leader operations launched")
 	return nil
 }
 
@@ -272,37 +332,52 @@ func (l *SkillLoader) syncSource(ctx context.Context, sourceID string, spec *Ski
 	})
 }
 
-// syncSourceLocked performs the actual drop-and-reindex from an already-parsed
-// spec. The caller must hold the source's lock. It resolves every repository at
-// every ref (bounded per sync by the worker pool, and globally by the in-flight
-// clone cap) and re-indexes what it finds; the ephemeral, rebuild-each-sync model
-// guarantees no orphans.
+// syncSourceLocked reconciles one source from an already-parsed spec. The caller
+// must hold the source's lock. It resolves every repository at every ref (bounded
+// per sync by the worker pool, and globally by the in-flight clone cap), upserts
+// each discovered skill, and then deletes only the skills that are no longer
+// present (removed skill dirs, refs, or repos) — so a read never sees the source
+// empty mid-sync, unlike a delete-then-rebuild.
 func (l *SkillLoader) syncSourceLocked(ctx context.Context, sourceID string, spec *SkillSourceSpec) {
-	l.state.TrackWrite()
-	delErr := l.services.SkillRepository.DeleteBySource(sourceID)
-	l.state.WriteComplete()
-	if delErr != nil {
-		basecatalog.SaveSourceStatus(l.services.CatalogSourceRepository, sourceID, basecatalog.SourceStatusError, delErr.Error())
-		return
-	}
-
-	jobs, errs := buildRefJobs(spec.Repositories, l.limits.MaxRefsPerRepo)
+	jobs, errs, rejectedRepos := buildRefJobs(spec.Repositories, l.limits.MaxRefsPerRepo)
 
 	if !l.state.ShouldWriteDatabase() || ctx.Err() != nil {
 		return
 	}
-	// Cache credentials for this source's sync so a repo with several refs (or
-	// several repos sharing a Secret) triggers at most one Secret lookup per name.
-	credentials := newCredentialCache(func(repo SkillRepository) (*Credentials, error) {
-		return l.credentialsFor(ctx, repo)
-	})
-	results := resolveJobsConcurrently(ctx, jobs, l.limits.MaxResolveWorkers, l.sem, l.resolver, credentials)
 
+	// Load the source's currently-indexed skills once, used both to skip unchanged
+	// refs (ref-level skip) and for orphan cleanup. A list error is non-fatal: the
+	// sync proceeds with no known commits (every ref is resolved) and no orphan pass.
+	existing, lerr := l.listSkillsForSource(sourceID)
+	if lerr != nil {
+		glog.Warningf("skill source %s: unable to list existing skills (%v); resolving all refs", sourceID, lerr)
+	}
+	knownCommit, namesByRef := indexExistingByRef(existing)
+
+	results := resolveJobsConcurrently(ctx, jobs, l.limits.MaxResolveWorkers, l.sem, l.resolver, l.credentialsForRepo, knownCommit)
+
+	// currentNames collects the composite name of every skill still present this
+	// sync — freshly upserted or retained from a skipped (unchanged) ref. Anything
+	// else still attributed to the source is an orphan.
+	currentNames := mapset.NewSet[string]()
+	// unsafeRepos collects repositories whose current skill set this sync could not
+	// fully determine: rejected outright, failed to resolve, or failed to save. Their
+	// already-indexed skills are stale but still valid, so orphan cleanup skips them
+	// rather than turning a transient clone failure into permanent data loss.
+	// Repositories that synced cleanly are still reconciled, so one flaky repo does
+	// not freeze cleanup for the whole source.
+	unsafeRepos := mapset.NewSet(rejectedRepos...)
 	var warningMsgs []string
-	indexed := 0
+	indexed, skipped := 0, 0
 	for _, res := range results {
 		if res.err != nil {
 			errs = append(errs, fmt.Sprintf("%s@%s: %v", res.repo.URL, res.ref, res.err))
+			unsafeRepos.Add(res.repo.URL)
+			continue
+		}
+		if res.skipped {
+			currentNames.Append(namesByRef[refKey(res.repo.URL, res.ref)]...)
+			skipped++
 			continue
 		}
 		for j := range res.skills {
@@ -310,20 +385,158 @@ func (l *SkillLoader) syncSourceLocked(ctx context.Context, sourceID string, spe
 				warningMsgs = append(warningMsgs, fmt.Sprintf("%s: %s", res.skills[j].Path, w))
 			}
 			entity := buildSkillEntity(res.skills[j], res.repo, spec, sourceID)
+			if attrs := entity.GetAttributes(); attrs != nil && attrs.Name != nil {
+				currentNames.Add(*attrs.Name)
+			}
 			l.state.TrackWrite()
 			_, serr := l.services.SkillRepository.Save(entity)
 			l.state.WriteComplete()
 			if serr != nil {
 				errs = append(errs, fmt.Sprintf("saving %s: %v", res.skills[j].Path, serr))
+				unsafeRepos.Add(res.repo.URL)
 				continue
 			}
 			indexed++
 		}
 	}
 
-	status, msg := skillSourceStatus(indexed, warningMsgs, errs)
+	// If leadership was lost or the context was cancelled mid-sync, currentNames is
+	// incomplete; skip reconciliation and the status write so live skills are not
+	// deleted as false orphans.
+	if !l.state.ShouldWriteDatabase() || ctx.Err() != nil {
+		return
+	}
+	// Reconcile only the repositories this sync fully enumerated. A list error
+	// leaves `existing` unknown, so cleanup is skipped entirely; otherwise each
+	// repository is cleaned or protected independently via unsafeRepos.
+	if lerr == nil {
+		if err := l.removeOrphans(existing, currentNames, unsafeRepos); err != nil {
+			errs = append(errs, fmt.Sprintf("removing orphaned skills: %v", err))
+		}
+	}
+
+	status, msg := skillSourceStatus(indexed+skipped, warningMsgs, errs)
 	basecatalog.SaveSourceStatus(l.services.CatalogSourceRepository, sourceID, status, msg)
-	glog.Infof("skill source %s: indexed %d skills, %d warnings, %d errors", sourceID, indexed, len(warningMsgs), len(errs))
+	glog.Infof("skill source %s: indexed %d skills, skipped %d unchanged refs, %d warnings, %d errors",
+		sourceID, indexed, skipped, len(warningMsgs), len(errs))
+}
+
+// listSkillsForSource returns every skill currently attributed to sourceID. List
+// with no page size returns all rows, so a single call sees every candidate.
+//
+// The SourceIDs list option is not yet honoured by the query layer, so the result
+// is narrowed to sourceID here as well. This filter is load-bearing, not just
+// defensive: composite skill names are namespaced by source ID, so another
+// source's skills can never appear in this sync's currentNames and removeOrphans
+// would delete every one of them.
+func (l *SkillLoader) listSkillsForSource(sourceID string) ([]models.Skill, error) {
+	sourceIDs := []string{sourceID}
+	result, err := l.services.SkillRepository.List(&models.SkillListOptions{SourceIDs: &sourceIDs})
+	if err != nil {
+		return nil, err
+	}
+	if result == nil {
+		return nil, nil
+	}
+	owned := make([]models.Skill, 0, len(result.Items))
+	for _, s := range result.Items {
+		if skillProperty(s, propSourceID) == sourceID {
+			owned = append(owned, s)
+		}
+	}
+	return owned, nil
+}
+
+// skillProperty returns the named string property of a skill, or "" if absent.
+func skillProperty(s models.Skill, name string) string {
+	props := s.GetProperties()
+	if props == nil {
+		return ""
+	}
+	for _, p := range *props {
+		if p.Name == name && p.StringValue != nil {
+			return *p.StringValue
+		}
+	}
+	return ""
+}
+
+// refKey is the map key identifying a (repository, ref) pair.
+func refKey(repoURL, ref string) string { return repoURL + "\x00" + ref }
+
+// indexExistingByRef groups already-indexed skills by (repository, ref), returning
+// the commit each ref was last resolved at and the composite names indexed under
+// it. All skills at one ref share a resolvedCommit, so the last one wins.
+func indexExistingByRef(existing []models.Skill) (knownCommitFunc, map[string][]string) {
+	commitByRef := map[string]string{}
+	namesByRef := map[string][]string{}
+	for _, s := range existing {
+		name, repo, version, commit := skillRefInfo(s)
+		if name == "" || repo == "" || version == "" {
+			continue
+		}
+		k := refKey(repo, version)
+		namesByRef[k] = append(namesByRef[k], name)
+		if commit != "" {
+			commitByRef[k] = commit
+		}
+	}
+	known := func(repo SkillRepository, ref string) string { return commitByRef[refKey(repo.URL, ref)] }
+	return known, namesByRef
+}
+
+// skillRefInfo extracts a skill's composite name and the repository, version, and
+// resolved commit it was indexed under.
+func skillRefInfo(s models.Skill) (name, repo, version, commit string) {
+	if a := s.GetAttributes(); a != nil && a.Name != nil {
+		name = *a.Name
+	}
+	if props := s.GetProperties(); props != nil {
+		for _, p := range *props {
+			if p.StringValue == nil {
+				continue
+			}
+			switch p.Name {
+			case propRepository:
+				repo = *p.StringValue
+			case propSkillVersion:
+				version = *p.StringValue
+			case propResolvedCommit:
+				commit = *p.StringValue
+			}
+		}
+	}
+	return
+}
+
+// removeOrphans deletes, from the pre-loaded existing set, every skill whose
+// composite name is not in currentNames — i.e. skills that a previous sync indexed
+// but this one neither upserted nor retained via a skipped ref. Skills belonging to
+// a repository in unsafeRepos are left alone: that repository did not fully
+// enumerate this sync, so its absence from currentNames proves nothing.
+func (l *SkillLoader) removeOrphans(existing []models.Skill, currentNames, unsafeRepos mapset.Set[string]) error {
+	var errs []error
+	for _, skill := range existing {
+		attrs := skill.GetAttributes()
+		if attrs == nil || attrs.Name == nil || skill.GetID() == nil {
+			continue
+		}
+		if currentNames.Contains(*attrs.Name) {
+			continue
+		}
+		if unsafeRepos.Contains(skillProperty(skill, propRepository)) {
+			glog.V(1).Infof("keeping skill %q: its repository did not fully sync", *attrs.Name)
+			continue
+		}
+		glog.Infof("removing orphaned skill %q", *attrs.Name)
+		l.state.TrackWrite()
+		delErr := l.services.SkillRepository.DeleteByID(*skill.GetID())
+		l.state.WriteComplete()
+		if delErr != nil {
+			errs = append(errs, fmt.Errorf("deleting orphaned skill %q: %w", *attrs.Name, delErr))
+		}
+	}
+	return errors.Join(errs...)
 }
 
 // schedulePeriodicSync starts a background resync loop for a source when its
@@ -331,13 +544,13 @@ func (l *SkillLoader) syncSourceLocked(ctx context.Context, sourceID string, spe
 // hot-reload and manual-sync triggers. The loop stops when ctx is cancelled —
 // leadership lost, or a later PerformLeaderOperations call supersedes it via
 // setCloser (which cancels this ctx before deriving and scheduling a fresh one).
-func (l *SkillLoader) schedulePeriodicSync(ctx context.Context, sourceID string, intervalMinutes int) {
+func (l *SkillLoader) schedulePeriodicSync(ctx context.Context, sourceID string, intervalMinutes int, wg *sync.WaitGroup) {
 	if intervalMinutes <= 0 {
 		return
 	}
 	interval := time.Duration(intervalMinutes) * time.Minute
 
-	runPeriodicSync(ctx, interval, l.currentWG(), func() {
+	runPeriodicSync(ctx, interval, wg, func() {
 		if !l.state.ShouldWriteDatabase() {
 			return
 		}
@@ -385,58 +598,25 @@ func runPeriodicSync(ctx context.Context, interval time.Duration, wg *sync.WaitG
 	}()
 }
 
-// credentialsFor resolves a repository entry's authSecretName into git
-// credentials. A repository with no authSecretName resolves anonymously
-// (nil, nil). A repository that requests a secret with no resolver configured
-// fails clearly rather than silently attempting an anonymous clone.
-func (l *SkillLoader) credentialsFor(ctx context.Context, repo SkillRepository) (*Credentials, error) {
-	if repo.AuthSecretName == "" {
+// credentialsForRepo resolves a repository's git credentials by reading the token
+// file named by its credentialRef from the mounted credentials directory. A repo
+// with no credentialRef clones anonymously (nil, nil); one whose token file is
+// missing or empty fails clearly rather than silently cloning anonymously. The key
+// is validated as a plain filename at config-parse time, so it cannot escape the
+// directory. The file is re-read each time, so a hot-reloaded Secret is picked up.
+func (l *SkillLoader) credentialsForRepo(repo SkillRepository) (*Credentials, error) {
+	if repo.CredentialRef == "" {
 		return nil, nil
 	}
-	if l.secretResolver == nil {
-		return nil, fmt.Errorf("repository requires secret %q but no secret resolver is configured", repo.AuthSecretName)
+	data, err := os.ReadFile(filepath.Join(l.credentialsDir, repo.CredentialRef))
+	if err != nil {
+		return nil, fmt.Errorf("reading git token for credentialRef %q: %w", repo.CredentialRef, err)
 	}
-	return l.secretResolver.GetCredentials(ctx, repo.AuthSecretName)
-}
-
-// newCredentialCache wraps fetch so each distinct authSecretName is resolved at
-// most once for the lifetime of the returned function: concurrent lookups for the
-// same secret are collapsed (singleflight) and the result is memoized, so a repo
-// with N refs (or several repos sharing a Secret) causes one Secret fetch, not N.
-// Anonymous repos (no authSecretName) are never cached — nothing to fetch.
-func newCredentialCache(fetch func(SkillRepository) (*Credentials, error)) func(SkillRepository) (*Credentials, error) {
-	type entry struct {
-		creds *Credentials
-		err   error
+	token := strings.TrimSpace(string(data))
+	if token == "" {
+		return nil, fmt.Errorf("git token for credentialRef %q is empty", repo.CredentialRef)
 	}
-	var (
-		mu    sync.Mutex
-		cache = map[string]entry{}
-		group singleflight.Group
-	)
-	return func(repo SkillRepository) (*Credentials, error) {
-		key := repo.AuthSecretName
-		if key == "" {
-			return fetch(repo)
-		}
-
-		mu.Lock()
-		if e, ok := cache[key]; ok {
-			mu.Unlock()
-			return e.creds, e.err
-		}
-		mu.Unlock()
-
-		v, err, _ := group.Do(key, func() (any, error) {
-			creds, ferr := fetch(repo)
-			mu.Lock()
-			cache[key] = entry{creds: creds, err: ferr}
-			mu.Unlock()
-			return creds, ferr
-		})
-		creds, _ := v.(*Credentials)
-		return creds, err
-	}
+	return &Credentials{Username: gitTokenUsername, Token: token}, nil
 }
 
 // refJob is one (repository, ref) pair to resolve.
@@ -449,46 +629,50 @@ type refJob struct {
 // (with an error, not a hang or a silent truncation) any repository with no
 // refs configured or with more refs than maxRefsPerRepo. Duplicate refs within a
 // repository are collapsed so a repeated ref indexes once rather than producing
-// colliding entries.
-func buildRefJobs(repos []SkillRepository, maxRefsPerRepo int) ([]refJob, []string) {
-	var jobs []refJob
-	var errs []string
+// colliding entries. The URLs of rejected repositories are returned alongside the
+// errors so orphan cleanup can leave their already-indexed skills in place.
+func buildRefJobs(repos []SkillRepository, maxRefsPerRepo int) (jobs []refJob, errs []string, rejected []string) {
 	for _, repo := range repos {
 		refs := dedupeStrings(repo.Refs)
 		switch {
 		case len(refs) == 0:
 			errs = append(errs, fmt.Sprintf("%s: no refs configured; skills must be pinned to a tag or commit SHA", repo.URL))
+			rejected = append(rejected, repo.URL)
 		case len(refs) > maxRefsPerRepo:
 			errs = append(errs, fmt.Sprintf("%s: lists %d refs, exceeding the maximum of %d", repo.URL, len(refs), maxRefsPerRepo))
+			rejected = append(rejected, repo.URL)
 		default:
 			for _, ref := range refs {
 				jobs = append(jobs, refJob{repo: repo, ref: ref})
 			}
 		}
 	}
-	return jobs, errs
+	return jobs, errs, rejected
 }
 
 // dedupeStrings returns values with duplicates removed, preserving first-seen order.
 func dedupeStrings(values []string) []string {
-	seen := make(map[string]bool, len(values))
+	seen := make(map[string]struct{}, len(values))
 	out := make([]string, 0, len(values))
 	for _, v := range values {
-		if seen[v] {
+		if _, ok := seen[v]; ok {
 			continue
 		}
-		seen[v] = true
+		seen[v] = struct{}{}
 		out = append(out, v)
 	}
 	return out
 }
 
-// resolveResult is the outcome of resolving one refJob.
+// resolveResult is the outcome of resolving one refJob. skipped is true when the
+// ref's remote commit was unchanged since the last sync, so it was not re-cloned
+// and its existing skills should be retained.
 type resolveResult struct {
-	repo   SkillRepository
-	ref    string
-	skills []ResolvedSkill
-	err    error
+	repo    SkillRepository
+	ref     string
+	skills  []ResolvedSkill
+	err     error
+	skipped bool
 }
 
 // resolveJobsConcurrently resolves every job through a fixed FIFO worker pool of
@@ -498,7 +682,12 @@ type resolveResult struct {
 // many credential lookups (e.g. Kubernetes Secret fetches) happen at once. Clones
 // are additionally bounded across all concurrent syncs by sem. Every job produces
 // a result, indexed to match the input order.
-func resolveJobsConcurrently(ctx context.Context, jobs []refJob, workers int, sem *semaphore.Weighted, resolver refResolver, credentials func(SkillRepository) (*Credentials, error)) []resolveResult {
+// knownCommit reports the commit a (repo, ref) was last indexed at, or "" if it
+// was not previously indexed. It lets resolveOne skip a ref whose remote commit is
+// unchanged.
+type knownCommitFunc func(repo SkillRepository, ref string) string
+
+func resolveJobsConcurrently(ctx context.Context, jobs []refJob, workers int, sem *semaphore.Weighted, resolver refResolver, credentials func(SkillRepository) (*Credentials, error), knownCommit knownCommitFunc) []resolveResult {
 	results := make([]resolveResult, len(jobs))
 	if len(jobs) == 0 {
 		return results
@@ -520,7 +709,7 @@ func resolveJobsConcurrently(ctx context.Context, jobs []refJob, workers int, se
 		go func() {
 			defer wg.Done()
 			for ij := range queue {
-				results[ij.idx] = resolveOne(ctx, ij.job, sem, resolver, credentials)
+				results[ij.idx] = resolveOne(ctx, ij.job, knownCommit(ij.job.repo, ij.job.ref), sem, resolver, credentials)
 			}
 		}()
 	}
@@ -536,17 +725,25 @@ func resolveJobsConcurrently(ctx context.Context, jobs []refJob, workers int, se
 	return results
 }
 
-// resolveOne resolves a single job to completion: credential lookup first, then a
-// clone gated by the global in-flight-clone semaphore. The credential lookup runs
-// before the clone slot is acquired so a slow lookup never holds one; it is still
-// bounded because resolveOne runs on a worker-pool goroutine.
-func resolveOne(ctx context.Context, job refJob, sem *semaphore.Weighted, resolver refResolver, credentials func(SkillRepository) (*Credentials, error)) resolveResult {
+// resolveOne resolves a single job to completion: credential lookup, an optional
+// unchanged-ref skip, then a clone gated by the global in-flight-clone semaphore.
+// When knownCommit is non-empty and the ref's current remote commit still matches
+// it, the clone is skipped (the ref is immutable, so its content cannot have
+// changed). A remote-commit lookup error is non-fatal — it falls through to a full
+// resolve. Credential lookup and the ls-remote check run before the clone slot is
+// acquired so neither holds one; both are still bounded by the worker pool.
+func resolveOne(ctx context.Context, job refJob, knownCommit string, sem *semaphore.Weighted, resolver refResolver, credentials func(SkillRepository) (*Credentials, error)) resolveResult {
 	if ctx.Err() != nil {
 		return resolveResult{repo: job.repo, ref: job.ref, err: ctx.Err()}
 	}
 	creds, err := credentials(job.repo)
 	if err != nil {
 		return resolveResult{repo: job.repo, ref: job.ref, err: err}
+	}
+	if knownCommit != "" {
+		if remote, rerr := resolver.RemoteCommit(ctx, job.repo, job.ref, creds); rerr == nil && remote == knownCommit {
+			return resolveResult{repo: job.repo, ref: job.ref, skipped: true}
+		}
 	}
 	if err := sem.Acquire(ctx, 1); err != nil {
 		return resolveResult{repo: job.repo, ref: job.ref, err: err}

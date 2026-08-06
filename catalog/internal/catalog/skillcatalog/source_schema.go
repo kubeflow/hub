@@ -20,7 +20,7 @@
 //	        - url: https://github.com/example/skills.git
 //	          refs: [main, v1.0]
 //	          scanPaths: [skills/]
-//	          authSecretName: git-creds
+//	          credentialRef: github            # file in the mounted credentials dir
 //	          provider: Example Org
 //	          category: DevOps
 //	          labels: [community]
@@ -41,6 +41,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/kubeflow/hub/catalog/internal/catalog/basecatalog"
@@ -56,6 +57,12 @@ const (
 	propYAMLCatalogPath = "yamlCatalogPath"
 	propRepositories    = "repositories"
 )
+
+// validCredentialRef matches a safe credential key: a plain filename with no path
+// separators and no dot-only name, so it can be joined to the mounted credentials
+// directory without escaping it. This prevents a source config from pointing the
+// resolver at an arbitrary host file (e.g. credentialRef: ../../etc/passwd).
+var validCredentialRef = regexp.MustCompile(`^[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?$`)
 
 // SkillOverride carries per-skill custom-metadata overrides for a repository entry.
 type SkillOverride struct {
@@ -77,8 +84,12 @@ type SkillRepository struct {
 	Refs []string `json:"refs,omitempty"`
 	// ScanPaths limits the SKILL.md scan to these subdirectories (default: whole repo).
 	ScanPaths []string `json:"scanPaths,omitempty"`
-	// AuthSecretName references a Secret providing credentials for private repos.
-	AuthSecretName string `json:"authSecretName,omitempty"`
+	// CredentialRef names the file, within the mounted git-credentials directory,
+	// that holds this repository's token. That directory is a Kubernetes Secret
+	// mounted as a volume, so operators (or the UI) can add credentials at runtime
+	// without a redeploy. The key must be a plain filename (validated); empty means
+	// an anonymous clone.
+	CredentialRef string `json:"credentialRef,omitempty"`
 	// Provider, Category, Labels are custom metadata stamped onto the repo's skills.
 	Provider string   `json:"provider,omitempty"`
 	Category string   `json:"category,omitempty"`
@@ -223,6 +234,9 @@ func validateRepositories(repos []SkillRepository) error {
 	for i, r := range repos {
 		if r.URL == "" {
 			return fmt.Errorf("repository[%d]: url is required", i)
+		}
+		if r.CredentialRef != "" && !validCredentialRef.MatchString(r.CredentialRef) {
+			return fmt.Errorf("repository[%d]: credentialRef %q must be a plain filename (letters, digits, '.', '_', '-')", i, r.CredentialRef)
 		}
 		key := normalizeRepoURL(r.URL)
 		if prev, dup := seen[key]; dup {

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/golang/glog"
 
 	mapset "github.com/deckarep/golang-set/v2"
 
@@ -54,11 +53,14 @@ func (p *Plugin) Init(_ context.Context, cfg plugin.Config) error {
 
 	base := basecatalog.NewBaseLoader(cfg.ConfigPaths)
 
-	var loaderOpts []skillcatalog.LoaderOption
-	if secretResolver, err := skillcatalog.NewK8sSecretResolver(); err != nil {
-		glog.Warningf("skill plugin: no Kubernetes Secret access available (%v); private repositories (authSecretName) will fail to sync", err)
-	} else {
-		loaderOpts = append(loaderOpts, skillcatalog.WithSecretResolver(secretResolver))
+	// Sync fan-out and per-clone limits default to their compiled-in values and
+	// are overridable via SKILL_CATALOG_* environment variables (see env_config.go).
+	// Private-repo credentials are read at clone time from token files in the mounted
+	// git-credentials directory, named by each repository's credentialRef.
+	loaderOpts := []skillcatalog.LoaderOption{
+		skillcatalog.WithSyncLimits(skillcatalog.SyncLimitsFromEnv()),
+		skillcatalog.WithResolveLimits(skillcatalog.ResolveLimitsFromEnv()),
+		skillcatalog.WithCredentialsDir(skillcatalog.CredentialsDirFromEnv()),
 	}
 	p.loader = skillcatalog.NewSkillLoader(p.services, base, loaderOpts...)
 

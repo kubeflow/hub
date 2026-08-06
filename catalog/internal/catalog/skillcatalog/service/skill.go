@@ -54,6 +54,18 @@ func (r *SkillRepositoryImpl) Save(entity models.Skill) (models.Skill, error) {
 	if entity.GetTypeID() == nil && config.TypeID > 0 {
 		entity.SetTypeID(config.TypeID)
 	}
+	// Upsert by composite name: if a skill with this name already exists, update it
+	// in place rather than inserting a duplicate that would violate the Context
+	// UNIQUE(type_id, name) constraint. This lets the loader reconcile a source by
+	// re-saving its current skills without first deleting them all, so reads never
+	// see the source empty mid-sync.
+	if entity.GetID() == nil {
+		if attrs := entity.GetAttributes(); attrs != nil && attrs.Name != nil {
+			if existing, err := r.GetByName(*attrs.Name); err == nil && existing.GetID() != nil {
+				entity.SetID(*existing.GetID())
+			}
+		}
+	}
 	return r.GenericRepository.Save(entity, nil)
 }
 

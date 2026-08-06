@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -27,6 +28,10 @@ const (
 var defaultAllowedProtocols = []string{"https", "http", "git"}
 
 var scpLikeRe = regexp.MustCompile(`^[\w.-]+@[\w.-]+:.*`)
+
+// fullSHA matches a full-length git object name (sha-1 or sha-256), which is
+// already an immutable commit and resolves to itself.
+var fullSHA = regexp.MustCompile(`^[0-9a-fA-F]{40}$|^[0-9a-fA-F]{64}$`)
 
 // ResolvedSkill is a skill discovered in a repository at a specific ref, ready to
 // be indexed. It pairs the parsed SKILL.md with its canonical identity.
@@ -58,6 +63,7 @@ type Credentials struct {
 type RepoResolver struct {
 	limits           ResolveLimits
 	allowedProtocols map[string]bool
+	baseEnv          []string
 }
 
 // Option configures a RepoResolver.
@@ -89,7 +95,24 @@ func NewRepoResolver(limits ResolveLimits, opts ...Option) *RepoResolver {
 	for _, opt := range opts {
 		opt(r)
 	}
+	r.baseEnv = r.computeBaseEnv()
 	return r
+}
+
+// computeBaseEnv builds the constant portion of the git environment: prompts
+// disabled, transport allowlist applied, and system config suppressed. The
+// result is precomputed once so concurrent clones only copy a slice.
+func (r *RepoResolver) computeBaseEnv() []string {
+	allowed := make([]string, 0, len(r.allowedProtocols))
+	for p := range r.allowedProtocols {
+		allowed = append(allowed, p)
+	}
+	return append(os.Environ(),
+		"GIT_TERMINAL_PROMPT=0",
+		"GIT_ALLOW_PROTOCOL="+strings.Join(allowed, ":"),
+		"GIT_CONFIG_NOSYSTEM=1",
+		"GIT_CONFIG_GLOBAL=/dev/null",
+	)
 }
 
 // Resolve shallow-clones repo.URL at ref, scans its scanPaths for SKILL.md files,
@@ -161,6 +184,82 @@ func (r *RepoResolver) Resolve(ctx context.Context, repo SkillRepository, ref st
 		return nil, err
 	}
 	return skills, nil
+}
+
+// RemoteCommit returns the commit that ref currently resolves to on the remote,
+// without cloning — a cheap ls-remote. A full commit-SHA ref resolves to itself;
+// a tag is peeled to its commit. This lets the loader skip re-cloning a
+// (repo, ref) whose commit has not changed since it was last indexed.
+func (r *RepoResolver) RemoteCommit(ctx context.Context, repo SkillRepository, ref string, creds *Credentials) (string, error) {
+	if repo.URL == "" || ref == "" {
+		return "", fmt.Errorf("repository url and ref are required")
+	}
+	if strings.HasPrefix(repo.URL, "-") || strings.HasPrefix(ref, "-") {
+		return "", fmt.Errorf("repository url and ref must not begin with '-'")
+	}
+	if err := r.checkProtocol(repo.URL); err != nil {
+		return "", err
+	}
+	if fullSHA.MatchString(ref) {
+		return strings.ToLower(ref), nil
+	}
+
+	askpassDir, env, err := r.gitEnv(creds)
+	if err != nil {
+		return "", err
+	}
+	if askpassDir != "" {
+		defer func() { _ = os.RemoveAll(askpassDir) }()
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, r.limits.CloneTimeout)
+	defer cancel()
+
+	// Use an isolated temp dir as the working directory so git does not pick up
+	// .git/config from any ancestor repository that happens to contain os.TempDir().
+	lsRemoteDir, err := os.MkdirTemp("", "skill-lsremote-")
+	if err != nil {
+		return "", fmt.Errorf("creating temp dir for ls-remote: %w", err)
+	}
+	defer func() { _ = os.RemoveAll(lsRemoteDir) }()
+
+	// Pass the exact ref and a trailing-glob: a narrow pattern omits the peeled
+	// (`^{}`) line for an annotated tag, while the glob captures it (along with
+	// sibling refs, which peelLsRemote filters out by exact name).
+	out, err := runGitCmd(ctx, lsRemoteDir, env, "ls-remote", repo.URL, ref, ref+"*")
+	if err != nil {
+		return "", fmt.Errorf("ls-remote %s at %q: %w", repo.URL, ref, err)
+	}
+	return peelLsRemote(out, ref), nil
+}
+
+// peelLsRemote returns the commit SHA that ref resolves to, from `git ls-remote`
+// output that may include sibling refs and a peeled (`^{}`) line for an annotated
+// tag. It considers only lines whose ref name matches ref exactly, preferring the
+// peeled line so an annotated tag yields its underlying commit rather than the tag
+// object (matching what Resolve records). Returns "" when nothing matched.
+func peelLsRemote(out, ref string) string {
+	var direct, peeled string
+	for _, line := range strings.Split(strings.TrimSpace(out), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			continue
+		}
+		sha, name := fields[0], fields[1]
+		core := strings.TrimSuffix(name, "^{}")
+		if core != ref && !strings.HasSuffix(core, "/"+ref) {
+			continue // a sibling ref matched by the glob (e.g. v2.0-rc for v2.0)
+		}
+		if strings.HasSuffix(name, "^{}") {
+			peeled = sha
+		} else if direct == "" {
+			direct = sha
+		}
+	}
+	if peeled != "" {
+		return peeled
+	}
+	return direct
 }
 
 // checkProtocol rejects repository URLs whose git transport is not allowed,
@@ -267,8 +366,9 @@ func (r *RepoResolver) scan(root string, repo SkillRepository, version, commit s
 	seen := make(map[string]bool)
 	// dirFiles accumulates all non-SKILL.md files encountered during the primary
 	// walk, keyed by their containing directory (absolute), so supporting files
-	// can be derived without a second per-skill WalkDir.
-	dirFiles := make(map[string][]string)
+	// can be derived without a second per-skill WalkDir. Using a set (map to
+	// struct{}) prevents duplicates when scanPaths overlap.
+	dirFiles := make(map[string]map[string]struct{})
 
 	for _, sp := range scanRoots {
 		start := filepath.Join(root, filepath.Clean("/"+sp))
@@ -293,7 +393,10 @@ func (r *RepoResolver) scan(root string, repo SkillRepository, version, commit s
 					return err
 				}
 				dir := filepath.Dir(path)
-				dirFiles[dir] = append(dirFiles[dir], filepath.ToSlash(rel))
+				if dirFiles[dir] == nil {
+					dirFiles[dir] = make(map[string]struct{})
+				}
+				dirFiles[dir][filepath.ToSlash(rel)] = struct{}{}
 				return nil
 			}
 
@@ -315,8 +418,13 @@ func (r *RepoResolver) scan(root string, repo SkillRepository, version, commit s
 			}
 			seen[relDir] = true
 
+			// For a root-level SKILL.md there is no directory name to use as the
+			// skill name or apply include/exclude filters against; the skill's name
+			// must come from its frontmatter.
 			name := filepath.Base(relDir)
-			if !filter.Allows(name) {
+			if relDir == "." {
+				name = ""
+			} else if !filter.Allows(name) {
 				return nil
 			}
 
@@ -330,6 +438,12 @@ func (r *RepoResolver) scan(root string, repo SkillRepository, version, commit s
 				// ("missing description or unparseable YAML → skip and log"); it is
 				// not fatal to the rest of the repo.
 				glog.Warningf("skipping skill %q (%s) in %s: %v", name, relDir, repo.URL, perr)
+				return nil
+			}
+
+			// For a root-level SKILL.md the directory name is not available before
+			// parsing; apply include/exclude filters here using the name from frontmatter.
+			if relDir == "." && !filter.Allows(parsed.Name) {
 				return nil
 			}
 
@@ -356,10 +470,20 @@ func (r *RepoResolver) scan(root string, repo SkillRepository, version, commit s
 		abs := filepath.Join(root, filepath.FromSlash(skills[i].Path))
 		skillDirToIdx[abs] = i
 	}
-	for dir, fileList := range dirFiles {
+	for dir, fileSet := range dirFiles {
 		if idx, ok := nearestSkillDir(dir, root, skillDirToIdx); ok {
-			skills[idx].SupportingFiles = append(skills[idx].SupportingFiles, fileList...)
+			for f := range fileSet {
+				skills[idx].SupportingFiles = append(skills[idx].SupportingFiles, f)
+			}
 		}
+	}
+
+	// The loop above ranges over maps, whose iteration order Go randomizes, so
+	// sort each skill's files. Otherwise identical repository content yields a
+	// differently-ordered JSON array on every sync, churning the stored property
+	// and reshuffling the API response for no reason.
+	for i := range skills {
+		slices.Sort(skills[i].SupportingFiles)
 	}
 
 	return skills, nil
@@ -389,15 +513,7 @@ func nearestSkillDir(dir, root string, skillDirToIdx map[string]int) (int, bool)
 // GIT_ASKPASS helper so the token never appears in argv or the URL. The caller
 // must remove the returned askpass directory.
 func (r *RepoResolver) gitEnv(creds *Credentials) (askpassDir string, env []string, err error) {
-	allowed := make([]string, 0, len(r.allowedProtocols))
-	for p := range r.allowedProtocols {
-		allowed = append(allowed, p)
-	}
-	env = append(os.Environ(),
-		"GIT_TERMINAL_PROMPT=0",
-		"GIT_ALLOW_PROTOCOL="+strings.Join(allowed, ":"),
-		"GIT_CONFIG_NOSYSTEM=1",
-	)
+	env = append([]string(nil), r.baseEnv...)
 	if creds == nil || creds.Token == "" {
 		return "", env, nil
 	}

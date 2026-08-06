@@ -38,7 +38,7 @@ repositories:
   - url: https://github.com/example/skills.git
     refs: [main, v1.0]
     scanPaths: [skills/]
-    authSecretName: git-creds
+    credentialRef: github
     provider: Example Org
     category: DevOps
     labels: [community]
@@ -60,7 +60,7 @@ repositories:
 	assert.Equal(t, "https://github.com/example/skills.git", r.URL)
 	assert.Equal(t, []string{"main", "v1.0"}, r.Refs)
 	assert.Equal(t, []string{"skills/"}, r.ScanPaths)
-	assert.Equal(t, "git-creds", r.AuthSecretName)
+	assert.Equal(t, "github", r.CredentialRef)
 	assert.Equal(t, []string{"*"}, r.IncludedSkills)
 	assert.Equal(t, []string{"*-draft"}, r.ExcludedSkills)
 	require.Len(t, r.SkillOverrides, 1)
@@ -208,6 +208,32 @@ repositories:
 	_, err := ParseSkillSource(src)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "url is required")
+}
+
+func TestParseSkillSource_CredentialRefMustBePlainFilename(t *testing.T) {
+	// A key with path separators / traversal is rejected, so a source config cannot
+	// point the resolver at an arbitrary host file outside the credentials dir.
+	for _, bad := range []string{"../../etc/passwd", "sub/dir", ".."} {
+		src := skillSource(mustProps(t, `
+repositories:
+  - url: https://github.com/example/skills.git
+    refs: [v1.0]
+    credentialRef: `+bad+`
+`))
+		_, err := ParseSkillSource(src)
+		require.Errorf(t, err, "credentialRef %q must be rejected", bad)
+		assert.Contains(t, err.Error(), "credentialRef")
+	}
+
+	// A plain filename is accepted.
+	good := skillSource(mustProps(t, `
+repositories:
+  - url: https://github.com/example/skills.git
+    refs: [v1.0]
+    credentialRef: github
+`))
+	_, err := ParseSkillSource(good)
+	require.NoError(t, err)
 }
 
 func TestParseSkillSource_DuplicateRepoURL(t *testing.T) {

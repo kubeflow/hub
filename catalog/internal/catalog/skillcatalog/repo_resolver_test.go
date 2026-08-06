@@ -151,6 +151,39 @@ func TestResolve_CollectsSupportingFiles(t *testing.T) {
 		"SKILL.md itself is not a supporting file")
 }
 
+func TestResolve_SupportingFilesAreSorted(t *testing.T) {
+	// Supporting files are accumulated by ranging over maps, whose iteration order
+	// Go randomizes. Without an explicit sort the same repository content would
+	// yield a different order on each resolve, churning the persisted JSON array
+	// and reshuffling the API response. Files are spread across several
+	// directories so an unsorted result is overwhelmingly likely to be caught.
+	repo := initFixtureRepo(t)
+	writeSkill(t, repo, "skills/deploy", "deploy", "D.")
+	writeRepoFile(t, repo, "skills/deploy/z.md", "z\n")
+	writeRepoFile(t, repo, "skills/deploy/a.md", "a\n")
+	writeRepoFile(t, repo, "skills/deploy/scripts/run.sh", "echo hi\n")
+	writeRepoFile(t, repo, "skills/deploy/scripts/helper.sh", "echo helper\n")
+	writeRepoFile(t, repo, "skills/deploy/docs/guide.md", "guide\n")
+	sha := commitAll(t, repo, "init")
+
+	want := []string{
+		"skills/deploy/a.md",
+		"skills/deploy/docs/guide.md",
+		"skills/deploy/scripts/helper.sh",
+		"skills/deploy/scripts/run.sh",
+		"skills/deploy/z.md",
+	}
+
+	// Repeat: map ordering is re-randomized per iteration, so a single pass could
+	// coincidentally come out sorted.
+	for i := range 5 {
+		skills, err := testResolver().Resolve(context.Background(), repoEntry(repo, nil, nil, nil), sha, nil)
+		require.NoError(t, err)
+		require.Len(t, skills, 1)
+		assert.Equal(t, want, skills[0].SupportingFiles, "resolve %d returned files out of order", i)
+	}
+}
+
 func TestResolve_NestedSkillFilesAttributedToNearestSkill(t *testing.T) {
 	// A skill nested inside another skill's tree must own its own files; the outer
 	// skill must not absorb the inner skill's supporting files.
@@ -202,6 +235,36 @@ func TestResolve_SymlinkedSkillMdNotFollowed(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, skills, 1, "only the real skill is indexed; the symlinked SKILL.md is skipped")
 	assert.Equal(t, "good", skills[0].Skill.Name)
+}
+
+func TestRemoteCommit_MatchesResolvedCommit(t *testing.T) {
+	repo := initFixtureRepo(t)
+	writeSkill(t, repo, "s", "s", "S.")
+	sha := commitAll(t, repo, "init")
+	runGit(t, repo, "tag", "v1.0")                          // lightweight tag
+	runGit(t, repo, "tag", "-a", "v2.0", "-m", "annotated") // annotated tag
+
+	r := testResolver()
+	ctx := context.Background()
+	entry := repoEntry(repo, nil, nil, nil)
+
+	lightweight, err := r.RemoteCommit(ctx, entry, "v1.0", nil)
+	require.NoError(t, err)
+	assert.Equal(t, sha, lightweight, "a lightweight tag resolves to its commit")
+
+	annotated, err := r.RemoteCommit(ctx, entry, "v2.0", nil)
+	require.NoError(t, err)
+	assert.Equal(t, sha, annotated, "an annotated tag is peeled to its commit, not the tag object")
+
+	fromSHA, err := r.RemoteCommit(ctx, entry, sha, nil)
+	require.NoError(t, err)
+	assert.Equal(t, sha, fromSHA, "a commit SHA resolves to itself")
+
+	// The value must equal what Resolve records, or the skip would be inaccurate.
+	skills, err := r.Resolve(ctx, entry, "v2.0", nil)
+	require.NoError(t, err)
+	require.Len(t, skills, 1)
+	assert.Equal(t, annotated, skills[0].ResolvedCommit)
 }
 
 func TestResolve_UnknownRefErrors(t *testing.T) {
