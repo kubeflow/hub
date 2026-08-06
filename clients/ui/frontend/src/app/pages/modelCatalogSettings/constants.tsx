@@ -25,7 +25,7 @@ export const SOURCE_TYPE_LABELS = {
   YAML: 'YAML file',
 } as const;
 
-export { SOURCE_NAME_CHARACTER_LIMIT } from '~/app/shared/catalogSettings';
+export { SOURCE_NAME_CHARACTER_LIMIT } from '~/app/shared/catalogSettings/const';
 
 export const VALIDATION_MESSAGES = {
   NAME_REQUIRED: 'Name is required',

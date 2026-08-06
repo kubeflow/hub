@@ -4,7 +4,7 @@ import { useMcpSourcePreview } from '~/app/pages/mcpCatalogSettings/useMcpSource
 import { ManageMcpSourceFormData } from '~/app/pages/mcpCatalogSettings/useManageMcpSourceData';
 import { McpCatalogSourceType } from '~/app/mcpServerCatalogTypes';
 import { McpCatalogSettingsAPIState } from '~/app/hooks/mcpCatalogSettings/useMcpCatalogSettingsAPIState';
-import { CatalogSettingsPreviewTab } from '~/app/shared/catalogSettings';
+import { CatalogSettingsPreviewTab } from '~/app/shared/catalogSettings/hooks/previewTypes';
 
 jest.mock('~/app/pages/mcpCatalogSettings/utils/validation', () => ({
   isPreviewReady: jest.fn(() => true),

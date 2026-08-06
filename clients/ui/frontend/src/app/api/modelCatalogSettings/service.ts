@@ -5,7 +5,7 @@ import {
   CatalogSourcePreviewRequest,
   CatalogSourcePreviewResult,
 } from '~/app/modelCatalogTypes';
-import { createSourceConfigService } from '~/app/shared/catalogSettings';
+import { createSourceConfigService } from '~/app/shared/catalogSettings/api/createSourceConfigService';
 
 const service = createSourceConfigService<
   CatalogSourceConfig,

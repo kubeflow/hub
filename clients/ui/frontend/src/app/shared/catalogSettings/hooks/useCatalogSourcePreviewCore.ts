@@ -187,6 +187,7 @@ export const useCatalogSourcePreviewCore = <TItem, TSummary, TRequest>({
     handlePreviewInternal({ loadMore: true });
   }, [handlePreviewInternal]);
 
+  // mount-only: auto-preview when entering edit mode
   React.useEffect(() => {
     const hasNoResults =
       previewState.tabStates[CatalogSettingsPreviewTab.INCLUDED].items.length === 0;

@@ -9,10 +9,8 @@ import {
   CatalogSourcePreviewSummary,
 } from '~/app/modelCatalogTypes';
 import { ModelCatalogSettingsAPIState } from '~/app/hooks/modelCatalogSettings/useModelCatalogSettingsAPIState';
-import {
-  CatalogSettingsPreviewTab,
-  useCatalogSourcePreviewCore,
-} from '~/app/shared/catalogSettings';
+import { CatalogSettingsPreviewTab } from '~/app/shared/catalogSettings/hooks/previewTypes';
+import { useCatalogSourcePreviewCore } from '~/app/shared/catalogSettings/hooks/useCatalogSourcePreviewCore';
 import { ManageSourceFormData } from './useManageSourceData';
 
 export enum PreviewMode {

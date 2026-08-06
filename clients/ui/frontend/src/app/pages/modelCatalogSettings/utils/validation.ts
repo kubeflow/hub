@@ -1,14 +1,11 @@
 import { CatalogSourceType } from '~/app/modelCatalogTypes';
 import { ManageSourceFormData } from '~/app/pages/modelCatalogSettings/useManageSourceData';
+import { SOURCE_NAME_CHARACTER_LIMIT } from '~/app/shared/catalogSettings/const';
 import {
   isNonEmptyString,
-  isSourceNameEmpty,
-  SOURCE_NAME_CHARACTER_LIMIT,
   validateSourceName as validateSharedSourceName,
   validateYamlContent,
-} from '~/app/shared/catalogSettings';
-
-export { isSourceNameEmpty, validateYamlContent };
+} from '~/app/shared/catalogSettings/utils/validation';
 
 export const validateSourceName = (name: string): boolean =>
   validateSharedSourceName(name, SOURCE_NAME_CHARACTER_LIMIT);

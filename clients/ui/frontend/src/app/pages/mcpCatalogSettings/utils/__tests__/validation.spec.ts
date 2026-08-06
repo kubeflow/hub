@@ -1,8 +1,6 @@
 import { McpCatalogSourceType } from '~/app/mcpServerCatalogTypes';
 import {
   validateMcpSourceName,
-  isMcpSourceNameEmpty,
-  validateMcpYamlContent,
   isMcpFormValid,
   isMcpPreviewReady,
 } from '~/app/pages/mcpCatalogSettings/utils/validation';
@@ -43,36 +41,6 @@ describe('validateMcpSourceName', () => {
   it('should return true for name at character limit', () => {
     const maxName = 'a'.repeat(238);
     expect(validateMcpSourceName(maxName)).toBe(true);
-  });
-});
-
-describe('isMcpSourceNameEmpty', () => {
-  it('should return true for empty string', () => {
-    expect(isMcpSourceNameEmpty('')).toBe(true);
-  });
-
-  it('should return true for whitespace-only string', () => {
-    expect(isMcpSourceNameEmpty('   ')).toBe(true);
-  });
-
-  it('should return false for non-empty string', () => {
-    expect(isMcpSourceNameEmpty('test')).toBe(false);
-  });
-});
-
-describe('validateMcpYamlContent', () => {
-  it('should return true for non-empty YAML content', () => {
-    expect(validateMcpYamlContent('source: test')).toBe(true);
-    expect(validateMcpYamlContent('mcp_servers:\n  - name: srv')).toBe(true);
-  });
-
-  it('should return false for empty string', () => {
-    expect(validateMcpYamlContent('')).toBe(false);
-  });
-
-  it('should return false for whitespace-only string', () => {
-    expect(validateMcpYamlContent('   ')).toBe(false);
-    expect(validateMcpYamlContent('\n\t')).toBe(false);
   });
 });
 

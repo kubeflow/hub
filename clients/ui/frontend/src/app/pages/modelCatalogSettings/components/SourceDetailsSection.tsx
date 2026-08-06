@@ -12,16 +12,14 @@ import {
 import { UpdateObjectAtPropAndValue, ThemeAwareFormGroupWrapper } from 'mod-arch-shared';
 import FormSection from '~/app/pages/modelRegistry/components/pf-overrides/FormSection';
 import { ManageSourceFormData } from '~/app/pages/modelCatalogSettings/useManageSourceData';
-import {
-  validateSourceName,
-  isSourceNameEmpty,
-} from '~/app/pages/modelCatalogSettings/utils/validation';
+import { validateSourceName } from '~/app/pages/modelCatalogSettings/utils/validation';
 import {
   FORM_LABELS,
   SOURCE_TYPE_LABELS,
   VALIDATION_MESSAGES,
   SOURCE_NAME_CHARACTER_LIMIT,
 } from '~/app/pages/modelCatalogSettings/constants';
+import { isSourceNameEmpty } from '~/app/shared/catalogSettings/utils/validation';
 import { CatalogSourceType } from '~/app/modelCatalogTypes';
 
 type SourceDetailsSectionProps = {

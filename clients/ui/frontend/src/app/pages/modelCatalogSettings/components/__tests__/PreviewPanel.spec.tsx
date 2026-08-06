@@ -10,7 +10,7 @@ import {
   PreviewState,
   PreviewMode,
 } from '~/app/pages/modelCatalogSettings/useSourcePreview';
-import { CatalogSettingsPreviewTab } from '~/app/shared/catalogSettings';
+import { CatalogSettingsPreviewTab } from '~/app/shared/catalogSettings/hooks/previewTypes';
 
 const mockSummary: CatalogSourcePreviewSummary = {
   totalModels: 20,

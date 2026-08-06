@@ -26,7 +26,7 @@ import {
   MCP_BUTTON_LABELS,
 } from '~/app/pages/mcpCatalogSettings/constants';
 import { UseMcpSourcePreviewResult } from '~/app/pages/mcpCatalogSettings/useMcpSourcePreview';
-import { CatalogSettingsPreviewTab } from '~/app/shared/catalogSettings';
+import { CatalogSettingsPreviewTab } from '~/app/shared/catalogSettings/hooks/previewTypes';
 
 type McpPreviewPanelProps = {
   preview: UseMcpSourcePreviewResult;

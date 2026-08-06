@@ -4,7 +4,8 @@ import {
   CatalogSourceType,
 } from '~/app/modelCatalogTypes';
 import { ManageSourceFormData } from '~/app/pages/modelCatalogSettings/useManageSourceData';
-import { generateSourceIdFromName, parseCommaSeparatedList } from '~/app/shared/catalogSettings';
+import { generateSourceIdFromName } from '~/app/shared/catalogSettings/utils/generateSourceIdFromName';
+import { parseCommaSeparatedList } from '~/app/shared/catalogSettings/utils/parseCommaSeparatedList';
 
 export const catalogSourceConfigToFormData = (
   sourceConfig: CatalogSourceConfig,

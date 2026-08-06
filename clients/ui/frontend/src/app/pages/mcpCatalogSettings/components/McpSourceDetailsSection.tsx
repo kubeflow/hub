@@ -10,13 +10,11 @@ import {
 import { UpdateObjectAtPropAndValue, ThemeAwareFormGroupWrapper } from 'mod-arch-shared';
 import FormSection from '~/app/pages/modelRegistry/components/pf-overrides/FormSection';
 import { ManageMcpSourceFormData } from '~/app/pages/mcpCatalogSettings/useManageMcpSourceData';
-import {
-  validateMcpSourceName,
-  isMcpSourceNameEmpty,
-} from '~/app/pages/mcpCatalogSettings/utils/validation';
+import { validateMcpSourceName } from '~/app/pages/mcpCatalogSettings/utils/validation';
 import { MCP_FORM_LABELS, MCP_VALIDATION_MESSAGES } from '~/app/pages/mcpCatalogSettings/constants';
 import { McpCatalogSourceConfig } from '~/app/mcpServerCatalogTypes';
-import { SOURCE_NAME_CHARACTER_LIMIT } from '~/app/shared/catalogSettings';
+import { SOURCE_NAME_CHARACTER_LIMIT } from '~/app/shared/catalogSettings/const';
+import { isSourceNameEmpty } from '~/app/shared/catalogSettings/utils/validation';
 
 type McpSourceDetailsSectionProps = {
   formData: ManageMcpSourceFormData;
@@ -56,7 +54,7 @@ const McpSourceDetailsSection: React.FC<McpSourceDetailsSectionProps> = ({
     <FormHelperText>
       <HelperText>
         <HelperTextItem variant="error" data-testid="mcp-source-name-error">
-          {isMcpSourceNameEmpty(formData.name)
+          {isSourceNameEmpty(formData.name)
             ? MCP_VALIDATION_MESSAGES.NAME_REQUIRED
             : formData.name.length > SOURCE_NAME_CHARACTER_LIMIT
               ? `Cannot exceed ${SOURCE_NAME_CHARACTER_LIMIT} characters`

@@ -1,6 +1,6 @@
 import { FetchState } from 'mod-arch-core';
 import { CatalogSourceConfigList } from '~/app/modelCatalogTypes';
-import { useSourceConfigs } from '~/app/shared/catalogSettings';
+import { useSourceConfigs } from '~/app/shared/catalogSettings/hooks/useSourceConfigs';
 import { ModelCatalogSettingsAPIState } from './useModelCatalogSettingsAPIState';
 
 export const useCatalogSourceConfigs = (

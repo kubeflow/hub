@@ -8,7 +8,7 @@ import type { CatalogSourceList } from '~/app/shared/types/catalogTypes';
 import type { CatalogSourceConfigList } from '~/app/modelCatalogTypes';
 import { BFF_API_VERSION, URL_PREFIX } from '~/app/utilities/const';
 import useModelCatalogAPIState from '~/app/hooks/modelCatalog/useModelCatalogAPIState';
-import { useCatalogSourcesWithPolling } from '~/app/shared/catalogSettings';
+import { useCatalogSourcesWithPolling } from '~/app/shared/catalogSettings/hooks/useCatalogSourcesWithPolling';
 
 export type ModelCatalogSettingsContextType = {
   apiState: ModelCatalogSettingsAPIState;

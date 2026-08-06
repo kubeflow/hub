@@ -16,7 +16,7 @@ import { useThemeContext } from 'mod-arch-kubeflow';
 import FormSection from '~/app/pages/modelRegistry/components/pf-overrides/FormSection';
 import ThemeAwareFieldset from '~/app/pages/modelRegistry/screens/components/ThemeAwareFieldset';
 import { ManageSourceFormData } from '~/app/pages/modelCatalogSettings/useManageSourceData';
-import { validateYamlContent } from '~/app/pages/modelCatalogSettings/utils/validation';
+import { validateYamlContent } from '~/app/shared/catalogSettings/utils/validation';
 import {
   FORM_LABELS,
   VALIDATION_MESSAGES,

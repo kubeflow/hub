@@ -4,7 +4,7 @@ import { useSourcePreview, PreviewMode } from '~/app/pages/modelCatalogSettings/
 import { ManageSourceFormData } from '~/app/pages/modelCatalogSettings/useManageSourceData';
 import { CatalogSourceType } from '~/app/modelCatalogTypes';
 import { ModelCatalogSettingsAPIState } from '~/app/hooks/modelCatalogSettings/useModelCatalogSettingsAPIState';
-import { CatalogSettingsPreviewTab } from '~/app/shared/catalogSettings';
+import { CatalogSettingsPreviewTab } from '~/app/shared/catalogSettings/hooks/previewTypes';
 
 // Mock the validation utility
 jest.mock('~/app/pages/modelCatalogSettings/utils/validation', () => ({

@@ -8,10 +8,8 @@ import {
   McpCatalogSourcePreviewSummary,
 } from '~/app/mcpServerCatalogTypes';
 import { McpCatalogSettingsAPIState } from '~/app/hooks/mcpCatalogSettings/useMcpCatalogSettingsAPIState';
-import {
-  CatalogSettingsPreviewTab,
-  useCatalogSourcePreviewCore,
-} from '~/app/shared/catalogSettings';
+import { CatalogSettingsPreviewTab } from '~/app/shared/catalogSettings/hooks/previewTypes';
+import { useCatalogSourcePreviewCore } from '~/app/shared/catalogSettings/hooks/useCatalogSourcePreviewCore';
 import { ManageMcpSourceFormData } from './useManageMcpSourceData';
 
 export type McpPreviewTabState = {

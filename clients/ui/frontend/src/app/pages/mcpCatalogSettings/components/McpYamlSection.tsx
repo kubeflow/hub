@@ -16,7 +16,7 @@ import { useThemeContext } from 'mod-arch-kubeflow';
 import FormSection from '~/app/pages/modelRegistry/components/pf-overrides/FormSection';
 import ThemeAwareFieldset from '~/app/pages/modelRegistry/screens/components/ThemeAwareFieldset';
 import { ManageMcpSourceFormData } from '~/app/pages/mcpCatalogSettings/useManageMcpSourceData';
-import { validateMcpYamlContent } from '~/app/pages/mcpCatalogSettings/utils/validation';
+import { validateYamlContent } from '~/app/shared/catalogSettings/utils/validation';
 import {
   MCP_FORM_LABELS,
   MCP_VALIDATION_MESSAGES,
@@ -40,7 +40,7 @@ const McpYamlSection: React.FC<McpYamlSectionProps> = ({
   const [isYamlTouched, setIsYamlTouched] = React.useState(false);
   const [filename, setFilename] = React.useState('');
   const [fileUploadError, setFileUploadError] = React.useState<string | undefined>(undefined);
-  const isYamlContentValid = validateMcpYamlContent(formData.yamlContent);
+  const isYamlContentValid = validateYamlContent(formData.yamlContent);
 
   const handleFileChange = (
     _event: React.DragEvent<HTMLElement> | React.ChangeEvent<HTMLInputElement> | Event,
