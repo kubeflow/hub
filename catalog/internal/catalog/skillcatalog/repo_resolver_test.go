@@ -300,6 +300,41 @@ func TestCheckImmutableRef(t *testing.T) {
 	assert.Contains(t, err.Error(), "unable to verify")
 }
 
+// TestComputeBaseEnv_HardeningOverridesAmbient pins the append order in
+// computeBaseEnv: the git hardening vars go after os.Environ(), and os/exec
+// resolves duplicate keys in favor of later values, so a hostile or careless
+// value in the pod's environment cannot weaken them. Moving os.Environ() to the
+// end would silently invert this and let the pod re-enable ext:: transports or
+// credential prompts.
+func TestComputeBaseEnv_HardeningOverridesAmbient(t *testing.T) {
+	t.Setenv("GIT_TERMINAL_PROMPT", "1")
+	t.Setenv("GIT_ALLOW_PROTOCOL", "ext:file")
+	t.Setenv("GIT_CONFIG_NOSYSTEM", "0")
+	t.Setenv("GIT_CONFIG_GLOBAL", "/home/attacker/.gitconfig")
+
+	// baseEnv is computed at construction, so the ambient values above are in play.
+	r := NewRepoResolver(ResolveLimits{})
+
+	// Cmd.Environ() applies the same dedup git will see at exec time, so this
+	// asserts on the effective environment rather than the raw slice.
+	cmd := exec.Command("git", "version")
+	cmd.Env = r.computeBaseEnv()
+	effective := map[string]string{}
+	for _, kv := range cmd.Environ() {
+		if k, v, ok := strings.Cut(kv, "="); ok {
+			effective[k] = v
+		}
+	}
+
+	assert.Equal(t, "0", effective["GIT_TERMINAL_PROMPT"], "prompts stay disabled")
+	assert.Equal(t, "1", effective["GIT_CONFIG_NOSYSTEM"], "system config stays suppressed")
+	assert.Equal(t, "/dev/null", effective["GIT_CONFIG_GLOBAL"], "global config stays suppressed")
+	assert.NotContains(t, effective["GIT_ALLOW_PROTOCOL"], "ext",
+		"the ambient environment must not widen the transport allowlist")
+	assert.NotContains(t, effective["GIT_ALLOW_PROTOCOL"], "file",
+		"the ambient environment must not widen the transport allowlist")
+}
+
 func TestResolve_RejectsLeadingDashArgs(t *testing.T) {
 	// A url or ref beginning with '-' could be misparsed by git as an option.
 	_, err := testResolver().Resolve(context.Background(), repoEntry("--upload-pack=touch /tmp/x", nil, nil, nil), "v1.0", nil)

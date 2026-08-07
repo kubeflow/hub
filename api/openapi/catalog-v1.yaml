@@ -2382,6 +2382,9 @@ components:
             license:
               type: string
               description: Short name of the skill's license (e.g., apache-2.0).
+            author:
+              type: string
+              description: Author of the skill, from the SKILL.md frontmatter (`author`, or `metadata.author`).
             compatibility:
               type: string
               description: Compatibility information declared in the SKILL.md frontmatter (e.g., supported clients or versions).

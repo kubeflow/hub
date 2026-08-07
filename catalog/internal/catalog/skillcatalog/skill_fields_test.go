@@ -39,9 +39,9 @@ func TestSkillFieldsCoverage(t *testing.T) {
 		case fieldInt:
 			prop.IntValue = i32Ptr(1)
 		case fieldStringSlice:
-			prop.StringValue = strPtr(`["x"]`)
+			prop.StringValue = new(`["x"]`)
 		default:
-			prop.StringValue = strPtr("v")
+			prop.StringValue = new("v")
 		}
 		res := mapDBSkillToAPI(&skillmodels.SkillImpl{Properties: &[]dbmodels.Properties{prop}})
 		assert.NotContainsf(t, res.CustomProperties, f.name,

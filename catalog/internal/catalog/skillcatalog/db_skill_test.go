@@ -10,26 +10,24 @@ import (
 	dbmodels "github.com/kubeflow/hub/internal/platform/db/entity"
 )
 
-func strPtr(s string) *string { return &s }
-func i32Ptr(n int32) *int32   { return &n }
-func boolPtr(b bool) *bool    { return &b }
+func i32Ptr(n int32) *int32 { return new(n) }
 
 func TestMapDBSkillToAPI_KnownFieldsAndCustomProperties(t *testing.T) {
 	entity := &skillmodels.SkillImpl{
 		ID: i32Ptr(7),
 		Properties: &[]dbmodels.Properties{
-			{Name: propSkillName, StringValue: strPtr("deploy")},
-			{Name: propRepository, StringValue: strPtr("https://github.com/acme/skills.git")},
-			{Name: propAuthor, StringValue: strPtr("Jane Doe")},
-			{Name: propSkillVersion, StringValue: strPtr("v1.0")},
+			{Name: propSkillName, StringValue: new("deploy")},
+			{Name: propRepository, StringValue: new("https://github.com/acme/skills.git")},
+			{Name: propAuthor, StringValue: new("Jane Doe")},
+			{Name: propSkillVersion, StringValue: new("v1.0")},
 			{Name: propBodyLineCount, IntValue: i32Ptr(42)},
-			{Name: propLabels, StringValue: strPtr(`["a","b"]`)},
+			{Name: propLabels, StringValue: new(`["a","b"]`)},
 			// A non-custom property that is NOT a pre-configured field: must not be dropped.
-			{Name: "futureField", StringValue: strPtr("keep-me")},
+			{Name: "futureField", StringValue: new("keep-me")},
 		},
 		CustomProperties: &[]dbmodels.Properties{
-			{Name: "author", IsCustomProperty: true, StringValue: strPtr("Jane")},
-			{Name: "featured", IsCustomProperty: true, BoolValue: boolPtr(true)},
+			{Name: "author", IsCustomProperty: true, StringValue: new("Jane")},
+			{Name: "featured", IsCustomProperty: true, BoolValue: new(true)},
 			{Name: "rank", IsCustomProperty: true, IntValue: i32Ptr(3)},
 		},
 	}

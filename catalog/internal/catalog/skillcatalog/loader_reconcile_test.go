@@ -56,6 +56,9 @@ type fakeSkillRepo struct {
 	deletedIDs     []int32
 	deleteBySource int
 
+	// distinctSourceIDs is what GetDistinctSourceIDs reports as already indexed.
+	distinctSourceIDs []string
+
 	// onDistinctSourceIDs, when set, is invoked from GetDistinctSourceIDs.
 	onDistinctSourceIDs func()
 }
@@ -69,17 +72,24 @@ func (f *fakeSkillRepo) seed(name string, id int32) {
 	f.seedFor(name, id, "src", "https://example.com/a.git")
 }
 
-// seedFor inserts a pre-existing row carrying the source_id and repository
-// properties the real loader writes, so source scoping and per-repo orphan
-// protection are exercised rather than bypassed.
+// seedFor inserts a pre-existing row at the default ref.
 func (f *fakeSkillRepo) seedFor(name string, id int32, sourceID, repository string) {
-	src, repoURL := sourceID, repository
+	f.seedForRef(name, id, sourceID, repository, "v1")
+}
+
+// seedForRef inserts a pre-existing row carrying the source_id, repository, and
+// version properties the real loader writes, so source scoping and both tiers of
+// orphan protection (per-repository and per-ref) are exercised rather than
+// bypassed by a fixture that omits the fields they key on.
+func (f *fakeSkillRepo) seedForRef(name string, id int32, sourceID, repository, version string) {
+	src, repoURL, ref := sourceID, repository, version
 	e := &skillmodels.SkillImpl{
 		ID:         &id,
 		Attributes: &skillmodels.SkillAttributes{Name: &name},
 		Properties: &[]dbmodels.Properties{
 			{Name: propSourceID, StringValue: &src},
 			{Name: propRepository, StringValue: &repoURL},
+			{Name: propSkillVersion, StringValue: &ref},
 		},
 	}
 	f.byName[name] = e
@@ -154,9 +164,17 @@ func (f *fakeSkillRepo) GetDistinctSourceIDs() ([]string, error) {
 	if f.onDistinctSourceIDs != nil {
 		f.onDistinctSourceIDs()
 	}
-	return nil, nil
+	return f.distinctSourceIDs, nil
 }
 func (f *fakeSkillRepo) GetTypeID() int32 { return 0 }
+
+// deleteBySourceCount reads the counter under the lock, for tests that observe it
+// while another goroutine may be calling DeleteBySource.
+func (f *fakeSkillRepo) deleteBySourceCount() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.deleteBySource
+}
 
 // noopSourceRepo satisfies CatalogSourceRepository for status writes.
 type noopSourceRepo struct{}
@@ -294,7 +312,7 @@ func TestRemoveOrphans_DeletesOnlyNonCurrent(t *testing.T) {
 	existing, err := l.listSkillsForSource("src")
 	require.NoError(t, err)
 	current := mapset.NewSet("a", "c")
-	require.NoError(t, l.removeOrphans(existing, current, mapset.NewSet[string]()))
+	require.NoError(t, l.removeOrphans(existing, current, newUnsafeScope(nil)))
 
 	assert.Equal(t, []int32{2}, repo.deletedIDs, "only the non-current skill b is removed")
 	assert.ElementsMatch(t, []string{"a", "c"}, repo.names())
@@ -346,6 +364,60 @@ func TestSyncSourceLocked_PartialFailureCleansOnlyHealthyRepos(t *testing.T) {
 		"the healthy repo is reconciled even though another repo failed")
 	assert.Contains(t, repo.names(), brokenStale,
 		"the failed repo keeps its stale-but-valid skills")
+}
+
+// perRefResolver fails specific (repository, ref) pairs, so a test can break one
+// ref of a repository while its siblings resolve.
+type perRefResolver struct {
+	errBy map[string]error // keyed by refKey(repoURL, ref)
+}
+
+func (r perRefResolver) Resolve(_ context.Context, repo SkillRepository, ref string, _ *Credentials) ([]ResolvedSkill, error) {
+	if err, ok := r.errBy[refKey(repo.URL, ref)]; ok {
+		return nil, err
+	}
+	return []ResolvedSkill{{
+		Repository: repo.URL, Path: "skills/a", Version: ref, ResolvedCommit: "abc",
+		Skill: &ParsedSkill{Name: "a", Description: "d"},
+	}}, nil
+}
+
+func (r perRefResolver) RemoteCommit(context.Context, SkillRepository, string, *Credentials) (string, error) {
+	return "", nil
+}
+
+// TestSyncSourceLocked_FailedRefDoesNotBlockSiblingRefCleanup pins the granularity
+// of orphan protection. One repository is pinned to several refs; an operator drops
+// v2 from the config while v3 is temporarily unreachable. Protecting at repository
+// granularity would keep v2's now-orphaned skills for as long as v3 kept failing —
+// indefinitely, since nothing else would ever re-enumerate them.
+func TestSyncSourceLocked_FailedRefDoesNotBlockSiblingRefCleanup(t *testing.T) {
+	repo := newFakeSkillRepo()
+	const url = "https://example.com/a.git"
+
+	// Already indexed: one skill per ref, including v2 which config no longer lists.
+	v1Skill := skillEntityName("src", url, "skills/a", "v1")
+	v2Orphan := skillEntityName("src", url, "skills/a", "v2")
+	v3Stale := skillEntityName("src", url, "skills/a", "v3")
+	repo.seedForRef(v1Skill, 1, "src", url, "v1")
+	repo.seedForRef(v2Orphan, 2, "src", url, "v2")
+	repo.seedForRef(v3Stale, 3, "src", url, "v3")
+
+	// v3 is unreachable this sync; v1 resolves cleanly. v2 is gone from the config,
+	// so no job is built for it at all.
+	resolver := perRefResolver{errBy: map[string]error{refKey(url, "v3"): fmt.Errorf("clone failed")}}
+	l := newReconcileLoader(repo, resolver)
+
+	l.syncSourceLocked(context.Background(), "src", &SkillSourceSpec{
+		Repositories: []SkillRepository{{URL: url, Refs: []string{"v1", "v3"}}},
+	})
+
+	assert.Equal(t, []int32{2}, repo.deletedIDs,
+		"the removed ref's orphan is cleaned even though a sibling ref of the same repository failed")
+	assert.Contains(t, repo.names(), v3Stale,
+		"the failed ref keeps its stale-but-valid skills")
+	assert.Contains(t, repo.names(), v1Skill,
+		"the healthy ref's skill is retained")
 }
 
 func TestSyncSourceLocked_RejectedRepoKeepsItsSkills(t *testing.T) {
@@ -600,4 +672,48 @@ func TestPerformLeaderOperations_RegistersTickerBeforeReturning(t *testing.T) {
 	cancel()
 	close(gate)
 	termWG.Wait()
+}
+
+// TestRemoveSkillsFromMissingSources_WaitsForInFlightSync pins that cleanup takes
+// the per-source lock. A previous term's initial sync goroutine is tracked only by
+// the inflight-write counter, and that drain is best-effort — it gives up after its
+// timeout. Deleting a source underneath such a straggler lets the straggler's
+// remaining Save calls resurrect rows for a source that is no longer enabled, with
+// nothing to clean them up until the next leader term.
+func TestRemoveSkillsFromMissingSources_WaitsForInFlightSync(t *testing.T) {
+	repo := newFakeSkillRepo()
+	repo.distinctSourceIDs = []string{"gone"}
+
+	l := newReconcileLoader(repo, scriptedResolver{})
+	// "gone" is indexed but no longer configured, so cleanup targets it.
+	l.sources = NewSkillSourceCollection("/cfg")
+
+	// Stand in for the previous term's sync goroutine: it holds "gone"'s lock until
+	// release is closed.
+	holding := make(chan struct{})
+	release := make(chan struct{})
+	go l.runSyncExclusive("gone", true, func() {
+		close(holding)
+		<-release
+	})
+	<-holding
+
+	done := make(chan error, 1)
+	go func() { done <- l.removeSkillsFromMissingSources(mapset.NewSet[string]()) }()
+
+	select {
+	case <-done:
+		t.Fatal("cleanup deleted source \"gone\" while a sync for it was still in flight")
+	case <-time.After(250 * time.Millisecond):
+	}
+	assert.Zero(t, repo.deleteBySourceCount(), "DeleteBySource must wait for the in-flight sync")
+
+	close(release)
+	select {
+	case err := <-done:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("timeout waiting for cleanup after the in-flight sync released the lock")
+	}
+	assert.Equal(t, 1, repo.deleteBySourceCount(), "cleanup proceeds once the sync finishes")
 }

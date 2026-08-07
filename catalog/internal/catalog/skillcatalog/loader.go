@@ -360,19 +360,17 @@ func (l *SkillLoader) syncSourceLocked(ctx context.Context, sourceID string, spe
 	// sync — freshly upserted or retained from a skipped (unchanged) ref. Anything
 	// else still attributed to the source is an orphan.
 	currentNames := mapset.NewSet[string]()
-	// unsafeRepos collects repositories whose current skill set this sync could not
-	// fully determine: rejected outright, failed to resolve, or failed to save. Their
-	// already-indexed skills are stale but still valid, so orphan cleanup skips them
-	// rather than turning a transient clone failure into permanent data loss.
-	// Repositories that synced cleanly are still reconciled, so one flaky repo does
-	// not freeze cleanup for the whole source.
-	unsafeRepos := mapset.NewSet(rejectedRepos...)
+	// unsafe collects what this sync could not fully determine, so orphan cleanup
+	// leaves it alone rather than turning a transient failure into permanent data
+	// loss. Everything it does not cover is still reconciled, so one flaky ref or
+	// repository does not freeze cleanup for the rest of the source.
+	unsafe := newUnsafeScope(rejectedRepos)
 	var warningMsgs []string
 	indexed, skipped := 0, 0
 	for _, res := range results {
 		if res.err != nil {
 			errs = append(errs, fmt.Sprintf("%s@%s: %v", res.repo.URL, res.ref, res.err))
-			unsafeRepos.Add(res.repo.URL)
+			unsafe.addRef(res.repo.URL, res.ref)
 			continue
 		}
 		if res.skipped {
@@ -393,7 +391,7 @@ func (l *SkillLoader) syncSourceLocked(ctx context.Context, sourceID string, spe
 			l.state.WriteComplete()
 			if serr != nil {
 				errs = append(errs, fmt.Sprintf("saving %s: %v", res.skills[j].Path, serr))
-				unsafeRepos.Add(res.repo.URL)
+				unsafe.addRef(res.repo.URL, res.ref)
 				continue
 			}
 			indexed++
@@ -406,11 +404,11 @@ func (l *SkillLoader) syncSourceLocked(ctx context.Context, sourceID string, spe
 	if !l.state.ShouldWriteDatabase() || ctx.Err() != nil {
 		return
 	}
-	// Reconcile only the repositories this sync fully enumerated. A list error
-	// leaves `existing` unknown, so cleanup is skipped entirely; otherwise each
-	// repository is cleaned or protected independently via unsafeRepos.
+	// Reconcile only what this sync fully enumerated. A list error leaves `existing`
+	// unknown, so cleanup is skipped entirely; otherwise each (repository, ref) is
+	// cleaned or protected independently via unsafe.
 	if lerr == nil {
-		if err := l.removeOrphans(existing, currentNames, unsafeRepos); err != nil {
+		if err := l.removeOrphans(existing, currentNames, unsafe); err != nil {
 			errs = append(errs, fmt.Sprintf("removing orphaned skills: %v", err))
 		}
 	}
@@ -509,12 +507,53 @@ func skillRefInfo(s models.Skill) (name, repo, version, commit string) {
 	return
 }
 
+// unsafeScope records what a sync could not enumerate, at the finest granularity
+// the failure allows.
+//
+// Repository-level entries cover repositories rejected before any job was built
+// (no refs configured, or more refs than the limit): nothing about them was
+// enumerated, so every skill they own must be kept.
+//
+// Ref-level entries cover individual (repository, ref) jobs that failed to
+// resolve or save. Protecting the whole repository for those would be too coarse:
+// a repository pinned to several refs, with one temporarily unreachable, would
+// keep orphans belonging to its other refs — including refs an operator has since
+// removed from the config — for as long as the one ref stays broken. Tracking the
+// failure against the ref that actually failed lets the siblings reconcile.
+type unsafeScope struct {
+	repos mapset.Set[string]
+	refs  mapset.Set[string]
+}
+
+func newUnsafeScope(rejectedRepos []string) *unsafeScope {
+	return &unsafeScope{
+		repos: mapset.NewSet(rejectedRepos...),
+		refs:  mapset.NewSet[string](),
+	}
+}
+
+// addRef marks one (repository, ref) as not fully enumerated.
+func (u *unsafeScope) addRef(repoURL, ref string) { u.refs.Add(refKey(repoURL, ref)) }
+
+// protects reports whether a skill indexed at (repoURL, version) must be kept
+// regardless of its absence from currentNames, and why (for logging).
+func (u *unsafeScope) protects(repoURL, version string) (bool, string) {
+	switch {
+	case u.repos.Contains(repoURL):
+		return true, "its repository did not fully sync"
+	case u.refs.Contains(refKey(repoURL, version)):
+		return true, "its ref did not fully sync"
+	default:
+		return false, ""
+	}
+}
+
 // removeOrphans deletes, from the pre-loaded existing set, every skill whose
 // composite name is not in currentNames — i.e. skills that a previous sync indexed
-// but this one neither upserted nor retained via a skipped ref. Skills belonging to
-// a repository in unsafeRepos are left alone: that repository did not fully
-// enumerate this sync, so its absence from currentNames proves nothing.
-func (l *SkillLoader) removeOrphans(existing []models.Skill, currentNames, unsafeRepos mapset.Set[string]) error {
+// but this one neither upserted nor retained via a skipped ref. Skills covered by
+// unsafe are left alone: this sync did not fully enumerate them, so their absence
+// from currentNames proves nothing.
+func (l *SkillLoader) removeOrphans(existing []models.Skill, currentNames mapset.Set[string], unsafe *unsafeScope) error {
 	var errs []error
 	for _, skill := range existing {
 		attrs := skill.GetAttributes()
@@ -524,8 +563,8 @@ func (l *SkillLoader) removeOrphans(existing []models.Skill, currentNames, unsaf
 		if currentNames.Contains(*attrs.Name) {
 			continue
 		}
-		if unsafeRepos.Contains(skillProperty(skill, propRepository)) {
-			glog.V(1).Infof("keeping skill %q: its repository did not fully sync", *attrs.Name)
+		if kept, why := unsafe.protects(skillProperty(skill, propRepository), skillProperty(skill, propSkillVersion)); kept {
+			glog.V(1).Infof("keeping skill %q: %s", *attrs.Name, why)
 			continue
 		}
 		glog.Infof("removing orphaned skill %q", *attrs.Name)
@@ -755,10 +794,12 @@ func resolveOne(ctx context.Context, job refJob, knownCommit string, sem *semaph
 }
 
 // removeSkillsFromMissingSources deletes skills whose source is gone or disabled.
-// Its DeleteBySource calls do not take the per-source lock, which is safe because
-// it only targets sources that are no longer enabled — those have no active
-// periodic ticker (schedulePeriodicSync's tick skips disabled sources) and no
-// concurrent syncSource.
+// Each DeleteBySource takes the per-source lock: the previous term's initial sync
+// goroutine is tracked only by the inflight-write counter, and that drain is
+// best-effort (WaitForInflightWrites gives up after its timeout), so a slow sync
+// can still be saving skills for a source this pass is about to delete. Blocking
+// is bounded — the previous term's context is already cancelled before the drain,
+// and clones run under it plus CloneTimeout, so a straggler unwinds promptly.
 func (l *SkillLoader) removeSkillsFromMissingSources(allKnownSourceIDs mapset.Set[string]) error {
 	enabledSourceIDs := mapset.NewSet[string]()
 	skillSourceIDs := mapset.NewSet[string]()
@@ -776,9 +817,12 @@ func (l *SkillLoader) removeSkillsFromMissingSources(allKnownSourceIDs mapset.Se
 
 	for oldSource := range mapset.NewSet(existingSourceIDs...).Difference(enabledSourceIDs).Iter() {
 		glog.Infof("Removing skills from source %s", oldSource)
-		l.state.TrackWrite()
-		delErr := l.services.SkillRepository.DeleteBySource(oldSource)
-		l.state.WriteComplete()
+		var delErr error
+		l.runSyncExclusive(oldSource, true, func() {
+			l.state.TrackWrite()
+			delErr = l.services.SkillRepository.DeleteBySource(oldSource)
+			l.state.WriteComplete()
+		})
 		if delErr != nil {
 			return fmt.Errorf("unable to remove skills from source %q: %w", oldSource, delErr)
 		}
