@@ -165,6 +165,8 @@ func mapDBSkillToAPI(dbSkill models.Skill) *openapi.Skill {
 				res.SupportingFiles = decodeStringSlice(p.StringValue)
 			case propBodyLineCount:
 				res.BodyLineCount = p.IntValue
+			case propConfigDigest:
+				// Internal sync bookkeeping; deliberately not exposed on the API.
 			default:
 				// Any property that isn't a pre-configured field is surfaced as a
 				// custom property rather than dropped.

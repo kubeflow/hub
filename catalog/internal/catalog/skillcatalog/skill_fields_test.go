@@ -18,9 +18,13 @@ import (
 // typed slot rather than letting it fall through to customProperties.
 func TestSkillFieldsCoverage(t *testing.T) {
 	// (a) writer: a fully-populated skill must emit every defined field.
-	repo := SkillRepository{Provider: "Example Org", Category: "DevOps", Labels: []string{"community"}}
-	spec := &SkillSourceSpec{TrustTier: "communityContributed"}
-	entity := buildSkillEntity(sampleResolved(), repo, spec, "community-skills")
+	repo := SkillRepository{
+		TrustTier: "communityContributed",
+		Provider:  "Example Org",
+		Category:  "DevOps",
+		Labels:    []string{"community"},
+	}
+	entity := buildSkillEntity(sampleResolved(), repo, "community-skills")
 
 	written := map[string]bool{}
 	require.NotNil(t, entity.GetProperties())

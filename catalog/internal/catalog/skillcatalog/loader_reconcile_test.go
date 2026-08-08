@@ -496,6 +496,39 @@ func TestSyncSourceLocked_SkipsUnchangedRef(t *testing.T) {
 	assert.Empty(t, repo.deletedIDs, "nothing deleted for a skipped ref")
 }
 
+// TestSyncSourceLocked_ReIndexesOnceAfterConfigChange covers the case the commit
+// check alone cannot see: an operator edits stamped metadata (or a filter) without
+// the ref moving. The ref must be re-indexed the next sync, and — because the new
+// rows carry the new digest — only that once.
+func TestSyncSourceLocked_ReIndexesOnceAfterConfigChange(t *testing.T) {
+	repo := newFakeSkillRepo()
+	res := &commitResolver{remoteCommit: "abc123"}
+	l := newReconcileLoader(repo, res)
+
+	specWith := func(category string) *SkillSourceSpec {
+		return &SkillSourceSpec{Repositories: []SkillRepository{
+			{URL: "https://example.com/a.git", Refs: []string{"v1"}, Category: category},
+		}}
+	}
+
+	l.syncSourceLocked(context.Background(), "src", specWith("DevOps"))
+	require.Equal(t, []string{"v1"}, res.refs())
+
+	// The ref has not moved, only the config. It must still be re-resolved.
+	l.syncSourceLocked(context.Background(), "src", specWith("SRE"))
+	require.Equal(t, []string{"v1", "v1"}, res.refs(), "a config change re-indexes an unmoved ref")
+
+	nameA := skillEntityName("src", "https://example.com/a.git", "skills/a", "v1")
+	require.Contains(t, repo.byName, nameA)
+	assert.Equal(t, "SRE", skillProperty(repo.byName[nameA], propCategory), "the new category is stamped")
+
+	// The refreshed rows carry the new digest, so the change costs exactly one
+	// re-index rather than re-cloning on every sync from here on.
+	l.syncSourceLocked(context.Background(), "src", specWith("SRE"))
+	assert.Equal(t, []string{"v1", "v1"}, res.refs(), "the unchanged config skips again")
+	assert.Empty(t, repo.deletedIDs, "nothing is orphaned by a re-index")
+}
+
 func TestSyncSourceLocked_ReResolvesChangedRef(t *testing.T) {
 	repo := newFakeSkillRepo()
 	res := &commitResolver{remoteCommit: "abc123"}

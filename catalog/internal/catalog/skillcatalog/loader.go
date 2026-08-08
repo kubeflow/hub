@@ -382,7 +382,7 @@ func (l *SkillLoader) syncSourceLocked(ctx context.Context, sourceID string, spe
 			for _, w := range res.skills[j].Skill.Warnings {
 				warningMsgs = append(warningMsgs, fmt.Sprintf("%s: %s", res.skills[j].Path, w))
 			}
-			entity := buildSkillEntity(res.skills[j], res.repo, spec, sourceID)
+			entity := buildSkillEntity(res.skills[j], res.repo, sourceID)
 			if attrs := entity.GetAttributes(); attrs != nil && attrs.Name != nil {
 				currentNames.Add(*attrs.Name)
 			}
@@ -464,12 +464,20 @@ func refKey(repoURL, ref string) string { return repoURL + "\x00" + ref }
 
 // indexExistingByRef groups already-indexed skills by (repository, ref), returning
 // the commit each ref was last resolved at and the composite names indexed under
-// it. All skills at one ref share a resolvedCommit, so the last one wins.
+// it. All skills at one ref share a resolvedCommit and configDigest, so the last
+// one wins.
+//
+// The returned lookup reports no known commit when the repository's configuration
+// has changed since the ref was indexed, which forces a re-resolve: an unmoved ref
+// still needs re-indexing when a category, label, or include filter was edited.
+// Rows written before configDigest existed have an empty digest and so refresh
+// once on upgrade.
 func indexExistingByRef(existing []models.Skill) (knownCommitFunc, map[string][]string) {
 	commitByRef := map[string]string{}
+	digestByRef := map[string]string{}
 	namesByRef := map[string][]string{}
 	for _, s := range existing {
-		name, repo, version, commit := skillRefInfo(s)
+		name, repo, version, commit, digest := skillRefInfo(s)
 		if name == "" || repo == "" || version == "" {
 			continue
 		}
@@ -478,14 +486,21 @@ func indexExistingByRef(existing []models.Skill) (knownCommitFunc, map[string][]
 		if commit != "" {
 			commitByRef[k] = commit
 		}
+		digestByRef[k] = digest
 	}
-	known := func(repo SkillRepository, ref string) string { return commitByRef[refKey(repo.URL, ref)] }
+	known := func(repo SkillRepository, ref string) string {
+		k := refKey(repo.URL, ref)
+		if digestByRef[k] != configDigest(repo) {
+			return ""
+		}
+		return commitByRef[k]
+	}
 	return known, namesByRef
 }
 
-// skillRefInfo extracts a skill's composite name and the repository, version, and
-// resolved commit it was indexed under.
-func skillRefInfo(s models.Skill) (name, repo, version, commit string) {
+// skillRefInfo extracts a skill's composite name and the repository, version,
+// resolved commit, and config digest it was indexed under.
+func skillRefInfo(s models.Skill) (name, repo, version, commit, digest string) {
 	if a := s.GetAttributes(); a != nil && a.Name != nil {
 		name = *a.Name
 	}
@@ -501,6 +516,8 @@ func skillRefInfo(s models.Skill) (name, repo, version, commit string) {
 				version = *p.StringValue
 			case propResolvedCommit:
 				commit = *p.StringValue
+			case propConfigDigest:
+				digest = *p.StringValue
 			}
 		}
 	}

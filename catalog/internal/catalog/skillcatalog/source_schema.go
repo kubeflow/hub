@@ -14,13 +14,13 @@
 //	    enabled: true
 //	    labels: [community]
 //	    properties:
-//	      trustTier: communityContributed       # optional provenance label
 //	      syncIntervalMinutes: 60               # optional
 //	      repositories:                         # inline form (UI-added sources)
 //	        - url: https://github.com/example/skills.git
 //	          refs: [main, v1.0]
 //	          scanPaths: [skills/]
 //	          credentialRef: github            # file in the mounted credentials dir
+//	          trustTier: communityContributed  # optional provenance label
 //	          provider: Example Org
 //	          category: DevOps
 //	          labels: [community]
@@ -90,10 +90,13 @@ type SkillRepository struct {
 	// without a redeploy. The key must be a plain filename (validated); empty means
 	// an anonymous clone.
 	CredentialRef string `json:"credentialRef,omitempty"`
-	// Provider, Category, Labels are custom metadata stamped onto the repo's skills.
-	Provider string   `json:"provider,omitempty"`
-	Category string   `json:"category,omitempty"`
-	Labels   []string `json:"labels,omitempty"`
+	// TrustTier, Provider, Category, Labels are custom metadata stamped onto the
+	// repo's skills. TrustTier is a provenance badge with no ordering or special
+	// semantics; empty means no badge.
+	TrustTier string   `json:"trustTier,omitempty"`
+	Provider  string   `json:"provider,omitempty"`
+	Category  string   `json:"category,omitempty"`
+	Labels    []string `json:"labels,omitempty"`
 	// IncludedSkills / ExcludedSkills are wildcard filters over skill names.
 	IncludedSkills []string `json:"includedSkills,omitempty"`
 	ExcludedSkills []string `json:"excludedSkills,omitempty"`
@@ -105,14 +108,12 @@ type SkillRepository struct {
 // PluginSource. Repositories are resolved to a single list regardless of whether
 // they were provided inline or via a file.
 type SkillSourceSpec struct {
-	TrustTier           string
 	SyncIntervalMinutes int
 	Repositories        []SkillRepository
 }
 
 // skillSourceProperties is the strict schema of a skill source's `properties` map.
 type skillSourceProperties struct {
-	TrustTier           string            `json:"trustTier,omitempty"`
 	SyncIntervalMinutes int               `json:"syncIntervalMinutes,omitempty"`
 	YAMLCatalogPath     string            `json:"yamlCatalogPath,omitempty"`
 	Repositories        []SkillRepository `json:"repositories,omitempty"`
@@ -136,9 +137,6 @@ func ParseSkillSource(source basecatalog.PluginSource) (*SkillSourceSpec, error)
 		return nil, fmt.Errorf("skill source %q: %w", source.GetId(), err)
 	}
 
-	if err := validateTrustTier(props.TrustTier); err != nil {
-		return nil, fmt.Errorf("skill source %q: %w", source.GetId(), err)
-	}
 	if props.SyncIntervalMinutes < 0 {
 		return nil, fmt.Errorf("skill source %q: syncIntervalMinutes must not be negative", source.GetId())
 	}
@@ -152,7 +150,6 @@ func ParseSkillSource(source basecatalog.PluginSource) (*SkillSourceSpec, error)
 	}
 
 	return &SkillSourceSpec{
-		TrustTier:           props.TrustTier,
 		SyncIntervalMinutes: props.SyncIntervalMinutes,
 		Repositories:        repos,
 	}, nil
@@ -237,6 +234,9 @@ func validateRepositories(repos []SkillRepository) error {
 		}
 		if r.CredentialRef != "" && !validCredentialRef.MatchString(r.CredentialRef) {
 			return fmt.Errorf("repository[%d]: credentialRef %q must be a plain filename (letters, digits, '.', '_', '-')", i, r.CredentialRef)
+		}
+		if err := validateTrustTier(r.TrustTier); err != nil {
+			return fmt.Errorf("repository[%d]: %w", i, err)
 		}
 		key := normalizeRepoURL(r.URL)
 		if prev, dup := seen[key]; dup {

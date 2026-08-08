@@ -32,13 +32,13 @@ func skillSource(props map[string]any) basecatalog.PluginSource {
 
 func TestParseSkillSource_InlineRepositories(t *testing.T) {
 	src := skillSource(mustProps(t, `
-trustTier: communityContributed
 syncIntervalMinutes: 60
 repositories:
   - url: https://github.com/example/skills.git
     refs: [main, v1.0]
     scanPaths: [skills/]
     credentialRef: github
+    trustTier: communityContributed
     provider: Example Org
     category: DevOps
     labels: [community]
@@ -52,12 +52,12 @@ repositories:
 
 	spec, err := ParseSkillSource(src)
 	require.NoError(t, err)
-	assert.Equal(t, "communityContributed", spec.TrustTier)
 	assert.Equal(t, 60, spec.SyncIntervalMinutes)
 	require.Len(t, spec.Repositories, 1)
 
 	r := spec.Repositories[0]
 	assert.Equal(t, "https://github.com/example/skills.git", r.URL)
+	assert.Equal(t, "communityContributed", r.TrustTier)
 	assert.Equal(t, []string{"main", "v1.0"}, r.Refs)
 	assert.Equal(t, []string{"skills/"}, r.ScanPaths)
 	assert.Equal(t, "github", r.CredentialRef)
@@ -72,6 +72,7 @@ func TestParseSkillSource_FileFormEquivalentToInline(t *testing.T) {
 repositories:
   - url: https://github.com/example/skills.git
     refs: [main, v1.0]
+    trustTier: communityContributed
     provider: Example Org
     category: DevOps
     labels: [community]
@@ -81,16 +82,15 @@ repositories:
 	require.NoError(t, os.WriteFile(repoFile, []byte(repoYAML), 0o600))
 
 	fileSrc := skillSource(mustProps(t, `
-trustTier: communityContributed
 yamlCatalogPath: example-skills.yaml
 `))
 	fileSrc.Origin = filepath.Join(dir, "catalog-sources.yaml")
 
 	inlineSrc := skillSource(mustProps(t, `
-trustTier: communityContributed
 repositories:
   - url: https://github.com/example/skills.git
     refs: [main, v1.0]
+    trustTier: communityContributed
     provider: Example Org
     category: DevOps
     labels: [community]
@@ -134,17 +134,16 @@ skill_catalogs:
     enabled: true
     labels: [community]
     properties:
-      trustTier: communityContributed
       syncIntervalMinutes: 30
       repositories:
         - url: https://github.com/example/skills.git
           refs: [main, v1.0]
+          trustTier: communityContributed
   - name: Red Hat Skills
     id: redhat-skills
     type: git-skills-plugin
     enabled: true
     properties:
-      trustTier: platformProvided
       yamlCatalogPath: redhat-skills.yaml
 `), 0o600))
 
@@ -162,9 +161,9 @@ skill_catalogs:
 
 func TestParseSkillSource_InvalidTrustTier(t *testing.T) {
 	src := skillSource(mustProps(t, `
-trustTier: superDuperTrusted
 repositories:
   - url: https://github.com/example/skills.git
+    trustTier: superDuperTrusted
 `))
 	_, err := ParseSkillSource(src)
 	require.Error(t, err)
@@ -179,7 +178,8 @@ repositories:
 `))
 	spec, err := ParseSkillSource(src)
 	require.NoError(t, err)
-	assert.Empty(t, spec.TrustTier)
+	require.Len(t, spec.Repositories, 1)
+	assert.Empty(t, spec.Repositories[0].TrustTier)
 }
 
 func TestParseSkillSource_BothFormsRejected(t *testing.T) {
@@ -194,7 +194,7 @@ repositories:
 }
 
 func TestParseSkillSource_NeitherFormRejected(t *testing.T) {
-	src := skillSource(mustProps(t, `trustTier: communityContributed`))
+	src := skillSource(mustProps(t, `syncIntervalMinutes: 30`))
 	_, err := ParseSkillSource(src)
 	require.Error(t, err)
 }
@@ -276,7 +276,6 @@ repositories:
 
 func TestParseSkillSource_UnknownPropertyRejected(t *testing.T) {
 	src := skillSource(mustProps(t, `
-trustTier: communityContributed
 bogusKey: nope
 repositories:
   - url: https://github.com/example/skills.git

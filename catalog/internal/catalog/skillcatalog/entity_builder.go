@@ -1,6 +1,8 @@
 package skillcatalog
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 
 	"github.com/golang/glog"
@@ -22,10 +24,9 @@ func skillEntityName(sourceID, repository, path, version string) string {
 
 // buildSkillEntity converts a resolved skill into a datastore entity, stamping
 // custom metadata from the source configuration. Precedence for category/labels
-// is repo entry → skillOverride (per-skill); provider and trustTier come from the
-// repo entry and source respectively; the SKILL.md frontmatter metadata becomes
-// customProperties.
-func buildSkillEntity(resolved ResolvedSkill, repo SkillRepository, spec *SkillSourceSpec, sourceID string) skillmodels.Skill {
+// is repo entry → skillOverride (per-skill); trustTier and provider come from the
+// repo entry; the SKILL.md frontmatter metadata becomes customProperties.
+func buildSkillEntity(resolved ResolvedSkill, repo SkillRepository, sourceID string) skillmodels.Skill {
 	parsed := resolved.Skill
 
 	category := repo.Category
@@ -47,9 +48,7 @@ func buildSkillEntity(resolved ResolvedSkill, repo SkillRepository, spec *SkillS
 	addString(&props, propSkillVersion, resolved.Version)
 	addString(&props, propResolvedCommit, resolved.ResolvedCommit)
 	addString(&props, propSourceID, sourceID)
-	if spec != nil {
-		addString(&props, propTrustTier, spec.TrustTier)
-	}
+	addString(&props, propTrustTier, repo.TrustTier)
 	addString(&props, propProvider, repo.Provider)
 	addString(&props, propCategory, category)
 	addString(&props, propLicense, parsed.License)
@@ -60,6 +59,7 @@ func buildSkillEntity(resolved ResolvedSkill, repo SkillRepository, spec *SkillS
 	addStringSlice(&props, propAllowedTools, parsed.AllowedTools)
 	addStringSlice(&props, propSupportingFiles, resolved.SupportingFiles)
 	addInt(&props, propBodyLineCount, int32(parsed.BodyLineCount))
+	addString(&props, propConfigDigest, configDigest(repo))
 
 	custom := customPropertiesFromMetadata(parsed.Metadata)
 
@@ -72,6 +72,24 @@ func buildSkillEntity(resolved ResolvedSkill, repo SkillRepository, spec *SkillS
 		Properties:       &props,
 		CustomProperties: &custom,
 	}
+}
+
+// configDigest fingerprints the repository configuration that shapes a ref's
+// skills, so the ref-skip in resolveOne can tell an unchanged commit apart from an
+// unchanged config: without it, editing a category, label, or include filter would
+// never take effect on a ref that has not moved. The refreshed rows carry the new
+// digest, so the change costs exactly one re-index.
+//
+// The parsed entry is digested whole so a new config field is covered automatically.
+// Refs is excluded: it selects which jobs run rather than shaping any one of them,
+// so including it would re-clone every existing ref whenever another was added.
+func configDigest(repo SkillRepository) string {
+	repo.Refs = nil // value copy; the caller is unaffected
+
+	// Marshaling cannot fail for these types (strings and string slices, no maps).
+	encoded, _ := json.Marshal(repo)
+	sum := sha256.Sum256(encoded)
+	return hex.EncodeToString(sum[:])
 }
 
 func findSkillOverride(overrides []SkillOverride, name string) *SkillOverride {

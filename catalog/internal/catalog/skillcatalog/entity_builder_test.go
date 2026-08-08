@@ -57,10 +57,14 @@ func sampleResolved() ResolvedSkill {
 }
 
 func TestBuildSkillEntity_FieldsAndIdentity(t *testing.T) {
-	repo := SkillRepository{Provider: "Example Org", Category: "DevOps", Labels: []string{"community"}}
-	spec := &SkillSourceSpec{TrustTier: "communityContributed"}
+	repo := SkillRepository{
+		TrustTier: "communityContributed",
+		Provider:  "Example Org",
+		Category:  "DevOps",
+		Labels:    []string{"community"},
+	}
 
-	e := buildSkillEntity(sampleResolved(), repo, spec, "community-skills")
+	e := buildSkillEntity(sampleResolved(), repo, "community-skills")
 
 	require.NotNil(t, e.GetAttributes())
 	require.NotNil(t, e.GetAttributes().Name)
@@ -95,7 +99,7 @@ func TestBuildSkillEntity_SkillOverrideWins(t *testing.T) {
 			{Name: "deploy", Category: "SRE", Labels: []string{"ops", "prod"}},
 		},
 	}
-	e := buildSkillEntity(sampleResolved(), repo, &SkillSourceSpec{}, "s")
+	e := buildSkillEntity(sampleResolved(), repo, "s")
 
 	assert.Equal(t, "SRE", propString(t, e, propCategory), "override category wins over repo entry")
 	assert.Equal(t, `["ops","prod"]`, propString(t, e, propLabels), "override labels win over repo entry")
@@ -107,8 +111,8 @@ func TestBuildSkillEntity_SameSkillFromTwoSourcesDoesNotCollide(t *testing.T) {
 	// the exact same (repository, path, version) must get distinct entity names,
 	// since Context has a UNIQUE(type_id, name) constraint.
 	resolved := sampleResolved()
-	a := buildSkillEntity(resolved, SkillRepository{}, &SkillSourceSpec{}, "source-a")
-	b := buildSkillEntity(resolved, SkillRepository{}, &SkillSourceSpec{}, "source-b")
+	a := buildSkillEntity(resolved, SkillRepository{}, "source-a")
+	b := buildSkillEntity(resolved, SkillRepository{}, "source-b")
 
 	require.NotNil(t, a.GetAttributes().Name)
 	require.NotNil(t, b.GetAttributes().Name)
@@ -118,7 +122,7 @@ func TestBuildSkillEntity_SameSkillFromTwoSourcesDoesNotCollide(t *testing.T) {
 }
 
 func TestBuildSkillEntity_CustomPropertiesFromMetadata(t *testing.T) {
-	e := buildSkillEntity(sampleResolved(), SkillRepository{}, &SkillSourceSpec{}, "s")
+	e := buildSkillEntity(sampleResolved(), SkillRepository{}, "s")
 
 	require.NotNil(t, e.GetCustomProperties())
 	custom := map[string]any{}
