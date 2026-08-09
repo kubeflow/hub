@@ -457,40 +457,34 @@ def test_http_download_extracts_safe_archive(tmp_path, archive_type):
     assert not (dest_dir / archive.name).exists()
 
 
-def test_download_from_s3(minimal_update_artifact_env_source_dest_vars):
-    """Test download_from_s3 now that it pages through prefixes."""
+@pytest.mark.parametrize("source_key", ["test-key", "test-key/"])
+def test_download_from_s3(minimal_update_artifact_env_source_dest_vars, source_key):
+    os.environ["MODEL_SYNC_SOURCE_AWS_KEY"] = source_key
 
-    # load config from your fixture
     config = get_config([])
 
-    # sanity-check config
     assert isinstance(config.source, S3StorageConfig)
     assert config.source.bucket == "test-bucket"
-    assert config.source.key == "test-key"
+    assert config.source.key == source_key
 
-    # use whatever path came back in config
     storage_path = config.storage.path
     assert storage_path == "/tmp/model-sync"
 
-    # mock out ModelRegistry so validate_and_get_model_registry_client returns a dummy client
     with patch("job.mr_client.ModelRegistry") as mock_registry_class:
         mock_registry_class.return_value = Mock()
         client = validate_and_get_model_registry_client(config.registry)
 
-    # now patch _connect_to_s3 and os.makedirs
     with patch("job.download._connect_to_s3") as mock_connect, \
          patch("os.makedirs") as mock_makedirs:
 
-        # prepare our fake s3 client + transfer config
         mock_s3 = Mock()
         mock_transfer_cfg = Mock()
         mock_connect.return_value = (mock_s3, mock_transfer_cfg)
 
-        # set up a paginator that yields a single page with two entries
         fake_page = {
             "Contents": [
                 {"Key": "test-key/file1.txt"},
-                {"Key": "test-key/dir/"},                # should be skipped
+                {"Key": "test-key/dir/"},
                 {"Key": "test-key/dir/file2.bin"},
             ]
         }
@@ -498,28 +492,24 @@ def test_download_from_s3(minimal_update_artifact_env_source_dest_vars):
         mock_paginator.paginate.return_value = [fake_page]
         mock_s3.get_paginator.return_value = mock_paginator
 
-        # call under test
         download_from_s3(config.source, config.storage.path)
 
-        # ensure _connect_to_s3 got all args including multipart settings
         mock_connect.assert_called_once_with(
             "http://localhost:9000",
             "test-access-key-id",
             "test-secret-access-key",
-            None,  # region
+            None,
             multipart_threshold=1024 * 1024,
             multipart_chunksize=1024 * 1024,
             max_pool_connections=10,
         )
 
-        # ensure we asked for the right paginator and paginated correctly
         mock_s3.get_paginator.assert_called_once_with("list_objects_v2")
         mock_paginator.paginate.assert_called_once_with(
             Bucket="test-bucket",
-            Prefix="test-key",
+            Prefix=source_key,
         )
 
-        # build expected download calls using the real storage_path
         expected = [
             call(
                 "test-bucket",
@@ -534,7 +524,6 @@ def test_download_from_s3(minimal_update_artifact_env_source_dest_vars):
         ]
         mock_s3.download_file.assert_has_calls(expected, any_order=False)
 
-        # directories should be created for each file
         mock_makedirs.assert_any_call(
             os.path.dirname(os.path.join(storage_path, "file1.txt")),
             exist_ok=True
@@ -543,6 +532,57 @@ def test_download_from_s3(minimal_update_artifact_env_source_dest_vars):
             os.path.dirname(os.path.join(storage_path, "dir", "file2.bin")),
             exist_ok=True
         )
+
+
+@pytest.mark.parametrize(
+    "source_key, expected_files",
+    [
+        ("my-model", ["model.onnx.bak", "model.onnx", "weights/data-backup", "weights/data"]),
+        ("my-model/", ["model.onnx.bak", "model.onnx", "weights/data-backup", "weights/data"]),
+        ("my-model/model.onnx", ["model.onnx"]),
+        ("my-model/weights/data", ["data"]),
+    ],
+)
+def test_download_from_s3_matching_keys(
+    minimal_update_artifact_env_source_dest_vars, tmp_path, source_key, expected_files
+):
+    os.environ["MODEL_SYNC_SOURCE_AWS_KEY"] = source_key
+    config = get_config([])
+    storage_path = tmp_path / "staging"
+    keys = [
+        "my-model-backup/unrelated.bin",
+        "my-model/",
+        "my-model/model.onnx.bak",
+        "my-model/model.onnx",
+        "my-model/weights/",
+        "my-model/weights/data-backup",
+        "my-model/weights/data",
+    ]
+
+    def paginate(*, Bucket, Prefix):
+        return [{"Contents": [{"Key": key}]} for key in keys if key.startswith(Prefix)]
+
+    def download_file(bucket, key, filename):
+        Path(filename).write_text(key)
+
+    with patch("job.download._connect_to_s3") as mock_connect:
+        mock_s3 = Mock()
+        mock_connect.return_value = (mock_s3, Mock())
+        mock_s3.get_paginator.return_value.paginate.side_effect = paginate
+        mock_s3.download_file.side_effect = download_file
+
+        download_from_s3(config.source, str(storage_path))
+
+    actual_files = {
+        path.relative_to(storage_path).as_posix()
+        for path in storage_path.rglob("*")
+        if path.is_file()
+    }
+    assert actual_files == set(expected_files)
+    assert mock_s3.download_file.call_count == len(expected_files)
+    for path in storage_path.rglob("*"):
+        if path.is_file():
+            assert path.read_text() in keys
 
 
 def test_download_from_s3_with_region(minimal_update_artifact_env_source_dest_vars):

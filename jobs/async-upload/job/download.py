@@ -49,8 +49,7 @@ def download_from_s3(config: S3StorageConfig, storage_path: str):
 
     bucket_name = config.bucket
     prefix = config.key
-
-    # TODO: It might make sense to check if the provided key points to a single file first before assuming the directory needs to be traversed
+    directory_prefix = prefix if prefix.endswith("/") else f"{prefix}/"
 
     paginator = s3_client.get_paginator("list_objects_v2")
     for page in paginator.paginate(Bucket=bucket_name, Prefix=prefix):
@@ -58,7 +57,12 @@ def download_from_s3(config: S3StorageConfig, storage_path: str):
             key = obj["Key"]
             if key.endswith("/"):
                 continue
-            relative = os.path.relpath(key, prefix)
+            if key == prefix:
+                relative = os.path.basename(key)
+            elif key.startswith(directory_prefix):
+                relative = os.path.relpath(key, directory_prefix)
+            else:
+                continue
             local_path = os.path.join(storage_path, relative)
             os.makedirs(os.path.dirname(local_path), exist_ok=True)
             logger.info(f"⏳ Downloading s3://{bucket_name}/{key} → {local_path}")
