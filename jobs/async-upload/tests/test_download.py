@@ -113,8 +113,11 @@ def test_unpack_archive_file(dummy_archive, tmp_path):
     assert result == DUMMY_FILE_DATA
 
 
-def test_download_from_s3(minimal_update_artifact_env_source_dest_vars):
-    """Test download_from_s3 now that it pages through prefixes."""
+@pytest.mark.parametrize("source_key", ["test-key", "test-key/"])
+def test_download_from_s3(minimal_update_artifact_env_source_dest_vars, source_key):
+    """Test download_from_s3 pages through a directory prefix."""
+
+    os.environ["MODEL_SYNC_SOURCE_AWS_KEY"] = source_key
 
     # load config from your fixture
     config = get_config([])
@@ -122,7 +125,7 @@ def test_download_from_s3(minimal_update_artifact_env_source_dest_vars):
     # sanity-check config
     assert isinstance(config.source, S3StorageConfig)
     assert config.source.bucket == "test-bucket"
-    assert config.source.key == "test-key"
+    assert config.source.key == source_key
 
     # use whatever path came back in config
     storage_path = config.storage.path
@@ -172,7 +175,7 @@ def test_download_from_s3(minimal_update_artifact_env_source_dest_vars):
         mock_s3.get_paginator.assert_called_once_with("list_objects_v2")
         mock_paginator.paginate.assert_called_once_with(
             Bucket="test-bucket",
-            Prefix="test-key",
+            Prefix="test-key/",
         )
 
         # build expected download calls using the real storage_path
