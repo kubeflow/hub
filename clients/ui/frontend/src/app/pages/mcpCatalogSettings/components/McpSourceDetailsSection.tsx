@@ -11,9 +11,12 @@ import { UpdateObjectAtPropAndValue, ThemeAwareFormGroupWrapper } from 'mod-arch
 import FormSection from '~/app/pages/modelRegistry/components/pf-overrides/FormSection';
 import { ManageMcpSourceFormData } from '~/app/pages/mcpCatalogSettings/useManageMcpSourceData';
 import { validateMcpSourceName } from '~/app/pages/mcpCatalogSettings/utils/validation';
-import { MCP_FORM_LABELS, MCP_VALIDATION_MESSAGES } from '~/app/pages/mcpCatalogSettings/constants';
+import {
+  MCP_FORM_LABELS,
+  MCP_VALIDATION_MESSAGES,
+  SOURCE_NAME_CHARACTER_LIMIT,
+} from '~/app/pages/mcpCatalogSettings/constants';
 import { McpCatalogSourceConfig } from '~/app/mcpServerCatalogTypes';
-import { SOURCE_NAME_CHARACTER_LIMIT } from '~/app/shared/catalogSettings/const';
 import { isSourceNameEmpty } from '~/app/shared/catalogSettings/utils/validation';
 
 type McpSourceDetailsSectionProps = {

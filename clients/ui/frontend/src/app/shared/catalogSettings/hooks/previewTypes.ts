@@ -17,12 +17,12 @@ export type CatalogSettingsPreviewResult<TItem, TSummary> = {
   nextPageToken?: string;
 };
 
-export const getTargetPreviewTab = <TTab extends string>(
+export const getTargetPreviewTab = (
   isFreshPreview: boolean,
-  switchToTab: TTab | undefined,
-  activeTab: TTab,
-  includedTab: TTab,
-): TTab => {
+  switchToTab: CatalogSettingsPreviewTab | undefined,
+  activeTab: CatalogSettingsPreviewTab,
+  includedTab: CatalogSettingsPreviewTab,
+): CatalogSettingsPreviewTab => {
   if (isFreshPreview) {
     return includedTab;
   }

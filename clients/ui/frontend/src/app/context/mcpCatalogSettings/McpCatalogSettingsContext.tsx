@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { useQueryParamNamespaces } from 'mod-arch-core';
 import useMcpCatalogSettingsAPIState, {
   McpCatalogSettingsAPIState,
 } from '~/app/hooks/mcpCatalogSettings/useMcpCatalogSettingsAPIState';
@@ -7,8 +6,20 @@ import { useMcpCatalogSourceConfigs } from '~/app/hooks/mcpCatalogSettings/useMc
 import type { McpCatalogSourceConfigList } from '~/app/mcpServerCatalogTypes';
 import type { CatalogSourceList } from '~/app/shared/types/catalogTypes';
 import { BFF_API_VERSION, URL_PREFIX } from '~/app/utilities/const';
-import useModelCatalogAPIState from '~/app/hooks/modelCatalog/useModelCatalogAPIState';
-import { useCatalogSourcesWithPolling } from '~/app/shared/catalogSettings/hooks/useCatalogSourcesWithPolling';
+import { createCatalogSettingsContext } from '~/app/shared/catalogSettings/createCatalogSettingsContext';
+
+// MCP preview quirk: preview calls the model_catalog settings host, not mcp_catalog.
+const { useCatalogSettingsValue } = createCatalogSettingsContext<
+  McpCatalogSettingsAPIState,
+  McpCatalogSourceConfigList
+>({
+  settingsHostPath: `${URL_PREFIX}/api/${BFF_API_VERSION}/settings/mcp_catalog`,
+  catalogHostPath: `${URL_PREFIX}/api/${BFF_API_VERSION}/model_catalog`,
+  catalogExtraQueryParams: { assetType: 'mcp_servers' },
+  previewHostPath: `${URL_PREFIX}/api/${BFF_API_VERSION}/settings/model_catalog`,
+  useSettingsAPIState: useMcpCatalogSettingsAPIState,
+  useSourceConfigsList: useMcpCatalogSourceConfigs,
+});
 
 export type McpCatalogSettingsContextType = {
   apiState: McpCatalogSettingsAPIState;
@@ -44,33 +55,18 @@ export const McpCatalogSettingsContext = React.createContext<McpCatalogSettingsC
 export const McpCatalogSettingsContextProvider: React.FC<
   McpCatalogSettingsContextProviderProps
 > = ({ children }) => {
-  const hostPath = `${URL_PREFIX}/api/${BFF_API_VERSION}/settings/mcp_catalog`;
-  const mcpCatalogHostPath = `${URL_PREFIX}/api/${BFF_API_VERSION}/model_catalog`;
-  const previewHostPath = `${URL_PREFIX}/api/${BFF_API_VERSION}/settings/model_catalog`;
-  const queryParams = useQueryParamNamespaces();
-  const [apiState, refreshAPIState] = useMcpCatalogSettingsAPIState(
-    hostPath,
-    queryParams,
-    previewHostPath,
-  );
-  const mcpCatalogQueryParams = React.useMemo(
-    () => ({ ...queryParams, assetType: 'mcp_servers' }),
-    [queryParams],
-  );
-  const [mcpCatalogAPIState] = useModelCatalogAPIState(mcpCatalogHostPath, mcpCatalogQueryParams);
-  const [
-    mcpCatalogSourceConfigs,
-    mcpCatalogSourceConfigsLoaded,
-    mcpCatalogSourceConfigsLoadError,
-    refreshMcpCatalogSourceConfigs,
-  ] = useMcpCatalogSourceConfigs(apiState);
-
-  const [
-    mcpCatalogSources,
-    mcpCatalogSourcesLoaded,
-    mcpCatalogSourcesLoadError,
-    refreshMcpCatalogSources,
-  ] = useCatalogSourcesWithPolling(mcpCatalogAPIState);
+  const {
+    apiState,
+    refreshAPIState,
+    sourceConfigs: mcpCatalogSourceConfigs,
+    sourceConfigsLoaded: mcpCatalogSourceConfigsLoaded,
+    sourceConfigsLoadError: mcpCatalogSourceConfigsLoadError,
+    refreshSourceConfigs: refreshMcpCatalogSourceConfigs,
+    catalogSources: mcpCatalogSources,
+    catalogSourcesLoaded: mcpCatalogSourcesLoaded,
+    catalogSourcesLoadError: mcpCatalogSourcesLoadError,
+    refreshCatalogSources: refreshMcpCatalogSources,
+  } = useCatalogSettingsValue();
 
   const contextValue = React.useMemo(
     () => ({
