@@ -151,6 +151,7 @@ export type McpServer = {
   deploymentMode?: McpDeploymentMode;
   endpoints?: McpEndpoints;
   runtimeMetadata?: McpRuntimeMetadata;
+  serverJson?: Record<string, unknown>;
 };
 
 export type McpServerList = PaginationParams & { items?: McpServer[] };

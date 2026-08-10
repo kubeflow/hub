@@ -63,3 +63,81 @@ const FRONTEND_TO_BACKEND_FILTER_KEY: Record<string, string> = Object.fromEntrie
 export function mcpFiltersToFilterQuery(filters: McpCatalogFiltersState): string {
   return stringFiltersToFilterQuery(filters, FRONTEND_TO_BACKEND_FILTER_KEY);
 }
+
+type McpServerJsonRemote = {
+  type: string;
+  url: string;
+};
+
+const DISPLAY_SERVER_JSON_KEYS = [
+  '$schema',
+  'name',
+  'description',
+  'title',
+  'version',
+  'websiteUrl',
+] as const;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const getRemotesFromPackages = (packages: unknown): McpServerJsonRemote[] => {
+  if (!Array.isArray(packages)) {
+    return [];
+  }
+
+  return packages.flatMap((pkg) => {
+    if (!isRecord(pkg)) {
+      return [];
+    }
+    const { transport } = pkg;
+    if (!isRecord(transport)) {
+      return [];
+    }
+    const { type, url } = transport;
+    if (typeof type !== 'string' || typeof url !== 'string' || !type || !url) {
+      return [];
+    }
+    return [{ type, url }];
+  });
+};
+
+const getExistingRemotes = (remotes: unknown): McpServerJsonRemote[] => {
+  if (!Array.isArray(remotes)) {
+    return [];
+  }
+
+  return remotes.flatMap((remote) => {
+    if (!isRecord(remote)) {
+      return [];
+    }
+    const { type, url } = remote;
+    if (typeof type !== 'string' || typeof url !== 'string' || !type || !url) {
+      return [];
+    }
+    return [{ type, url }];
+  });
+};
+
+/** Maps opaque catalog serverJson into the compact remotes display shape. */
+export const toDisplayServerJson = (
+  serverJson: Record<string, unknown>,
+): Record<string, unknown> => {
+  const display: Record<string, unknown> = {};
+
+  DISPLAY_SERVER_JSON_KEYS.forEach((key) => {
+    if (key in serverJson) {
+      display[key] = serverJson[key];
+    }
+  });
+
+  const remotesFromField = getExistingRemotes(serverJson.remotes);
+  const remotes =
+    remotesFromField.length > 0 ? remotesFromField : getRemotesFromPackages(serverJson.packages);
+
+  if (remotes.length > 0) {
+    display.remotes = remotes;
+  }
+
+  return display;
+};

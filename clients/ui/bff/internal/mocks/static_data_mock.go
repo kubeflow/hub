@@ -2744,9 +2744,116 @@ func CreateMcpCatalogSourcePreviewMockWithFilter(filterStatus string, pageSize i
 	return filterAndPaginatePreviewItems(GetMcpServersWithInclusionStatusListMocks(), GetMcpCatalogSourcePreviewSummaryMock(), filterStatus, pageSize, nextPageToken)
 }
 
+func mustParseServerJson(raw string) map[string]interface{} {
+	var result map[string]interface{}
+	if err := json.Unmarshal([]byte(raw), &result); err != nil {
+		panic(fmt.Sprintf("invalid serverJson mock: %v", err))
+	}
+	return result
+}
+
 func GetMcpServerMocks() []models.McpServer {
 	trueVal := true
 	falseVal := false
+	prometheusServerJson := mustParseServerJson(`{
+		"$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+		"name": "org.mariadb/mariadb-mcp",
+		"description": "A standard interface for managing and querying MariaDB databases. Supports SQL operations and schema inspection.",
+		"title": "MariaDB MCP Server",
+		"version": "1.0.0",
+		"websiteUrl": "https://github.com/mariadb/mcp",
+		"packages": [
+			{
+				"environmentVariables": [
+					{
+						"description": "MariaDB username (from secret mariadb-credentials)",
+						"isRequired": true,
+						"isSecret": true,
+						"name": "DB_USER"
+					},
+					{
+						"description": "MariaDB password (from secret mariadb-credentials)",
+						"isRequired": true,
+						"isSecret": true,
+						"name": "DB_PASSWORD"
+					},
+					{
+						"description": "MariaDB server hostname",
+						"isRequired": true,
+						"name": "DB_HOST"
+					},
+					{
+						"description": "MariaDB database name (optional; can be set per query)",
+						"isRequired": false,
+						"name": "DB_NAME"
+					},
+					{
+						"default": "3306",
+						"description": "MariaDB server port (default 3306)",
+						"isRequired": false,
+						"name": "DB_PORT"
+					},
+					{
+						"default": "true",
+						"description": "Enforce read-only mode for SQL queries (default true)",
+						"isRequired": false,
+						"name": "MCP_READ_ONLY"
+					},
+					{
+						"description": "Comma-separated list of allowed Host header values",
+						"isRequired": true,
+						"name": "ALLOWED_HOSTS"
+					}
+				],
+				"identifier": "quay.io/rhoai-partner-mcp/ubi10-mariadb-mcp:f94b043241c702c607e88274da83f8482e3e7d56",
+				"packageArguments": [
+					{ "type": "positional", "value": "python" },
+					{ "type": "positional", "value": "src/server.py" },
+					{ "name": "--host", "type": "named", "value": "0.0.0.0" },
+					{ "name": "--transport", "type": "named", "value": "http" },
+					{ "name": "--port", "type": "named", "value": "9001" }
+				],
+				"registryType": "oci",
+				"runtimeHint": "docker",
+				"transport": {
+					"type": "streamable-http",
+					"url": "http://localhost:9001/mcp"
+				}
+			}
+		],
+		"repository": {
+			"source": "github",
+			"url": "https://github.com/mariadb/mcp"
+		}
+	}`)
+	kubernetesServerJson := mustParseServerJson(`{
+		"$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+		"name": "kubernetes-mcp-server",
+		"description": "Manage Kubernetes resources and query cluster state",
+		"title": "Kubernetes",
+		"version": "1.2.0",
+		"websiteUrl": "https://github.com/cncf/kubernetes-mcp-server",
+		"remotes": [
+			{
+				"type": "streamable-http",
+				"url": "https://kubernetes-mcp-server.demo-namespace.svc.cluster.local:8080"
+			}
+		]
+	}`)
+	dynatraceServerJson := mustParseServerJson(`{
+		"$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+		"name": "dynatrace-mcp-server",
+		"description": "Official Dynatrace-OSS project exposing DQL queries, problem feeds, and vulnerability data. Gives agents real-time service health, letting them recommend rollbacks or capacity fixes inside OpenShift.",
+		"title": "Dynatrace",
+		"version": "2.0.4",
+		"websiteUrl": "https://github.com/dynatrace-oss/dynatrace-mcp",
+		"remotes": [
+			{
+				"type": "streamable-http",
+				"url": "https://dynatrace-mcp-server.demo-namespace.svc.cluster.local:8080"
+			}
+		]
+	}`)
 
 	prometheusMcp := models.McpServer{
 		ID:          "1",
@@ -2796,6 +2903,7 @@ func GetMcpServerMocks() []models.McpServer {
 		SourceCode:    stringToPointer("prometheus-community/prometheus-mcp"),
 		RepositoryURL: stringToPointer("https://github.com/prometheus-community/prometheus-mcp"),
 		LastUpdated:   stringToPointer("1706745600000"),
+		ServerJson:    prometheusServerJson,
 	}
 
 	kubernetesMcp := models.McpServer{
@@ -2830,6 +2938,7 @@ func GetMcpServerMocks() []models.McpServer {
 		SourceCode:    stringToPointer("cncf/kubernetes-mcp-server"),
 		RepositoryURL: stringToPointer("https://github.com/cncf/kubernetes-mcp-server"),
 		LastUpdated:   stringToPointer("1709913600000"),
+		ServerJson:    kubernetesServerJson,
 	}
 
 	elasticMcp := models.McpServer{
@@ -2884,6 +2993,7 @@ func GetMcpServerMocks() []models.McpServer {
 		DocumentationURL: stringToPointer("https://github.com/dynatrace-oss/dynatrace-mcp-server/blob/main/README.md"),
 		Readme:           stringToPointer("# Dynatrace MCP Server\n\nThe local Dynatrace MCP server allows AI Assistants to interact with the Dynatrace observability platform, bringing real-time observability data directly into your development workflow.\n\n**Note:** This product is not officially supported by Dynatrace.\n\nIf you need help, please contact us via GitHub Issues if you have feature requests, questions, or need help.\n\n## Quickstart\n\nYou can add this MCP server to your MCP Client like VSCode, Claude, Cursor, Amazon Q, Windsurf, ChatGPT, or GitHub Copilot via the command `npx -y @dynatrace-oss/dynatrace-mcp-server` (type: stdio). For more details, please refer to the configuration section below.\n\nFurthermore, you need to configure the URL to a Dynatrace environment:\n\n- `DT_ENVIRONMENT` (string, e.g., https://abc12345.apps.dynatrace.com) - URL to your Dynatrace Platform (do not use Dynatrace classic URLs like abc12345.live.dynatrace.com)\n\nOnce we are done, we recommend looking into example prompts, like \"Get all details of the entity 'my-service'\" or \"Show me error logs\". Please mind that these prompts lead to executing DQL statements which may incur costs in accordance to your licence.\n\n## Use Cases\n\n- **Real-time observability** - Fetch production-level data for early detection and proactive monitoring\n- **Contextual debugging** - Fix issues with full context from monitored exceptions, logs, and anomalies\n- **Security insights** - Get detailed vulnerability analysis and security problem tracking\n- **Natural language queries** - Use AI-powered DQL generation and explanation\n- **Multi-phase incident investigation** - Systematic 4-phase approach with automated impact assessment\n\n## Tools\n\n| Tool | Description |\n|------|-------------|\n| `execute_dql` | Execute Dynatrace Query Language (DQL) queries |\n| `get_problems` | Retrieve current problems and incidents |\n| `get_service_health` | Get health status of services |\n| `get_vulnerabilities` | Retrieve security vulnerability data |\n| `create_maintenance_window` | Create a maintenance window to suppress alerts |\n"),
 		LastUpdated:      stringToPointer("1704067200000"),
+		ServerJson:       dynatraceServerJson,
 	}
 
 	grafanaMcp := models.McpServer{

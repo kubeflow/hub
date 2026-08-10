@@ -21,6 +21,7 @@ const customServer = mockMcpServer({
   source_id: 'sample', // eslint-disable-line camelcase
   toolCount: 0,
   readme: undefined,
+  serverJson: undefined,
 });
 
 describe('MCP Server Details Page', () => {
@@ -119,6 +120,32 @@ describe('MCP Server Details Page', () => {
       mcpServerDetails.visit(customServer.id);
       mcpServerDetails.findNoReadme().should('be.visible');
       mcpServerDetails.findNoReadme().should('contain.text', 'No README available');
+    });
+  });
+
+  describe('Server.json card', () => {
+    it('should render mapped remotes from backend packages serverJson', () => {
+      initServerDetailIntercept(kubernetesServer);
+      mcpServerDetails.visit(kubernetesServer.id);
+      mcpServerDetails.findServerJsonCard().should('be.visible');
+      mcpServerDetails.findServerJsonCode().should('contain.text', 'kubernetes-mcp-server');
+      mcpServerDetails.findServerJsonCode().should('contain.text', '$schema');
+      mcpServerDetails.findServerJsonCode().should('contain.text', 'remotes');
+      mcpServerDetails
+        .findServerJsonCode()
+        .should(
+          'contain.text',
+          'https://kubernetes-mcp-server.demo-namespace.svc.cluster.local:8080',
+        );
+      mcpServerDetails.findServerJsonCode().should('not.contain.text', 'environmentVariables');
+      mcpServerDetails.findServerJsonCode().should('not.contain.text', 'packageArguments');
+      mcpServerDetails.findServerJsonCode().should('not.contain.text', 'repository');
+    });
+
+    it('should hide Server.json card when serverJson is absent', () => {
+      initServerDetailIntercept(customServer);
+      mcpServerDetails.visit(customServer.id);
+      mcpServerDetails.findServerJsonCard().should('not.exist');
     });
   });
 

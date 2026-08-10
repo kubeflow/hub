@@ -3512,6 +3512,13 @@ components:
           $ref: "#/components/schemas/McpEndpoints"
         runtimeMetadata:
           $ref: "#/components/schemas/McpRuntimeMetadata"
+        serverJson:
+          type: object
+          description: |-
+            MCP server.json conformant structure. Opaque to this API; the
+            schema is defined by the MCP specification and may evolve independently.
+            See https://registry.modelcontextprotocol.io/docs#/schemas/ServerJSON for details.
+          additionalProperties: true
     McpServerList:
       description: List of McpServer entities.
       allOf:

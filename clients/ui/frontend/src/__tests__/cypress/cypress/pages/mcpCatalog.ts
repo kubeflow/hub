@@ -118,6 +118,14 @@ class McpServerDetails {
     return cy.findByTestId('mcp-server-no-readme');
   }
 
+  findServerJsonCard() {
+    return cy.findByTestId('mcp-server-json-card');
+  }
+
+  findServerJsonCode() {
+    return cy.findByTestId('mcp-server-json-code');
+  }
+
   findVersion() {
     return cy.findByTestId('mcp-server-version');
   }

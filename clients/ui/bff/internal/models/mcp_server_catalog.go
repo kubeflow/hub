@@ -175,6 +175,7 @@ type McpServer struct {
 	Endpoints          *McpEndpoints                     `json:"endpoints,omitempty"`
 	RuntimeMetadata    *McpRuntimeMetadata               `json:"runtimeMetadata,omitempty"`
 	CustomProperties   *map[string]openapi.MetadataValue `json:"customProperties,omitempty"`
+	ServerJson         map[string]interface{}            `json:"serverJson,omitempty"`
 }
 
 type McpServerList struct {

@@ -26,6 +26,42 @@ export const mockMcpServer = (partial?: Partial<McpServer>): McpServer => ({
   transports: ['http'],
   tags: ['kubernetes', 'infrastructure'],
   readme: '# Kubernetes MCP Server\n\n### Overview\n\nManage clusters with `kubectl`.',
+  serverJson: {
+    $schema: 'https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json',
+    name: 'kubernetes-mcp-server',
+    description: 'Control and inspect Kubernetes clusters.',
+    title: 'Kubernetes',
+    version: '1.0.0',
+    websiteUrl: 'https://github.com/kubernetes/mcp-server',
+    packages: [
+      {
+        environmentVariables: [
+          {
+            description: 'Path to kubeconfig',
+            isRequired: true,
+            isSecret: true,
+            name: 'KUBECONFIG',
+          },
+        ],
+        identifier: 'ghcr.io/kubernetes/mcp-server:latest',
+        packageArguments: [
+          { type: 'positional', value: 'npx' },
+          { type: 'positional', value: '-y' },
+          { type: 'positional', value: '@cncf/kubernetes-mcp-server' },
+        ],
+        registryType: 'oci',
+        runtimeHint: 'docker',
+        transport: {
+          type: 'streamable-http',
+          url: 'https://kubernetes-mcp-server.demo-namespace.svc.cluster.local:8080',
+        },
+      },
+    ],
+    repository: {
+      source: 'github',
+      url: 'https://github.com/kubernetes/mcp-server',
+    },
+  },
   ...partial,
 });
 
