@@ -2,10 +2,7 @@ import * as React from 'react';
 import { useQueryParamNamespaces } from 'mod-arch-core';
 import useModelCatalogAPIState from '~/app/hooks/modelCatalog/useModelCatalogAPIState';
 import { useCatalogSourcesWithPolling } from './hooks/useCatalogSourcesWithPolling';
-import type {
-  CatalogSettingsContextDefinition,
-  CatalogSettingsContextValue,
-} from './types';
+import type { CatalogSettingsContextDefinition, CatalogSettingsContextValue } from './types';
 
 /**
  * Factory that builds a reusable context-value hook for a catalog settings
@@ -45,19 +42,11 @@ export const createCatalogSettingsContext = <TAPIState, TConfigList>(
       catalogQueryParams,
     );
 
-    const [
-      sourceConfigs,
-      sourceConfigsLoaded,
-      sourceConfigsLoadError,
-      refreshSourceConfigs,
-    ] = contextDef.useSourceConfigsList(apiState);
+    const [sourceConfigs, sourceConfigsLoaded, sourceConfigsLoadError, refreshSourceConfigs] =
+      contextDef.useSourceConfigsList(apiState);
 
-    const [
-      catalogSources,
-      catalogSourcesLoaded,
-      catalogSourcesLoadError,
-      refreshCatalogSources,
-    ] = useCatalogSourcesWithPolling(catalogAPIState);
+    const [catalogSources, catalogSourcesLoaded, catalogSourcesLoadError, refreshCatalogSources] =
+      useCatalogSourcesWithPolling(catalogAPIState);
 
     return React.useMemo(
       () => ({
