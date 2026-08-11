@@ -161,9 +161,9 @@ const ModelDetailsView: React.FC<ModelDetailsViewProps> = ({
                   </CardHeader>
                   <CardBody>
                     <Content component="p" className="pf-v6-u-mb-md">
-                      These runtime arguments have been tested to work with this model. To enable
-                      each capability, copy and paste the arguments into the{' '}
-                      <b>Additional arguments</b> field when deploying.
+                      These runtime arguments have been tested to work with this model. When
+                      deploying, you can select which configurations to apply in the deployment
+                      wizard.
                     </Content>
                     <Card
                       id="tool-calling-card"

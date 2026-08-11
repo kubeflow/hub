@@ -373,6 +373,9 @@ describe('Model Catalog Details Page - Validated Configurations Card', () => {
     it('should display the validated configurations card with tool calling content', () => {
       modelCatalog.findValidatedConfigurationsCard().should('be.visible');
       modelCatalog.findValidatedConfigurationsCard().should('contain.text', 'Validated arguments');
+      modelCatalog
+        .findValidatedConfigurationsCard()
+        .should('contain.text', 'select which configurations to apply in the deployment wizard');
       modelCatalog.findToolCallingCard().should('be.visible');
       modelCatalog.findToolCallingCard().should('contain.text', 'Tool calling');
     });
