@@ -30,6 +30,10 @@ export { default as CatalogGalleryLayout } from './CatalogGalleryLayout';
 export { default as CatalogAllItemsView } from './CatalogAllItemsView';
 export { default as CatalogSourceLabelToggle } from './CatalogSourceLabelToggle';
 export { default as CatalogPageLayout } from './CatalogPageLayout';
+export { default as CatalogActiveFilters } from './CatalogActiveFilters';
+export type { CatalogActiveFiltersProps } from './CatalogActiveFilters';
+export { default as CatalogSourceLabelSelector } from './CatalogSourceLabelSelector';
+export type { CatalogSourceLabelSelectorProps } from './CatalogSourceLabelSelector';
 export {
   isSourceStatusActive,
   filterEnabledCatalogSources,
