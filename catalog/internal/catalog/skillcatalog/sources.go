@@ -1,6 +1,9 @@
 package skillcatalog
 
 import (
+	"maps"
+	"slices"
+	"strings"
 	"sync"
 
 	"github.com/kubeflow/hub/catalog/internal/catalog/basecatalog"
@@ -99,4 +102,45 @@ func (sc *SkillSourceCollection) AllSources() map[string]basecatalog.PluginSourc
 	defer sc.mu.RUnlock()
 
 	return sc.merged()
+}
+
+// ByLabel returns enabled sources that have any of the labels provided.
+// Matching is case-insensitive. If a label is "null", sources without labels are returned.
+func (sc *SkillSourceCollection) ByLabel(labels []string) []basecatalog.PluginSource {
+	sc.mu.RLock()
+	defer sc.mu.RUnlock()
+
+	labelMap := make(map[string]struct{}, len(labels))
+	for _, label := range labels {
+		labelMap[strings.ToLower(label)] = struct{}{}
+	}
+
+	matches := map[string]basecatalog.PluginSource{}
+	sources := sc.merged()
+
+	if _, hasNull := labelMap["null"]; hasNull {
+		for _, source := range sources {
+			if source.Enabled != nil && !*source.Enabled {
+				continue
+			}
+			if len(source.Labels) == 0 {
+				matches[source.ID] = source
+			}
+		}
+	}
+
+OUTER:
+	for _, source := range sources {
+		if source.Enabled != nil && !*source.Enabled {
+			continue
+		}
+		for _, label := range source.Labels {
+			if _, match := labelMap[strings.ToLower(label)]; match {
+				matches[source.ID] = source
+				continue OUTER
+			}
+		}
+	}
+
+	return slices.Collect(maps.Values(matches))
 }

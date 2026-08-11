@@ -10,8 +10,10 @@ import (
 
 	"github.com/golang/glog"
 
+	"github.com/kubeflow/hub/catalog/internal/catalog/basecatalog"
 	"github.com/kubeflow/hub/catalog/internal/catalog/skillcatalog/models"
 	skillservice "github.com/kubeflow/hub/catalog/internal/catalog/skillcatalog/service"
+	sharedmodels "github.com/kubeflow/hub/catalog/internal/db/models"
 	openapi "github.com/kubeflow/hub/catalog/pkg/openapi"
 	"github.com/kubeflow/hub/internal/platform/apiutils"
 	dbmodels "github.com/kubeflow/hub/internal/platform/db/entity"
@@ -20,19 +22,22 @@ import (
 
 // DBSkillCatalog serves skill catalog reads from the datastore.
 type DBSkillCatalog struct {
-	skillRepo models.SkillRepository
+	skillRepo                 models.SkillRepository
+	propertyOptionsRepository sharedmodels.PropertyOptionsRepository
 }
 
 // NewDBSkillCatalog creates a skill catalog provider backed by the datastore.
 func NewDBSkillCatalog(services Services) *DBSkillCatalog {
 	return &DBSkillCatalog{
-		skillRepo: services.SkillRepository,
+		skillRepo:                 services.SkillRepository,
+		propertyOptionsRepository: services.PropertyOptionsRepository,
 	}
 }
 
 // ListSkillsParams carries the list/query parameters for skills.
-// name/q filtering and sourceLabel resolution are added with the query API (SKC-108).
 type ListSkillsParams struct {
+	Name          string
+	Query         string
 	SourceIDs     []string
 	FilterQuery   string
 	PageSize      int32
@@ -41,16 +46,45 @@ type ListSkillsParams struct {
 	NextPageToken *string
 }
 
-// GetFilterOptions returns the filterable fields for skills. Entity-specific
-// options are populated once fields are persisted (SKC-108).
+// GetFilterOptions returns the filterable fields and their known values for skills.
 func (d *DBSkillCatalog) GetFilterOptions(_ context.Context) (*openapi.FilterOptionsList, error) {
-	options := make(map[string]openapi.FilterOption)
+	skillTypeID := d.skillRepo.GetTypeID()
+
+	contextProperties, err := d.propertyOptionsRepository.List(sharedmodels.ContextPropertyOptionType, skillTypeID)
+	if err != nil {
+		return nil, err
+	}
+
+	options := make(map[string]openapi.FilterOption, len(contextProperties))
+
+	for _, prop := range contextProperties {
+		// Identity/free-text fields with no meaningful enumeration, the internal
+		// sync digest, and fields already reachable through a dedicated list
+		// parameter (name, source_id) are not surfaced in filter_options.
+		switch prop.Name {
+		case propSkillName, propSourceID, propRepository, propPath, propSkillVersion,
+			propResolvedCommit, propReadme, propDescription, propSupportingFiles, propBodyLineCount, propConfigDigest:
+			continue
+		}
+
+		option := basecatalog.DbPropToAPIOption(prop)
+		if option != nil {
+			options[prop.FullName("")] = *option
+		}
+	}
+
 	return &openapi.FilterOptionsList{Filters: &options}, nil
 }
 
 // ListSkills returns a paginated list of skills.
 func (d *DBSkillCatalog) ListSkills(_ context.Context, params ListSkillsParams) (openapi.SkillList, error) {
 	listOptions := models.SkillListOptions{}
+	if params.Name != "" {
+		listOptions.Name = &params.Name
+	}
+	if params.Query != "" {
+		listOptions.Query = &params.Query
+	}
 	if len(params.SourceIDs) > 0 {
 		listOptions.SourceIDs = &params.SourceIDs
 	}

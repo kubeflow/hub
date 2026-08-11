@@ -8,6 +8,8 @@ import (
 // SkillListOptions holds the options for listing Skill entities.
 type SkillListOptions struct {
 	dbmodels.Pagination
+	Name        *string
+	Query       *string
 	SourceIDs   *[]string
 	FilterQuery *string
 }

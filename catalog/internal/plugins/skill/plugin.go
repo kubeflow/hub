@@ -33,7 +33,7 @@ func (p *Plugin) Migrations() []plugin.Migration { return nil }
 func (p *Plugin) DatastoreEntries() []plugin.DatastoreEntry {
 	return []plugin.DatastoreEntry{
 		{
-			TypeName: "kf.Skill",
+			TypeName: skillservice.SkillTypeName,
 			Category: "context",
 			// Property names/kinds come from skillcatalog's shared field table so the
 			// datastore schema can't drift from the loader's writer and API mapper.
@@ -84,7 +84,7 @@ func (p *Plugin) Init(_ context.Context, cfg plugin.Config) error {
 func (p *Plugin) RegisterRoutes(router chi.Router) error {
 	provider := skillcatalog.NewDBSkillCatalog(p.services)
 	ctrl := openapi.NewSkillCatalogServiceAPIController(
-		openapi.NewSkillCatalogServiceAPIService(provider),
+		openapi.NewSkillCatalogServiceAPIService(provider, p.loader.SourceCollection()),
 	)
 
 	for _, route := range ctrl.OrderedRoutes() {

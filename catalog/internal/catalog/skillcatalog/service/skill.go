@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/kubeflow/hub/catalog/internal/catalog/skillcatalog/models"
 	"github.com/kubeflow/hub/catalog/internal/db/pagination"
@@ -16,6 +17,9 @@ import (
 )
 
 var ErrSkillNotFound = errors.New("skill not found")
+
+// SkillTypeName is the datastore Context type name for skill entities.
+const SkillTypeName = "kf.Skill"
 
 // SkillRepositoryImpl implements SkillRepository using GORM.
 type SkillRepositoryImpl struct {
@@ -141,9 +145,55 @@ func mapSkillToProperties(entity models.Skill, contextID int32) []schema.Context
 	return properties
 }
 
-// applySkillListFilters applies list filters to the query. Filtering is a no-op
-// for now; entity-specific filters are added with the query API (SKC-108).
-func applySkillListFilters(query *gorm.DB, _ *models.SkillListOptions) *gorm.DB {
+// applySkillListFilters applies the name/q/source list parameters to the query.
+// filterQuery is applied separately by the generic repository via FilterApplier.
+func applySkillListFilters(query *gorm.DB, listOptions *models.SkillListOptions) *gorm.DB {
+	contextTable := utils.GetTableName(query.Statement.DB, &schema.Context{})
+	propertyTable := utils.GetTableName(query.Statement.DB, &schema.ContextProperty{})
+
+	// Name is passed through as-is: the caller supplies the SQL LIKE pattern
+	// (per the OpenAPI description), matching the mcpcatalog convention.
+	// is_custom_property = false excludes a same-named customProperty (e.g. a
+	// SKILL.md frontmatter metadata key literally called "name", which
+	// customPropertiesFromMetadata does not guard against) — without it, a
+	// colliding custom property's value could satisfy the LIKE pattern and
+	// produce a false-positive match.
+	if listOptions.Name != nil {
+		query = query.Where(
+			fmt.Sprintf("EXISTS (SELECT 1 FROM %s cp WHERE cp.context_id = %s.id AND cp.name = ? AND cp.is_custom_property = ? AND cp.string_value LIKE ?)", propertyTable, contextTable),
+			"name", false, *listOptions.Name,
+		)
+	}
+
+	// q searches name, description, and readme, per the KEP execution plan (SKC-108).
+	// Same is_custom_property = false guard as above, applied to all three fields.
+	if listOptions.Query != nil && *listOptions.Query != "" {
+		queryPattern := fmt.Sprintf("%%%s%%", strings.ToLower(*listOptions.Query))
+		query = query.Where(
+			fmt.Sprintf("EXISTS (SELECT 1 FROM %s cp WHERE cp.context_id = %s.id AND cp.name IN (?, ?, ?) AND cp.is_custom_property = ? AND LOWER(cp.string_value) LIKE ?)", propertyTable, contextTable),
+			"name", "description", "readme", false, queryPattern,
+		)
+	}
+
+	var nonEmptySourceIDs []string
+	if listOptions.SourceIDs != nil {
+		for _, sourceID := range *listOptions.SourceIDs {
+			if sourceID != "" {
+				nonEmptySourceIDs = append(nonEmptySourceIDs, sourceID)
+			}
+		}
+	}
+
+	if len(nonEmptySourceIDs) > 0 {
+		// is_custom_property = false excludes a same-named customProperty (e.g. a
+		// SKILL.md frontmatter metadata key literally called "source_id", which
+		// customPropertiesFromMetadata does not guard against) — without it, a
+		// colliding row would duplicate the skill in the joined result set.
+		joinClause := fmt.Sprintf("JOIN %s cp ON cp.context_id = %s.id", propertyTable, contextTable)
+		query = query.Joins(joinClause).
+			Where("cp.name = ? AND cp.is_custom_property = ? AND cp.string_value IN ?", "source_id", false, nonEmptySourceIDs)
+	}
+
 	return query
 }
 

@@ -172,6 +172,12 @@ func (l *SkillLoader) AllSources() map[string]basecatalog.PluginSource {
 	return l.sources.AllSources()
 }
 
+// SourceCollection returns the loader's underlying source collection, used to
+// resolve sourceLabel query params to source IDs.
+func (l *SkillLoader) SourceCollection() *SkillSourceCollection {
+	return l.sources
+}
+
 func (l *SkillLoader) setCloser(closer func()) {
 	l.closerMu.Lock()
 	defer l.closerMu.Unlock()

@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/kubeflow/hub/catalog/internal/catalog/skillcatalog"
@@ -13,13 +14,14 @@ import (
 // delegating to the skill catalog DB provider.
 type SkillCatalogServiceAPIService struct {
 	provider *skillcatalog.DBSkillCatalog
+	sources  *skillcatalog.SkillSourceCollection
 }
 
 var _ SkillCatalogServiceAPIServicer = &SkillCatalogServiceAPIService{}
 
 // NewSkillCatalogServiceAPIService creates a skill catalog API service.
-func NewSkillCatalogServiceAPIService(provider *skillcatalog.DBSkillCatalog) SkillCatalogServiceAPIServicer {
-	return &SkillCatalogServiceAPIService{provider: provider}
+func NewSkillCatalogServiceAPIService(provider *skillcatalog.DBSkillCatalog, sources *skillcatalog.SkillSourceCollection) SkillCatalogServiceAPIServicer {
+	return &SkillCatalogServiceAPIService{provider: provider, sources: sources}
 }
 
 // FindSkills lists skills.
@@ -33,12 +35,34 @@ func (s *SkillCatalogServiceAPIService) FindSkills(ctx context.Context, name str
 	if len(source) == 1 && source[0] == "" {
 		source = nil
 	}
+	if len(sourceLabel) == 1 && sourceLabel[0] == "" {
+		sourceLabel = nil
+	}
 
-	// NOTE: the name, q, and sourceLabel parameters are wired with the query API
-	// (SKC-108); they are accepted but not yet applied so the endpoint serves in
-	// the meantime.
+	if len(source) > 0 && len(sourceLabel) > 0 {
+		err := fmt.Errorf("source and sourceLabel cannot be used together")
+		return ErrorResponse(http.StatusBadRequest, err), err
+	}
+
+	sourceIDs := source
+	if len(sourceIDs) == 0 && len(sourceLabel) > 0 && s.sources != nil {
+		matched := s.sources.ByLabel(sourceLabel)
+		if len(matched) == 0 {
+			return Response(http.StatusOK, model.SkillList{
+				Items:    []model.Skill{},
+				PageSize: pageSizeInt,
+			}), nil
+		}
+		sourceIDs = make([]string, len(matched))
+		for i, src := range matched {
+			sourceIDs[i] = src.ID
+		}
+	}
+
 	params := skillcatalog.ListSkillsParams{
-		SourceIDs:     source,
+		Name:          name,
+		Query:         q,
+		SourceIDs:     sourceIDs,
 		FilterQuery:   filterQuery,
 		PageSize:      pageSizeInt,
 		OrderBy:       orderBy,
