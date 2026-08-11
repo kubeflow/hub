@@ -9,6 +9,8 @@ import { hasFiltersApplied } from '~/app/pages/modelCatalog/utils/modelCatalogUt
 import ModelCatalogSortDropdown from '~/app/pages/modelCatalog/components/ModelCatalogSortDropdown';
 import ModelCatalogSourceLabelBlocks from './ModelCatalogSourceLabelBlocks';
 
+const noop = (): void => undefined;
+
 type ModelCatalogSourceLabelSelectorProps = {
   searchTerm?: string;
   onSearch?: (term: string) => void;
@@ -74,17 +76,12 @@ const ModelCatalogSourceLabelSelector: React.FC<ModelCatalogSourceLabelSelectorP
 
   const shouldShowAlert = performanceViewEnabled && performanceFiltersChangedOnDetailsPage;
 
-  // Without reset handlers the shared shell still needs safe no-ops for required props.
-  const handleSearch = onSearch ?? (() => undefined);
-  const handleClearSearch = onClearSearch ?? (() => undefined);
-  const handleResetAllFilters = onResetAllFilters ?? (() => undefined);
-
   return (
     <CatalogSourceLabelSelector
       searchTerm={searchTerm || ''}
-      onSearch={handleSearch}
-      onClearSearch={handleClearSearch}
-      onResetAllFilters={handleResetAllFilters}
+      onSearch={onSearch ?? noop}
+      onClearSearch={onClearSearch ?? noop}
+      onResetAllFilters={onResetAllFilters ?? noop}
       hasFiltersApplied={hasActiveFilters}
       showResetAllButton={
         Boolean(onResetAllFilters) && !performanceViewEnabled && hasBasicFiltersApplied

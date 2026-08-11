@@ -104,15 +104,14 @@ describe('CatalogActiveFilters', () => {
     expect(updater({ framework: ['langgraph'] })).toEqual({ framework: [] });
   });
 
-  it('keeps ToolbarFilter mounted with empty labels when forceHideLabels is true', () => {
+  it('keeps ToolbarFilter mounted with empty labels when a category has no values', () => {
     renderWithToolbar(
       <CatalogActiveFilters
         filterKeys={FILTER_KEYS}
         categoryNames={CATEGORY_NAMES}
-        filters={{ framework: ['langgraph'] }}
+        filters={{ framework: [] }}
         setFilters={jest.fn()}
         testIdPrefix="test-filter"
-        forceHideLabels
       />,
     );
 

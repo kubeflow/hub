@@ -17,11 +17,6 @@ export type CatalogActiveFiltersProps<TFilterKey extends string> = {
    * `${testIdPrefix}-chip-${filterKey}-${value}` and `${testIdPrefix}-container-${filterKey}`.
    */
   testIdPrefix: string;
-  /**
-   * Force empty labels on all ToolbarFilter instances (PF #12247 workaround).
-   * Keeps filters mounted so the parent Toolbar filter count stays correct.
-   */
-  forceHideLabels?: boolean;
 };
 
 function CatalogActiveFilters<TFilterKey extends string>({
@@ -31,7 +26,6 @@ function CatalogActiveFilters<TFilterKey extends string>({
   setFilters,
   labelMappings,
   testIdPrefix,
-  forceHideLabels = false,
 }: CatalogActiveFiltersProps<TFilterKey>): React.ReactElement {
   const handleRemoveFilter = React.useCallback(
     (categoryKey: TFilterKey, valueKey: string) => {
@@ -59,17 +53,16 @@ function CatalogActiveFilters<TFilterKey extends string>({
         const hasValue = values.length > 0;
         const labelMapping = labelMappings?.[filterKey];
 
-        const labels: ToolbarLabel[] =
-          hasValue && !forceHideLabels
-            ? values.map((value) => ({
-                key: value,
-                node: (
-                  <span data-testid={`${testIdPrefix}-chip-${filterKey}-${value}`}>
-                    {labelMapping?.[value] || value}
-                  </span>
-                ),
-              }))
-            : [];
+        const labels: ToolbarLabel[] = hasValue
+          ? values.map((value) => ({
+              key: value,
+              node: (
+                <span data-testid={`${testIdPrefix}-chip-${filterKey}-${value}`}>
+                  {labelMapping?.[value] || value}
+                </span>
+              ),
+            }))
+          : [];
 
         const categoryLabelGroup: ToolbarLabelGroup = {
           key: filterKey,

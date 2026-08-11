@@ -93,10 +93,6 @@ const CatalogSourceLabelSelector: React.FC<CatalogSourceLabelSelectorProps> = ({
     }
   }, [inputValue, searchTerm, onSearch]);
 
-  const handleClear = React.useCallback(() => {
-    onClearSearch();
-  }, [onClearSearch]);
-
   const handleSearchInputChange = React.useCallback((value: string) => {
     setInputValue(value);
   }, []);
@@ -144,7 +140,7 @@ const CatalogSourceLabelSelector: React.FC<CatalogSourceLabelSelectorProps> = ({
                       value={inputValue}
                       onChange={handleSearchInputChange}
                       onSearch={handleSearchInputSearch}
-                      onClear={handleClear}
+                      onClear={onClearSearch}
                     />
                   </ToolbarItem>
                   <ToolbarItem>
