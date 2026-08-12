@@ -861,6 +861,53 @@ func TestMCPSourceCollection_GetNamedQuery_SliceDeepCopy(t *testing.T) {
 	assert.Equal(t, "active", filters2["status"].Value.([]any)[0])
 }
 
+func TestMCPSourceCollection_MergeWithNamedQueries_InputMutationIsolation(t *testing.T) {
+	t.Run("mutating input map after MergeWithNamedQueries does not affect stored state", func(t *testing.T) {
+		coll := NewMCPSourceCollection()
+		sources := map[string]basecatalog.MCPSource{}
+		queries := map[string]map[string]basecatalog.FieldFilter{
+			"my_query": {
+				"status": {Operator: "=", Value: "active"},
+			},
+		}
+
+		require.NoError(t, coll.MergeWithNamedQueries("origin", sources, queries))
+
+		// Mutate the input maps after merge
+		queries["my_query"]["status"] = basecatalog.FieldFilter{Operator: "!=", Value: "mutated"}
+		queries["injected"] = map[string]basecatalog.FieldFilter{
+			"field": {Operator: "=", Value: "injected"},
+		}
+
+		// Internal state must be unchanged
+		result := coll.GetNamedQueries()
+		require.Len(t, result, 1)
+		assert.NotContains(t, result, "injected")
+		assert.Equal(t, "=", result["my_query"]["status"].Operator)
+		assert.Equal(t, "active", result["my_query"]["status"].Value)
+	})
+
+	t.Run("mutating input slice Value after MergeWithNamedQueries does not affect stored state", func(t *testing.T) {
+		coll := NewMCPSourceCollection()
+		sources := map[string]basecatalog.MCPSource{}
+		sliceVal := []any{"active", "beta"}
+		queries := map[string]map[string]basecatalog.FieldFilter{
+			"in_query": {
+				"status": {Operator: "IN", Value: sliceVal},
+			},
+		}
+
+		require.NoError(t, coll.MergeWithNamedQueries("origin", sources, queries))
+
+		// Mutate the original slice after merge
+		sliceVal[0] = "mutated"
+
+		// Internal state must be unchanged
+		result := coll.GetNamedQueries()
+		assert.Equal(t, "active", result["in_query"]["status"].Value.([]any)[0])
+	})
+}
+
 func TestMCPSourceCollection_ByLabel(t *testing.T) {
 	makeCollection := func(sources map[string]basecatalog.MCPSource) *MCPSourceCollection {
 		coll := NewMCPSourceCollection()
@@ -952,6 +999,115 @@ func TestMCPSourceCollection_Merge_WithoutNamedQueries(t *testing.T) {
 	all := coll.AllSources()
 	assert.Contains(t, all, "src1")
 	assert.Empty(t, coll.GetNamedQueries())
+}
+
+func TestMCPSourceCollection_NamedQueriesClearedOnMerge(t *testing.T) {
+	t.Run("Merge clears named queries from same origin", func(t *testing.T) {
+		coll := NewMCPSourceCollection()
+		sources := map[string]basecatalog.MCPSource{
+			"src1": {ID: "src1", Name: "Source 1", Type: "yaml"},
+		}
+		queries := map[string]map[string]basecatalog.FieldFilter{
+			"production_ready": {
+				"verified": {Operator: "=", Value: true},
+			},
+		}
+
+		// First, merge with named queries
+		err := coll.MergeWithNamedQueries("origin1", sources, queries)
+		require.NoError(t, err)
+		require.Len(t, coll.GetNamedQueries(), 1)
+
+		// Now re-merge the same origin without named queries (simulates config update)
+		err = coll.Merge("origin1", sources)
+		require.NoError(t, err)
+
+		// Named queries from origin1 should be cleared
+		assert.Empty(t, coll.GetNamedQueries())
+	})
+
+	t.Run("Merge only clears named queries from its own origin", func(t *testing.T) {
+		coll := NewMCPSourceCollection()
+		sources := map[string]basecatalog.MCPSource{}
+
+		// Origin A contributes a named query
+		queriesA := map[string]map[string]basecatalog.FieldFilter{
+			"queryA": {"field": {Operator: "=", Value: "a"}},
+		}
+		require.NoError(t, coll.MergeWithNamedQueries("originA", sources, queriesA))
+
+		// Origin B contributes a different named query
+		queriesB := map[string]map[string]basecatalog.FieldFilter{
+			"queryB": {"field": {Operator: "=", Value: "b"}},
+		}
+		require.NoError(t, coll.MergeWithNamedQueries("originB", sources, queriesB))
+
+		require.Len(t, coll.GetNamedQueries(), 2)
+
+		// Re-merge originA without named queries
+		require.NoError(t, coll.Merge("originA", sources))
+
+		// Only queryA should be removed; queryB should remain
+		result := coll.GetNamedQueries()
+		assert.Len(t, result, 1)
+		assert.Contains(t, result, "queryB")
+		assert.NotContains(t, result, "queryA")
+	})
+
+	t.Run("MergeWithNamedQueries replaces previous named queries from same origin", func(t *testing.T) {
+		coll := NewMCPSourceCollection()
+		sources := map[string]basecatalog.MCPSource{}
+
+		// Origin A contributes initial named queries
+		queriesV1 := map[string]map[string]basecatalog.FieldFilter{
+			"old_query": {"field": {Operator: "=", Value: "old"}},
+		}
+		require.NoError(t, coll.MergeWithNamedQueries("originA", sources, queriesV1))
+		require.Contains(t, coll.GetNamedQueries(), "old_query")
+
+		// Origin A re-parses with different named queries
+		queriesV2 := map[string]map[string]basecatalog.FieldFilter{
+			"new_query": {"field": {Operator: "=", Value: "new"}},
+		}
+		require.NoError(t, coll.MergeWithNamedQueries("originA", sources, queriesV2))
+
+		// old_query should be gone, new_query should be present
+		result := coll.GetNamedQueries()
+		assert.Len(t, result, 1)
+		assert.NotContains(t, result, "old_query")
+		assert.Contains(t, result, "new_query")
+	})
+
+	t.Run("cross-origin field-level merge still works after clear", func(t *testing.T) {
+		coll := NewMCPSourceCollection()
+		sources := map[string]basecatalog.MCPSource{}
+
+		// Origin A sets field "rating" on query "quality"
+		queriesA := map[string]map[string]basecatalog.FieldFilter{
+			"quality": {"rating": {Operator: ">=", Value: 3}},
+		}
+		require.NoError(t, coll.MergeWithNamedQueries("originA", sources, queriesA))
+
+		// Origin B sets field "verified" on query "quality"
+		queriesB := map[string]map[string]basecatalog.FieldFilter{
+			"quality": {"verified": {Operator: "=", Value: true}},
+		}
+		require.NoError(t, coll.MergeWithNamedQueries("originB", sources, queriesB))
+
+		// Both fields should be present
+		result := coll.GetNamedQueries()
+		assert.Len(t, result["quality"], 2)
+
+		// Clear origin A's queries
+		require.NoError(t, coll.Merge("originA", sources))
+
+		// Only origin B's "verified" field should remain
+		result = coll.GetNamedQueries()
+		require.Len(t, result, 1)
+		assert.Len(t, result["quality"], 1)
+		assert.Contains(t, result["quality"], "verified")
+		assert.NotContains(t, result["quality"], "rating")
+	})
 }
 
 func TestMergeMCPSources_IncludedExcludedServers(t *testing.T) {

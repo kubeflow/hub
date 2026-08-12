@@ -17,9 +17,9 @@ type agentOriginEntry struct {
 
 // AgentSourceCollection manages agent catalog sources from multiple origins with priority-based merging.
 type AgentSourceCollection struct {
-	mu           sync.RWMutex
-	entries      []agentOriginEntry
-	namedQueries map[string]map[string]basecatalog.FieldFilter
+	mu                sync.RWMutex
+	entries           []agentOriginEntry
+	namedQueryEntries map[string]map[string]map[string]basecatalog.FieldFilter // origin -> queryName -> fieldName -> FieldFilter
 }
 
 func NewAgentSourceCollection(originOrder ...string) *AgentSourceCollection {
@@ -28,15 +28,42 @@ func NewAgentSourceCollection(originOrder ...string) *AgentSourceCollection {
 		entries[i] = agentOriginEntry{origin: origin, sources: nil}
 	}
 	return &AgentSourceCollection{
-		entries:      entries,
-		namedQueries: make(map[string]map[string]basecatalog.FieldFilter),
+		entries:           entries,
+		namedQueryEntries: make(map[string]map[string]map[string]basecatalog.FieldFilter),
 	}
 }
 
+// Merge adds sources from one origin, completely replacing anything that was
+// previously from that origin. Any named queries previously contributed by
+// this origin are cleared.
 func (sc *AgentSourceCollection) Merge(origin string, sources map[string]basecatalog.PluginSource) error {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
 
+	// Clear any previously contributed named queries for this origin
+	delete(sc.namedQueryEntries, origin)
+
+	return sc.mergeSourcesInternal(origin, sources)
+}
+
+// MergeWithNamedQueries adds sources and named queries from one origin.
+// Later origins override earlier ones at the field level within a query.
+func (sc *AgentSourceCollection) MergeWithNamedQueries(origin string, sources map[string]basecatalog.PluginSource, namedQueries map[string]map[string]basecatalog.FieldFilter) error {
+	sc.mu.Lock()
+	defer sc.mu.Unlock()
+
+	if err := sc.mergeSourcesInternal(origin, sources); err != nil {
+		return err
+	}
+
+	// Deep-copy and store named queries for this origin (clears any previously contributed entries)
+	sc.namedQueryEntries[origin] = basecatalog.CloneNamedQueries(namedQueries)
+
+	return nil
+}
+
+// mergeSourcesInternal performs the source merge. Must be called with lock held.
+func (sc *AgentSourceCollection) mergeSourcesInternal(origin string, sources map[string]basecatalog.PluginSource) error {
 	for i := range sc.entries {
 		if sc.entries[i].origin == origin {
 			sc.entries[i].sources = sources
@@ -48,32 +75,23 @@ func (sc *AgentSourceCollection) Merge(origin string, sources map[string]basecat
 	return nil
 }
 
-func (sc *AgentSourceCollection) MergeWithNamedQueries(origin string, sources map[string]basecatalog.PluginSource, namedQueries map[string]map[string]basecatalog.FieldFilter) error {
-	if err := sc.Merge(origin, sources); err != nil {
-		return err
+// mergedNamedQueries computes the merged view of all named queries across origins.
+// Later origins (by entry order) override earlier ones at the field level.
+// Must be called with lock held.
+func (sc *AgentSourceCollection) mergedNamedQueries() map[string]map[string]basecatalog.FieldFilter {
+	originOrder := make([]string, len(sc.entries))
+	for i, entry := range sc.entries {
+		originOrder[i] = entry.origin
 	}
-
-	sc.mu.Lock()
-	defer sc.mu.Unlock()
-	for queryName, fieldFilters := range namedQueries {
-		if sc.namedQueries[queryName] == nil {
-			sc.namedQueries[queryName] = make(map[string]basecatalog.FieldFilter)
-		}
-		maps.Copy(sc.namedQueries[queryName], fieldFilters)
-	}
-	return nil
+	return basecatalog.MergeNamedQueriesInOrder(originOrder, sc.namedQueryEntries)
 }
 
+// GetNamedQueries returns a deep copy of all merged named queries.
 func (sc *AgentSourceCollection) GetNamedQueries() map[string]map[string]basecatalog.FieldFilter {
 	sc.mu.RLock()
 	defer sc.mu.RUnlock()
 
-	result := make(map[string]map[string]basecatalog.FieldFilter, len(sc.namedQueries))
-	for queryName, fieldFilters := range sc.namedQueries {
-		result[queryName] = make(map[string]basecatalog.FieldFilter, len(fieldFilters))
-		maps.Copy(result[queryName], fieldFilters)
-	}
-	return result
+	return basecatalog.CloneNamedQueries(sc.mergedNamedQueries())
 }
 
 func (sc *AgentSourceCollection) merged() map[string]basecatalog.PluginSource {

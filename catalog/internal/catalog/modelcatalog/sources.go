@@ -19,9 +19,9 @@ type originEntry struct {
 // SourceCollection manages catalog sources from multiple origins with priority-based merging.
 // Later entries in the slice take precedence over earlier ones.
 type SourceCollection struct {
-	mu           sync.RWMutex
-	entries      []originEntry
-	namedQueries map[string]map[string]basecatalog.FieldFilter
+	mu                sync.RWMutex
+	entries           []originEntry
+	namedQueryEntries map[string]map[string]map[string]basecatalog.FieldFilter // origin -> queryName -> fieldName -> FieldFilter
 }
 
 // NewSourceCollection creates a new SourceCollection with the given origin order.
@@ -34,8 +34,8 @@ func NewSourceCollection(originOrder ...string) *SourceCollection {
 		entries[i] = originEntry{origin: origin, sources: nil}
 	}
 	return &SourceCollection{
-		entries:      entries,
-		namedQueries: make(map[string]map[string]basecatalog.FieldFilter),
+		entries:           entries,
+		namedQueryEntries: make(map[string]map[string]map[string]basecatalog.FieldFilter),
 	}
 }
 
@@ -50,6 +50,10 @@ func NewSourceCollection(originOrder ...string) *SourceCollection {
 func (sc *SourceCollection) Merge(origin string, sources map[string]basecatalog.ModelSource) error {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
+
+	// Clear any previously contributed named queries for this origin
+	delete(sc.namedQueryEntries, origin)
+
 	return sc.mergeSourcesInternal(origin, sources)
 }
 
@@ -63,13 +67,8 @@ func (sc *SourceCollection) MergeWithNamedQueries(origin string, sources map[str
 		return err
 	}
 
-	// Merge named queries (later origins override earlier ones)
-	for queryName, fieldFilters := range namedQueries {
-		if sc.namedQueries[queryName] == nil {
-			sc.namedQueries[queryName] = make(map[string]basecatalog.FieldFilter)
-		}
-		maps.Copy(sc.namedQueries[queryName], fieldFilters)
-	}
+	// Deep-copy and store named queries for this origin (clears any previously contributed entries)
+	sc.namedQueryEntries[origin] = basecatalog.CloneNamedQueries(namedQueries)
 
 	return nil
 }
@@ -89,18 +88,23 @@ func (sc *SourceCollection) mergeSourcesInternal(origin string, sources map[stri
 	return nil
 }
 
+// mergedNamedQueries computes the merged view of all named queries across origins.
+// Later origins (by entry order) override earlier ones at the field level.
+// Must be called with lock held.
+func (sc *SourceCollection) mergedNamedQueries() map[string]map[string]basecatalog.FieldFilter {
+	originOrder := make([]string, len(sc.entries))
+	for i, entry := range sc.entries {
+		originOrder[i] = entry.origin
+	}
+	return basecatalog.MergeNamedQueriesInOrder(originOrder, sc.namedQueryEntries)
+}
+
 // GetNamedQueries returns all merged named queries
 func (sc *SourceCollection) GetNamedQueries() map[string]map[string]basecatalog.FieldFilter {
 	sc.mu.RLock()
 	defer sc.mu.RUnlock()
 
-	// Return a copy to prevent external modification
-	result := make(map[string]map[string]basecatalog.FieldFilter, len(sc.namedQueries))
-	for queryName, fieldFilters := range sc.namedQueries {
-		result[queryName] = make(map[string]basecatalog.FieldFilter, len(fieldFilters))
-		maps.Copy(result[queryName], fieldFilters)
-	}
-	return result
+	return basecatalog.CloneNamedQueries(sc.mergedNamedQueries())
 }
 
 // mergeSources performs field-level merging of two Source structs.
