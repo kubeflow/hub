@@ -6,6 +6,7 @@
 catalog/clients/python/src/catalog_openapi/__init__.py linguist-generated=true
 catalog/clients/python/src/catalog_openapi/api/mcp_catalog_service_api.py linguist-generated=true
 catalog/clients/python/src/catalog_openapi/api/model_catalog_service_api.py linguist-generated=true
+catalog/clients/python/src/catalog_openapi/api/skill_catalog_service_api.py linguist-generated=true
 catalog/clients/python/src/catalog_openapi/api_client.py linguist-generated=true
 catalog/clients/python/src/catalog_openapi/configuration.py linguist-generated=true
 catalog/clients/python/src/catalog_openapi/exceptions.py linguist-generated=true
@@ -66,6 +67,9 @@ catalog/clients/python/src/catalog_openapi/models/metadata_struct_value.py lingu
 catalog/clients/python/src/catalog_openapi/models/metadata_value.py linguist-generated=true
 catalog/clients/python/src/catalog_openapi/models/model_preview_result.py linguist-generated=true
 catalog/clients/python/src/catalog_openapi/models/order_by_field.py linguist-generated=true
+catalog/clients/python/src/catalog_openapi/models/skill.py linguist-generated=true
+catalog/clients/python/src/catalog_openapi/models/skill_list.py linguist-generated=true
+catalog/clients/python/src/catalog_openapi/models/skill_trust_tier.py linguist-generated=true
 catalog/clients/python/src/catalog_openapi/models/sort_order.py linguist-generated=true
 catalog/clients/python/src/catalog_openapi/rest.py linguist-generated=true
 catalog/internal/server/openapi/api_agent.go linguist-generated=true

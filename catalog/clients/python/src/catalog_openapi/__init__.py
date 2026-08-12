@@ -20,6 +20,7 @@ __version__ = "1.0.0"
 __all__ = [
     "MCPCatalogServiceApi",
     "ModelCatalogServiceApi",
+    "SkillCatalogServiceApi",
     "ApiResponse",
     "ApiClient",
     "Configuration",
@@ -85,12 +86,16 @@ __all__ = [
     "MetadataValue",
     "ModelPreviewResult",
     "OrderByField",
+    "Skill",
+    "SkillList",
+    "SkillTrustTier",
     "SortOrder",
 ]
 
 # import apis into sdk package
 from catalog_openapi.api.mcp_catalog_service_api import MCPCatalogServiceApi as MCPCatalogServiceApi
 from catalog_openapi.api.model_catalog_service_api import ModelCatalogServiceApi as ModelCatalogServiceApi
+from catalog_openapi.api.skill_catalog_service_api import SkillCatalogServiceApi as SkillCatalogServiceApi
 
 # import ApiClient
 from catalog_openapi.api_response import ApiResponse as ApiResponse
@@ -160,5 +165,8 @@ from catalog_openapi.models.metadata_struct_value import MetadataStructValue as 
 from catalog_openapi.models.metadata_value import MetadataValue as MetadataValue
 from catalog_openapi.models.model_preview_result import ModelPreviewResult as ModelPreviewResult
 from catalog_openapi.models.order_by_field import OrderByField as OrderByField
+from catalog_openapi.models.skill import Skill as Skill
+from catalog_openapi.models.skill_list import SkillList as SkillList
+from catalog_openapi.models.skill_trust_tier import SkillTrustTier as SkillTrustTier
 from catalog_openapi.models.sort_order import SortOrder as SortOrder
 

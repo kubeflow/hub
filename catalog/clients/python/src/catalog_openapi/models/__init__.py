@@ -69,5 +69,8 @@ from catalog_openapi.models.metadata_struct_value import MetadataStructValue
 from catalog_openapi.models.metadata_value import MetadataValue
 from catalog_openapi.models.model_preview_result import ModelPreviewResult
 from catalog_openapi.models.order_by_field import OrderByField
+from catalog_openapi.models.skill import Skill
+from catalog_openapi.models.skill_list import SkillList
+from catalog_openapi.models.skill_trust_tier import SkillTrustTier
 from catalog_openapi.models.sort_order import SortOrder
 

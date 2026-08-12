@@ -41,6 +41,19 @@ def _encode_path_param(value: str) -> str:
     return quote(value, safe="")
 
 
+def _as_str_list(value: str | list[str] | None) -> list[str] | None:
+    """Normalize a single-value-or-list query param to a list, or None.
+
+    An empty string or empty list is treated the same as None (no filter),
+    matching how other list-style query params in this client behave.
+    """
+    if not value:
+        return None
+    if isinstance(value, str):
+        return [value]
+    return value
+
+
 # Type variable for generic function return types
 T = TypeVar("T")
 
@@ -217,6 +230,7 @@ class CatalogAPIClient:
             from catalog_openapi import ApiClient, Configuration
             from catalog_openapi.api.mcp_catalog_service_api import MCPCatalogServiceApi
             from catalog_openapi.api.model_catalog_service_api import ModelCatalogServiceApi
+            from catalog_openapi.api.skill_catalog_service_api import SkillCatalogServiceApi
         except ImportError as e:
             msg = (
                 "Generated catalog_openapi client not found. "
@@ -237,6 +251,7 @@ class CatalogAPIClient:
         self._configure_timeout(config, timeout)
         self.catalog_api = ModelCatalogServiceApi(self.api_client)
         self.mcp_api = MCPCatalogServiceApi(self.api_client)
+        self.skill_api = SkillCatalogServiceApi(self.api_client)
 
     def _validate_base_url(self, base_url: str) -> None:
         """Validate the base URL parameter."""
@@ -655,6 +670,73 @@ class CatalogAPIClient:
             page_size=page_size_str,
             next_page_token=next_page_token,
         )
+        return response.to_dict()
+
+    @_handle_api_errors
+    def get_skills(
+        self,
+        name: str | None = None,
+        q: str | None = None,
+        source: str | list[str] | None = None,
+        source_label: str | list[str] | None = None,
+        filter_query: str | None = None,
+        order_by: str | None = None,
+        sort_order: str | None = None,
+        page_size: int | None = None,
+        next_page_token: str | None = None,
+    ) -> dict[str, Any]:
+        """Get skills from the skill catalog.
+
+        Args:
+            name: Filter by skill name using SQL LIKE pattern matching.
+            q: Free-form keyword search across name, description, and readme.
+            source: Filter by source ID(s). Accepts a single ID or a list.
+            source_label: Filter by source label(s). Accepts a single label or a
+                list. Use "null" to match sources with no label.
+            filter_query: SQL-like filter expression (e.g. "category='devops'").
+            order_by: Field to order results by (e.g. "CREATE_TIME", "NAME").
+            sort_order: Sort direction ("ASC" or "DESC").
+            page_size: Number of items per page.
+            next_page_token: Token for pagination.
+
+        Returns:
+            Dict with skills list and pagination info.
+        """
+        source_list = _as_str_list(source)
+        source_label_list = _as_str_list(source_label)
+        page_size_str = str(page_size) if page_size is not None else None
+
+        order_by_enum: OrderByField | None = None
+        if order_by:
+            order_by_enum = OrderByField(order_by.upper())
+        sort_order_enum: SortOrder | None = None
+        if sort_order:
+            sort_order_enum = SortOrder(sort_order.upper())
+
+        response = self.skill_api.find_skills(
+            name=name,
+            q=q,
+            source=source_list,
+            source_label=source_label_list,
+            filter_query=filter_query,
+            order_by=order_by_enum,
+            sort_order=sort_order_enum,
+            page_size=page_size_str,
+            next_page_token=next_page_token,
+        )
+        return response.to_dict()
+
+    @_handle_api_errors
+    def get_skill(self, skill_id: str) -> dict[str, Any]:
+        """Get a specific skill by ID.
+
+        Args:
+            skill_id: The skill identifier.
+
+        Returns:
+            Dict with skill details.
+        """
+        response = self.skill_api.get_skill(id=_encode_path_param(skill_id))
         return response.to_dict()
 
     def get_named_queries(self, source: str | None = None) -> dict[str, Any]:
