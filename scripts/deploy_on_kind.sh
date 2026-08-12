@@ -37,6 +37,14 @@ else
 fi
 
 kubectl apply -k manifests/kustomize/overlays/$DEPLOY_MANIFEST_DB -n "$MR_NAMESPACE"
+
+# Scale the server deployment to 0 before swapping in $IMG. Otherwise the pod
+# created by `apply` (using the base manifest's image) can start running its
+# embedded DB migrations, then get killed by the rollout that the patch below
+# triggers, leaving the migrations table in a dirty state that blocks every
+# subsequent pod from starting (see golang-migrate "Dirty database version").
+kubectl scale deployment -n "$MR_NAMESPACE" model-registry-deployment --replicas=0
+
 kubectl patch deployment -n "$MR_NAMESPACE" model-registry-deployment \
 --patch '{"spec": {"template": {"spec": {"containers": [{"name": "rest-container", "image": "'$IMG'", "imagePullPolicy": "IfNotPresent"}]}}}}'
 
@@ -47,7 +55,7 @@ if ! kubectl wait --for=condition=available -n "$MR_NAMESPACE" deployment/model-
     exit 1
 fi
 
-kubectl delete pod -n "$MR_NAMESPACE" --selector='component=model-registry-server'
+kubectl scale deployment -n "$MR_NAMESPACE" model-registry-deployment --replicas=1
 
 repeat_cmd_until "kubectl get pod -n "$MR_NAMESPACE" --selector='component=model-registry-server' \
 -o jsonpath=\"{.items[*].spec.containers[?(@.name=='rest-container')].image}\" | tr ' ' '\n' | sort -u" "= $IMG" 500 "kubectl describe pod -n $MR_NAMESPACE --selector='component=model-registry-server'"
