@@ -1,14 +1,11 @@
 --- a/catalog/clients/python/src/catalog_openapi/models/catalog_model.py
 +++ b/catalog/clients/python/src/catalog_openapi/models/catalog_model.py
-@@ -79,10 +79,7 @@
-         * OpenAPI `readOnly` fields are excluded.
+@@ -85,8 +85,6 @@
          * OpenAPI `readOnly` fields are excluded.
          """
--        excluded_fields: Set[str] = set([
+         excluded_fields: Set[str] = set([
 -            "create_time_since_epoch",
 -            "last_update_time_since_epoch",
--        ])
-+        excluded_fields: Set[str] = set([])
-
-         _dict = self.model_dump(
-             by_alias=True,
+             "artifact_counts",
+         ])
+ 

@@ -1,12 +1,10 @@
 --- a/catalog/clients/python/src/catalog_openapi/models/order_by_field.py
 +++ b/catalog/clients/python/src/catalog_openapi/models/order_by_field.py
-@@ -29,6 +29,7 @@ class OrderByField(str, Enum):
-     CREATE_TIME = 'CREATE_TIME'
-     LAST_UPDATE_TIME = 'LAST_UPDATE_TIME'
+@@ -31,6 +31,7 @@
      ID = 'ID'
      NAME = 'NAME'
+     RECOMMENDED = 'RECOMMENDED'
 +    ACCURACY = 'ACCURACY'
  
      @classmethod
      def from_json(cls, json_str: str) -> Self:
-
