@@ -1563,6 +1563,14 @@ The response type varies based on the `assetType` field in the uploaded config:
     and model-specific summary fields (`totalModels`, `includedModels`, `excludedModels`).
   - `mcp_servers`: Returns an `AssetSourcePreviewResponse` with `AssetPreviewResult` items
     and generic summary fields (`totalAssets`, `includedAssets`, `excludedAssets`).
+  - `skills`: Returns an `AssetSourcePreviewResponse` with `AssetPreviewResult` items.
+    Unlike model and MCP previews, a `git-skills-plugin` source is previewed by
+    shallow-cloning a repository to enumerate its skills, so `catalogData` does
+    not apply. Preview is scoped to a single repository at a time (each repo is
+    a network clone): the config must provide exactly one entry inline under
+    `properties.repositories`; more than one is rejected, and the file-based
+    `yamlCatalogPath` form is not supported for preview (skills are read from
+    git, not a catalog file).
 
 **Two modes of operation:**
 

@@ -1,0 +1,11 @@
+skill_catalogs:
+  - name: Test Skills
+    id: test-skills
+    type: git-skills-plugin
+    enabled: true
+    properties:
+      repositories:
+        - url: https://github.com/mattpocock/skills.git
+          refs: ["v1.2.3"]
+          scanPaths: ["skills/"]
+          includedSkills: ["*"]

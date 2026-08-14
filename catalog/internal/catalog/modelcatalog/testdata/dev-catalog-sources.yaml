@@ -1,4 +1,4 @@
-catalogs:
+model_catalogs:
   - name: "Organization AI Models"
     id: organization_ai_models
     type: yaml

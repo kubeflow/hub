@@ -1,4 +1,4 @@
-catalogs:
+model_catalogs:
   - name: "Catalog 1"
     id: catalog1
     type: yaml

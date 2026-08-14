@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -352,6 +353,19 @@ func (r *RepoResolver) enforceSizeLimit(dir string) error {
 	return err
 }
 
+// skillFilterName returns the name a skill's include/exclude filter matches
+// against: the skill's directory name, or — for a repo-root SKILL.md (relDir ".")
+// — its frontmatter name, since a root skill has no directory name to match on.
+// relDir is slash-separated. This is the single definition of the filter-match
+// rule, shared by the resolver's scan and the source previewer so the two cannot
+// drift apart.
+func skillFilterName(relDir, frontmatterName string) string {
+	if relDir == "." || relDir == "" {
+		return frontmatterName
+	}
+	return path.Base(relDir)
+}
+
 // scan walks the repo's scanPaths for SKILL.md files, parses each, and builds the
 // resolved skills. Directories named .git and node_modules are skipped.
 // All non-SKILL.md files are accumulated in a single pass and used to derive
@@ -418,32 +432,38 @@ func (r *RepoResolver) scan(root string, repo SkillRepository, version, commit s
 			}
 			seen[relDir] = true
 
-			// For a root-level SKILL.md there is no directory name to use as the
-			// skill name or apply include/exclude filters against; the skill's name
-			// must come from its frontmatter.
-			name := filepath.Base(relDir)
-			if relDir == "." {
-				name = ""
-			} else if !filter.Allows(name) {
-				return nil
+			// dirName is the skill's directory name, used as the parse fallback when
+			// the frontmatter omits a name. A repo-root SKILL.md (relDir ".") has no
+			// directory name. A nested skill can be filtered here from its directory
+			// name; a root skill has nothing to match against until its frontmatter
+			// name is parsed, so it is filtered below instead.
+			// filepath.Base (not path.Base) because the walk's `path` variable shadows
+			// the path package here; relDir is slash-separated and the resolver runs on
+			// Linux, so the two are equivalent.
+			dirName := ""
+			if relDir != "." {
+				dirName = filepath.Base(relDir)
+				if !filter.Allows(skillFilterName(relDir, "")) {
+					return nil
+				}
 			}
 
 			content, err := os.ReadFile(path)
 			if err != nil {
 				return err
 			}
-			parsed, perr := ParseSkillMD(content, name)
+			parsed, perr := ParseSkillMD(content, dirName)
 			if perr != nil {
 				// Lenient: an unparseable skill is skipped and logged, per the spec
 				// ("missing description or unparseable YAML → skip and log"); it is
 				// not fatal to the rest of the repo.
-				glog.Warningf("skipping skill %q (%s) in %s: %v", name, relDir, repo.URL, perr)
+				glog.Warningf("skipping skill %q (%s) in %s: %v", dirName, relDir, repo.URL, perr)
 				return nil
 			}
 
-			// For a root-level SKILL.md the directory name is not available before
-			// parsing; apply include/exclude filters here using the name from frontmatter.
-			if relDir == "." && !filter.Allows(parsed.Name) {
+			// A root-level skill is filtered here, once its frontmatter name — the
+			// only name it can be matched on — has been parsed.
+			if relDir == "." && !filter.Allows(skillFilterName(relDir, parsed.Name)) {
 				return nil
 			}
 

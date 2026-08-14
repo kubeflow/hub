@@ -13,6 +13,7 @@ import (
 	"github.com/kubeflow/hub/catalog/internal/catalog/basecatalog"
 	"github.com/kubeflow/hub/catalog/internal/catalog/mcpcatalog"
 	"github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog"
+	"github.com/kubeflow/hub/catalog/internal/catalog/skillcatalog"
 	modelcatalogmodels "github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog/models"
 	modelcatalogservice "github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog/service"
 	"github.com/kubeflow/hub/catalog/internal/db/models"
@@ -32,6 +33,19 @@ type mcpSourceProvider interface {
 // Used to get agent sources for the unified FindSources endpoint.
 type agentSourceProvider interface {
 	AgentSources() *agentcatalog.AgentSourceCollection
+}
+
+// skillPreviewProvider is a local interface satisfied by the skill plugin. It
+// supplies the previewer that lets the shared sources/preview endpoint handle
+// assetType: skills without the model service depending on the skill catalog.
+type skillPreviewProvider interface {
+	SkillPreviewer() openapi.SkillSourcePreviewer
+}
+
+// skillSourceProvider is a local interface satisfied by the skill plugin.
+// Used to get skill sources for the unified FindSources endpoint.
+type skillSourceProvider interface {
+	SkillSources() *skillcatalog.SkillSourceCollection
 }
 
 type Plugin struct {
@@ -127,6 +141,15 @@ func (p *Plugin) Init(_ context.Context, cfg plugin.Config) error {
 				poRefresher.Trigger()
 				return nil
 			})
+			// Models are fully written before OnLeaderReady is called (WaitForInflightWrites
+			// runs first), so the event handler above will not fire for the initial load.
+			// Do a synchronous refresh here so filter options are populated immediately.
+			if err := p.services.PropertyOptionsRepository.Refresh(models.ContextPropertyOptionType); err != nil {
+				return fmt.Errorf("refreshing context property options: %w", err)
+			}
+			if err := p.services.PropertyOptionsRepository.Refresh(models.ArtifactPropertyOptionType); err != nil {
+				return fmt.Errorf("refreshing artifact property options: %w", err)
+			}
 			return nil
 		},
 	})
@@ -171,6 +194,16 @@ func (p *Plugin) RegisterRoutes(router chi.Router) error {
 		}
 	}
 
+	var svcOpts []openapi.ModelCatalogServiceOption
+	if skillPlugin, ok := plugin.Get("skill"); ok {
+		if sp, ok := skillPlugin.(skillPreviewProvider); ok {
+			svcOpts = append(svcOpts, openapi.WithSkillPreviewer(sp.SkillPreviewer()))
+		}
+		if ss, ok := skillPlugin.(skillSourceProvider); ok {
+			svcOpts = append(svcOpts, openapi.WithSkillSources(ss.SkillSources()))
+		}
+	}
+
 	svc := openapi.NewModelCatalogServiceAPIService(
 		modelcatalog.NewDBCatalog(p.services, p.loader.Sources),
 		p.loader.Sources,
@@ -178,6 +211,7 @@ func (p *Plugin) RegisterRoutes(router chi.Router) error {
 		agentSources,
 		p.loader.Labels,
 		p.services.CatalogSourceRepository,
+		svcOpts...,
 	)
 	ctrl := openapi.NewModelCatalogServiceAPIController(svc)
 

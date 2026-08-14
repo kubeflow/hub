@@ -5,6 +5,7 @@ import (
 	"github.com/kubeflow/hub/catalog/internal/catalog/basecatalog"
 	"github.com/kubeflow/hub/catalog/internal/catalog/mcpcatalog"
 	"github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog"
+	"github.com/kubeflow/hub/catalog/internal/catalog/skillcatalog"
 )
 
 type (
@@ -23,6 +24,9 @@ type (
 
 	// Agent catalog types
 	AgentSourceCollection = agentcatalog.AgentSourceCollection
+
+	// Skill catalog types
+	SkillSourceCollection = skillcatalog.SkillSourceCollection
 
 	// MCP catalog types
 	MCPSourceCollection      = mcpcatalog.MCPSourceCollection

@@ -283,7 +283,12 @@ func (l *ModelLoader) updateLabels(path string, config *basecatalog.SourceConfig
 func (l *ModelLoader) updateDatabase(ctx context.Context) error {
 	records := l.readProviderRecords(ctx)
 
+	// Hold a single write slot for the goroutine's lifetime so the WG counter
+	// never hits zero between iterations, preventing WaitForInflightWrites from
+	// falsely unblocking while the loop is still processing records.
+	l.state.TrackWrite()
 	go func() {
+		defer l.state.WriteComplete()
 		for record := range records {
 			// Check if we're still the leader before each write
 			if !l.state.ShouldWriteDatabase() {
@@ -306,9 +311,6 @@ func (l *ModelLoader) updateDatabase(ctx context.Context) error {
 			}
 
 			func() {
-				// Track this write operation
-				l.state.TrackWrite()
-				defer l.state.WriteComplete()
 
 				glog.Infof("Loading model %s with %d artifact(s)", *attr.Name, len(record.Artifacts))
 

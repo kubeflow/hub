@@ -10,6 +10,10 @@
 # - a model-catalog server built from source.
 # - a model-registry-ui built from source (standalone mode)
 version: '3.8'
+networks:
+  hub:
+    driver: bridge
+
 services:
   model-registry-ui:
     build:
@@ -29,6 +33,8 @@ services:
     container_name: model-registry-ui
     ports:
       - "9000:9000"
+    networks:
+      - hub
     depends_on:
       - model-registry
       - model-catalog
@@ -41,12 +47,15 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ["catalog", "--listen", "0.0.0.0:8081", "--catalogs-path", "/testdata/test-catalog-sources.yaml"]
+    image: hub/server:local
+    command: ["catalog", "--listen", "0.0.0.0:8081", "--catalogs-path", "/testdata/test-catalog-sources.yaml", "--catalogs-path", "/testdata/test-skill-sources.yaml"]
     container_name: model-catalog
     ports:
       - "8081:8081"
+    networks:
+      - hub
     volumes:
-      - ./catalog/internal/catalog/modelcatalog/testdata:/testdata
+      - ./catalog/internal/catalog/modelcatalog/testdata:/testdata:z
     depends_on:
       - postgres
     profiles:
@@ -61,8 +70,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: hub/server:local
     entrypoint: ["/bin/sh"]
-    command: 
+    command:
       - -c
       - |
         if [ "$$DB_TYPE" = "postgres" ]; then
@@ -73,6 +83,8 @@ services:
     container_name: model-registry
     ports:
       - "8080:8080"
+    networks:
+      - hub
     depends_on:
       - ${DB_TYPE:-mysql}
     environment:
@@ -89,6 +101,8 @@ services:
       - MYSQL_DATABASE=model_registry
     ports:
       - "3306:3306"
+    networks:
+      - hub
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
@@ -109,9 +123,11 @@ services:
       - POSTGRES_PASSWORD=demo
     ports:
       - "5432:5432"
+    networks:
+      - hub
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./scripts/pginit.sql:/docker-entrypoint-initdb.d/pginit.sql:ro
+      - ./scripts/pginit.sql:/docker-entrypoint-initdb.d/pginit.sql:ro,z
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d model_registry"]
       interval: 10s

@@ -88,7 +88,7 @@ sequenceDiagram
 
 ## 5. Identity - Canonical vs Fetch URL
 
-Internal IDs are not stable, since the index is just a cache. The canonical identity is the only permanent reference, and it stays the same even when a deployment reads through a different URL. `version` (the ref) tells entries apart - a branch surfaces as `latest`, and every entry records the commit it resolved to (`resolvedCommit`), which the marketplace pins to so installs are reproducible even for `latest`.
+Internal IDs are not stable, since the index is just a cache. The canonical identity is the only permanent reference, and it stays the same even when a deployment reads through a different URL. `version` (the ref — a tag, release, or commit SHA) tells entries apart. Branches are not accepted as refs; the source schema rejects them so that every entry resolves to a fixed, reproducible commit. Every entry records the commit it resolved to (`resolvedCommit`), which the marketplace carries as the `sha` pin.
 
 ```mermaid
 flowchart TB

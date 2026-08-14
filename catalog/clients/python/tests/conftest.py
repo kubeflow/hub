@@ -219,6 +219,53 @@ def poll_for_ready(user_token: str | None, verify_ssl: bool) -> None:
         backoff = min(backoff * 2, MAX_BACKOFF)  # Exponential backoff with cap
 
 
+def poll_for_filter_options(user_token: str | None, verify_ssl: bool) -> None:
+    """Wait until filter options are populated (materialized views refreshed).
+
+    The catalog HTTP server becomes reachable before leader setup completes
+    (migrations → model writes → OnLeaderReady → REFRESH MATERIALIZED VIEW).
+    This guard ensures tests only start after the views are populated.
+
+    Args:
+        user_token: Optional auth token.
+        verify_ssl: Whether to verify SSL certificates.
+    """
+    url = f"{CATALOG_URL}{API_BASE_PATH}/models/filter_options"
+    params = {
+        "url": url,
+        "headers": {
+            "Authorization": f"Bearer {user_token}",
+        }
+        if user_token
+        else None,
+        "verify": verify_ssl,
+    }
+    backoff = POLL_INTERVAL
+    poll_start = time.time()
+
+    while True:
+        elapsed_time = time.time() - poll_start
+        if elapsed_time >= MAX_POLL_TIME:
+            logger.warning("Filter options still empty after %ds; proceeding anyway", int(elapsed_time))
+            return
+        logger.info("Waiting for filter options to be populated...")
+        try:
+            response = requests.get(**params, timeout=MAX_BACKOFF)
+            if response.status_code == 200:
+                try:
+                    filters = response.json().get("filters", {})
+                    if filters:
+                        logger.info("Filter options ready (%d fields)", len(filters))
+                        return
+                except Exception:
+                    pass
+        except requests.exceptions.ConnectionError:
+            pass
+
+        time.sleep(backoff)
+        backoff = min(backoff * 2, MAX_BACKOFF)
+
+
 @pytest.fixture(scope="session")
 def api_client(user_token: str | None, verify_ssl: bool) -> Generator[CatalogAPIClient, None, None]:
     """Create API client for the catalog service.
@@ -232,6 +279,7 @@ def api_client(user_token: str | None, verify_ssl: bool) -> Generator[CatalogAPI
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     poll_for_ready(user_token=user_token, verify_ssl=verify_ssl)
+    poll_for_filter_options(user_token=user_token, verify_ssl=verify_ssl)
     with CatalogAPIClient(
         CATALOG_URL, timeout=CLIENT_TIMEOUT, verify_ssl=verify_ssl, access_token=user_token
     ) as client:

@@ -31,7 +31,49 @@ const (
 	// is mounted; each file in it is a token named by a repository's credentialRef
 	// (default /etc/skill-catalog/git-credentials).
 	EnvGitCredentialsDir = "SKILL_CATALOG_GIT_CREDENTIALS_DIR"
+
+	// EnvMarketplaceName overrides the `name` of the rendered Claude Code plugin
+	// marketplace (kebab-case; users install with name@<this>). Default
+	// "kubeflow-skill-catalog".
+	EnvMarketplaceName = "SKILL_CATALOG_MARKETPLACE_NAME"
+	// EnvMarketplaceOwner overrides the marketplace owner/maintainer name shown in
+	// the rendered marketplace. Default "Kubeflow".
+	EnvMarketplaceOwner = "SKILL_CATALOG_MARKETPLACE_OWNER"
+	// EnvContentMirror sets the external base URL that marketplace plugin clone
+	// URLs are rewritten onto (canonical https://<host>/{org}/{repo}.git ->
+	// {base}/{org}/{repo}.git). Unset means canonical upstream URLs are served.
+	EnvContentMirror = "SKILL_CONTENT_MIRROR"
+	// EnvContentMirrorInternal sets the base URL used instead of EnvContentMirror
+	// when a marketplace request carries ?audience=cluster (in-cluster consumers).
+	// Unset means the external mirror (or canonical URL) is used for all audiences.
+	EnvContentMirrorInternal = "SKILL_CONTENT_MIRROR_INTERNAL"
 )
+
+// Defaults for the rendered Claude Code plugin marketplace.
+const (
+	defaultMarketplaceName  = "kubeflow-skill-catalog"
+	defaultMarketplaceOwner = "Kubeflow"
+)
+
+// MarketplaceConfigFromEnv builds the marketplace rendering config from the
+// environment, falling back to the compiled-in defaults for name and owner and to
+// canonical (un-rewritten) clone URLs when no content mirror is configured.
+func MarketplaceConfigFromEnv() MarketplaceConfig {
+	name := os.Getenv(EnvMarketplaceName)
+	if name == "" {
+		name = defaultMarketplaceName
+	}
+	owner := os.Getenv(EnvMarketplaceOwner)
+	if owner == "" {
+		owner = defaultMarketplaceOwner
+	}
+	return MarketplaceConfig{
+		Name:           name,
+		Owner:          owner,
+		ExternalMirror: os.Getenv(EnvContentMirror),
+		InternalMirror: os.Getenv(EnvContentMirrorInternal),
+	}
+}
 
 // CredentialsDirFromEnv returns the git-credentials mount directory, overridden by
 // EnvGitCredentialsDir when set to a non-empty value; otherwise the default.

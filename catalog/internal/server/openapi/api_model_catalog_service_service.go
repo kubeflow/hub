@@ -31,8 +31,34 @@ type ModelCatalogServiceAPIService struct {
 	sources          *catalog.SourceCollection
 	mcpSources       *catalog.MCPSourceCollection
 	agentSources     *catalog.AgentSourceCollection
+	skillSources     *catalog.SkillSourceCollection
 	labels           *catalog.LabelCollection
 	sourceRepository models.CatalogSourceRepository
+	skillPreviewer   SkillSourcePreviewer
+}
+
+// SkillSourcePreviewer previews a git-skills-plugin source by resolving its
+// repositories. It is implemented by the skill plugin and injected via
+// WithSkillPreviewer, so the shared sources/preview endpoint can dispatch
+// assetType: skills without this package depending on the skill catalog package.
+type SkillSourcePreviewer interface {
+	PreviewSkillSource(ctx context.Context, configBytes []byte) ([]model.AssetPreviewResult, error)
+}
+
+// ModelCatalogServiceOption configures optional dependencies of the service.
+type ModelCatalogServiceOption func(*ModelCatalogServiceAPIService)
+
+// WithSkillPreviewer enables previewing git-skills-plugin sources through the
+// shared sources/preview endpoint. When unset, an assetType: skills preview
+// returns 501 Not Implemented.
+func WithSkillPreviewer(p SkillSourcePreviewer) ModelCatalogServiceOption {
+	return func(s *ModelCatalogServiceAPIService) { s.skillPreviewer = p }
+}
+
+// WithSkillSources wires the skill source collection into FindSources so that
+// sources with assetType: skills appear alongside model/MCP/agent sources.
+func WithSkillSources(sc *catalog.SkillSourceCollection) ModelCatalogServiceOption {
+	return func(s *ModelCatalogServiceAPIService) { s.skillSources = sc }
 }
 
 // GetAllModelArtifacts retrieves all model artifacts for a given model from the specified source.
@@ -390,6 +416,12 @@ func (m *ModelCatalogServiceAPIService) FindSources(ctx context.Context, name st
 		}
 	}
 
+	if m.skillSources != nil {
+		for id, skillSrc := range m.skillSources.AllSources() {
+			sources[id] = skillSourceToCatalogSource(skillSrc)
+		}
+	}
+
 	if len(sources) > math.MaxInt32 {
 		err := errors.New("too many registered sources")
 		return ErrorResponse(http.StatusInternalServerError, err), err
@@ -492,6 +524,17 @@ func agentSourceToCatalogSource(src basecatalog.PluginSource) model.CatalogSourc
 	}
 }
 
+func skillSourceToCatalogSource(src basecatalog.PluginSource) model.CatalogSource {
+	assetType := model.CATALOGASSETTYPE_SKILLS
+	return model.CatalogSource{
+		Id:        src.ID,
+		Name:      src.Name,
+		Enabled:   src.Enabled,
+		Labels:    src.Labels,
+		AssetType: &assetType,
+	}
+}
+
 func (m *ModelCatalogServiceAPIService) PreviewCatalogSource(ctx context.Context, configParam *os.File, pageSizeParam string, nextPageTokenParam string, filterStatusParam string, catalogDataParam *os.File) (ImplResponse, error) {
 	if _, err := parsePageSize(pageSizeParam); err != nil {
 		return ErrorResponse(http.StatusBadRequest, err), err
@@ -540,7 +583,46 @@ func (m *ModelCatalogServiceAPIService) PreviewCatalogSource(ctx context.Context
 		return m.previewMCPSource(ctx, configBytes, catalogDataBytes, pageSizeParam, nextPageTokenParam, filterStatus)
 	}
 
+	if assetTypeProbe.AssetType == string(model.CATALOGASSETTYPE_SKILLS) {
+		return m.previewSkillSource(ctx, configBytes, pageSizeParam, nextPageTokenParam, filterStatus)
+	}
+
 	return m.previewModelSource(ctx, configBytes, catalogDataBytes, pageSizeParam, nextPageTokenParam, filterStatus)
+}
+
+// previewSkillSource previews a git-skills-plugin source. Unlike the model and MCP
+// previews, which read a catalog file, a skill preview resolves (shallow-clones)
+// the configured repositories to enumerate their skills; catalogData does not apply
+// and is ignored. It reuses the shared filter/paginate helpers and reports results
+// as generic assets (assetType: skills, AssetSourcePreviewResponse), mirroring MCP.
+func (m *ModelCatalogServiceAPIService) previewSkillSource(ctx context.Context, configBytes []byte, pageSizeParam, nextPageTokenParam, filterStatus string) (ImplResponse, error) {
+	if m.skillPreviewer == nil {
+		err := errors.New("skill source preview is not available")
+		return ErrorResponse(http.StatusNotImplemented, err), err
+	}
+
+	previewResults, err := m.skillPreviewer.PreviewSkillSource(ctx, configBytes)
+	if err != nil {
+		return ErrorResponse(http.StatusUnprocessableEntity, fmt.Errorf("failed to load skills: %w", err)), err
+	}
+
+	page, err := filterAndPaginate(previewResults, func(r model.AssetPreviewResult) bool { return r.Included }, filterStatus, pageSizeParam, nextPageTokenParam)
+	if err != nil {
+		return ErrorResponse(http.StatusBadRequest, err), err
+	}
+
+	return Response(http.StatusOK, model.AssetSourcePreviewResponse{
+		AssetType:     model.CATALOGASSETTYPE_SKILLS,
+		PageSize:      page.pageSize,
+		Size:          int32(len(page.items)),
+		NextPageToken: page.nextPageToken,
+		Items:         page.items,
+		Summary: model.AssetSourcePreviewResponseAllOfSummary{
+			TotalAssets:    page.total,
+			IncludedAssets: page.includedCount,
+			ExcludedAssets: page.excludedCount,
+		},
+	}), nil
 }
 
 type previewPage[T model.Sortable] struct {
@@ -763,8 +845,8 @@ func genLabelCmpFunc(orderByKey string, sortOrder model.SortOrder) func(sortable
 var _ ModelCatalogServiceAPIServicer = &ModelCatalogServiceAPIService{}
 
 // NewModelCatalogServiceAPIService creates a default api service
-func NewModelCatalogServiceAPIService(provider catalog.APIProvider, sources *catalog.SourceCollection, mcpSources *catalog.MCPSourceCollection, agentSources *catalog.AgentSourceCollection, labels *catalog.LabelCollection, sourceRepository models.CatalogSourceRepository) ModelCatalogServiceAPIServicer {
-	return &ModelCatalogServiceAPIService{
+func NewModelCatalogServiceAPIService(provider catalog.APIProvider, sources *catalog.SourceCollection, mcpSources *catalog.MCPSourceCollection, agentSources *catalog.AgentSourceCollection, labels *catalog.LabelCollection, sourceRepository models.CatalogSourceRepository, opts ...ModelCatalogServiceOption) ModelCatalogServiceAPIServicer {
+	svc := &ModelCatalogServiceAPIService{
 		provider:         provider,
 		sources:          sources,
 		mcpSources:       mcpSources,
@@ -772,6 +854,10 @@ func NewModelCatalogServiceAPIService(provider catalog.APIProvider, sources *cat
 		labels:           labels,
 		sourceRepository: sourceRepository,
 	}
+	for _, opt := range opts {
+		opt(svc)
+	}
+	return svc
 }
 
 func notFound(msg string) ImplResponse {

@@ -10,6 +10,10 @@
 # - a model-catalog server
 # - a model-registry-ui (standalone mode)
 version: '3.8'
+networks:
+  hub:
+    driver: bridge
+
 services:
   model-registry-ui:
     image: ghcr.io/kubeflow/hub/ui-standalone:latest
@@ -25,6 +29,8 @@ services:
     container_name: model-registry-ui
     ports:
       - "9000:9000"
+    networks:
+      - hub
     depends_on:
       - model-registry
       - model-catalog
@@ -36,12 +42,14 @@ services:
   model-catalog:
     image: ghcr.io/kubeflow/hub/server:latest
     pull_policy: always
-    command: ["catalog", "--listen", "0.0.0.0:8081", "--catalogs-path", "/testdata/test-catalog-sources.yaml"]
+    command: ["catalog", "--listen", "0.0.0.0:8081", "--catalogs-path", "/testdata/test-catalog-sources.yaml", "--catalogs-path", "/testdata/test-skill-sources.yaml"]
     container_name: model-catalog
     ports:
       - "8081:8081"
+    networks:
+      - hub
     volumes:
-      - ./catalog/internal/catalog/testdata:/testdata
+      - ./catalog/internal/catalog/modelcatalog/testdata:/testdata:z
     depends_on:
       - postgres
     profiles:
@@ -67,6 +75,8 @@ services:
     container_name: model-registry
     ports:
       - "8080:8080"
+    networks:
+      - hub
     depends_on:
       - ${DB_TYPE:-mysql}
     environment:
@@ -83,6 +93,8 @@ services:
       - MYSQL_DATABASE=model_registry
     ports:
       - "3306:3306"
+    networks:
+      - hub
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
@@ -103,9 +115,11 @@ services:
       - POSTGRES_PASSWORD=demo
     ports:
       - "5432:5432"
+    networks:
+      - hub
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./scripts/pginit.sql:/docker-entrypoint-initdb.d/pginit.sql:ro
+      - ./scripts/pginit.sql:/docker-entrypoint-initdb.d/pginit.sql:ro,z
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d model_registry"]
       interval: 10s

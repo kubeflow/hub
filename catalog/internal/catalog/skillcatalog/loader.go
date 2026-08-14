@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -660,25 +659,11 @@ func runPeriodicSync(ctx context.Context, interval time.Duration, wg *sync.WaitG
 	}()
 }
 
-// credentialsForRepo resolves a repository's git credentials by reading the token
-// file named by its credentialRef from the mounted credentials directory. A repo
-// with no credentialRef clones anonymously (nil, nil); one whose token file is
-// missing or empty fails clearly rather than silently cloning anonymously. The key
-// is validated as a plain filename at config-parse time, so it cannot escape the
-// directory. The file is re-read each time, so a hot-reloaded Secret is picked up.
+// credentialsForRepo resolves a repository's git credentials from the loader's
+// mounted credentials directory. See loadRepoCredentials for the shared semantics
+// used by both the loader and the source previewer.
 func (l *SkillLoader) credentialsForRepo(repo SkillRepository) (*Credentials, error) {
-	if repo.CredentialRef == "" {
-		return nil, nil
-	}
-	data, err := os.ReadFile(filepath.Join(l.credentialsDir, repo.CredentialRef))
-	if err != nil {
-		return nil, fmt.Errorf("reading git token for credentialRef %q: %w", repo.CredentialRef, err)
-	}
-	token := strings.TrimSpace(string(data))
-	if token == "" {
-		return nil, fmt.Errorf("git token for credentialRef %q is empty", repo.CredentialRef)
-	}
-	return &Credentials{Username: gitTokenUsername, Token: token}, nil
+	return loadRepoCredentials(l.credentialsDir, repo)
 }
 
 // refJob is one (repository, ref) pair to resolve.

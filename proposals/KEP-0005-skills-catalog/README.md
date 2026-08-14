@@ -14,7 +14,7 @@ Agent skills have an open specification, growing public repositories, and instal
 
 - `skill` plugin; API base `/api/skill_catalog/v1alpha1`.
 - A `git-skills-plugin` source type - a dedicated type for git-hosted skills, alongside the existing `yaml` and `hf` types - listing repositories whose SKILL.md files are parsed per the specification at sync time.
-- Versioned entries: a repository can list multiple refs (tags, releases, branches, or commits). Each ref becomes its own set of catalog entries, with the version shown in the UI. A branch is surfaced as `latest` (not the raw branch name), and every entry pins to the commit it resolved to, so installs are reproducible.
+- Versioned entries: a repository can list multiple refs (tags, releases, or commits). Each ref becomes its own set of catalog entries, with the version shown in the UI. Branches are not supported as refs — only specific, pinnable refs (tags, releases, or commit SHAs) are accepted, so every entry resolves to a fixed commit and installs are reproducible. Every entry pins to the commit it resolved to.
 - Custom metadata (trust tier, provider, category, labels) assigned in the source file; per-skill overrides; include/exclude filtering.
 - Catalog UI: gallery, detail with rendered SKILL.md, filters, install instructions; an admin settings page that reuses the existing model/MCP catalog-settings mechanism to manage sources (add/edit/delete user-managed sources with include/exclude preview before save; shipped defaults read-only) alongside sync status and manual sync.
 - `marketplace.json` endpoint, with optional URL rewriting for deployments fronting repos with an internal git mirror.
@@ -47,8 +47,9 @@ Registered like any other catalog source, as `type: git-skills-plugin`. A source
   trustTier: communityContributed
   repositories:
     - url: https://github.com/example/skills.git
-      refs: [main, v1.0]          # optional; tags/releases/branches/commits -
-                                  #   each ref yields its own catalog entries.
+      refs: [v1.0, abc1234]       # optional; tags, releases, or commit SHAs only -
+                                  #   branches are not accepted (not reproducible).
+                                  #   Each ref yields its own catalog entries.
                                   #   Also: scanPaths, authSecretName,
                                   #   canonicalUrl (when url is a mirror)
       provider: Example Org
@@ -59,7 +60,7 @@ Registered like any other catalog source, as `type: git-skills-plugin`. A source
       skillOverrides: [{name: deploy, category: SRE}]
 ```
 
-Each time the catalog syncs, the plugin reads each listed repository at each listed ref (making a temporary, lightweight copy used only for parsing, then throwing it away), finds and parses `SKILL.md` files per the specification, and rebuilds the index. A skill's `version` is the ref (a branch is surfaced as `latest`, not the branch name), and the exact commit it resolved to is recorded as `resolvedCommit`. Skills, refs, repositories, or sources that have been removed are cleaned up. Pulling from private git repositories with securely configured credentials will be supported.
+Each time the catalog syncs, the plugin reads each listed repository at each listed ref (making a temporary, lightweight copy used only for parsing, then throwing it away), finds and parses `SKILL.md` files per the specification, and rebuilds the index. A skill's `version` is the ref (a tag, release, or commit SHA), and the exact commit it resolved to is recorded as `resolvedCommit`. Branches are not accepted as refs; the source schema rejects them so that every entry is reproducible. Skills, refs, repositories, or sources that have been removed are cleaned up. Pulling from private git repositories with securely configured credentials will be supported.
 
 Source management reuses the same mechanism as the model and MCP catalogs: read-only defaults (shipped in a ConfigMap) merged with a user-managed ConfigMap that the settings UI writes via the BFF, with per-source auth stored as Secrets. Adding a skills git source through the UI works like adding a HuggingFace source for models. Editing the ConfigMap directly (kubectl/GitOps) works too; the file-watcher picks up either path.
 
@@ -92,7 +93,7 @@ The `Skill` resource carries the SKILL.md fields (including the body as `readme`
 /plugin install deploy@example-skill-catalog
 ```
 
-Every listed ref of a skill is exposed as its own plugin entry carrying its version (a branch appears as `latest`), so all versions are discoverable, and each entry's git source is pinned to the commit it resolved to (`resolvedCommit`) so `/plugin install` is reproducible even for `latest`. Source URLs default to the repositories' own URLs. An optional `skill_content_mirror: {internalBaseUrl, externalBaseUrl}` setting rewrites them for deployments that put an internal mirror in front of the repositories (using the external base by default, and the internal base for `?audience=cluster`). A note for user docs: `npx skills add` reads git repositories directly, never this endpoint.
+Every listed ref of a skill is exposed as its own plugin entry carrying its version (the tag, release, or commit SHA it was indexed at), so all versions are discoverable. Each entry's git source is pinned to the commit it resolved to (`resolvedCommit`) so `/plugin install` is reproducible. Branches are not accepted as refs. Source URLs default to the repositories' own URLs. An optional `skill_content_mirror: {internalBaseUrl, externalBaseUrl}` setting rewrites them for deployments that put an internal mirror in front of the repositories (using the external base by default, and the internal base for `?audience=cluster`). A note for user docs: `npx skills add` reads git repositories directly, never this endpoint.
 
 ### 7. UI
 

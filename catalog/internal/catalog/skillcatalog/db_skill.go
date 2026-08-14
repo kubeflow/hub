@@ -126,6 +126,33 @@ func (d *DBSkillCatalog) ListSkills(_ context.Context, params ListSkillsParams) 
 	return list, nil
 }
 
+// marketplacePageSize is how many skills ListAllSkills fetches per page while
+// walking the full catalog for the marketplace document.
+const marketplacePageSize = 200
+
+// ListAllSkills returns every indexed skill, paging through the datastore. It is
+// used to render the marketplace document, which lists all skills at once rather
+// than a single page.
+func (d *DBSkillCatalog) ListAllSkills(ctx context.Context) ([]openapi.Skill, error) {
+	var all []openapi.Skill
+	var token *string
+	for {
+		list, err := d.ListSkills(ctx, ListSkillsParams{PageSize: marketplacePageSize, NextPageToken: token})
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, list.Items...)
+		// Stop on the last page, or defensively if a page returns nothing (so a
+		// pager that fails to advance its token cannot loop forever).
+		if list.NextPageToken == "" || len(list.Items) == 0 {
+			break
+		}
+		next := list.NextPageToken
+		token = &next
+	}
+	return all, nil
+}
+
 // GetSkill returns a single skill by its datastore ID.
 func (d *DBSkillCatalog) GetSkill(_ context.Context, id string) (*openapi.Skill, error) {
 	skillID, err := apiutils.ValidateIDAsInt32(id, "skill")
@@ -247,6 +274,14 @@ func dbPropToMetadataValue(prop dbmodels.Properties) openapi.MetadataValue {
 		mv.MetadataBoolValue.BoolValue = *prop.BoolValue
 	}
 	return mv
+}
+
+// deref returns the pointed-to string, or "" if the pointer is nil.
+func deref(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }
 
 // decodeStringSlice decodes a JSON string array stored in a string property.
