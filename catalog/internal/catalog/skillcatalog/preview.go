@@ -171,8 +171,9 @@ func filterMatchName(rs ResolvedSkill) string {
 	return skillFilterName(rs.Path, frontmatter)
 }
 
-// previewSkillName is the human-facing name shown for a previewed skill: its
-// frontmatter name, falling back to the directory name.
+// previewSkillName is the human-facing name shown for a previewed skill.
+// ParseSkillMD guarantees Name is non-empty for every resolved skill, so the
+// filterMatchName fallback is a defensive guard for unexpected nil Skill values.
 func previewSkillName(rs ResolvedSkill) string {
 	if rs.Skill != nil && rs.Skill.Name != "" {
 		return rs.Skill.Name

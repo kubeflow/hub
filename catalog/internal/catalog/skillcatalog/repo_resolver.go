@@ -432,11 +432,11 @@ func (r *RepoResolver) scan(root string, repo SkillRepository, version, commit s
 			}
 			seen[relDir] = true
 
-			// dirName is the skill's directory name, used as the parse fallback when
-			// the frontmatter omits a name. A repo-root SKILL.md (relDir ".") has no
-			// directory name. A nested skill can be filtered here from its directory
-			// name; a root skill has nothing to match against until its frontmatter
-			// name is parsed, so it is filtered below instead.
+			// dirName is the skill's directory name, used for the name-mismatch warning
+			// inside ParseSkillMD and for skip log messages. A repo-root SKILL.md
+			// (relDir ".") has no directory name. A nested skill can be pre-filtered
+			// here from its directory name; a root skill has nothing to match against
+			// until its frontmatter name is parsed, so it is filtered below instead.
 			// filepath.Base (not path.Base) because the walk's `path` variable shadows
 			// the path package here; relDir is slash-separated and the resolver runs on
 			// Linux, so the two are equivalent.

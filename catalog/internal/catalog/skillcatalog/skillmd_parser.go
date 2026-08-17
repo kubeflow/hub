@@ -29,6 +29,8 @@ var (
 	ErrNoFrontmatter = errors.New("SKILL.md has no YAML frontmatter")
 	// ErrInvalidFrontmatter indicates the frontmatter block is not valid YAML.
 	ErrInvalidFrontmatter = errors.New("SKILL.md frontmatter is not valid YAML")
+	// ErrMissingName indicates the required `name` field is absent or non-string.
+	ErrMissingName = errors.New("SKILL.md frontmatter is missing required 'name'")
 	// ErrMissingDescription indicates the required `description` field is absent.
 	ErrMissingDescription = errors.New("SKILL.md frontmatter is missing required 'description'")
 )
@@ -50,11 +52,11 @@ type ParsedSkill struct {
 	Warnings []string
 }
 
-// ParseSkillMD parses SKILL.md content leniently per the Agent Skills spec.
-// expectedName is the skill's directory name, used for the name-match warning.
+// ParseSkillMD parses SKILL.md content per the Agent Skills spec.
+// expectedName is the skill's directory name, used for the name-mismatch warning.
 //
-// It returns a non-nil error only for the skip cases (no/invalid frontmatter,
-// missing description); a successful parse may still carry Warnings.
+// It returns a non-nil error for skip cases (no/invalid frontmatter, missing
+// name or description); a successful parse may still carry Warnings.
 func ParseSkillMD(content []byte, expectedName string) (*ParsedSkill, error) {
 	fmText, body, err := splitFrontmatter(content)
 	if err != nil {
@@ -81,23 +83,21 @@ func ParseSkillMD(content []byte, expectedName string) (*ParsedSkill, error) {
 		return nil, ErrMissingDescription
 	}
 
+	// name is required per the Agent Skills specification; missing or non-string skips.
 	skill.Name = skill.stringField(raw, "name")
+	if skill.Name == "" {
+		return nil, ErrMissingName
+	}
+	// Frontmatter name is authoritative; warn when it diverges from the directory name.
+	if expectedName != "" && skill.Name != expectedName {
+		skill.warnf("frontmatter name %q does not match directory %q", skill.Name, expectedName)
+	}
+
 	skill.License = skill.stringField(raw, "license")
 	skill.Compatibility = skill.stringField(raw, "compatibility")
 	skill.AllowedTools = parseAllowedTools(raw["allowed-tools"])
 	skill.Metadata = skill.mapField(raw, "metadata")
 	skill.Author = skill.resolveAuthor(raw)
-
-	// Name (lenient: warn, never skip).
-	switch {
-	case skill.Name == "" && expectedName == "":
-		skill.warnf("frontmatter is missing 'name' for a root-level SKILL.md")
-	case skill.Name == "":
-		skill.Name = expectedName
-		skill.warnf("frontmatter is missing 'name'; using directory name %q", expectedName)
-	case expectedName != "" && skill.Name != expectedName:
-		skill.warnf("frontmatter name %q does not match directory %q", skill.Name, expectedName)
-	}
 
 	// Length limits from the spec (lenient: warn, never skip).
 	if n := utf8.RuneCountInString(skill.Name); n > maxSkillNameLength {

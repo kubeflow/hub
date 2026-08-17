@@ -59,17 +59,16 @@ func TestParseSkillMD_NameMismatchWarns(t *testing.T) {
 		"expected a name-mismatch warning, got %v", skill.Warnings)
 }
 
-func TestParseSkillMD_MissingNameUsesDirectory(t *testing.T) {
+func TestParseSkillMD_MissingNameSkipped(t *testing.T) {
 	content := `---
 description: A skill with no name.
 ---
 Body.
 `
 	skill, err := ParseSkillMD([]byte(content), "fallback-name")
-	require.NoError(t, err)
-	require.NotNil(t, skill)
-	assert.Equal(t, "fallback-name", skill.Name)
-	assert.True(t, hasWarning(skill.Warnings, "name"), "expected a missing-name warning, got %v", skill.Warnings)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, ErrMissingName)
+	assert.Nil(t, skill)
 }
 
 func TestParseSkillMD_NameTooLongWarns(t *testing.T) {
@@ -240,6 +239,7 @@ func TestParseSkillMD_IndentedDashesInsideBlockScalarNotAFence(t *testing.T) {
 	// The `---` inside the `description` block scalar is indented, so it must not
 	// be treated as the closing fence — only the column-0 `---` closes frontmatter.
 	content := `---
+name: x
 foo: bar
 description: |
    blah
@@ -312,16 +312,14 @@ Body.
 	assert.True(t, hasWarning(skill.Warnings, "metadata"), "expected a metadata type warning, got %v", skill.Warnings)
 }
 
-func TestParseSkillMD_NonStringNameWarnsAndFallsBack(t *testing.T) {
-	// name written as a number is not a string; ignore it, fall back to the
-	// directory name, and still parse rather than failing.
+func TestParseSkillMD_NonStringNameSkipped(t *testing.T) {
+	// name written as a number is not a string; stringField returns "" and the
+	// skill is skipped as if name were absent.
 	content := "---\nname: 123\ndescription: Valid description.\nlicense: apache-2.0\n---\nbody\n"
 	skill, err := ParseSkillMD([]byte(content), "expected-dir")
-	require.NoError(t, err)
-	require.NotNil(t, skill)
-	assert.Equal(t, "expected-dir", skill.Name)
-	assert.Equal(t, "apache-2.0", skill.License, "other fields still parse")
-	assert.True(t, hasWarning(skill.Warnings, "name"), "expected a name type/fallback warning, got %v", skill.Warnings)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, ErrMissingName)
+	assert.Nil(t, skill)
 }
 
 func hasWarning(warnings []string, substr string) bool {
