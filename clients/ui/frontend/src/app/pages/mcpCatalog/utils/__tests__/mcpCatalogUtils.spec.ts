@@ -3,7 +3,6 @@ import {
   getSecurityIndicatorLabels,
   hasMcpFiltersApplied,
   isMcpRemoteDeploymentMode,
-  toDisplayServerJson,
 } from '~/app/pages/mcpCatalog/utils/mcpCatalogUtils';
 import type { McpCatalogFiltersState } from '~/app/pages/mcpCatalog/types/mcpCatalogFilterOptions';
 
@@ -119,89 +118,5 @@ describe('hasMcpFiltersApplied', () => {
     expect(hasMcpFiltersApplied({ deploymentMode: 'Local' as unknown as string[] }, '')).toBe(
       false,
     );
-  });
-});
-
-describe('toDisplayServerJson', () => {
-  it('maps packages.transport into remotes and drops heavy fields', () => {
-    expect(
-      toDisplayServerJson({
-        $schema: 'https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json',
-        name: 'org.mariadb/mariadb-mcp',
-        description: 'MariaDB MCP',
-        title: 'MariaDB MCP Server',
-        version: '1.0.0',
-        websiteUrl: 'https://github.com/mariadb/mcp',
-        packages: [
-          {
-            identifier: 'quay.io/example/mariadb-mcp:latest',
-            environmentVariables: [{ name: 'DB_USER', isRequired: true }],
-            packageArguments: [{ type: 'positional', value: 'python' }],
-            registryType: 'oci',
-            runtimeHint: 'docker',
-            transport: {
-              type: 'streamable-http',
-              url: 'http://localhost:9001/mcp',
-            },
-          },
-        ],
-        repository: { source: 'github', url: 'https://github.com/mariadb/mcp' },
-      }),
-    ).toEqual({
-      $schema: 'https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json',
-      name: 'org.mariadb/mariadb-mcp',
-      description: 'MariaDB MCP',
-      title: 'MariaDB MCP Server',
-      version: '1.0.0',
-      websiteUrl: 'https://github.com/mariadb/mcp',
-      remotes: [
-        {
-          type: 'streamable-http',
-          url: 'http://localhost:9001/mcp',
-        },
-      ],
-    });
-  });
-
-  it('prefers existing remotes over packages', () => {
-    expect(
-      toDisplayServerJson({
-        name: 'dynatrace-mcp-server',
-        remotes: [
-          {
-            type: 'streamable-http',
-            url: 'https://dynatrace-mcp-server.demo-namespace.svc.cluster.local:8080',
-          },
-        ],
-        packages: [
-          {
-            transport: {
-              type: 'streamable-http',
-              url: 'http://should-not-use',
-            },
-          },
-        ],
-      }),
-    ).toEqual({
-      name: 'dynatrace-mcp-server',
-      remotes: [
-        {
-          type: 'streamable-http',
-          url: 'https://dynatrace-mcp-server.demo-namespace.svc.cluster.local:8080',
-        },
-      ],
-    });
-  });
-
-  it('omits remotes when neither remotes nor package transports are present', () => {
-    expect(
-      toDisplayServerJson({
-        name: 'example',
-        packages: [{ identifier: 'quay.io/example' }],
-        repository: { source: 'github', url: 'https://example.com' },
-      }),
-    ).toEqual({
-      name: 'example',
-    });
   });
 });

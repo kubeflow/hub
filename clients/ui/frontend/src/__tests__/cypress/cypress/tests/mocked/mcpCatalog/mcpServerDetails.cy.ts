@@ -124,22 +124,22 @@ describe('MCP Server Details Page', () => {
   });
 
   describe('Server.json card', () => {
-    it('should render mapped remotes from backend packages serverJson', () => {
+    it('should render serverJson', () => {
       initServerDetailIntercept(kubernetesServer);
       mcpServerDetails.visit(kubernetesServer.id);
       mcpServerDetails.findServerJsonCard().should('be.visible');
       mcpServerDetails.findServerJsonCode().should('contain.text', 'kubernetes-mcp-server');
       mcpServerDetails.findServerJsonCode().should('contain.text', '$schema');
-      mcpServerDetails.findServerJsonCode().should('contain.text', 'remotes');
+      mcpServerDetails.findServerJsonCode().should('contain.text', 'packages');
+      mcpServerDetails.findServerJsonCode().should('contain.text', 'environmentVariables');
+      mcpServerDetails.findServerJsonCode().should('contain.text', 'packageArguments');
+      mcpServerDetails.findServerJsonCode().should('contain.text', 'repository');
       mcpServerDetails
         .findServerJsonCode()
         .should(
           'contain.text',
           'https://kubernetes-mcp-server.demo-namespace.svc.cluster.local:8080',
         );
-      mcpServerDetails.findServerJsonCode().should('not.contain.text', 'environmentVariables');
-      mcpServerDetails.findServerJsonCode().should('not.contain.text', 'packageArguments');
-      mcpServerDetails.findServerJsonCode().should('not.contain.text', 'repository');
     });
 
     it('should hide Server.json card when serverJson is absent', () => {

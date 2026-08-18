@@ -13,6 +13,8 @@ import {
   Label,
   LabelGroup,
   PageSection,
+  Panel,
+  PanelMain,
   Sidebar,
   SidebarContent,
   SidebarPanel,
@@ -27,10 +29,7 @@ import CodeBlockComponent from '~/app/shared/markdown/components/CodeBlockCompon
 import MarkdownComponent from '~/app/shared/markdown/MarkdownComponent';
 import ModelTimestamp from '~/app/pages/modelRegistry/screens/components/ModelTimestamp';
 import McpServerToolsSection from '~/app/pages/mcpCatalog/screens/McpServerToolsSection';
-import {
-  getMcpServerPrimaryEndpoint,
-  toDisplayServerJson,
-} from '~/app/pages/mcpCatalog/utils/mcpCatalogUtils';
+import { getMcpServerPrimaryEndpoint } from '~/app/pages/mcpCatalog/utils/mcpCatalogUtils';
 
 type McpServerDetailsViewProps = {
   server: McpServer;
@@ -70,7 +69,7 @@ const McpServerDetailsView: React.FC<McpServerDetailsViewProps> = ({ server }) =
   const transportTypeLabel = getTransportTypeLabel(server.transports);
   const primaryEndpoint = getMcpServerPrimaryEndpoint(server.endpoints);
   const serverJsonContent = server.serverJson
-    ? JSON.stringify(toDisplayServerJson(server.serverJson), null, 2)
+    ? JSON.stringify(server.serverJson, null, 2)
     : undefined;
 
   return (
@@ -106,9 +105,13 @@ const McpServerDetailsView: React.FC<McpServerDetailsViewProps> = ({ server }) =
                     </Title>
                   </CardHeader>
                   <CardBody>
-                    <div data-testid="mcp-server-json-code">
-                      <CodeBlockComponent>{serverJsonContent}</CodeBlockComponent>
-                    </div>
+                    <Panel isScrollable>
+                      <PanelMain maxHeight="400px">
+                        <div data-testid="mcp-server-json-code">
+                          <CodeBlockComponent>{serverJsonContent}</CodeBlockComponent>
+                        </div>
+                      </PanelMain>
+                    </Panel>
                   </CardBody>
                 </Card>
               </StackItem>
