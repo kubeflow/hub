@@ -344,10 +344,10 @@ func (app *App) Routes() http.Handler {
 		apiRouter.POST(CatalogSourcePreviewPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.AttachModelCatalogRESTClient(app.CreateCatalogSourcePreviewHandler))))
 
 		// Agent catalog endpoints
-		apiRouter.GET(AgentListPath, app.AttachNamespace(app.AttachModelCatalogRESTClient(app.GetAllAgentsHandler)))
-		apiRouter.GET(AgentFilterOptionListPath, app.AttachNamespace(app.AttachModelCatalogRESTClient(app.GetAgentsFiltersHandler)))
-		apiRouter.GET(AgentArtifactsPath, app.AttachNamespace(app.AttachModelCatalogRESTClient(app.GetAgentArtifactsHandler)))
-		apiRouter.GET(AgentPath, app.AttachNamespace(app.AttachModelCatalogRESTClient(app.GetAgentHandler)))
+		apiRouter.GET(AgentListPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.AttachModelCatalogRESTClient(app.GetAllAgentsHandler))))
+		apiRouter.GET(AgentFilterOptionListPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.AttachModelCatalogRESTClient(app.GetAgentsFiltersHandler))))
+		apiRouter.GET(AgentArtifactsPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.AttachModelCatalogRESTClient(app.GetAgentArtifactsHandler))))
+		apiRouter.GET(AgentPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.AttachModelCatalogRESTClient(app.GetAgentHandler))))
 
 		// MCP server catalog endpoints
 		apiRouter.GET(McpServerListPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.AttachModelCatalogRESTClient(app.GetAllMcpServersHandler))))
