@@ -126,6 +126,10 @@ class McpServerDetails {
     return cy.findByTestId('mcp-server-json-code');
   }
 
+  findServerJsonScroll() {
+    return cy.findByTestId('mcp-server-json-scroll');
+  }
+
   findVersion() {
     return cy.findByTestId('mcp-server-version');
   }

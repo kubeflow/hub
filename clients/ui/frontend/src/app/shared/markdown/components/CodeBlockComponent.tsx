@@ -4,13 +4,25 @@ import {
   CodeBlockAction,
   CodeBlockCode,
   ClipboardCopyButton,
+  Panel,
+  PanelMain,
+  PanelMainBody,
 } from '@patternfly/react-core';
 
 type CodeBlockComponentProps = {
   children: string;
+  /** When set, wraps only the code in a scrollable panel; copy actions stay fixed above it. */
+  maxHeight?: string;
+  scrollTestId?: string;
+  codeTestId?: string;
 };
 
-const CodeBlockComponent: React.FC<CodeBlockComponentProps> = ({ children }) => {
+const CodeBlockComponent: React.FC<CodeBlockComponentProps> = ({
+  children,
+  maxHeight,
+  scrollTestId,
+  codeTestId,
+}) => {
   const [copied, setCopied] = React.useState(false);
   const id = React.useId();
 
@@ -38,9 +50,19 @@ const CodeBlockComponent: React.FC<CodeBlockComponentProps> = ({ children }) => 
     </CodeBlockAction>
   );
 
+  const code = <CodeBlockCode>{children}</CodeBlockCode>;
+
   return (
     <CodeBlock actions={actions}>
-      <CodeBlockCode>{children}</CodeBlockCode>
+      {maxHeight ? (
+        <Panel isScrollable>
+          <PanelMain maxHeight={maxHeight} tabIndex={0} data-testid={scrollTestId}>
+            <PanelMainBody data-testid={codeTestId}>{code}</PanelMainBody>
+          </PanelMain>
+        </Panel>
+      ) : (
+        code
+      )}
     </CodeBlock>
   );
 };

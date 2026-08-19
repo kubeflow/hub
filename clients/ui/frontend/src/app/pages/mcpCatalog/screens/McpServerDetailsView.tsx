@@ -13,8 +13,6 @@ import {
   Label,
   LabelGroup,
   PageSection,
-  Panel,
-  PanelMain,
   Sidebar,
   SidebarContent,
   SidebarPanel,
@@ -25,9 +23,9 @@ import {
 import { GithubIcon, OutlinedClockIcon } from '@patternfly/react-icons';
 import type { McpServer } from '~/app/mcpServerCatalogTypes';
 import ExternalLink from '~/app/shared/components/ExternalLink';
-import CodeBlockComponent from '~/app/shared/markdown/components/CodeBlockComponent';
 import MarkdownComponent from '~/app/shared/markdown/MarkdownComponent';
 import ModelTimestamp from '~/app/pages/modelRegistry/screens/components/ModelTimestamp';
+import CodeBlockComponent from '~/app/shared/markdown/components/CodeBlockComponent';
 import McpServerToolsSection from '~/app/pages/mcpCatalog/screens/McpServerToolsSection';
 import { getMcpServerPrimaryEndpoint } from '~/app/pages/mcpCatalog/utils/mcpCatalogUtils';
 
@@ -105,13 +103,13 @@ const McpServerDetailsView: React.FC<McpServerDetailsViewProps> = ({ server }) =
                     </Title>
                   </CardHeader>
                   <CardBody>
-                    <Panel isScrollable>
-                      <PanelMain maxHeight="400px">
-                        <div data-testid="mcp-server-json-code">
-                          <CodeBlockComponent>{serverJsonContent}</CodeBlockComponent>
-                        </div>
-                      </PanelMain>
-                    </Panel>
+                    <CodeBlockComponent
+                      maxHeight="400px"
+                      scrollTestId="mcp-server-json-scroll"
+                      codeTestId="mcp-server-json-code"
+                    >
+                      {serverJsonContent}
+                    </CodeBlockComponent>
                   </CardBody>
                 </Card>
               </StackItem>

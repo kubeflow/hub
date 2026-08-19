@@ -56,6 +56,20 @@ describe('CodeBlockComponent', () => {
     expect(screen.getByRole('button', { name: 'Copy to clipboard' })).toBeInTheDocument();
   });
 
+  it('keeps copy actions outside the scroll region when maxHeight is set', () => {
+    render(
+      <CodeBlockComponent maxHeight="400px" scrollTestId="scroll-region" codeTestId="code-region">
+        {'{ "name": "example" }'}
+      </CodeBlockComponent>,
+    );
+
+    const scrollRegion = screen.getByTestId('scroll-region');
+    expect(scrollRegion).toHaveAttribute('tabIndex', '0');
+    expect(screen.getByTestId('code-region')).toHaveTextContent('{ "name": "example" }');
+    expect(scrollRegion.querySelector('.pf-v6-c-code-block__header')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Copy to clipboard' })).toBeInTheDocument();
+  });
+
   it('does not show copied state when clipboard write fails', async () => {
     (navigator.clipboard.writeText as jest.Mock).mockRejectedValue(new Error('denied'));
 
