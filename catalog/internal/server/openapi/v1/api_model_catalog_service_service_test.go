@@ -310,12 +310,11 @@ func TestFindModels(t *testing.T) {
 
 			resp, err := service.FindModels(
 				context.Background(),
-				false, // recommended
-				0,     // targetRPS
-				"",    // latencyProperty
-				"",    // rpsProperty
-				"",    // hardwareCountProperty
-				"",    // hardwareTypeProperty
+				0,  // targetRPS
+				"", // latencyProperty
+				"", // rpsProperty
+				"", // hardwareCountProperty
+				"", // hardwareTypeProperty
 				[]string{tc.sourceID},
 				tc.q,
 				[]string{""},
@@ -1623,7 +1622,6 @@ func TestGetAllModelArtifacts(t *testing.T) {
 				tc.sourceID,
 				tc.modelName,
 				[]model.ArtifactTypeQueryParam{},
-				[]model.ArtifactTypeQueryParam{},
 				"",
 				"10",
 				string(model.ORDERBYFIELD_CREATE_TIME),
@@ -1909,21 +1907,20 @@ func TestFindModelsRecommended(t *testing.T) {
 
 	service := NewModelCatalogServiceAPIService(provider, sources, nil, nil, sourceLabels, nil)
 
-	// Test recommended=true with default parameters
+	// Test orderBy=RECOMMENDED with default parameters
 	resp, err := service.FindModels(
 		context.Background(),
-		true, // recommended
-		0,    // targetRPS
-		"",   // latencyProperty
-		"",   // rpsProperty
-		"",   // hardwareCountProperty
-		"",   // hardwareTypeProperty
+		0,  // targetRPS
+		"", // latencyProperty
+		"", // rpsProperty
+		"", // hardwareCountProperty
+		"", // hardwareTypeProperty
 		[]string{"source1"},
 		"",
 		[]string{""},
 		"",
 		"10",
-		model.ORDERBYFIELD_NAME,
+		model.ORDERBYFIELD_RECOMMENDED,
 		model.SORTORDER_ASC,
 		"",
 	)
@@ -1961,7 +1958,6 @@ func TestFindModelsRecommendedWithCustomParams(t *testing.T) {
 	// Test with custom latency property and targetRPS
 	resp, err := service.FindModels(
 		context.Background(),
-		true,             // recommended
 		100,              // targetRPS
 		"custom_latency", // latencyProperty
 		"",               // rpsProperty
@@ -1972,56 +1968,7 @@ func TestFindModelsRecommendedWithCustomParams(t *testing.T) {
 		[]string{""},
 		"",
 		"10",
-		model.ORDERBYFIELD_NAME,
-		model.SORTORDER_ASC,
-		"",
-	)
-
-	assert.Equal(t, http.StatusOK, resp.Code)
-	require.NoError(t, err)
-
-	require.NotNil(t, resp.Body)
-	response, ok := resp.Body.(model.CatalogModelList)
-	require.True(t, ok)
-
-	// Verify models are sorted by recommended latency (mock returns models sorted by name)
-	require.True(t, len(response.Items) > 0)
-}
-
-func TestFindModelsRecommendedIgnoresOrderBy(t *testing.T) {
-	sources := catalog.NewSourceCollection()
-	sources.Merge("",
-		map[string]catalog.ModelSource{
-			"source1": {CatalogSource: model.CatalogSource{Id: "source1", Name: "Test Source 1"}},
-		},
-	)
-
-	sourceLabels := catalog.NewLabelCollection()
-
-	provider := &mockModelProvider{
-		models: map[string]*model.CatalogModel{
-			"modelA": {Name: "Model A"},
-			"modelB": {Name: "Model B"},
-		},
-	}
-
-	service := NewModelCatalogServiceAPIService(provider, sources, nil, nil, sourceLabels, nil)
-
-	// Test that orderBy is ignored when recommended=true
-	resp, err := service.FindModels(
-		context.Background(),
-		true, // recommended
-		0,    // targetRPS
-		"",   // latencyProperty
-		"",   // rpsProperty
-		"",   // hardwareCountProperty
-		"",   // hardwareTypeProperty
-		[]string{"source1"},
-		"",
-		[]string{""},
-		"",
-		"10",
-		model.ORDERBYFIELD_NAME, // This should be ignored
+		model.ORDERBYFIELD_RECOMMENDED,
 		model.SORTORDER_ASC,
 		"",
 	)
@@ -2065,8 +2012,7 @@ func TestFindModelsRecommendedWithNumericNextPageToken(t *testing.T) {
 
 	resp, err := service.FindModels(
 		context.Background(),
-		true, // recommended
-		1,    // targetRPS
+		1, // targetRPS
 		"ttft_p90",
 		"",
 		"",
@@ -2076,7 +2022,7 @@ func TestFindModelsRecommendedWithNumericNextPageToken(t *testing.T) {
 		[]string{""},
 		"",
 		"10",
-		model.ORDERBYFIELD_NAME,
+		model.ORDERBYFIELD_RECOMMENDED,
 		model.SORTORDER_ASC,
 		"10", // numeric nextPageToken from FindModelsWithRecommendedLatency
 	)
@@ -2093,7 +2039,6 @@ func TestFindModelsNonRecommendedRejectsInvalidToken(t *testing.T) {
 
 	resp, err := service.FindModels(
 		context.Background(),
-		false, // NOT recommended
 		0,
 		"",
 		"",
@@ -2121,7 +2066,6 @@ func TestFindModelsRecommendedRejectsNonNumericToken(t *testing.T) {
 
 	resp, err := service.FindModels(
 		context.Background(),
-		true, // recommended
 		1,
 		"ttft_p90",
 		"",
@@ -2132,7 +2076,7 @@ func TestFindModelsRecommendedRejectsNonNumericToken(t *testing.T) {
 		[]string{""},
 		"",
 		"10",
-		model.ORDERBYFIELD_NAME,
+		model.ORDERBYFIELD_RECOMMENDED,
 		model.SORTORDER_ASC,
 		"abc", // non-numeric token must be rejected
 	)
@@ -2364,7 +2308,6 @@ func TestFindModelsRecommendedRejectsOverflowToken(t *testing.T) {
 
 	resp, err := service.FindModels(
 		context.Background(),
-		true, // recommended
 		1,
 		"ttft_p90",
 		"",
@@ -2375,7 +2318,7 @@ func TestFindModelsRecommendedRejectsOverflowToken(t *testing.T) {
 		[]string{""},
 		"",
 		"10",
-		model.ORDERBYFIELD_NAME,
+		model.ORDERBYFIELD_RECOMMENDED,
 		model.SORTORDER_ASC,
 		"9999999999999", // exceeds MaxInt32, must be rejected
 	)
@@ -2502,15 +2445,14 @@ func TestFindModelsOrderByRecommended(t *testing.T) {
 
 	service := NewModelCatalogServiceAPIService(provider, sources, nil, nil, catalog.NewLabelCollection(), nil)
 
-	// orderBy=RECOMMENDED with recommendations=false should still use the recommendation path
+	// orderBy=RECOMMENDED should use the recommendation path
 	resp, err := service.FindModels(
 		context.Background(),
-		false, // recommendations=false
-		0,     // targetRPS
-		"",    // latencyProperty
-		"",    // rpsProperty
-		"",    // hardwareCountProperty
-		"",    // hardwareTypeProperty
+		0,  // targetRPS
+		"", // latencyProperty
+		"", // rpsProperty
+		"", // hardwareCountProperty
+		"", // hardwareTypeProperty
 		[]string{"source1"},
 		"",
 		[]string{""},
@@ -2553,12 +2495,11 @@ func TestFindModelsOrderByRecommendedDesc(t *testing.T) {
 	// orderBy=RECOMMENDED with sortOrder=DESC
 	resp, err := service.FindModels(
 		context.Background(),
-		false, // recommendations=false
-		0,     // targetRPS
-		"",    // latencyProperty
-		"",    // rpsProperty
-		"",    // hardwareCountProperty
-		"",    // hardwareTypeProperty
+		0,  // targetRPS
+		"", // latencyProperty
+		"", // rpsProperty
+		"", // hardwareCountProperty
+		"", // hardwareTypeProperty
 		[]string{"source1"},
 		"",
 		[]string{""},
@@ -2604,7 +2545,6 @@ func TestFindModelsOrderByRecommendedPagination(t *testing.T) {
 	// to base64-decode it as a DB cursor.
 	resp, err := service.FindModels(
 		context.Background(),
-		false, // recommendations=false — using orderBy instead
 		0, "", "", "", "",
 		[]string{"source1"},
 		"", []string{""}, "",
