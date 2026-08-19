@@ -62,14 +62,7 @@ func WithSkillSources(sc *catalog.SkillSourceCollection) ModelCatalogServiceOpti
 }
 
 // GetAllModelArtifacts retrieves all model artifacts for a given model from the specified source.
-func (m *ModelCatalogServiceAPIService) GetAllModelArtifacts(ctx context.Context, sourceID string, modelName string, artifactType []model.ArtifactTypeQueryParam, artifactType2 []model.ArtifactTypeQueryParam, filterQuery string, pageSize string, orderBy string, sortOrder model.SortOrder, nextPageToken string) (ImplResponse, error) {
-	// Handle multiple artifact_type parameters (snake case - deprecated, will be removed in future)
-	for _, v := range artifactType2 {
-		if v != "" {
-			artifactType = append(artifactType, v)
-		}
-	}
-
+func (m *ModelCatalogServiceAPIService) GetAllModelArtifacts(ctx context.Context, sourceID string, modelName string, artifactType []model.ArtifactTypeQueryParam, filterQuery string, pageSize string, orderBy string, sortOrder model.SortOrder, nextPageToken string) (ImplResponse, error) {
 	if newName, err := url.PathUnescape(modelName); err == nil {
 		modelName = newName
 	}
@@ -245,13 +238,13 @@ func (m *ModelCatalogServiceAPIService) FindLabels(ctx context.Context, assetTyp
 	return Response(http.StatusOK, res), nil
 }
 
-func (m *ModelCatalogServiceAPIService) FindModels(ctx context.Context, recommended bool, targetRPS int32, latencyProperty string, rpsProperty string, hardwareCountProperty string, hardwareTypeProperty string, sourceIDs []string, q string, sourceLabels []string, filterQuery string, pageSize string, orderBy model.OrderByField, sortOrder model.SortOrder, nextPageToken string) (ImplResponse, error) {
+func (m *ModelCatalogServiceAPIService) FindModels(ctx context.Context, targetRPS int32, latencyProperty string, rpsProperty string, hardwareCountProperty string, hardwareTypeProperty string, sourceIDs []string, q string, sourceLabels []string, filterQuery string, pageSize string, orderBy model.OrderByField, sortOrder model.SortOrder, nextPageToken string) (ImplResponse, error) {
 	// Validate pageSize and nextPageToken up-front. The recommended path uses numeric
 	// offset tokens; the non-recommended path uses base64-encoded DB cursors
 	// validated inside parsePaginationParams.
 	var pageSizeInt int32
 	var err error
-	if recommended || orderBy == model.ORDERBYFIELD_RECOMMENDED {
+	if orderBy == model.ORDERBYFIELD_RECOMMENDED {
 		pageSizeInt, err = parsePageSize(pageSize)
 		if err != nil {
 			return ErrorResponse(http.StatusBadRequest, err), err
@@ -293,8 +286,8 @@ func (m *ModelCatalogServiceAPIService) FindModels(ctx context.Context, recommen
 		}
 	}
 
-	// Handle recommended latency sorting (triggered by recommendations=true or orderBy=RECOMMENDED)
-	if recommended || orderBy == model.ORDERBYFIELD_RECOMMENDED {
+	// Handle recommended latency sorting (triggered by orderBy=RECOMMENDED)
+	if orderBy == model.ORDERBYFIELD_RECOMMENDED {
 		// Build Pareto filtering parameters with defaults
 		var targetRPSPtr *int32
 		if targetRPS != 0 {

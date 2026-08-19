@@ -217,22 +217,6 @@ func (c *ModelCatalogServiceAPIController) FindModels(w http.ResponseWriter, r *
 		c.errorHandler(w, r, &ParsingError{Err: err}, nil)
 		return
 	}
-	var recommendationsParam bool
-	if query.Has("recommendations") {
-		param, err := parseBoolParameter(
-			query.Get("recommendations"),
-			WithParse[bool](parseBool),
-		)
-		if err != nil {
-			c.errorHandler(w, r, &ParsingError{Param: "recommendations", Err: err}, nil)
-			return
-		}
-
-		recommendationsParam = param
-	} else {
-		var param bool = false
-		recommendationsParam = param
-	}
 	var targetRPSParam int32
 	if query.Has("targetRPS") {
 		param, err := parseNumericParameter[int32](
@@ -333,7 +317,7 @@ func (c *ModelCatalogServiceAPIController) FindModels(w http.ResponseWriter, r *
 		nextPageTokenParam = param
 	} else {
 	}
-	result, err := c.service.FindModels(r.Context(), recommendationsParam, targetRPSParam, latencyPropertyParam, rpsPropertyParam, hardwareCountPropertyParam, hardwareTypePropertyParam, sourceParam, qParam, sourceLabelParam, filterQueryParam, pageSizeParam, orderByParam, sortOrderParam, nextPageTokenParam)
+	result, err := c.service.FindModels(r.Context(), targetRPSParam, latencyPropertyParam, rpsPropertyParam, hardwareCountPropertyParam, hardwareTypePropertyParam, sourceParam, qParam, sourceLabelParam, filterQueryParam, pageSizeParam, orderByParam, sortOrderParam, nextPageTokenParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)
@@ -557,19 +541,6 @@ func (c *ModelCatalogServiceAPIController) GetAllModelArtifacts(w http.ResponseW
 			artifactTypeParam = append(artifactTypeParam, *paramEnum)
 		}
 	}
-	var artifactType2Param []model.ArtifactTypeQueryParam
-	if query.Has("artifact_type") {
-		paramSplits := strings.Split(query.Get("artifact_type"), ",")
-		artifactType2Param = make([]model.ArtifactTypeQueryParam, 0, len(paramSplits))
-		for _, param := range paramSplits {
-			paramEnum, err := model.NewArtifactTypeQueryParamFromValue(param)
-			if err != nil {
-				c.errorHandler(w, r, &ParsingError{Param: "artifact_type", Err: err}, nil)
-				return
-			}
-			artifactType2Param = append(artifactType2Param, *paramEnum)
-		}
-	}
 	var filterQueryParam string
 	if query.Has("filterQuery") {
 		param := query.Get("filterQuery")
@@ -605,7 +576,7 @@ func (c *ModelCatalogServiceAPIController) GetAllModelArtifacts(w http.ResponseW
 		nextPageTokenParam = param
 	} else {
 	}
-	result, err := c.service.GetAllModelArtifacts(r.Context(), sourceIdParam, modelNameParam, artifactTypeParam, artifactType2Param, filterQueryParam, pageSizeParam, orderByParam, sortOrderParam, nextPageTokenParam)
+	result, err := c.service.GetAllModelArtifacts(r.Context(), sourceIdParam, modelNameParam, artifactTypeParam, filterQueryParam, pageSizeParam, orderByParam, sortOrderParam, nextPageTokenParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)
