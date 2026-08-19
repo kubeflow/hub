@@ -109,7 +109,7 @@ describe('MCP Server Details Page', () => {
     it('should render README with markdown elements', () => {
       initServerDetailIntercept(kubernetesServer);
       mcpServerDetails.visit(kubernetesServer.id);
-      mcpServerDetails.findReadmeMarkdown().should('be.visible');
+      mcpServerDetails.findReadmeMarkdown().scrollIntoView().should('be.visible');
       mcpServerDetails.findReadmeMarkdown().should('contain.text', 'Kubernetes MCP Server');
       mcpServerDetails.findReadmeMarkdown().find('h3').should('exist');
       mcpServerDetails.findReadmeMarkdown().find('code').should('exist');
