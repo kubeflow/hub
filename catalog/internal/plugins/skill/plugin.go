@@ -14,7 +14,6 @@ import (
 	"github.com/kubeflow/hub/catalog/internal/db/models"
 	"github.com/kubeflow/hub/catalog/internal/plugin"
 	v1 "github.com/kubeflow/hub/catalog/internal/server/openapi/v1"
-	v1alpha1 "github.com/kubeflow/hub/catalog/internal/server/openapi/v1alpha1"
 	"github.com/kubeflow/hub/internal/platform/datastore"
 )
 
@@ -26,9 +25,9 @@ type Plugin struct {
 }
 
 func (p *Plugin) Name() string                   { return "skill" }
-func (p *Plugin) Version() string                { return "v1alpha1" }
+func (p *Plugin) Version() string                { return "v1" }
 func (p *Plugin) Description() string            { return "Skill catalog" }
-func (p *Plugin) BasePath() string               { return "/api/skill_catalog/v1alpha1" }
+func (p *Plugin) BasePath() string               { return "/api/skill_catalog/v1" }
 func (p *Plugin) Healthy() bool                  { return true }
 func (p *Plugin) Migrations() []plugin.Migration { return nil }
 
@@ -106,14 +105,6 @@ func (p *Plugin) SkillSources() *skillcatalog.SkillSourceCollection {
 
 func (p *Plugin) RegisterRoutes(router chi.Router) error {
 	provider := skillcatalog.NewDBSkillCatalog(p.services)
-
-	// v1alpha1 routes
-	alphaCtrl := v1alpha1.NewSkillCatalogServiceAPIController(
-		v1alpha1.NewSkillCatalogServiceAPIService(provider, p.loader.SourceCollection()),
-	)
-	for _, route := range alphaCtrl.OrderedRoutes() {
-		router.Method(route.Method, route.Pattern, route.HandlerFunc)
-	}
 
 	// v1 routes
 	v1Ctrl := v1.NewSkillCatalogServiceAPIController(

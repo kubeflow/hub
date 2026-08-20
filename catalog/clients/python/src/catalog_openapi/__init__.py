@@ -21,7 +21,6 @@ __all__ = [
     "AgentCatalogServiceApi",
     "MCPCatalogServiceApi",
     "ModelCatalogServiceApi",
-    "SkillCatalogServiceApi",
     "ApiResponse",
     "ApiClient",
     "Configuration",
@@ -99,9 +98,6 @@ __all__ = [
     "OrderByField",
     "PreviewCatalogSourceResponse",
     "ServingConfig",
-    "Skill",
-    "SkillList",
-    "SkillTrustTier",
     "SortOrder",
     "ToolCallingConfig",
 ]
@@ -110,7 +106,6 @@ __all__ = [
 from catalog_openapi.api.agent_catalog_service_api import AgentCatalogServiceApi as AgentCatalogServiceApi
 from catalog_openapi.api.mcp_catalog_service_api import MCPCatalogServiceApi as MCPCatalogServiceApi
 from catalog_openapi.api.model_catalog_service_api import ModelCatalogServiceApi as ModelCatalogServiceApi
-from catalog_openapi.api.skill_catalog_service_api import SkillCatalogServiceApi as SkillCatalogServiceApi
 
 # import ApiClient
 from catalog_openapi.api_response import ApiResponse as ApiResponse
@@ -192,8 +187,5 @@ from catalog_openapi.models.model_preview_result import ModelPreviewResult as Mo
 from catalog_openapi.models.order_by_field import OrderByField as OrderByField
 from catalog_openapi.models.preview_catalog_source_response import PreviewCatalogSourceResponse as PreviewCatalogSourceResponse
 from catalog_openapi.models.serving_config import ServingConfig as ServingConfig
-from catalog_openapi.models.skill import Skill as Skill
-from catalog_openapi.models.skill_list import SkillList as SkillList
-from catalog_openapi.models.skill_trust_tier import SkillTrustTier as SkillTrustTier
 from catalog_openapi.models.sort_order import SortOrder as SortOrder
 from catalog_openapi.models.tool_calling_config import ToolCallingConfig as ToolCallingConfig

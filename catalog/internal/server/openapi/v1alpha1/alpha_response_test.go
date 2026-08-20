@@ -121,40 +121,6 @@ func TestAlphaResponseJSONRenaming(t *testing.T) {
 		assert.NotContains(t, jsonStr, `"sourceId"`)
 	})
 
-	t.Run("AlphaSkill renames sourceId to source_id", func(t *testing.T) {
-		sk := model.Skill{
-			Name:     "test-skill",
-			SourceId: &sourceID,
-		}
-		wrapped := wrapSkill(&sk)
-
-		data, err := json.Marshal(wrapped)
-		require.NoError(t, err)
-
-		jsonStr := string(data)
-		assert.Contains(t, jsonStr, `"source_id":"test-source-1"`)
-		assert.NotContains(t, jsonStr, `"sourceId"`)
-	})
-
-	t.Run("AlphaSkillList renames sourceId in items", func(t *testing.T) {
-		sk := model.Skill{
-			Name:     "test-skill",
-			SourceId: &sourceID,
-		}
-		list := model.SkillList{
-			Items: []model.Skill{sk},
-			Size:  1,
-		}
-		wrapped := wrapSkillList(&list)
-
-		data, err := json.Marshal(wrapped)
-		require.NoError(t, err)
-
-		jsonStr := string(data)
-		assert.Contains(t, jsonStr, `"source_id":"test-source-1"`)
-		assert.NotContains(t, jsonStr, `"sourceId"`)
-	})
-
 	t.Run("AlphaCatalogModel preserves keys in nested maps", func(t *testing.T) {
 		m := model.CatalogModel{
 			Name:     "test-model",

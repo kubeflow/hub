@@ -7,7 +7,7 @@ OPENAPI_GENERATOR=${OPENAPI_GENERATOR:-openapi-generator-cli}
 PROJECT_ROOT=$(realpath "$(dirname "$0")/../../..")
 REPO_ROOT=$(realpath "$PROJECT_ROOT/..")
 
-VERSIONS=("v1alpha1" "v1")
+VERSIONS=("v1")
 if [[ -n "$1" ]]; then
     VERSIONS=("$1")
 fi
