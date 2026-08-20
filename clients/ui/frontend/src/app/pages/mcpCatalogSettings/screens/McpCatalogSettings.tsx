@@ -1,8 +1,7 @@
 import * as React from 'react';
-import { Button, EmptyState, EmptyStateBody, EmptyStateVariant } from '@patternfly/react-core';
-import { PlusCircleIcon } from '@patternfly/react-icons';
 import { useNavigate } from 'react-router-dom';
-import { ApplicationsPage, ProjectObjectType, TitleWithIcon } from 'mod-arch-shared';
+import { ProjectObjectType, TitleWithIcon } from 'mod-arch-shared';
+import { CatalogSettingsListPage } from '~/app/shared/catalogSettings';
 import {
   MCP_CATALOG_SETTINGS_PAGE_TITLE,
   MCP_CATALOG_SETTINGS_DESCRIPTION,
@@ -37,7 +36,7 @@ const McpCatalogSettings: React.FC = () => {
   );
 
   return (
-    <ApplicationsPage
+    <CatalogSettingsListPage
       title={
         <TitleWithIcon
           title={MCP_CATALOG_SETTINGS_PAGE_TITLE}
@@ -45,38 +44,23 @@ const McpCatalogSettings: React.FC = () => {
         />
       }
       description={MCP_CATALOG_SETTINGS_DESCRIPTION}
-      empty={isEmpty}
-      emptyStatePage={
-        <EmptyState
-          headingLevel="h5"
-          icon={PlusCircleIcon}
-          titleText="No MCP sources"
-          variant={EmptyStateVariant.lg}
-          data-testid="mcp-catalog-settings-empty-state"
-        >
-          <EmptyStateBody>
-            No MCP sources have been configured. Add a source to get started.
-          </EmptyStateBody>
-          <Button
-            variant="primary"
-            onClick={() => navigate(mcpAddSourceUrl())}
-            data-testid="mcp-add-source-button-empty"
-          >
-            {MCP_ADD_SOURCE_TITLE}
-          </Button>
-        </EmptyState>
-      }
+      isEmpty={isEmpty}
       loaded={mcpCatalogSourceConfigsLoaded}
       loadError={mcpCatalogSourceConfigsLoadError}
       errorMessage="Unable to load MCP catalog source configurations."
-      provideChildrenPadding
+      emptyStateTitle="No MCP sources"
+      emptyStateBody="No MCP sources have been configured. Add a source to get started."
+      emptyStateTestId="mcp-catalog-settings-empty-state"
+      addSourceLabel={MCP_ADD_SOURCE_TITLE}
+      addSourceButtonTestId="mcp-add-source-button-empty"
+      onAddSource={() => navigate(mcpAddSourceUrl())}
     >
       <McpCatalogSourceConfigsTable
         mcpCatalogSourceConfigs={configs}
         onAddSource={() => navigate(mcpAddSourceUrl())}
         onDeleteSource={handleDeleteSource}
       />
-    </ApplicationsPage>
+    </CatalogSettingsListPage>
   );
 };
 

@@ -52,3 +52,11 @@ export type {
   SourcePreviewTabState,
   SourcePreviewPanelTestIds,
 } from './components/SourcePreviewPanel';
+export { default as CatalogSettingsListPage } from './components/CatalogSettingsListPage';
+export { default as ManageSourcePageShell } from './components/ManageSourcePageShell';
+export { default as SourceConfigsTable } from './components/SourceConfigsTable';
+export { default as SourceConfigsTableRow } from './components/SourceConfigsTableRow';
+export type {
+  SourceConfigRowBase,
+  SourceVisibilityLabelInfo,
+} from './components/SourceConfigsTableRow';

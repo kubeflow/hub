@@ -1,8 +1,7 @@
 import * as React from 'react';
-import { Button, EmptyState, EmptyStateBody, EmptyStateVariant } from '@patternfly/react-core';
-import { PlusCircleIcon } from '@patternfly/react-icons';
 import { useNavigate } from 'react-router-dom';
-import { ProjectObjectType, TitleWithIcon, ApplicationsPage } from 'mod-arch-shared';
+import { ProjectObjectType, TitleWithIcon } from 'mod-arch-shared';
+import { CatalogSettingsListPage } from '~/app/shared/catalogSettings';
 import {
   CATALOG_SETTINGS_PAGE_TITLE,
   CATALOG_SETTINGS_DESCRIPTION,
@@ -39,7 +38,7 @@ const ModelCatalogSettings: React.FC = () => {
   );
 
   return (
-    <ApplicationsPage
+    <CatalogSettingsListPage
       title={
         <TitleWithIcon
           title={CATALOG_SETTINGS_PAGE_TITLE}
@@ -47,38 +46,23 @@ const ModelCatalogSettings: React.FC = () => {
         />
       }
       description={CATALOG_SETTINGS_DESCRIPTION}
-      empty={isEmpty}
-      emptyStatePage={
-        <EmptyState
-          headingLevel="h5"
-          icon={PlusCircleIcon}
-          titleText="No catalog sources"
-          variant={EmptyStateVariant.lg}
-          data-testid="catalog-settings-empty-state"
-        >
-          <EmptyStateBody>
-            No catalog sources have been configured. Add a source to get started.
-          </EmptyStateBody>
-          <Button
-            variant="primary"
-            onClick={() => navigate(addSourceUrl())}
-            data-testid="add-source-button-empty"
-          >
-            {ADD_SOURCE_TITLE}
-          </Button>
-        </EmptyState>
-      }
+      isEmpty={isEmpty}
       loaded={catalogSourceConfigsLoaded}
       loadError={catalogSourceConfigsLoadError}
       errorMessage="Unable to load catalog source configurations."
-      provideChildrenPadding
+      emptyStateTitle="No catalog sources"
+      emptyStateBody="No catalog sources have been configured. Add a source to get started."
+      emptyStateTestId="catalog-settings-empty-state"
+      addSourceLabel={ADD_SOURCE_TITLE}
+      addSourceButtonTestId="add-source-button-empty"
+      onAddSource={() => navigate(addSourceUrl())}
     >
       <CatalogSourceConfigsTable
         catalogSourceConfigs={configs}
         onAddSource={() => navigate(addSourceUrl())}
         onDeleteSource={handleDeleteSource}
       />
-    </ApplicationsPage>
+    </CatalogSettingsListPage>
   );
 };
 
