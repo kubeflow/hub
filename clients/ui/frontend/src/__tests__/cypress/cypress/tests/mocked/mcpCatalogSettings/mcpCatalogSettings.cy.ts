@@ -1,6 +1,7 @@
 import {
   mcpCatalogSettings,
   mcpManageSourcePage,
+  mcpDeleteSourceModal,
 } from '~/__tests__/cypress/cypress/pages/mcpCatalogSettings';
 import {
   mockMcpCatalogSourceConfigList,
@@ -857,6 +858,141 @@ describe('MCP Catalog Source Configs Table', () => {
       mcpCatalogSettings.visit();
       const row = mcpCatalogSettings.getRow('Error Source');
       row.find().should('contain', 'Failed');
+    });
+  });
+
+  describe('Sources refresh after mutations', () => {
+    it('should refresh catalog sources after toggling enable/disable', () => {
+      const mockData = mockMcpCatalogSourceConfigList({
+        catalogs: [
+          mockMcpCatalogSourceConfig({
+            id: 'custom-mcp',
+            name: 'Custom MCP',
+            isDefault: false,
+            enabled: false,
+          }),
+        ],
+      });
+      cy.intercept('GET', '**/settings/mcp_catalog/source_configs*', {
+        data: mockData,
+      });
+      cy.intercept('GET', '**/model_catalog/sources*assetType=mcp_servers*', {
+        data: {
+          items: [],
+          size: 0,
+          pageSize: 10,
+          nextPageToken: '',
+        },
+      });
+
+      cy.intercept('PATCH', '/model-registry/api/v1/settings/mcp_catalog/source_configs/*', {
+        statusCode: 200,
+        body: {
+          data: mockMcpCatalogSourceConfig({ id: 'custom-mcp', enabled: true }),
+        },
+      }).as('toggleSource');
+
+      mcpCatalogSettings.visit();
+
+      const row = mcpCatalogSettings.getRow('Custom MCP');
+      row.findName().should('be.visible');
+
+      row.shouldHaveValidationStatus('-');
+
+      // After toggle, configs refresh should return custom-mcp as enabled
+      cy.intercept('GET', '/model-registry/api/v1/settings/mcp_catalog/source_configs', {
+        data: {
+          catalogs: [
+            mockMcpCatalogSourceConfig({
+              id: 'custom-mcp',
+              name: 'Custom MCP',
+              isDefault: false,
+              enabled: true,
+            }),
+          ],
+        },
+      });
+
+      row.toggleEnable();
+
+      cy.wait('@toggleSource');
+
+      row.shouldHaveValidationStatus('Starting');
+    });
+
+    it('should refresh catalog sources after deleting a source', () => {
+      const availableSource = {
+        id: 'mcp-source-1',
+        name: 'MCP Source 1',
+        labels: [],
+        status: 'available',
+      };
+
+      const mockData = mockMcpCatalogSourceConfigList({
+        catalogs: [
+          mockMcpCatalogSourceConfig({
+            id: 'mcp-source-1',
+            name: 'MCP Source 1',
+            isDefault: false,
+            enabled: true,
+          }),
+          mockMcpCatalogSourceConfig({
+            id: 'mcp-source-2',
+            name: 'MCP Source 2',
+            isDefault: false,
+            enabled: true,
+          }),
+        ],
+      });
+
+      cy.intercept('GET', '**/settings/mcp_catalog/source_configs*', {
+        data: mockData,
+      });
+      cy.intercept('GET', '**/model_catalog/sources*assetType=mcp_servers*', {
+        data: {
+          items: [availableSource],
+          size: 1,
+          pageSize: 10,
+          nextPageToken: '',
+        },
+      });
+
+      cy.intercept('DELETE', '/model-registry/api/v1/settings/mcp_catalog/source_configs/*', {
+        statusCode: 200,
+        body: {},
+      }).as('deleteSource');
+
+      mcpCatalogSettings.visit();
+
+      const row = mcpCatalogSettings.getRow('MCP Source 1');
+
+      row.shouldHaveValidationStatus('Ready');
+
+      // After delete, configs refresh should return without mcp-source-1
+      cy.intercept('GET', '/model-registry/api/v1/settings/mcp_catalog/source_configs', {
+        data: {
+          catalogs: [
+            mockMcpCatalogSourceConfig({
+              id: 'mcp-source-2',
+              name: 'MCP Source 2',
+              isDefault: false,
+              enabled: true,
+            }),
+          ],
+        },
+      });
+
+      row.findKebab().click();
+      cy.findByRole('menuitem', { name: 'Delete source' }).click();
+
+      mcpDeleteSourceModal.shouldBeOpen();
+      mcpDeleteSourceModal.typeConfirmation('MCP Source 1');
+      mcpDeleteSourceModal.findDeleteButton().click();
+
+      cy.wait('@deleteSource');
+
+      // Assert row was removed after delete (table had 2 rows, now has 1)
+      mcpCatalogSettings.findRows().should('have.length', 1);
     });
   });
 });

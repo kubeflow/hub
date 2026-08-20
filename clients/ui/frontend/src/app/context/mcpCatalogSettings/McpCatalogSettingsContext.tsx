@@ -32,6 +32,8 @@ export type McpCatalogSettingsContextType = {
   mcpCatalogSourcesLoaded: boolean;
   mcpCatalogSourcesLoadError?: Error;
   refreshMcpCatalogSources: () => void;
+  pendingSourceIds: Map<string, string>;
+  markSourcePending: (id: string, previousStatus: string) => void;
 };
 
 type McpCatalogSettingsContextProviderProps = {
@@ -50,6 +52,8 @@ export const McpCatalogSettingsContext = React.createContext<McpCatalogSettingsC
   mcpCatalogSourcesLoaded: false,
   mcpCatalogSourcesLoadError: undefined,
   refreshMcpCatalogSources: () => undefined,
+  pendingSourceIds: new Map(),
+  markSourcePending: () => undefined,
 });
 
 export const McpCatalogSettingsContextProvider: React.FC<
@@ -68,6 +72,51 @@ export const McpCatalogSettingsContextProvider: React.FC<
     refreshCatalogSources: refreshMcpCatalogSources,
   } = useCatalogSettingsValue();
 
+  const [pendingSourceIds, setPendingSourceIds] = React.useState<Map<string, string>>(new Map());
+  const pendingSkipCountRef = React.useRef(new Map<string, number>());
+  const pollGenerationRef = React.useRef(0);
+  const lastSeenGenerationRef = React.useRef(new Map<string, number>());
+
+  const markSourcePending = React.useCallback((id: string, previousStatus: string) => {
+    lastSeenGenerationRef.current.set(id, pollGenerationRef.current);
+    pendingSkipCountRef.current.set(id, 3);
+    setPendingSourceIds((prev) => {
+      const next = new Map(prev);
+      next.set(id, previousStatus);
+      return next;
+    });
+  }, []);
+
+  React.useEffect(() => {
+    pollGenerationRef.current += 1;
+    const currentGeneration = pollGenerationRef.current;
+
+    setPendingSourceIds((prev) => {
+      if (prev.size === 0) {
+        return prev;
+      }
+      const next = new Map(prev);
+      let changed = false;
+      for (const [id] of prev) {
+        const markedAt = lastSeenGenerationRef.current.get(id) ?? 0;
+        const pollsSinceMarked = currentGeneration - markedAt;
+        const skipCount = pendingSkipCountRef.current.get(id) ?? 0;
+
+        if (pollsSinceMarked <= skipCount) {
+          continue;
+        }
+        const source = mcpCatalogSources?.items?.find((s) => s.id === id);
+        if (!source || source.status) {
+          next.delete(id);
+          pendingSkipCountRef.current.delete(id);
+          lastSeenGenerationRef.current.delete(id);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [mcpCatalogSources]);
+
   const contextValue = React.useMemo(
     () => ({
       apiState,
@@ -80,6 +129,8 @@ export const McpCatalogSettingsContextProvider: React.FC<
       mcpCatalogSourcesLoaded,
       mcpCatalogSourcesLoadError,
       refreshMcpCatalogSources,
+      pendingSourceIds,
+      markSourcePending,
     }),
     [
       apiState,
@@ -92,6 +143,8 @@ export const McpCatalogSettingsContextProvider: React.FC<
       mcpCatalogSourcesLoaded,
       mcpCatalogSourcesLoadError,
       refreshMcpCatalogSources,
+      pendingSourceIds,
+      markSourcePending,
     ],
   );
 

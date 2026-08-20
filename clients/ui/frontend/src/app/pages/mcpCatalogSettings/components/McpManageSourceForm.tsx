@@ -51,7 +51,13 @@ const McpManageSourceForm: React.FC<McpManageSourceFormProps> = ({
   const [formData, setData] = useManageMcpSourceData(existingData);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submitError, setSubmitError] = React.useState<Error | undefined>(undefined);
-  const { apiState, refreshMcpCatalogSourceConfigs } = React.useContext(McpCatalogSettingsContext);
+  const {
+    apiState,
+    mcpCatalogSources,
+    refreshMcpCatalogSourceConfigs,
+    refreshMcpCatalogSources,
+    markSourcePending,
+  } = React.useContext(McpCatalogSettingsContext);
 
   const preview = useMcpSourcePreview({
     formData,
@@ -74,13 +80,25 @@ const McpManageSourceForm: React.FC<McpManageSourceFormProps> = ({
       const sourceConfig = transformMcpFormDataToConfig(formData, existingSourceConfig);
       const payload = getMcpPayloadForConfig(sourceConfig, isEditMode);
 
-      if (isEditMode) {
+      if (isEditMode && existingData) {
+        const previousStatus =
+          mcpCatalogSources?.items?.find((s) => s.id === formData.id)?.status ?? '';
         await apiState.api.updateMcpCatalogSourceConfig({}, formData.id, payload);
+        const validationFieldsChanged =
+          existingData.sourceType !== formData.sourceType ||
+          existingData.yamlContent !== formData.yamlContent ||
+          existingData.includedServers !== formData.includedServers ||
+          existingData.excludedServers !== formData.excludedServers ||
+          existingData.enabled !== formData.enabled;
+        if (validationFieldsChanged) {
+          markSourcePending(formData.id, previousStatus);
+        }
       } else {
         await apiState.api.createMcpCatalogSourceConfig({}, payload);
       }
 
       refreshMcpCatalogSourceConfigs();
+      refreshMcpCatalogSources();
       navigate(mcpCatalogSettingsUrl());
     } catch (error) {
       setSubmitError(error instanceof Error ? error : new Error(MCP_ERROR_MESSAGES.SAVE_FAILED));

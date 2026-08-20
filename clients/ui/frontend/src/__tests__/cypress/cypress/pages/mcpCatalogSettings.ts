@@ -1,5 +1,53 @@
 import { appChrome } from './appChrome';
 import { TableRow } from './components/table';
+import { Modal } from './components/Modal';
+
+class McpDeleteSourceModal extends Modal {
+  constructor() {
+    super('Delete a source');
+  }
+
+  find() {
+    return cy.findByTestId('mcp-delete-source-modal');
+  }
+
+  findDeleteButton() {
+    return cy.findByTestId('delete-modal-confirm-button');
+  }
+
+  findConfirmInput() {
+    return cy.findByTestId('delete-modal-input');
+  }
+
+  typeConfirmation(text: string) {
+    this.findConfirmInput().clear().type(text);
+    return this;
+  }
+}
+
+class McpCatalogSourceConfigRow extends TableRow {
+  findName() {
+    return this.find().find('[data-label="Name"]');
+  }
+
+  findEnableToggle() {
+    return this.find().find('[data-label="Enable"]').find('input[type="checkbox"]');
+  }
+
+  findValidationStatus() {
+    return this.find().find('[data-label="Validation status"]');
+  }
+
+  toggleEnable() {
+    this.findEnableToggle().click({ force: true });
+    return this;
+  }
+
+  shouldHaveValidationStatus(status: 'Ready' | 'Failed' | 'Starting' | 'Unknown' | '-') {
+    this.findValidationStatus().contains(status);
+    return this;
+  }
+}
 
 class McpCatalogSettings {
   visit() {
@@ -61,7 +109,7 @@ class McpCatalogSettings {
   }
 
   getRow(name: string) {
-    return new TableRow(() =>
+    return new McpCatalogSourceConfigRow(() =>
       this.findTable().find('tbody').find('tr').contains(name).parents('tr'),
     );
   }
@@ -240,3 +288,4 @@ class McpManageSourcePage {
 
 export const mcpCatalogSettings = new McpCatalogSettings();
 export const mcpManageSourcePage = new McpManageSourcePage();
+export const mcpDeleteSourceModal = new McpDeleteSourceModal();

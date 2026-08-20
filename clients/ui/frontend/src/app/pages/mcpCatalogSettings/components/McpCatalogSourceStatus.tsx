@@ -13,8 +13,12 @@ type McpCatalogSourceStatusProps = {
 const McpCatalogSourceStatus: React.FC<McpCatalogSourceStatusProps> = ({
   mcpCatalogSourceConfig,
 }) => {
-  const { mcpCatalogSources, mcpCatalogSourcesLoaded, mcpCatalogSourcesLoadError } =
-    React.useContext(McpCatalogSettingsContext);
+  const {
+    mcpCatalogSources,
+    mcpCatalogSourcesLoaded,
+    mcpCatalogSourcesLoadError,
+    pendingSourceIds,
+  } = React.useContext(McpCatalogSettingsContext);
   const [isErrorModalOpen, setIsErrorModalOpen] = React.useState(false);
 
   if (!mcpCatalogSourceConfig.enabled || mcpCatalogSourceConfig.isDefault) {
@@ -27,10 +31,6 @@ const McpCatalogSourceStatus: React.FC<McpCatalogSourceStatusProps> = ({
     );
   }
 
-  const matchingSource = mcpCatalogSources?.items?.find(
-    (source) => source.id === mcpCatalogSourceConfig.id,
-  );
-
   const startingOrUnknownLabel = (
     <Label
       color="grey"
@@ -40,6 +40,14 @@ const McpCatalogSourceStatus: React.FC<McpCatalogSourceStatusProps> = ({
     >
       {mcpCatalogSourcesLoadError ? 'Unknown' : 'Starting'}
     </Label>
+  );
+
+  if (pendingSourceIds.has(mcpCatalogSourceConfig.id)) {
+    return startingOrUnknownLabel;
+  }
+
+  const matchingSource = mcpCatalogSources?.items?.find(
+    (source) => source.id === mcpCatalogSourceConfig.id,
   );
 
   if (!matchingSource || !matchingSource.status) {

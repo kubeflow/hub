@@ -31,8 +31,14 @@ const McpCatalogSourceConfigsTable: React.FC<McpCatalogSourceConfigsTableProps> 
 }) => {
   const [toggleError, setToggleError] = React.useState<Error | undefined>(undefined);
   const [updatingToggleId, setUpdatingToggleId] = React.useState<string | null>(null);
-  const { apiState, refreshMcpCatalogSourceConfigs, mcpCatalogSourcesLoadError } =
-    React.useContext(McpCatalogSettingsContext);
+  const {
+    apiState,
+    refreshMcpCatalogSourceConfigs,
+    refreshMcpCatalogSources,
+    mcpCatalogSourcesLoadError,
+    mcpCatalogSources,
+    markSourcePending,
+  } = React.useContext(McpCatalogSettingsContext);
 
   const handleEnableToggle = async (
     checked: boolean,
@@ -45,11 +51,20 @@ const McpCatalogSourceConfigsTable: React.FC<McpCatalogSourceConfigsTableProps> 
     setUpdatingToggleId(catalogSourceConfig.id);
     setToggleError(undefined);
 
+    if (checked) {
+      const previousStatus =
+        mcpCatalogSources?.items?.find((s) => s.id === catalogSourceConfig.id)?.status ?? '';
+      markSourcePending(catalogSourceConfig.id, previousStatus);
+    }
+
     try {
       await apiState.api.updateMcpCatalogSourceConfig({}, catalogSourceConfig.id, {
         enabled: checked,
       });
       refreshMcpCatalogSourceConfigs();
+      if (checked) {
+        refreshMcpCatalogSources();
+      }
     } catch (e) {
       if (e instanceof Error) {
         setToggleError(new Error(`Error enabling/disabling source ${catalogSourceConfig.name}`));

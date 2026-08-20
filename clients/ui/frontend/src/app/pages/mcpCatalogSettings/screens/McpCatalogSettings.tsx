@@ -20,6 +20,7 @@ const McpCatalogSettings: React.FC = () => {
     mcpCatalogSourceConfigsLoadError,
     apiState,
     refreshMcpCatalogSourceConfigs,
+    refreshMcpCatalogSources,
   } = React.useContext(McpCatalogSettingsContext);
 
   const configs = mcpCatalogSourceConfigs?.catalogs || [];
@@ -32,8 +33,9 @@ const McpCatalogSettings: React.FC = () => {
       }
       await apiState.api.deleteMcpCatalogSourceConfig({}, sourceId);
       refreshMcpCatalogSourceConfigs();
+      refreshMcpCatalogSources();
     },
-    [apiState.api, apiState.apiAvailable, refreshMcpCatalogSourceConfigs],
+    [apiState.api, apiState.apiAvailable, refreshMcpCatalogSourceConfigs, refreshMcpCatalogSources],
   );
 
   return (
