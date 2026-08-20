@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { Button, ButtonProps } from '@patternfly/react-core';
-import { BUTTON_LABELS } from '~/app/pages/modelCatalogSettings/constants';
 
 type PreviewButtonProps = {
+  label: string;
   onClick: () => void;
   isDisabled: boolean;
   isLoading?: boolean;
@@ -11,6 +11,7 @@ type PreviewButtonProps = {
 };
 
 const PreviewButton: React.FC<PreviewButtonProps> = ({
+  label,
   onClick,
   isDisabled,
   isLoading = false,
@@ -24,7 +25,7 @@ const PreviewButton: React.FC<PreviewButtonProps> = ({
     isLoading={isLoading}
     data-testid={testId}
   >
-    {BUTTON_LABELS.PREVIEW}
+    {label}
   </Button>
 );
 

@@ -35,3 +35,20 @@ export {
   validateSourceName,
   validateYamlContent,
 } from './utils/validation';
+export { default as YamlUploadSection } from './components/YamlUploadSection';
+export type { YamlUploadSectionTestIds } from './components/YamlUploadSection';
+export { default as PreviewButton } from './components/PreviewButton';
+export { default as ManageSourceFormFooter } from './components/ManageSourceFormFooter';
+export { default as CatalogSourceStatusErrorModal } from './components/CatalogSourceStatusErrorModal';
+export { default as ExpectedYamlFormatDrawer } from './components/ExpectedYamlFormatDrawer';
+export type { ExpectedYamlFormatDrawerTestIds } from './components/ExpectedYamlFormatDrawer';
+export { default as CatalogSourceStatus } from './components/CatalogSourceStatus';
+export type { CatalogSourceStatusConfig } from './components/CatalogSourceStatus';
+export { default as IncludeExcludeFiltersSection } from './components/IncludeExcludeFiltersSection';
+export type { IncludeExcludeFiltersSectionTestIds } from './components/IncludeExcludeFiltersSection';
+export { default as SourcePreviewPanel } from './components/SourcePreviewPanel';
+export type {
+  SourcePreviewItem,
+  SourcePreviewTabState,
+  SourcePreviewPanelTestIds,
+} from './components/SourcePreviewPanel';

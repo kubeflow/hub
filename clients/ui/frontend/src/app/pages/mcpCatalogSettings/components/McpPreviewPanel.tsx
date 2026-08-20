@@ -1,24 +1,9 @@
 import * as React from 'react';
+import { SourcePreviewPanel } from '~/app/shared/catalogSettings';
 import {
-  EmptyState,
-  EmptyStateVariant,
-  EmptyStateBody,
-  EmptyStateFooter,
-  EmptyStateActions,
-  Flex,
-  FlexItem,
-  Title,
-  Tabs,
-  Tab,
-  TabTitleText,
-  Alert,
-  List,
-  ListItem,
-  Spinner,
-  Button,
-  AlertActionLink,
-} from '@patternfly/react-core';
-import { CheckCircleIcon, TimesCircleIcon } from '@patternfly/react-icons';
+  McpCatalogSourcePreviewAsset,
+  McpCatalogSourcePreviewSummary,
+} from '~/app/mcpServerCatalogTypes';
 import {
   MCP_PAGE_TITLES,
   MCP_ERROR_MESSAGES,
@@ -26,199 +11,67 @@ import {
   MCP_BUTTON_LABELS,
 } from '~/app/pages/mcpCatalogSettings/constants';
 import { UseMcpSourcePreviewResult } from '~/app/pages/mcpCatalogSettings/useMcpSourcePreview';
-import { CatalogSettingsPreviewTab } from '~/app/shared/catalogSettings/hooks/previewTypes';
 
 type McpPreviewPanelProps = {
   preview: UseMcpSourcePreviewResult;
 };
 
+const initialEmptyStateBody = (
+  <>
+    Complete all required fields, then click <strong>Preview</strong> to see which servers will
+    appear in the catalog.
+  </>
+);
+
 const McpPreviewPanel: React.FC<McpPreviewPanelProps> = ({ preview }) => {
   const {
     previewState,
-    handlePreview: onPreview,
+    handlePreview,
     handleTabChange,
-    handleLoadMore: onLoadMore,
+    handleLoadMore,
     hasFormChanged,
     canPreview,
   } = preview;
   const { isLoadingInitial, isLoadingMore, activeTab, summary, tabStates, error } = previewState;
-  const { items, hasMore } = tabStates[activeTab];
-
-  const handleTabSelect = (_event: React.MouseEvent, tabIndex: string | number) => {
-    handleTabChange(
-      tabIndex === 0 ? CatalogSettingsPreviewTab.INCLUDED : CatalogSettingsPreviewTab.EXCLUDED,
-    );
-  };
-
-  const renderEmptyState = () => {
-    if (error) {
-      return (
-        <EmptyState
-          icon={TimesCircleIcon}
-          titleText={MCP_ERROR_MESSAGES.PREVIEW_FAILED}
-          variant={EmptyStateVariant.sm}
-        >
-          <EmptyStateBody>{error.message}</EmptyStateBody>
-          <EmptyStateFooter>
-            <EmptyStateActions>
-              <Button
-                variant="link"
-                onClick={onPreview}
-                isDisabled={!canPreview}
-                isLoading={isLoadingInitial}
-                data-testid="mcp-preview-button-panel-retry"
-              >
-                {MCP_BUTTON_LABELS.PREVIEW}
-              </Button>
-            </EmptyStateActions>
-          </EmptyStateFooter>
-        </EmptyState>
-      );
-    }
-
-    return (
-      <EmptyState titleText={MCP_PAGE_TITLES.PREVIEW_SERVERS} variant={EmptyStateVariant.sm}>
-        <EmptyStateBody>
-          Complete all required fields, then click <strong>Preview</strong> to see which servers
-          will appear in the catalog.
-        </EmptyStateBody>
-        <EmptyStateFooter>
-          <EmptyStateActions>
-            <Button
-              variant="link"
-              onClick={onPreview}
-              isDisabled={!canPreview}
-              isLoading={isLoadingInitial}
-              data-testid="mcp-preview-button-panel"
-            >
-              {MCP_BUTTON_LABELS.PREVIEW}
-            </Button>
-          </EmptyStateActions>
-        </EmptyStateFooter>
-      </EmptyState>
-    );
-  };
-
-  const renderContent = () => {
-    if (isLoadingInitial) {
-      return (
-        <div className="pf-v6-u-text-align-center pf-v6-u-py-xl">
-          <Spinner size="xl" aria-label="Loading preview" />
-        </div>
-      );
-    }
-
-    if ((!items.length && !summary) || error) {
-      return renderEmptyState();
-    }
-
-    return (
-      <>
-        <Tabs
-          activeKey={activeTab === CatalogSettingsPreviewTab.INCLUDED ? 0 : 1}
-          onSelect={handleTabSelect}
-          aria-label="MCP preview tabs"
-        >
-          <Tab eventKey={0} title={<TabTitleText>MCP servers included</TabTitleText>} />
-          <Tab eventKey={1} title={<TabTitleText>MCP servers excluded</TabTitleText>} />
-        </Tabs>
-        <div className="pf-v6-u-mt-md">
-          {hasFormChanged && (
-            <Alert
-              variant="info"
-              isInline
-              title="Source configuration changed. Refresh the preview."
-              className="pf-v6-u-mb-md"
-              actionLinks={
-                <AlertActionLink onClick={onPreview} data-testid="mcp-refresh-preview-link">
-                  Refresh preview
-                </AlertActionLink>
-              }
-            />
-          )}
-          {items.length > 0 ? (
-            <>
-              <strong>
-                {activeTab === CatalogSettingsPreviewTab.INCLUDED
-                  ? `${summary?.includedAssets ?? 0} of ${summary?.totalAssets ?? 0} MCP servers included:`
-                  : `${summary?.excludedAssets ?? 0} of ${summary?.totalAssets ?? 0} MCP servers excluded:`}
-              </strong>
-              <List isPlain className="pf-v6-u-mt-md">
-                {items.map((server) => (
-                  <ListItem
-                    key={server.name}
-                    icon={
-                      server.included ? (
-                        <CheckCircleIcon color="green" />
-                      ) : (
-                        <TimesCircleIcon color="red" />
-                      )
-                    }
-                  >
-                    {server.name}
-                  </ListItem>
-                ))}
-              </List>
-              {hasMore && (
-                <div className="pf-v6-u-mt-md pf-v6-u-text-align-center">
-                  <Button
-                    variant="link"
-                    onClick={onLoadMore}
-                    isLoading={isLoadingMore}
-                    isDisabled={isLoadingMore}
-                  >
-                    {isLoadingMore ? 'Loading...' : 'Load more'}
-                  </Button>
-                </div>
-              )}
-            </>
-          ) : (
-            <EmptyState
-              variant={EmptyStateVariant.sm}
-              titleText={
-                activeTab === CatalogSettingsPreviewTab.INCLUDED
-                  ? MCP_EMPTY_STATE_TEXT.NO_SERVERS_INCLUDED
-                  : MCP_EMPTY_STATE_TEXT.NO_SERVERS_EXCLUDED
-              }
-            >
-              <EmptyStateBody>
-                {activeTab === CatalogSettingsPreviewTab.INCLUDED
-                  ? MCP_EMPTY_STATE_TEXT.NO_SERVERS_INCLUDED_BODY
-                  : MCP_EMPTY_STATE_TEXT.NO_SERVERS_EXCLUDED_BODY}
-              </EmptyStateBody>
-            </EmptyState>
-          )}
-        </div>
-      </>
-    );
-  };
 
   return (
-    <div data-testid="mcp-preview-panel" className="pf-v6-u-h-100">
-      <Flex
-        justifyContent={{ default: 'justifyContentSpaceBetween' }}
-        alignItems={{ default: 'alignItemsCenter' }}
-        className="pf-v6-u-mb-md"
-      >
-        <FlexItem>
-          <Title headingLevel="h2" size="lg">
-            {MCP_PAGE_TITLES.MCP_CATALOG_PREVIEW}
-          </Title>
-        </FlexItem>
-        <FlexItem>
-          <Button
-            variant="secondary"
-            onClick={onPreview}
-            isDisabled={!canPreview}
-            isLoading={isLoadingInitial}
-            data-testid="mcp-preview-button-header"
-          >
-            {MCP_BUTTON_LABELS.PREVIEW}
-          </Button>
-        </FlexItem>
-      </Flex>
-      {renderContent()}
-    </div>
+    <SourcePreviewPanel<McpCatalogSourcePreviewAsset, McpCatalogSourcePreviewSummary>
+      activeTab={activeTab}
+      tabStates={tabStates}
+      summary={summary}
+      isLoadingInitial={isLoadingInitial}
+      isLoadingMore={isLoadingMore}
+      error={error}
+      hasFormChanged={hasFormChanged}
+      canPreview={canPreview}
+      onPreview={() => handlePreview()}
+      onLoadMore={() => handleLoadMore()}
+      onTabChange={handleTabChange}
+      pageTitle={MCP_PAGE_TITLES.MCP_CATALOG_PREVIEW}
+      previewLabel={MCP_BUTTON_LABELS.PREVIEW}
+      tabsAriaLabel="MCP preview tabs"
+      includedTabTitle="MCP servers included"
+      excludedTabTitle="MCP servers excluded"
+      initialEmptyStateTitle={MCP_PAGE_TITLES.PREVIEW_SERVERS}
+      initialEmptyStateBody={initialEmptyStateBody}
+      errorStateTitle={MCP_ERROR_MESSAGES.PREVIEW_FAILED}
+      noIncludedTitle={MCP_EMPTY_STATE_TEXT.NO_SERVERS_INCLUDED}
+      noIncludedBody={MCP_EMPTY_STATE_TEXT.NO_SERVERS_INCLUDED_BODY}
+      noExcludedTitle={MCP_EMPTY_STATE_TEXT.NO_SERVERS_EXCLUDED}
+      noExcludedBody={MCP_EMPTY_STATE_TEXT.NO_SERVERS_EXCLUDED_BODY}
+      getTotalCount={(s) => s.totalAssets}
+      getIncludedCount={(s) => s.includedAssets}
+      getExcludedCount={(s) => s.excludedAssets}
+      includedCountLabel={(included, total) => `${included} of ${total} MCP servers included:`}
+      excludedCountLabel={(excluded, total) => `${excluded} of ${total} MCP servers excluded:`}
+      testIds={{
+        panel: 'mcp-preview-panel',
+        previewButtonHeader: 'mcp-preview-button-header',
+        previewButtonPanel: 'mcp-preview-button-panel',
+        previewButtonPanelRetry: 'mcp-preview-button-panel-retry',
+        refreshPreviewLink: 'mcp-refresh-preview-link',
+      }}
+    />
   );
 };
 

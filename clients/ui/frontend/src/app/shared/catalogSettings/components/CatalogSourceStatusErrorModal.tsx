@@ -10,18 +10,23 @@ import {
   ModalVariant,
 } from '@patternfly/react-core';
 import { ExclamationCircleIcon } from '@patternfly/react-icons';
-import { ERROR_MESSAGES } from '~/app/pages/modelCatalogSettings/constants';
 
 type CatalogSourceStatusErrorModalProps = {
   isOpen: boolean;
   onClose: () => void;
   errorMessage: string;
+  validationFailedTitle?: string;
+  validationFailedBody?: string;
+  testId?: string;
 };
 
 const CatalogSourceStatusErrorModal: React.FC<CatalogSourceStatusErrorModalProps> = ({
   isOpen,
   onClose,
   errorMessage,
+  validationFailedTitle = 'Validation failed',
+  validationFailedBody = 'The system cannot establish a connection to the source.',
+  testId = 'catalog-source-status-error-modal',
 }) => {
   const titleWithLabel = (
     <Flex spaceItems={{ default: 'spaceItemsSm' }} alignItems={{ default: 'alignItemsCenter' }}>
@@ -35,23 +40,16 @@ const CatalogSourceStatusErrorModal: React.FC<CatalogSourceStatusErrorModalProps
   );
 
   return (
-    <Modal
-      variant={ModalVariant.medium}
-      isOpen={isOpen}
-      onClose={onClose}
-      data-testid="catalog-source-status-error-modal"
-    >
+    <Modal variant={ModalVariant.medium} isOpen={isOpen} onClose={onClose} data-testid={testId}>
       <ModalHeader title={titleWithLabel} />
       <ModalBody>
         <Alert
           variant="danger"
           isInline
-          title={ERROR_MESSAGES.VALIDATION_FAILED}
+          title={validationFailedTitle}
           data-testid="catalog-source-status-error-alert"
         >
-          <p data-testid="catalog-source-status-error-details">
-            {ERROR_MESSAGES.VALIDATION_FAILED_BODY}
-          </p>
+          <p data-testid="catalog-source-status-error-details">{validationFailedBody}</p>
           {errorMessage && <p data-testid="catalog-source-status-error-message">{errorMessage}</p>}
         </Alert>
       </ModalBody>
