@@ -270,38 +270,24 @@ func (r *CatalogModelRepositoryImpl) DeleteByID(id int32) error {
 }
 
 // GetDistinctSourceIDs retrieves all unique source_id values from catalog models.
-// This method queries the ContextProperty table to find distinct string_value entries
-// where the property name is 'source_id'.
+// The query is scoped to the model entity type via type_id so that source IDs
+// belonging to other catalog types (skills, MCP servers, agents) are not returned.
 func (r *CatalogModelRepositoryImpl) GetDistinctSourceIDs() ([]string, error) {
 	config := r.GetConfig()
-
 	var sourceIDs []string
 
-	// Execute the SQL query to get distinct source_id values
-	query := `SELECT DISTINCT string_value FROM "ContextProperty" WHERE name='source_id'`
+	propTableName := utils.GetTableName(config.DB, &schema.ContextProperty{})
+	tableName := utils.GetTableName(config.DB, &schema.Context{})
 
-	rows, err := config.DB.Raw(query).Rows()
+	err := config.DB.Table(propTableName+" cp").
+		Select("DISTINCT cp.string_value").
+		Joins("INNER JOIN "+tableName+" c ON cp.context_id = c.id").
+		Where("cp.name = ? AND c.type_id = ?", "source_id", config.TypeID).
+		Pluck("string_value", &sourceIDs).Error
 	if err != nil {
-		// Sanitize database errors to avoid exposing internal details to users
 		err = dbutil.SanitizeDatabaseError(err)
 		return nil, fmt.Errorf("error querying distinct source IDs: %w", err)
 	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var sourceID string
-		if err := rows.Scan(&sourceID); err != nil {
-			err = dbutil.SanitizeDatabaseError(err)
-			return nil, fmt.Errorf("error scanning source ID: %w", err)
-		}
-		sourceIDs = append(sourceIDs, sourceID)
-	}
-
-	if err := rows.Err(); err != nil {
-		err = dbutil.SanitizeDatabaseError(err)
-		return nil, fmt.Errorf("error iterating source ID rows: %w", err)
-	}
-
 	return sourceIDs, nil
 }
 

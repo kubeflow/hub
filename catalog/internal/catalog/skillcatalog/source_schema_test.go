@@ -193,6 +193,42 @@ repositories:
 	assert.Contains(t, err.Error(), "not both")
 }
 
+func TestParseSkillSource_InlineMultipleRepositoriesRejected(t *testing.T) {
+	// The settings UI edits repositories[0] and writes the list back as a single
+	// entry, so an inline source with several repos would be silently truncated on
+	// the next save through the UI. Reject it at load time instead.
+	src := skillSource(mustProps(t, `
+repositories:
+  - url: https://github.com/example/skills.git
+  - url: https://github.com/example/more-skills.git
+`))
+	_, err := ParseSkillSource(src)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "accepts a single repository")
+	assert.Contains(t, err.Error(), propYAMLCatalogPath)
+}
+
+func TestParseSkillSource_FileFormAllowsMultipleRepositories(t *testing.T) {
+	// The file form is authored by the platform team for shipped defaults, which the
+	// UI never writes, so it keeps the full list.
+	repoYAML := `
+repositories:
+  - url: https://github.com/example/skills.git
+    trustTier: platformProvided
+  - url: https://github.com/example/more-skills.git
+    trustTier: communityContributed
+`
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "repos.yaml"), []byte(repoYAML), 0o600))
+
+	src := skillSource(mustProps(t, `yamlCatalogPath: repos.yaml`))
+	src.Origin = filepath.Join(dir, "catalog-sources.yaml")
+
+	spec, err := ParseSkillSource(src)
+	require.NoError(t, err)
+	require.Len(t, spec.Repositories, 2)
+}
+
 func TestParseSkillSource_NeitherFormRejected(t *testing.T) {
 	src := skillSource(mustProps(t, `syncIntervalMinutes: 30`))
 	_, err := ParseSkillSource(src)
@@ -236,6 +272,22 @@ repositories:
 	require.NoError(t, err)
 }
 
+// multiRepoFileSource builds a source using the file form, the only form that
+// still accepts several repositories now that the inline form is single-repo.
+func multiRepoFileSource(t *testing.T, urls ...string) basecatalog.PluginSource {
+	t.Helper()
+	repoYAML := "repositories:\n"
+	for _, u := range urls {
+		repoYAML += "  - url: " + u + "\n"
+	}
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "repos.yaml"), []byte(repoYAML), 0o600))
+
+	src := skillSource(mustProps(t, `yamlCatalogPath: repos.yaml`))
+	src.Origin = filepath.Join(dir, "catalog-sources.yaml")
+	return src
+}
+
 func TestParseSkillSource_DuplicateRepoURL(t *testing.T) {
 	// Exact, host-case, and trailing-slash variants are all trivially equivalent
 	// and must be rejected as duplicates.
@@ -249,11 +301,7 @@ func TestParseSkillSource_DuplicateRepoURL(t *testing.T) {
 	}
 	for name, urls := range dupCases {
 		t.Run(name, func(t *testing.T) {
-			src := skillSource(mustProps(t, `
-repositories:
-  - url: `+urls[0]+`
-  - url: `+urls[1]+`
-`))
+			src := multiRepoFileSource(t, urls[0], urls[1])
 			_, err := ParseSkillSource(src)
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), "duplicate")
@@ -264,11 +312,10 @@ repositories:
 func TestParseSkillSource_DistinctPathCaseAllowed(t *testing.T) {
 	// Path case is preserved (git paths can be case-sensitive), so these are two
 	// distinct repositories, not duplicates.
-	src := skillSource(mustProps(t, `
-repositories:
-  - url: https://github.com/Example/skills.git
-  - url: https://github.com/example/skills.git
-`))
+	src := multiRepoFileSource(t,
+		"https://github.com/Example/skills.git",
+		"https://github.com/example/skills.git",
+	)
 	spec, err := ParseSkillSource(src)
 	require.NoError(t, err)
 	assert.Len(t, spec.Repositories, 2)

@@ -181,6 +181,16 @@ func resolveRepositories(source basecatalog.PluginSource, props *skillSourceProp
 	case hasInline && hasFile:
 		return nil, fmt.Errorf("specify either %q (inline) or %q (file), not both", propRepositories, propYAMLCatalogPath)
 	case hasInline:
+		// The inline form is what the settings UI authors, and that form models a
+		// single repository: it edits repositories[0] and writes the list back as one
+		// entry. Accepting more here would let a source exist that the UI silently
+		// truncates on the next save. The file form below keeps the full list, so a
+		// platform team can still ship a multi-repo default via yamlCatalogPath.
+		if len(props.Repositories) > 1 {
+			return nil, fmt.Errorf(
+				"%q accepts a single repository (found %d); use %q to configure several",
+				propRepositories, len(props.Repositories), propYAMLCatalogPath)
+		}
 		return props.Repositories, nil
 	case hasFile:
 		return loadRepositoriesFile(source, props.YAMLCatalogPath)
