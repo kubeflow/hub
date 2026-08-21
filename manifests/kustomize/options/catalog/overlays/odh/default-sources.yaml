@@ -88,3 +88,4 @@ agent_catalogs:
       yamlCatalogPath: /shared-data/redhat-agents-catalog.yaml
     labels:
       - Red Hat Agents
+skill_catalogs: []

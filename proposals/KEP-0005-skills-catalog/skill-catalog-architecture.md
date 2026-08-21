@@ -75,7 +75,7 @@ sequenceDiagram
     L->>L: remove skills from deleted sources
     loop each source file, each repo and ref
         L->>R: resolve(repo, ref)
-        R->>R: make a temporary copy at ref (Secret auth, limits)
+        R->>R: make a temporary copy at ref (credentialRef token via GIT_ASKPASS, limits)
         R->>R: find SKILL.md, parse + validate (lenient)
         R->>R: version = ref, resolvedCommit = SHA
         R->>R: apply custom metadata (tier, provider, category, labels, overrides)
@@ -88,7 +88,7 @@ sequenceDiagram
 
 ## 5. Identity - Canonical vs Fetch URL
 
-Internal IDs are not stable, since the index is just a cache. The canonical identity is the only permanent reference, and it stays the same even when a deployment reads through a different URL. `version` (the ref — a tag, release, or commit SHA) tells entries apart. Branches are not accepted as refs; the source schema rejects them so that every entry resolves to a fixed, reproducible commit. Every entry records the commit it resolved to (`resolvedCommit`), which the marketplace carries as the `sha` pin.
+Internal IDs are not stable, since the index is just a cache. The canonical identity is the only permanent reference, and it stays the same even when a deployment reads through a different URL. `version` (the ref — a tag, release, or commit SHA) tells entries apart. Branches are not accepted as refs; the resolver refuses them at sync time (the check queries the remote, since a ref cannot be classified by name alone) so that every entry resolves to a fixed, reproducible commit. Every entry records the commit it resolved to (`resolvedCommit`), which the marketplace carries as the `sha` pin.
 
 ```mermaid
 flowchart TB
@@ -100,12 +100,12 @@ flowchart TB
 
 ## 6. Custom Metadata - Who Sets Tier / Provider / Category
 
-Custom metadata lives in the source files and is applied at sync time. It is never kept in the rebuildable index and never read from repository content. Source management reuses the existing model/MCP catalog-settings mechanism: read-only default sources merged with a user-managed ConfigMap that the settings UI writes via the BFF (auth as Secrets). Adding a skills git source through the UI works like adding a HuggingFace source for models; editing the ConfigMap directly (kubectl / GitOps) works too. `trustTier` is simply a label (`platformProvided`, `partnerVerified`, `organizationApproved`, or `communityContributed`), shown as a badge and available as a filter, with no ordering or special meaning.
+Custom metadata lives in the source files and is applied at sync time. It is never kept in the rebuildable index and never read from repository content. Source management reuses the existing model/MCP catalog-settings mechanism: read-only default sources merged with a user-managed ConfigMap that the settings UI writes via the BFF (git tokens go to the mounted `skill-catalog-git-credentials` Secret, referenced from a repository by `credentialRef`, never into the ConfigMap). Adding a skills git source through the UI works like adding a HuggingFace source for models; editing the ConfigMap directly (kubectl / GitOps) works too. `trustTier` is simply a label (`platformProvided`, `partnerVerified`, `organizationApproved`, or `communityContributed`), shown as a badge and available as a filter, with no ordering or special meaning. It is declared per repository entry, which matters for file-form sources: an inline (UI-written) source carries exactly one repository, so its metadata is effectively per-source, while a file-form default can list repositories of differing provenance.
 
 | Entry path | Who | Sets |
 |---|---|---|
 | Default sources (read-only; Part II) | Platform team | All fields; read-only in the UI |
-| User-managed sources (admin settings UI or kubectl / GitOps) | Catalog admins | All fields; UI writes the user-managed ConfigMap |
+| User-managed sources (admin settings UI or kubectl / GitOps) | Catalog admins | All fields; UI writes the user-managed ConfigMap. Repositories are inline, one per source |
 | `skillOverrides` on a repo entry | Either | Per-skill category/labels |
 | SKILL.md `metadata` frontmatter | Skill authors | `customProperties` only, never tier/provider |
 

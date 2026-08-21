@@ -20,6 +20,12 @@ configMapGenerator:
   name: mcp-catalog-sources
   options:
     disableNameSuffixHash: true
+- behavior: create
+  files:
+  - sources.yaml=skill-sources.yaml
+  name: skill-catalog-sources
+  options:
+    disableNameSuffixHash: true
 
 secretGenerator:
 - name: model-catalog-postgres

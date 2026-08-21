@@ -38,31 +38,66 @@ A standard Hub catalog plugin, following the existing plugin architecture.
 
 Registered like any other catalog source, as `type: git-skills-plugin`. A source lists git repositories and their catalog metadata. The repository list can live in the source config **inline** (used by UI-added sources - written to the user-managed ConfigMap, editable like an `hf` source) or **via a file** (`yamlCatalogPath`, used by shipped defaults that bundle many repos). The loader accepts both.
 
+The two forms differ in how many repositories they accept. The **inline** form takes exactly one: it is what the settings UI writes, and that form edits a single repository, so a source carrying several would be silently truncated the next time an admin saved it. The loader rejects an inline list of more than one rather than allowing that state to exist. The **file** form keeps the full list, so a platform team can still ship a multi-repo default through `yamlCatalogPath`; those sources are read-only in the UI and never rewritten by it. An operator who needs several repositories under UI management registers them as separate sources.
+
 ```yaml
 # inline form (UI-added source in the user-managed ConfigMap)
 - name: Community Skills
   id: community-skills
   type: git-skills-plugin
   enabled: true
-  trustTier: communityContributed
-  repositories:
-    - url: https://github.com/example/skills.git
-      refs: [v1.0, abc1234]       # optional; tags, releases, or commit SHAs only -
-                                  #   branches are not accepted (not reproducible).
-                                  #   Each ref yields its own catalog entries.
-                                  #   Also: scanPaths, authSecretName,
-                                  #   canonicalUrl (when url is a mirror)
-      provider: Example Org
-      category: DevOps
-      labels: [community]
-      includedSkills: ["*"]
-      excludedSkills: ["*-draft"]
-      skillOverrides: [{name: deploy, category: SRE}]
+  properties:                       # the repository list and its metadata live here
+    syncIntervalMinutes: 60         # optional
+    repositories:
+      - url: https://github.com/example/skills.git
+        refs: [v1.0, abc1234]       # optional; tags, releases, or commit SHAs only -
+                                    #   branches are not accepted (not reproducible).
+                                    #   Each ref yields its own catalog entries.
+                                    #   Also: scanPaths, credentialRef,
+                                    #   canonicalUrl (when url is a mirror)
+        trustTier: communityContributed
+        provider: Example Org
+        category: DevOps
+        labels: [community]
+        includedSkills: ["*"]
+        excludedSkills: ["*-draft"]
+        skillOverrides: [{name: deploy, category: SRE}]
 ```
 
-Each time the catalog syncs, the plugin reads each listed repository at each listed ref (making a temporary, lightweight copy used only for parsing, then throwing it away), finds and parses `SKILL.md` files per the specification, and rebuilds the index. A skill's `version` is the ref (a tag, release, or commit SHA), and the exact commit it resolved to is recorded as `resolvedCommit`. Branches are not accepted as refs; the source schema rejects them so that every entry is reproducible. Skills, refs, repositories, or sources that have been removed are cleaned up. Pulling from private git repositories with securely configured credentials will be supported.
+```yaml
+# file form (shipped default, read-only in the UI)
+- name: Platform Skills
+  id: platform-skills
+  type: git-skills-plugin
+  enabled: true
+  properties:
+    yamlCatalogPath: /shared-data/platform-skills-catalog.yaml
+    syncIntervalMinutes: 60         # optional
+```
 
-Source management reuses the same mechanism as the model and MCP catalogs: read-only defaults (shipped in a ConfigMap) merged with a user-managed ConfigMap that the settings UI writes via the BFF, with per-source auth stored as Secrets. Adding a skills git source through the UI works like adding a HuggingFace source for models. Editing the ConfigMap directly (kubectl/GitOps) works too; the file-watcher picks up either path.
+```yaml
+# /shared-data/platform-skills-catalog.yaml - the repository list, same schema
+# as the inline `repositories` block, but with no one-repository limit
+repositories:
+  - url: https://github.com/example/platform-skills.git
+    refs: [v2.1]
+    trustTier: platformProvided
+    provider: Example Platform Team
+    category: SRE
+  - url: https://github.com/example/partner-skills.git
+    refs: [v1.4]
+    trustTier: partnerVerified
+    provider: Example Partner
+    category: DevOps
+```
+
+`trustTier`, `provider`, and `category` are per-repository, not per-source: a file-form source may list repositories with different provenance (an inline source has a single repository, so for those the distinction does not arise). The `properties` block is decoded strictly - an unrecognised key fails the whole source rather than being ignored - so these must not be lifted to the source level.
+
+Each time the catalog syncs, the plugin reads each listed repository at each listed ref (making a temporary, lightweight copy used only for parsing, then throwing it away), finds and parses `SKILL.md` files per the specification, and rebuilds the index. A skill's `version` is the ref (a tag, release, or commit SHA), and the exact commit it resolved to is recorded as `resolvedCommit`. Branches are not accepted as refs. A ref cannot be classified by name alone — `main` and `v1.0` are indistinguishable as strings, and a tag may legitimately be called `main` — so the resolver asks the remote at sync time and refuses anything that resolves to a branch or `HEAD`, failing closed if the check itself fails. The source preview runs the same resolver, so an admin sees the rejection before saving. Skills, refs, repositories, or sources that have been removed are cleaned up. Private git repositories are read with a token supplied through `credentialRef`, described below.
+
+Source management reuses the same mechanism as the model and MCP catalogs: read-only defaults (shipped in a ConfigMap) merged with a user-managed ConfigMap that the settings UI writes via the BFF. Adding a skills git source through the UI works like adding a HuggingFace source for models. Editing the ConfigMap directly (kubectl/GitOps) works too; the file-watcher picks up either path.
+
+Git credentials are held in a single `skill-catalog-git-credentials` Secret mounted read-only into the catalog pod at `/etc/skill-catalog/git-credentials`, one key per source. A repository's `credentialRef` names the key to read - it is a plain filename within that mount, not a Secret name. The catalog service has no Kubernetes API access and so cannot resolve Secrets by name; it only reads the mounted files. When an admin enters a token in the settings UI, the BFF writes it as a key in that Secret and sets `credentialRef` to match. The token file is re-read on every sync, so kubelet's in-place refresh of the mount applies a rotated credential without restarting the pod.
 
 ### 3. Custom metadata
 
@@ -103,7 +138,7 @@ Follows the MCP catalog UI, built on the shared catalog components, with a BFF (
 
 Source URLs are treated as trusted: managing sources requires admin access (settings page) or configuration access (ConfigMap/GitOps edits), the same trust boundary as the other catalogs. The operational risk is resource exhaustion, not untrusted input.
 
-- **Hub fetches remote content at sync** → only temporary, lightweight copies are made (kept isolated and cleaned up afterward); content is only parsed, never executed; private repositories authenticate through Kubernetes Secrets. Concrete limits bound the blast radius: a per-clone timeout, a maximum repository size, a maximum number of refs per repository, and a global cap on in-flight clones so a large source set (many repositories × many refs) cannot saturate the pod.
+- **Hub fetches remote content at sync** → only temporary, lightweight copies are made (kept isolated and cleaned up afterward); content is only parsed, never executed; private repositories authenticate with tokens from a read-only Secret mount, passed to git via `GIT_ASKPASS` so they never appear in argv, a URL, or a log line. Concrete limits bound the blast radius: a per-clone timeout, a maximum repository size, a maximum number of refs per repository, and a global cap on in-flight clones so a large source set (many repositories × many refs) cannot saturate the pod.
 - **Sync storms from rapid config changes** → hot-reload is debounced, so a burst of ConfigMap edits (UI or GitOps) coalesces into a single sync rather than a fetch storm.
 - **A source in trouble** → shown as a degraded source status; a content-scanning hook is planned for the future.
 
