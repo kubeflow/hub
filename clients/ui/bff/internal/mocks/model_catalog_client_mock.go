@@ -727,3 +727,29 @@ func (m *ModelCatalogClientMock) GetAgentArtifacts(client httpclient.HTTPClientI
 
 	return GetAgentArtifactListMock(agentId), nil
 }
+
+func (m *ModelCatalogClientMock) GetAllSkills(client httpclient.HTTPClientInterface, pageValues url.Values) (*models.SkillList, error) {
+	return &models.SkillList{
+		Items:    []models.Skill{},
+		PageSize: 10,
+		Size:     0,
+	}, nil
+}
+
+func (m *ModelCatalogClientMock) GetSkillsFilter(client httpclient.HTTPClientInterface) (*models.FilterOptionsList, error) {
+	return &models.FilterOptionsList{}, nil
+}
+
+func (m *ModelCatalogClientMock) GetSkill(client httpclient.HTTPClientInterface, skillId string, pageValues url.Values) (*models.Skill, error) {
+	return nil, &httpclient.HTTPError{
+		StatusCode: 404,
+		ErrorResponse: httpclient.ErrorResponse{
+			Code:    "404",
+			Message: fmt.Sprintf("skill not found: %s", skillId),
+		},
+	}
+}
+
+func (m *ModelCatalogClientMock) GetSkillMarketplace(client httpclient.HTTPClientInterface, pageValues url.Values) (*models.SkillMarketplace, error) {
+	return &models.SkillMarketplace{Plugins: []models.SkillMarketplacePlugin{}}, nil
+}

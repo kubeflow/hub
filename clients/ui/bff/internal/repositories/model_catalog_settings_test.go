@@ -574,6 +574,18 @@ var _ = Describe("ModelCatalogSettingRepository", func() {
 	})
 })
 
+var _ = Describe("validateCatalogId", func() {
+	It("accepts an id with only lowercase letters, numbers, and underscores", func() {
+		Expect(validateCatalogId("my_source_1")).NotTo(HaveOccurred())
+	})
+
+	It("rejects a hyphenated id (model/mcp catalogs never accepted hyphens)", func() {
+		err := validateCatalogId("my-source")
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("lowercase letters, numbers, and underscores"))
+	})
+})
+
 func boolPtr(b bool) *bool {
 	return &b
 }
