@@ -296,8 +296,12 @@ func (l *AgentLoader) removeAgentsFromMissingSources(allKnownSourceIDs mapset.Se
 			return fmt.Errorf("unable to remove agents from source %q: %w", oldSource, err)
 		}
 
-		if !agentSourceIDs.Contains(oldSource) {
-			glog.Infof("Removing status for agent source %s (no longer in config)", oldSource)
+		// Only delete the shared CatalogSource status record if the source is absent
+		// from ALL plugin configs — not just the agent config. allKnownSourceIDs is
+		// the union of every plugin's configured source IDs, so if another plugin
+		// (model, skill, mcp) owns this source we must not delete its status row.
+		if !agentSourceIDs.Contains(oldSource) && !allKnownSourceIDs.Contains(oldSource) {
+			glog.Infof("Removing status for agent source %s (no longer in any config)", oldSource)
 			if delErr := l.services.CatalogSourceRepository.Delete(oldSource); delErr != nil {
 				glog.Errorf("failed to delete status for agent source %s: %v", oldSource, delErr)
 			}

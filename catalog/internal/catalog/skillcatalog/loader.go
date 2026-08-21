@@ -16,6 +16,7 @@ import (
 
 	"github.com/kubeflow/hub/catalog/internal/catalog/basecatalog"
 	"github.com/kubeflow/hub/catalog/internal/catalog/skillcatalog/models"
+	dbmodels "github.com/kubeflow/hub/catalog/internal/db/models"
 )
 
 // Defaults for SyncLimits.
@@ -138,6 +139,37 @@ type SkillLoader struct {
 	// or a reload-triggered PerformLeaderOperations) and drop or duplicate rows.
 	syncLocksMu sync.Mutex
 	syncLocks   map[string]*sync.Mutex
+
+	// poRefresher rebuilds the context_property_options materialized view, which is
+	// what serves GetFilterOptions. Nothing else refreshes it on the skill catalog's
+	// behalf, so without this a synced source's provider/category/labels never reach
+	// the filter sidebar, and values removed from a source linger there indefinitely —
+	// until an unrelated catalog (model or agent) happens to refresh the shared view.
+	//
+	// It is debounced rather than called per source: a full reload syncs every source,
+	// and each refresh rebuilds the whole view. Replaced per leader term so it stops
+	// with that term's context.
+	poRefresherMu sync.Mutex
+	poRefresher   *dbmodels.PropertyOptionsRefresher
+}
+
+// setPropertyOptionsRefresher installs the refresher for a leader term.
+func (l *SkillLoader) setPropertyOptionsRefresher(r *dbmodels.PropertyOptionsRefresher) {
+	l.poRefresherMu.Lock()
+	defer l.poRefresherMu.Unlock()
+	l.poRefresher = r
+}
+
+// triggerPropertyOptionsRefresh schedules a rebuild of the filter-options view.
+// It is a no-op before a leader term has started, and safe to call from any sync
+// goroutine — the refresher coalesces bursts into a single rebuild.
+func (l *SkillLoader) triggerPropertyOptionsRefresh() {
+	l.poRefresherMu.Lock()
+	r := l.poRefresher
+	l.poRefresherMu.Unlock()
+	if r != nil {
+		r.Trigger()
+	}
 }
 
 // currentWG returns the WaitGroup for the current leader term, creating it on
@@ -237,6 +269,16 @@ func (l *SkillLoader) PerformLeaderOperations(ctx context.Context, allKnownSourc
 	termWG := l.currentWG()
 	l.setCloser(cancel)
 
+	// Tied to this term's context, so it stops when leadership is lost. The one-second
+	// delay coalesces the burst of syncs a reload kicks off into a single view rebuild.
+	// Skipped when no repository is wired (tests, and non-Postgres backends where the
+	// view does not exist): the refresher's goroutine would call Refresh on a nil
+	// interface the first time a sync triggered it.
+	if l.services.PropertyOptionsRepository != nil {
+		l.setPropertyOptionsRefresher(
+			dbmodels.NewPropertyOptionsRefresher(ctx, l.services.PropertyOptionsRepository, time.Second))
+	}
+
 	// Drain in-flight DB writes from the previous term first, then wait for the
 	// ticker goroutines themselves (which exit promptly after context cancellation).
 	l.state.WaitForInflightWrites(30 * time.Second)
@@ -244,6 +286,9 @@ func (l *SkillLoader) PerformLeaderOperations(ctx context.Context, allKnownSourc
 
 	if err := l.removeSkillsFromMissingSources(allKnownSourceIDs); err != nil {
 		glog.Errorf("error removing skills from missing sources: %v", err)
+	} else {
+		// A deleted source's provider/category would otherwise stay in the filter list.
+		l.triggerPropertyOptionsRefresh()
 	}
 
 	for id, source := range l.sources.AllSources() {
@@ -420,6 +465,9 @@ func (l *SkillLoader) syncSourceLocked(ctx context.Context, sourceID string, spe
 
 	status, msg := skillSourceStatus(indexed+skipped, warningMsgs, errs)
 	basecatalog.SaveSourceStatus(l.services.CatalogSourceRepository, sourceID, status, msg)
+	// Indexing or orphan removal above may have added or dropped property values, so
+	// the filter-options view needs rebuilding for them to be reflected.
+	l.triggerPropertyOptionsRefresh()
 	glog.Infof("skill source %s: indexed %d skills, skipped %d unchanged refs, %d warnings, %d errors",
 		sourceID, indexed, skipped, len(warningMsgs), len(errs))
 }
@@ -834,7 +882,11 @@ func (l *SkillLoader) removeSkillsFromMissingSources(allKnownSourceIDs mapset.Se
 		if delErr != nil {
 			return fmt.Errorf("unable to remove skills from source %q: %w", oldSource, delErr)
 		}
-		if !skillSourceIDs.Contains(oldSource) {
+		// Only delete the shared CatalogSource status record if the source is absent
+		// from ALL plugin configs — not just the skill config. allKnownSourceIDs is
+		// the union of every plugin's configured source IDs, so if another plugin
+		// (model, mcp, agent) owns this source we must not delete its status row.
+		if !skillSourceIDs.Contains(oldSource) && !allKnownSourceIDs.Contains(oldSource) {
 			if err := l.services.CatalogSourceRepository.Delete(oldSource); err != nil {
 				glog.Errorf("failed to delete status for skill source %s: %v", oldSource, err)
 			}

@@ -523,9 +523,12 @@ func (ml *MCPLoader) removeServersFromMissingSources(enabledSourceIDs, allSource
 				glog.Errorf("Error deleting servers from source %s: %v", dbSourceID, err)
 			}
 
-			// If the source is completely gone from config (not just disabled), remove its status too
-			if !allSourceIDs.Contains(dbSourceID) {
-				glog.Infof("Removing status for MCP source %s (no longer in config)", dbSourceID)
+			// Only delete the shared CatalogSource status record if the source is absent
+			// from ALL plugin configs — not just the MCP config. allKnownSourceIDs is
+			// the union of every plugin's configured source IDs, so if another plugin
+			// (model, skill, agent) owns this source we must not delete its status row.
+			if !allSourceIDs.Contains(dbSourceID) && !allKnownSourceIDs.Contains(dbSourceID) {
+				glog.Infof("Removing status for MCP source %s (no longer in any config)", dbSourceID)
 				if delErr := ml.services.CatalogSourceRepository.Delete(dbSourceID); delErr != nil {
 					glog.Errorf("failed to delete status for MCP source %s: %v", dbSourceID, delErr)
 				}

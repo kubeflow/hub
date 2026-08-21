@@ -599,10 +599,12 @@ func (l *ModelLoader) removeModelsFromMissingSources(allKnownSourceIDs mapset.Se
 			return fmt.Errorf("unable to remove models from source %q: %w", oldSource, err)
 		}
 
-		// If the source is completely gone from model config (not just disabled), remove its status too.
-		// We check model-only IDs here since existingSourceIDs comes from CatalogModelRepository.
-		if !modelSourceIDs.Contains(oldSource) {
-			glog.Infof("Removing status for source %s (no longer in model config)", oldSource)
+		// Only delete the shared CatalogSource status record if the source is absent
+		// from ALL plugin configs — not just the model config. allKnownSourceIDs is
+		// the union of every plugin's configured source IDs, so if another plugin
+		// (skill, mcp, agent) owns this source we must not delete its status row.
+		if !modelSourceIDs.Contains(oldSource) && !allKnownSourceIDs.Contains(oldSource) {
+			glog.Infof("Removing status for source %s (no longer in any config)", oldSource)
 			if delErr := l.services.CatalogSourceRepository.Delete(oldSource); delErr != nil {
 				glog.Errorf("failed to delete status for source %s: %v", oldSource, delErr)
 			}

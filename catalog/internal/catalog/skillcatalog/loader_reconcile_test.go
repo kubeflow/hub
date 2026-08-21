@@ -750,3 +750,52 @@ func TestRemoveSkillsFromMissingSources_WaitsForInFlightSync(t *testing.T) {
 	}
 	assert.Equal(t, 1, repo.deleteBySourceCount(), "cleanup proceeds once the sync finishes")
 }
+
+// countingPropertyOptionsRepo records Refresh calls so a test can assert the
+// filter-options view is rebuilt after a sync.
+type countingPropertyOptionsRepo struct {
+	refreshes int64
+}
+
+func (c *countingPropertyOptionsRepo) Refresh(sharedmodels.PropertyOptionType) error {
+	atomic.AddInt64(&c.refreshes, 1)
+	return nil
+}
+
+func (c *countingPropertyOptionsRepo) List(sharedmodels.PropertyOptionType, int32) ([]sharedmodels.PropertyOption, error) {
+	return nil, nil
+}
+
+// Filter options are served from a materialized view that only changes when something
+// refreshes it. Nothing else does so on the skill catalog's behalf, so a source that
+// syncs without this leaves its provider/category out of the filter sidebar, and values
+// dropped from a source linger there.
+func TestPerformLeaderOperations_RefreshesPropertyOptionsAfterSync(t *testing.T) {
+	po := &countingPropertyOptionsRepo{}
+	fake := newBlockingFakeResolver(2)
+	close(fake.release) // never block; this test is about the refresh, not concurrency
+	l := &SkillLoader{
+		state: &fakeLoaderState{},
+		services: Services{
+			SkillRepository:           newFakeSkillRepo(),
+			CatalogSourceRepository:   noopSourceRepo{},
+			PropertyOptionsRepository: po,
+		},
+		resolver: fake,
+		limits:   SyncLimits{MaxInFlightClones: 4, MaxRefsPerRepo: 10, MaxResolveWorkers: 4},
+		sem:      semaphore.NewWeighted(4),
+		sources:  twoGitSources(),
+		tickerWG: &sync.WaitGroup{},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	require.NoError(t, l.PerformLeaderOperations(ctx, mapset.NewSet[string]()))
+	l.state.WaitForInflightWrites(5 * time.Second)
+
+	// The refresher debounces, so a burst of source syncs collapses into at least one
+	// rebuild rather than one per source.
+	require.Eventually(t, func() bool {
+		return atomic.LoadInt64(&po.refreshes) > 0
+	}, 5*time.Second, 50*time.Millisecond, "property options view was never refreshed after sync")
+}
