@@ -9,9 +9,9 @@ import (
 	"github.com/kubeflow/hub/catalog/internal/db/pagination"
 	"github.com/kubeflow/hub/internal/platform/db/dbutil"
 	dbmodels "github.com/kubeflow/hub/internal/platform/db/entity"
+	service "github.com/kubeflow/hub/internal/platform/db/repository"
 	"github.com/kubeflow/hub/internal/platform/db/schema"
 	"github.com/kubeflow/hub/internal/platform/db/scopes"
-	service "github.com/kubeflow/hub/internal/platform/db/repository"
 	"github.com/kubeflow/hub/internal/platform/db/utils"
 	"gorm.io/gorm"
 )
@@ -325,29 +325,6 @@ func (r *MCPServerRepositoryImpl) DeleteByID(id int32) error {
 // GetTypeID returns the MLMD type ID for the kf.MCPServer context type.
 func (r *MCPServerRepositoryImpl) GetTypeID() int32 {
 	return r.GetConfig().TypeID
-}
-
-// GetDistinctSourceIDs retrieves all unique source_id values from MCP servers.
-func (r *MCPServerRepositoryImpl) GetDistinctSourceIDs() ([]string, error) {
-	config := r.GetConfig()
-
-	var sourceIDs []string
-
-	contextPropertyTable := utils.GetTableName(config.DB, &schema.ContextProperty{})
-	contextTable := utils.GetTableName(config.DB, &schema.Context{})
-
-	err := config.DB.Table(contextPropertyTable+" cp").
-		Select("DISTINCT cp.string_value").
-		Joins("INNER JOIN "+contextTable+" c ON cp.context_id = c.id").
-		Where("cp.name = ? AND c.type_id = ?", "source_id", config.TypeID).
-		Pluck("string_value", &sourceIDs).Error
-
-	if err != nil {
-		err = dbutil.SanitizeDatabaseError(err)
-		return nil, fmt.Errorf("error querying distinct source IDs: %w", err)
-	}
-
-	return sourceIDs, nil
 }
 
 // applyMCPServerListFilters applies list filters to the query.

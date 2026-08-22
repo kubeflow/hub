@@ -9,11 +9,11 @@ import (
 	"github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog/models"
 	catpagination "github.com/kubeflow/hub/catalog/internal/db/pagination"
 	"github.com/kubeflow/hub/internal/platform/db/dbutil"
-	dbfilter "github.com/kubeflow/hub/internal/platform/db/filter"
 	dbmodels "github.com/kubeflow/hub/internal/platform/db/entity"
+	dbfilter "github.com/kubeflow/hub/internal/platform/db/filter"
+	service "github.com/kubeflow/hub/internal/platform/db/repository"
 	"github.com/kubeflow/hub/internal/platform/db/schema"
 	"github.com/kubeflow/hub/internal/platform/db/scopes"
-	service "github.com/kubeflow/hub/internal/platform/db/repository"
 	"github.com/kubeflow/hub/internal/platform/db/utils"
 	"gorm.io/gorm"
 )
@@ -267,28 +267,6 @@ func (r *CatalogModelRepositoryImpl) DeleteByID(id int32) error {
 	}
 
 	return nil
-}
-
-// GetDistinctSourceIDs retrieves all unique source_id values from catalog models.
-// The query is scoped to the model entity type via type_id so that source IDs
-// belonging to other catalog types (skills, MCP servers, agents) are not returned.
-func (r *CatalogModelRepositoryImpl) GetDistinctSourceIDs() ([]string, error) {
-	config := r.GetConfig()
-	var sourceIDs []string
-
-	propTableName := utils.GetTableName(config.DB, &schema.ContextProperty{})
-	tableName := utils.GetTableName(config.DB, &schema.Context{})
-
-	err := config.DB.Table(propTableName+" cp").
-		Select("DISTINCT cp.string_value").
-		Joins("INNER JOIN "+tableName+" c ON cp.context_id = c.id").
-		Where("cp.name = ? AND c.type_id = ?", "source_id", config.TypeID).
-		Pluck("string_value", &sourceIDs).Error
-	if err != nil {
-		err = dbutil.SanitizeDatabaseError(err)
-		return nil, fmt.Errorf("error querying distinct source IDs: %w", err)
-	}
-	return sourceIDs, nil
 }
 
 func (r *CatalogModelRepositoryImpl) GetTypeID() int32 {

@@ -10,6 +10,7 @@ import (
 	"github.com/kubeflow/hub/internal/platform/db/filter"
 	"github.com/kubeflow/hub/internal/platform/db/schema"
 	"github.com/kubeflow/hub/internal/platform/db/scopes"
+	"github.com/kubeflow/hub/internal/platform/db/utils"
 	platformerrors "github.com/kubeflow/hub/internal/platform/errors"
 	"gorm.io/gorm"
 )
@@ -532,6 +533,29 @@ func (r *GenericRepository[TEntity, TSchema, TProp, TListOpts]) getNonUpdatableF
 
 func (r *GenericRepository[TEntity, TSchema, TProp, TListOpts]) GetConfig() GenericRepositoryConfig[TEntity, TSchema, TProp, TListOpts] {
 	return r.config
+}
+
+// GetDistinctSourceIDs retrieves all unique source_id property values for this
+// repository's entities. The query is scoped to the repository's own type_id so
+// that source IDs belonging to other catalog types are not returned.
+func (r *GenericRepository[TEntity, TSchema, TProp, TListOpts]) GetDistinctSourceIDs() ([]string, error) {
+	var schemaEntity TSchema
+	var propEntity TProp
+
+	entityTable := utils.GetTableName(r.config.DB, &schemaEntity)
+	propTable := utils.GetTableName(r.config.DB, &propEntity)
+
+	var sourceIDs []string
+	err := r.config.DB.Table(propTable+" p").
+		Select("DISTINCT p.string_value").
+		Joins("INNER JOIN "+entityTable+" e ON p."+r.config.PropertyFieldName+" = e.id").
+		Where("p.name = ? AND e.type_id = ?", "source_id", r.config.TypeID).
+		Pluck("string_value", &sourceIDs).Error
+	if err != nil {
+		err = dbutil.SanitizeDatabaseError(err)
+		return nil, fmt.Errorf("error querying distinct source IDs: %w", err)
+	}
+	return sourceIDs, nil
 }
 
 func (r *GenericRepository[TEntity, TSchema, TProp, TListOpts]) ApplyStandardPagination(query *gorm.DB, listOptions TListOpts, entities any) *gorm.DB {
