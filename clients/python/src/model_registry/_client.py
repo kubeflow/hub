@@ -17,15 +17,11 @@ from typing import (
 )
 from warnings import warn
 
-from model_registry.types.artifacts import ExperimentRunArtifact
 from model_registry.types.base import BaseResourceModel
 
-from ._experiments import ActiveExperimentRun, RunContext
 from .core import ModelRegistryAPIClient
 from .exceptions import StoreError
 from .types import (
-    Experiment,
-    ExperimentRun,
     ListOptions,
     ModelArtifact,
     ModelVersion,
@@ -36,12 +32,9 @@ from .types import (
 from .utils import (
     OCIParams,
     S3Params,
-    ThreadSafeVariable,
     _connect_to_s3,
     _s3_creds,
     _upload_to_s3,
-    generate_name,
-    required_args,
     save_to_oci_registry,
 )
 
@@ -164,7 +157,6 @@ class ModelRegistry:
             )
         else:
             self._api = ModelRegistryAPIClient.insecure_connection(server_address, port, user_token)
-        self._active_experiment_context = ThreadSafeVariable(value=RunContext())
         self.get_registered_models().page_size(1)._next_page()
 
     @staticmethod
@@ -726,301 +718,6 @@ class ModelRegistry:
             region=region,
             transfer_config=transfer_config,
         )
-
-    def start_experiment_run(
-        self,
-        experiment_name: str | None = None,
-        experiment_id: str | None = None,
-        run_name: str | None = None,
-        run_id: str | None = None,
-        *,
-        owner: str | None = None,
-        description: str | None = None,
-        run_description: str | None = None,
-        nested: bool = False,
-        nested_tag: str | None = "kubeflow.parent_run_id",
-    ) -> ActiveExperimentRun:
-        """Start an experiment run.
-
-        Args:
-            experiment_name: Name of the experiment.
-            experiment_id: ID of the experiment.
-            run_name: Name of the run.
-            run_id: ID of the run.
-
-        Keyword Args:
-            owner: Owner of the experiment.
-            description: Description of the experiment.
-            run_description: Description of the run.
-            nested: Whether the run is nested.
-            nested_tag: Tag to use for nested runs.
-
-        Returns:
-            Experiment run.
-        """
-        active_ctx = self._get_active_context()
-        self._validate_nested_run(active_ctx, nested)
-
-        # Resolve experiment details
-        exp_name, exp_id = self._resolve_experiment_info(experiment_name, experiment_id, active_ctx, nested)
-
-        # Get or create experiment
-        experiment = self._get_or_create_experiment(exp_name, exp_id, owner, description)
-
-        # Get or create run
-        parent_props = self._get_parent_properties(active_ctx, nested_tag) if nested else {}  # type: ignore[arg-type]
-        exp_run = self._get_or_create_run(experiment, run_name, run_id, run_description, parent_props, nested)
-
-        # Update context if not nested
-        if not active_ctx.active:
-            self._set_active_context(experiment.id, exp_name, exp_run.id)  # type: ignore[arg-type]
-
-        return ActiveExperimentRun(
-            thread_safe_ctx=self._active_experiment_context,
-            experiment_run=exp_run,
-            api=self._api,
-            async_runner=self.async_runner,
-        )
-
-    def _get_active_context(self) -> RunContext:
-        """Get the current active experiment context."""
-        return self._active_experiment_context.get()
-
-    def _validate_nested_run(self, active_ctx: RunContext, nested: bool) -> None:
-        """Validate nested run configuration."""
-        if active_ctx.active and not nested:
-            msg = "Experiment run is already active. Please set nested=True to start a nested run."
-            raise ValueError(msg)
-
-    def _resolve_experiment_info(
-        self,
-        exp_name: str | None,
-        exp_id: str | None,
-        active_ctx: RunContext,
-        nested: bool,
-    ) -> tuple[str | None, str | None]:
-        """Resolve experiment name and ID from inputs or context."""
-        # Use provided values or inherit from active context
-        exp_name = exp_name or active_ctx.name
-        exp_id = exp_id or active_ctx.id
-
-        # Generate name if nothing provided and not nested
-        if not any([exp_name, exp_id, nested]):
-            exp_name = generate_name("experiment")
-
-        return exp_name, exp_id
-
-    def _get_or_create_experiment(
-        self,
-        exp_name: str | None,
-        exp_id: str | None,
-        owner: str | None,
-        description: str | None,
-    ) -> Experiment:
-        """Get existing experiment or create new one."""
-        # Try to get existing experiment
-        if exp_name:
-            exp = self.async_runner(self._api.get_experiment_by_name(exp_name))
-        elif exp_id:
-            exp = self.async_runner(self._api.get_experiment_by_id(exp_id))
-        else:
-            msg = "Either experiment_name or experiment_id must be provided"
-            raise ValueError(msg)
-
-        # Create if doesn't exist
-        if not exp:
-            exp = self.async_runner(
-                self._api.upsert_experiment(
-                    Experiment(
-                        name=exp_name,  # type: ignore[arg-type]
-                        owner=owner,
-                        description=description,
-                    )
-                )
-            )
-            print(f"Experiment {exp_name} created with ID: {exp.id}")
-
-        return exp
-
-    def _get_parent_properties(self, active_ctx: RunContext, nested_tag: str) -> dict:
-        """Get parent run properties for nested runs."""
-        return {nested_tag: active_ctx.run_id} if active_ctx.active else {}
-
-    def _get_or_create_run(
-        self,
-        experiment: Experiment,
-        run_name: str | None,
-        run_id: str | None,
-        run_description: str | None,
-        parent_props: dict,
-        nested: bool,
-    ) -> ExperimentRun:
-        """Get existing run or create new one."""
-        exp_run_args = {
-            "experiment_name": experiment.name,
-            "experiment_id": experiment.id,
-        }
-
-        # Try to get existing run
-        if run_name:
-            exp_run = self.async_runner(
-                self._api.get_experiment_run_by_experiment_and_run_name(
-                    run_name=run_name,
-                    **exp_run_args,  # type: ignore[arg-type]
-                )
-            )
-        elif run_id:
-            exp_run = self.async_runner(
-                self._api.get_experiment_run_by_experiment_and_run_id(
-                    run_id=run_id,
-                    **exp_run_args,
-                )
-            )
-        else:
-            # Create new run
-            exp_run = self.async_runner(
-                self._api.upsert_experiment_run(
-                    ExperimentRun(
-                        experiment_id=experiment.id,  # type: ignore[arg-type]
-                        name=generate_name("run"),
-                        description=run_description,
-                        custom_properties=parent_props,
-                    )
-                )
-            )
-            prefix = "Nested " if nested else ""
-            print(f"{prefix}Experiment Run {exp_run.name} created with ID: {exp_run.id}")
-
-        return exp_run
-
-    def _set_active_context(self, exp_id: str, exp_name: str, run_id: str) -> None:
-        """Set the active experiment context."""
-        new_ctx = RunContext(id=exp_id, name=exp_name, run_id=run_id, active=True)
-        self._active_experiment_context.set(new_ctx)
-
-    def create_experiment(self, name: str) -> Experiment:
-        """Create an experiment.
-
-        Args:
-            name: Name of the experiment.
-        """
-        return self.async_runner(self._api.upsert_experiment(Experiment(name=name)))
-
-    def get_experiment_run(self, run_id: str) -> ExperimentRun:
-        """Get an experiment run.
-
-        Args:
-            run_id: ID of the experiment run.
-        """
-        return self.async_runner(self._api.get_experiment_run_by_id(run_id))
-
-    def get_experiments(self) -> Pager[Experiment]:
-        """Get a pager for experiments.
-
-        Returns:
-            Iterable pager for experiments.
-        """
-
-        def exp_list(options: ListOptions) -> list[Experiment]:
-            return self.async_runner(self._api.get_experiments(options))
-
-        return Pager[Experiment](exp_list)
-
-    @overload
-    def get_experiment_runs(self, experiment_id: str) -> Pager[ExperimentRun]: ...
-
-    @overload
-    def get_experiment_runs(self, experiment_name: str) -> Pager[ExperimentRun]: ...
-
-    @required_args(("experiment_id",), ("experiment_name",))  # type: ignore[misc]
-    def get_experiment_runs(
-        self, experiment_id: str | None = None, experiment_name: str | None = None
-    ) -> Pager[ExperimentRun]:
-        """Get a pager for experiment runs.
-
-        Returns:
-            Iterable pager for experiment runs.
-        """
-
-        def exp_run_list(options: ListOptions) -> list[ExperimentRun]:
-            if experiment_id:
-                return self.async_runner(self._api.get_experiment_runs_by_experiment_id(experiment_id, options))
-            return self.async_runner(self._api.get_experiment_runs_by_experiment_name(experiment_name, options))  # type: ignore[arg-type,type-var]
-
-        return Pager[ExperimentRun](exp_run_list)
-
-    @overload
-    def get_experiment_run_logs(
-        self,
-        run_id: str,
-    ) -> Pager[ExperimentRunArtifact]: ...
-
-    @overload
-    def get_experiment_run_logs(
-        self,
-        run_name: str,
-        experiment_name: str,
-    ) -> Pager[ExperimentRunArtifact]: ...
-
-    @overload
-    def get_experiment_run_logs(
-        self,
-        run_name: str,
-        experiment_id: str,
-    ) -> Pager[ExperimentRunArtifact]: ...
-
-    @required_args(  # type: ignore[misc]
-        ("run_id",),
-        (
-            "run_name",
-            "experiment_name",
-        ),
-        (
-            "run_name",
-            "experiment_id",
-        ),
-    )
-    def get_experiment_run_logs(
-        self,
-        run_id: str | None = None,
-        run_name: str | None = None,
-        experiment_id: str | None = None,
-        experiment_name: str | None = None,
-    ) -> Pager[ExperimentRunArtifact]:
-        """Get a pager for experiment run logs.
-
-        Args:
-            run_id: ID of the experiment run.
-            run_name: Name of the experiment run.
-            experiment_id: ID of the experiment.
-            experiment_name: Name of the experiment.
-
-        Returns:
-            Iterable pager for experiment run logs.
-        """
-
-        def exp_run_logs(options: ListOptions) -> list[ExperimentRunArtifact]:
-            if run_id:
-                return self.async_runner(
-                    self._api.get_artifacts_by_experiment_run_params(run_id=run_id, options=options)
-                )
-            if run_name and experiment_name:
-                return self.async_runner(
-                    self._api.get_artifacts_by_experiment_run_params(
-                        run_name=run_name,
-                        experiment_name=experiment_name,
-                        options=options,
-                    )
-                )
-            if run_name and experiment_id:
-                return self.async_runner(
-                    self._api.get_artifacts_by_experiment_run_params(
-                        run_name=run_name, experiment_id=experiment_id, options=options
-                    )
-                )
-            return None  # type: ignore[return-value]
-
-        return Pager[ExperimentRunArtifact](exp_run_logs)
 
     # TODO: consider porting get_artifacts method here
     # https://github.com/kubeflow/hub/pull/1536

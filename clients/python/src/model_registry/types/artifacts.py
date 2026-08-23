@@ -2,7 +2,7 @@
 
 Artifacts represent pieces of data.
 This could be datasets, models, metrics, or any other piece of data produced or consumed by an
-execution, such as an experiment run.
+execution.
 
 Those types are used to map between proto types based on artifacts and Python objects.
 
@@ -14,7 +14,6 @@ from __future__ import annotations  # noqa: I001
 
 import warnings
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
 from typing import Any, TypeVar
 
 from typing_extensions import override
@@ -75,8 +74,6 @@ class Artifact(BaseResourceModel, ABC):
     state: ArtifactState = ArtifactState.UNKNOWN
     description: str | None = None
     external_id: str | None = None
-    experiment_id: str | None = None
-    experiment_run_id: str | None = None
 
     @classmethod
     def from_artifact(cls: type[A], source: ArtifactBaseModel) -> A:
@@ -166,8 +163,6 @@ class DocArtifact(Artifact):
             external_id=source.external_id,
             create_time_since_epoch=source.create_time_since_epoch,
             last_update_time_since_epoch=source.last_update_time_since_epoch,
-            experiment_id=source.experiment_id,
-            experiment_run_id=source.experiment_run_id,
             uri=source.uri,
             state=source.state,
             custom_properties=cls._unmap_custom_properties(source.custom_properties)
@@ -253,8 +248,6 @@ class ModelArtifact(Artifact):
             external_id=source.external_id,
             create_time_since_epoch=source.create_time_since_epoch,
             last_update_time_since_epoch=source.last_update_time_since_epoch,
-            experiment_id=source.experiment_id,
-            experiment_run_id=source.experiment_run_id,
             uri=source.uri,
             model_format_name=source.model_format_name,
             model_format_version=source.model_format_version,
@@ -338,8 +331,6 @@ class DataSet(Artifact):
             external_id=source.external_id,
             create_time_since_epoch=source.create_time_since_epoch,
             last_update_time_since_epoch=source.last_update_time_since_epoch,
-            experiment_id=source.experiment_id,
-            experiment_run_id=source.experiment_run_id,
             uri=source.uri,
             digest=source.digest,
             source_type=source.source_type,
@@ -412,8 +403,6 @@ class Metric(Artifact):
             external_id=source.external_id,
             create_time_since_epoch=source.create_time_since_epoch,
             last_update_time_since_epoch=source.last_update_time_since_epoch,
-            experiment_id=source.experiment_id,
-            experiment_run_id=source.experiment_run_id,
             value=source.value,  # type: ignore[arg-type]
             timestamp=source.timestamp,
             step=source.step,  # type: ignore[arg-type]
@@ -489,8 +478,6 @@ class Parameter(Artifact):
             external_id=source.external_id,
             create_time_since_epoch=source.create_time_since_epoch,
             last_update_time_since_epoch=source.last_update_time_since_epoch,
-            experiment_id=source.experiment_id,
-            experiment_run_id=source.experiment_run_id,
             value=value,  # type: ignore[arg-type]
             parameter_type=source.parameter_type,
             state=source.state,  # type: ignore[arg-type]
@@ -498,15 +485,3 @@ class Parameter(Artifact):
             if source.custom_properties
             else None,
         )
-
-
-ExperimentRunArtifact = Parameter | Metric | DataSet
-
-
-@dataclass
-class ExperimentRunArtifactTypes:
-    """Types of experiment run artifacts."""
-
-    params: dict[str, Parameter] = field(default_factory=dict)
-    metrics: dict[str, Metric] = field(default_factory=dict)
-    datasets: dict[str, DataSet] = field(default_factory=dict)

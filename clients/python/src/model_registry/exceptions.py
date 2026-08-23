@@ -23,11 +23,3 @@ class ServerError(StoreError):
 
 class DuplicateError(StoreError):
     """Raised when the user tries to put an object with a conflicting property."""
-
-
-class ExperimentRunError(Exception):
-    """Raised when an error occurs while working with an experiment run."""
-
-
-class ExperimentRunStoreError(StoreError):
-    """Raised when an error occurs while storing an experiment run."""

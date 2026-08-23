@@ -264,7 +264,7 @@ async def test_patch_model_artifacts_artifact_type(
     from .conftest import REGISTRY_HOST, REGISTRY_PORT
 
     response = requests.patch(
-        url=f"{REGISTRY_HOST}:{REGISTRY_PORT}/api/model_registry/v1alpha3/model_artifacts/{ma.id}",
+        url=f"{REGISTRY_HOST}:{REGISTRY_PORT}/api/model_registry/v1/model_artifacts/{ma.id}",
         json=payload,
         timeout=10,
         headers=request_headers,

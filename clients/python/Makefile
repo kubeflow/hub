@@ -6,7 +6,7 @@ BUILD_IMAGE ?= true # whether to build the MR server image
 
 .PHONY: install
 install:
-	../../bin/openapi-generator-cli generate -i ../../api/openapi/model-registry.yaml -g python -o src/ --package-name mr_openapi --additional-properties=library=asyncio,generateSourceCodeOnly=true,useOneOfDiscriminatorLookup=true --template-dir templates/
+	../../bin/openapi-generator-cli generate -i ../../api/openapi/model-registry-v1.yaml -g python -o src/ --package-name mr_openapi --additional-properties=library=asyncio,generateSourceCodeOnly=true,useOneOfDiscriminatorLookup=true --template-dir templates/
 	mv src/mr_openapi_README.md src/mr_openapi/README.md
 	git apply patches/*
 	poetry install
@@ -25,8 +25,8 @@ deploy-latest-mr:
 # TODO RHOAIENG-30453 align consistency ./scripts/deploy_on_kind.sh uses IMG with :tag, Vs, Makefile(s) and ci/GHA we use IMG without trailing :tag
 	kubectl port-forward -n kubeflow services/model-registry-service 8080:8080 > /dev/null 2>&1 & echo $$! >> .port-forwards.pid
 	@echo "Waiting for model-registry port-forward (8080)..."
-	@for i in $$(seq 1 30); do curl -sf http://localhost:8080/api/model_registry/v1alpha3/registered_models > /dev/null 2>&1 && break || sleep 1; done
-	@curl -sf http://localhost:8080/api/model_registry/v1alpha3/registered_models > /dev/null 2>&1 || \
+	@for i in $$(seq 1 30); do curl -sf http://localhost:8080/api/model_registry/v1/registered_models > /dev/null 2>&1 && break || sleep 1; done
+	@curl -sf http://localhost:8080/api/model_registry/v1/registered_models > /dev/null 2>&1 || \
 		(echo "ERROR: model-registry not reachable on localhost:8080 after 30s"; exit 1)
 
 .PHONY: deploy-test-minio

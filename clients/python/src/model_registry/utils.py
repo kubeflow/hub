@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import base64
-import copy
 import json
 import os
 import shutil
 import tempfile
-import threading
 from collections.abc import Callable, Generator
 from contextlib import contextmanager, suppress
 from dataclasses import asdict, dataclass
@@ -740,24 +738,6 @@ def create_auth_object(oci_ref: str, username: str, password: str) -> dict[str, 
     return {"auths": {auth_ref: {"auth": auth_value}}}
 
 
-def rand_suffix(size: int = 8) -> str:
-    """Generate a random suffix.
-
-    Returns:
-        A random suffix.
-    """
-    return os.urandom(size).hex()
-
-
-def generate_name(prefix: str) -> str:
-    """Generate a random name.
-
-    Returns:
-        A random name for experiments.
-    """
-    return f"{prefix}_{rand_suffix()}"
-
-
 def upload_to_s3(
     s3_auth: S3Params,
     path: str,
@@ -791,22 +771,3 @@ def upload_to_s3(
         path_prefix=s3_auth.s3_prefix,
         transfer_config=transfer_config,
     )
-
-
-class ThreadSafeVariable(Generic[T]):
-    """Thread safe variable."""
-
-    def __init__(self, value: T):
-        """Initialize the thread safe variable."""
-        self.local = threading.local()
-        self._initial_value = value
-
-    def get(self) -> T:
-        """Get the value."""
-        if not hasattr(self.local, "value"):
-            self.local.value = self._initial_value
-        return copy.deepcopy(self.local.value)
-
-    def set(self, value: T) -> None:
-        """Set the value."""
-        self.local.value = value

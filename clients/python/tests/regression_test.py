@@ -108,7 +108,7 @@ async def test_patch_model_artifacts_artifact_type(
     assert ma.id
 
     payload = { "modelFormatName": "foo", "artifactType": "model-artifact" }
-    response = requests.patch(url=f"{REGISTRY_HOST}:{REGISTRY_PORT}/api/model_registry/v1alpha3/artifacts/{ma.id}",
+    response = requests.patch(url=f"{REGISTRY_HOST}:{REGISTRY_PORT}/api/model_registry/v1/artifacts/{ma.id}",
                               json=payload, timeout=10,
                               headers=request_headers, verify=verify_ssl)
     assert response.status_code == 200
@@ -141,7 +141,7 @@ async def test_patch_artifact_cannot_change_artifact_type(
     # Attempt to change artifact type from model-artifact to doc-artifact
     # This should fail with a 400 Bad Request, not crash the server (503)
     payload = {"artifactType": "doc-artifact"}
-    response = requests.patch(url=f"{REGISTRY_HOST}:{REGISTRY_PORT}/api/model_registry/v1alpha3/artifacts/{ma.id}",
+    response = requests.patch(url=f"{REGISTRY_HOST}:{REGISTRY_PORT}/api/model_registry/v1/artifacts/{ma.id}",
                               json=payload, timeout=10,
                               headers=request_headers, verify=verify_ssl)
 
@@ -165,7 +165,7 @@ async def test_as_mlops_engineer_i_would_like_to_store_a_malformed_registered_mo
     """As a MLOps engineer if I try to store a malformed RegisteredModel I get a structured error message
     """
     payload = { "name": "test_model", "ext_id": 123 }
-    response = requests.post(url=f"{REGISTRY_HOST}:{REGISTRY_PORT}/api/model_registry/v1alpha3/registered_models",
+    response = requests.post(url=f"{REGISTRY_HOST}:{REGISTRY_PORT}/api/model_registry/v1/registered_models",
                              json=payload, timeout=10, headers=request_headers, verify=verify_ssl
                              )
     assert response.status_code == 400
@@ -189,7 +189,7 @@ async def test_as_mlops_engineer_i_would_like_to_store_a_malformed_model_version
     )
 
     payload = { "registeredModelId": rm.id }
-    response = requests.post(url=f"{REGISTRY_HOST}:{REGISTRY_PORT}/api/model_registry/v1alpha3/model_versions",
+    response = requests.post(url=f"{REGISTRY_HOST}:{REGISTRY_PORT}/api/model_registry/v1/model_versions",
                              json=payload, timeout=10, headers=request_headers, verify=verify_ssl)
     assert response.status_code == 422
     assert response.json() == {
