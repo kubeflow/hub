@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 import * as React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import SkillCatalogCard from '~/app/pages/skillCatalog/components/SkillCatalogCard';
 import type { Skill } from '~/app/skillCatalogTypes';
@@ -69,6 +69,18 @@ describe('SkillCatalogCard', () => {
       wrapper,
     });
     expect(screen.queryByText('popular')).not.toBeInTheDocument();
+  });
+
+  it('renders an install button that opens the install modal on click', () => {
+    render(<SkillCatalogCard skill={mockSkill} />, { wrapper });
+    expect(screen.queryByTestId('skill-install-modal-1')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('skill-catalog-card-install-button-1'));
+
+    expect(screen.getByTestId('skill-install-modal-1')).toBeInTheDocument();
+    expect(screen.getByTestId('skill-install-modal-title-1')).toHaveTextContent(
+      'Install Diagnosing Bugs',
+    );
   });
 
   it('always renders the default cube icon', () => {

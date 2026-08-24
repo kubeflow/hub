@@ -16,7 +16,7 @@ import {
   Stack,
   StackItem,
 } from '@patternfly/react-core';
-import { CubeIcon, SearchIcon } from '@patternfly/react-icons';
+import { CubeIcon, PluggedIcon, SearchIcon } from '@patternfly/react-icons';
 import { ApplicationsPage } from 'mod-arch-shared';
 import { useSkillWithAPI } from '~/app/hooks/skillCatalog/useSkill';
 import { SkillCatalogContext } from '~/app/context/skillCatalog/SkillCatalogContext';
@@ -26,12 +26,14 @@ import {
   SKILL_TRUST_TIER_LABEL_MAPPING,
 } from '~/app/pages/skillCatalog/const';
 import ScrollViewOnMount from '~/app/shared/components/ScrollViewOnMount';
+import SkillInstallModal from '~/app/pages/skillCatalog/components/SkillInstallModal';
 import SkillDetailsView from './SkillDetailsView';
 
 const SkillDetailsPage: React.FC = () => {
   const { skillId = '' } = useParams<{ skillId: string }>();
   const { skillApiState } = React.useContext(SkillCatalogContext);
   const [skill, skillLoaded, skillLoadError] = useSkillWithAPI(skillApiState, skillId);
+  const [isInstallModalOpen, setIsInstallModalOpen] = React.useState(false);
 
   const isNotFound = !skill && (skillLoaded || !!skillLoadError);
   const skillName = skill?.displayName || skill?.name;
@@ -100,6 +102,18 @@ const SkillDetailsPage: React.FC = () => {
             </Flex>
           ) : null
         }
+        headerAction={
+          skill ? (
+            <Button
+              variant="primary"
+              icon={<PluggedIcon />}
+              onClick={() => setIsInstallModalOpen(true)}
+              data-testid="skill-details-install-button"
+            >
+              Install
+            </Button>
+          ) : undefined
+        }
         empty={isNotFound}
         emptyStatePage={
           isNotFound ? (
@@ -123,6 +137,13 @@ const SkillDetailsPage: React.FC = () => {
       >
         {skill && <SkillDetailsView skill={skill} />}
       </ApplicationsPage>
+      {skill && isInstallModalOpen && (
+        <SkillInstallModal
+          skill={skill}
+          isOpen={isInstallModalOpen}
+          onClose={() => setIsInstallModalOpen(false)}
+        />
+      )}
     </>
   );
 };

@@ -12,6 +12,10 @@ jest.mock('~/app/shared/markdown/MarkdownComponent', () => ({
   default: () => null,
 }));
 
+jest.mock('~/app/hooks/skillCatalog/useSkillMarketplace', () => ({
+  useSkillMarketplace: () => [null, true, undefined],
+}));
+
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <MemoryRouter>{children}</MemoryRouter>
 );

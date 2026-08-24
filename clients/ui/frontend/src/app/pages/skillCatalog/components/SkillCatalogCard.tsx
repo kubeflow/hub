@@ -11,18 +11,20 @@ import {
   Label,
   LabelGroup,
 } from '@patternfly/react-core';
-import { CubeIcon } from '@patternfly/react-icons';
+import { CubeIcon, PluggedIcon } from '@patternfly/react-icons';
 import { Link, type LinkProps } from 'react-router-dom';
 import type { Skill } from '~/app/skillCatalogTypes';
 import { skillDetailsUrl } from '~/app/routes/skillCatalog/skillCatalog';
 import { formatSkillVersion } from '~/app/pages/skillCatalog/utils/skillCatalogUtils';
 import { SKILL_TRUST_TIER_LABEL_MAPPING } from '~/app/pages/skillCatalog/const';
+import SkillInstallModal from '~/app/pages/skillCatalog/components/SkillInstallModal';
 
 type SkillCatalogCardProps = {
   skill: Skill;
 };
 
 const SkillCatalogCard: React.FC<SkillCatalogCardProps> = React.memo(({ skill }) => {
+  const [isInstallModalOpen, setIsInstallModalOpen] = React.useState(false);
   const skillName = skill.displayName || skill.name;
 
   return (
@@ -145,8 +147,24 @@ const SkillCatalogCard: React.FC<SkillCatalogCardProps> = React.memo(({ skill })
               </span>
             </Label>
           </FlexItem>
+          <FlexItem>
+            <Button
+              variant="plain"
+              aria-label={`Install ${skillName}`}
+              icon={<PluggedIcon />}
+              onClick={() => setIsInstallModalOpen(true)}
+              data-testid={`skill-catalog-card-install-button-${skill.id}`}
+            />
+          </FlexItem>
         </Flex>
       </CardFooter>
+      {isInstallModalOpen && (
+        <SkillInstallModal
+          skill={skill}
+          isOpen={isInstallModalOpen}
+          onClose={() => setIsInstallModalOpen(false)}
+        />
+      )}
     </Card>
   );
 });

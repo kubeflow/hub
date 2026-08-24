@@ -26,6 +26,7 @@ import { CodeIcon, ExclamationTriangleIcon, GithubIcon } from '@patternfly/react
 import type { Skill } from '~/app/skillCatalogTypes';
 import ExternalLink from '~/app/shared/components/ExternalLink';
 import MarkdownComponent from '~/app/shared/markdown/MarkdownComponent';
+import SkillInstallTabs from '~/app/pages/skillCatalog/components/SkillInstallTabs';
 import SkillFileTree from '~/app/pages/skillCatalog/components/SkillFileTree';
 import {
   SKILL_RECOMMENDED_MAX_BODY_LINES,
@@ -90,6 +91,18 @@ const SkillDetailsView: React.FC<SkillDetailsViewProps> = ({ skill }) => {
                   <Content className="pf-v6-u-text-break-word">
                     <p data-testid="skill-description">{skill.description || 'No description'}</p>
                   </Content>
+                </CardBody>
+              </Card>
+            </StackItem>
+            <StackItem>
+              <Card data-testid="skill-install-card">
+                <CardHeader>
+                  <Title headingLevel="h2" size="lg">
+                    Install
+                  </Title>
+                </CardHeader>
+                <CardBody>
+                  <SkillInstallTabs skill={skill} idPrefix="skill-install-section" />
                 </CardBody>
               </Card>
             </StackItem>
