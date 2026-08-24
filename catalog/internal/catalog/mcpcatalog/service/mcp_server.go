@@ -7,6 +7,7 @@ import (
 
 	"github.com/kubeflow/hub/catalog/internal/catalog/mcpcatalog/models"
 	"github.com/kubeflow/hub/catalog/internal/db/pagination"
+	catalogsvc "github.com/kubeflow/hub/catalog/internal/db/service"
 	"github.com/kubeflow/hub/internal/platform/db/dbutil"
 	dbmodels "github.com/kubeflow/hub/internal/platform/db/entity"
 	service "github.com/kubeflow/hub/internal/platform/db/repository"
@@ -325,6 +326,13 @@ func (r *MCPServerRepositoryImpl) DeleteByID(id int32) error {
 // GetTypeID returns the MLMD type ID for the kf.MCPServer context type.
 func (r *MCPServerRepositoryImpl) GetTypeID() int32 {
 	return r.GetConfig().TypeID
+}
+
+func (r *MCPServerRepositoryImpl) GetDistinctSourceIDs() ([]string, error) {
+	cfg := r.GetConfig()
+	entityTable := utils.GetTableName(cfg.DB, &schema.Context{})
+	propTable := utils.GetTableName(cfg.DB, &schema.ContextProperty{})
+	return catalogsvc.GetDistinctSourceIDs(cfg.DB, entityTable, propTable, cfg.PropertyFieldName, cfg.TypeID)
 }
 
 // applyMCPServerListFilters applies list filters to the query.

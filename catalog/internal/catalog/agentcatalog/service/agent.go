@@ -7,6 +7,7 @@ import (
 
 	"github.com/kubeflow/hub/catalog/internal/catalog/agentcatalog/models"
 	"github.com/kubeflow/hub/catalog/internal/db/pagination"
+	catalogsvc "github.com/kubeflow/hub/catalog/internal/db/service"
 	dbmodels "github.com/kubeflow/hub/internal/platform/db/entity"
 	service "github.com/kubeflow/hub/internal/platform/db/repository"
 	"github.com/kubeflow/hub/internal/platform/db/schema"
@@ -271,4 +272,11 @@ func (r *AgentRepositoryImpl) DeleteByID(id int32) error {
 
 func (r *AgentRepositoryImpl) GetTypeID() int32 {
 	return r.GetConfig().TypeID
+}
+
+func (r *AgentRepositoryImpl) GetDistinctSourceIDs() ([]string, error) {
+	cfg := r.GetConfig()
+	entityTable := utils.GetTableName(cfg.DB, &schema.Context{})
+	propTable := utils.GetTableName(cfg.DB, &schema.ContextProperty{})
+	return catalogsvc.GetDistinctSourceIDs(cfg.DB, entityTable, propTable, cfg.PropertyFieldName, cfg.TypeID)
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog/models"
 	catpagination "github.com/kubeflow/hub/catalog/internal/db/pagination"
+	catalogsvc "github.com/kubeflow/hub/catalog/internal/db/service"
 	"github.com/kubeflow/hub/internal/platform/db/dbutil"
 	dbmodels "github.com/kubeflow/hub/internal/platform/db/entity"
 	dbfilter "github.com/kubeflow/hub/internal/platform/db/filter"
@@ -271,6 +272,13 @@ func (r *CatalogModelRepositoryImpl) DeleteByID(id int32) error {
 
 func (r *CatalogModelRepositoryImpl) GetTypeID() int32 {
 	return r.GetConfig().TypeID
+}
+
+func (r *CatalogModelRepositoryImpl) GetDistinctSourceIDs() ([]string, error) {
+	cfg := r.GetConfig()
+	entityTable := utils.GetTableName(cfg.DB, &schema.Context{})
+	propTable := utils.GetTableName(cfg.DB, &schema.ContextProperty{})
+	return catalogsvc.GetDistinctSourceIDs(cfg.DB, entityTable, propTable, cfg.PropertyFieldName, cfg.TypeID)
 }
 
 func applyCatalogModelListFilters(query *gorm.DB, listOptions *models.CatalogModelListOptions) *gorm.DB {

@@ -7,6 +7,7 @@ import (
 
 	"github.com/kubeflow/hub/catalog/internal/catalog/skillcatalog/models"
 	"github.com/kubeflow/hub/catalog/internal/db/pagination"
+	catalogsvc "github.com/kubeflow/hub/catalog/internal/db/service"
 	dbmodels "github.com/kubeflow/hub/internal/platform/db/entity"
 	service "github.com/kubeflow/hub/internal/platform/db/repository"
 	"github.com/kubeflow/hub/internal/platform/db/schema"
@@ -277,4 +278,11 @@ func (r *SkillRepositoryImpl) DeleteByID(id int32) error {
 // GetTypeID returns the datastore type ID for the skill context type.
 func (r *SkillRepositoryImpl) GetTypeID() int32 {
 	return r.GetConfig().TypeID
+}
+
+func (r *SkillRepositoryImpl) GetDistinctSourceIDs() ([]string, error) {
+	cfg := r.GetConfig()
+	entityTable := utils.GetTableName(cfg.DB, &schema.Context{})
+	propTable := utils.GetTableName(cfg.DB, &schema.ContextProperty{})
+	return catalogsvc.GetDistinctSourceIDs(cfg.DB, entityTable, propTable, cfg.PropertyFieldName, cfg.TypeID)
 }
