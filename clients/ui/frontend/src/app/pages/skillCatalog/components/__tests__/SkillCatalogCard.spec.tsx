@@ -96,12 +96,10 @@ describe('SkillCatalogCard', () => {
     );
   });
 
-  // The card name is plain text until the skill details page exists; the link and the
-  // install button are added by the PRs that introduce what they navigate to.
-  it('renders the card name as plain text, with no link to a details page', () => {
+  it('renders clickable card name as link to details page', () => {
     render(<SkillCatalogCard skill={mockSkill} />, { wrapper });
-    expect(screen.getByTestId('skill-catalog-card-name-1')).toHaveTextContent('Diagnosing Bugs');
-    expect(screen.queryByTestId('skill-catalog-card-detail-link-1')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('skill-catalog-card-install-button-1')).not.toBeInTheDocument();
+    const link = screen.getByTestId('skill-catalog-card-detail-link-1');
+    expect(link.tagName).toBe('A');
+    expect(link).toHaveAttribute('href', '/skill-catalog/1');
   });
 });

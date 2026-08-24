@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {
+  Button,
   Card,
   CardBody,
   CardFooter,
@@ -11,7 +12,9 @@ import {
   LabelGroup,
 } from '@patternfly/react-core';
 import { CubeIcon } from '@patternfly/react-icons';
+import { Link, type LinkProps } from 'react-router-dom';
 import type { Skill } from '~/app/skillCatalogTypes';
+import { skillDetailsUrl } from '~/app/routes/skillCatalog/skillCatalog';
 import { formatSkillVersion } from '~/app/pages/skillCatalog/utils/skillCatalogUtils';
 import { SKILL_TRUST_TIER_LABEL_MAPPING } from '~/app/pages/skillCatalog/const';
 
@@ -52,21 +55,28 @@ const SkillCatalogCard: React.FC<SkillCatalogCardProps> = React.memo(({ skill })
           </FlexItem>
         </Flex>
         <CardTitle>
-          {/* Plain text until the skill details page exists. Deliberately not a
-              disabled-looking link: an affordance that goes nowhere is worse than none. */}
-          <span
+          <Button
+            data-testid={`skill-catalog-card-detail-link-${skill.id}`}
+            variant="link"
+            isInline
+            component={(props: LinkProps) => <Link {...props} to={skillDetailsUrl(skill.id)} />}
             style={{
-              display: 'block',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
               fontSize: 'var(--pf-t--global--font--size--body--default)',
               fontWeight: 'var(--pf-t--global--font--weight--body--bold)',
             }}
-            data-testid={`skill-catalog-card-name-${skill.id}`}
           >
-            {skillName}
-          </span>
+            <span
+              style={{
+                display: 'block',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+              data-testid={`skill-catalog-card-name-${skill.id}`}
+            >
+              {skillName}
+            </span>
+          </Button>
         </CardTitle>
         {(skill.provider || skill.version) && (
           <div
