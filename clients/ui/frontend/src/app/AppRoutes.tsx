@@ -11,6 +11,7 @@ import AgentsCatalogRoutes from './pages/agentsCatalog/AgentsCatalogRoutes';
 import SkillCatalogRoutes from './pages/skillCatalog/SkillCatalogRoutes';
 import ModelCatalogSettingsRoutes from './pages/modelCatalogSettings/ModelCatalogSettingsRoutes';
 import McpCatalogSettingsRoutes from './pages/mcpCatalogSettings/McpCatalogSettingsRoutes';
+import SkillCatalogSettingsRoutes from './pages/skillCatalogSettings/SkillCatalogSettingsRoutes';
 import { modelCatalogUrl } from './routes/modelCatalog/catalogModel';
 import { mcpCatalogUrl } from './routes/mcpCatalog/mcpCatalog';
 import { agentsCatalogUrl } from './routes/agentsCatalog/agentsCatalog';
@@ -23,6 +24,10 @@ import {
   mcpCatalogSettingsUrl,
   MCP_CATALOG_SETTINGS_PAGE_TITLE,
 } from './routes/mcpCatalogSettings/mcpCatalogSettings';
+import {
+  skillCatalogSettingsUrl,
+  SKILL_CATALOG_SETTINGS_PAGE_TITLE,
+} from './routes/skillCatalogSettings/skillCatalogSettings';
 import { modelRegistryUrl } from './pages/modelRegistry/screens/routeUtils';
 import { MODEL_CATALOG_TITLE } from './pages/modelCatalog/const';
 import { MCP_CATALOG_TITLE } from './pages/mcpCatalog/const';
@@ -47,6 +52,10 @@ export const useAdminSettings = (): NavDataItem[] => {
     settingsChildren.push({
       label: MCP_CATALOG_SETTINGS_PAGE_TITLE,
       path: mcpCatalogSettingsUrl(),
+    });
+    settingsChildren.push({
+      label: SKILL_CATALOG_SETTINGS_PAGE_TITLE,
+      path: skillCatalogSettingsUrl(),
     });
   }
 
@@ -102,6 +111,7 @@ const AppRoutes: React.FC = () => {
           <Route path={`${skillCatalogUrl()}/*`} element={<SkillCatalogRoutes />} />
           <Route path={`${catalogSettingsUrl()}/*`} element={<ModelCatalogSettingsRoutes />} />
           <Route path={`${mcpCatalogSettingsUrl()}/*`} element={<McpCatalogSettingsRoutes />} />
+          <Route path={`${skillCatalogSettingsUrl()}/*`} element={<SkillCatalogSettingsRoutes />} />
         </>
       )}
       <Route path="*" element={<NotFound />} />
