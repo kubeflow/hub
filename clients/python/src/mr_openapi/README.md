@@ -31,13 +31,16 @@ In your own code, to use this library to connect and interact with mr-openapi,
 you can run the following:
 
 ```python
+
 import mr_openapi
 from mr_openapi.rest import ApiException
 from pprint import pprint
 
 # Defining the host is optional and defaults to https://localhost:8080
 # See configuration.py for a list of all supported configuration parameters.
-configuration = mr_openapi.Configuration(host="https://localhost:8080")
+configuration = mr_openapi.Configuration(
+    host = "https://localhost:8080"
+)
 
 # The client must configure the authentication and authorization parameters
 # in accordance with the API server security policy.
@@ -45,14 +48,16 @@ configuration = mr_openapi.Configuration(host="https://localhost:8080")
 # satisfies your auth use case.
 
 # Configure Bearer authorization (JWT): Bearer
-configuration = mr_openapi.Configuration(access_token=os.environ["BEARER_TOKEN"])
+configuration = mr_openapi.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
 
 # Enter a context with an instance of the API client
 async with mr_openapi.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = mr_openapi.ModelRegistryServiceApi(api_client)
-    artifact_create = mr_openapi.ArtifactCreate()  # ArtifactCreate | A new `Artifact` to be created.
+    artifact_create = mr_openapi.ArtifactCreate() # ArtifactCreate | A new `Artifact` to be created.
 
     try:
         # Create an Artifact
@@ -61,6 +66,7 @@ async with mr_openapi.ApiClient(configuration) as api_client:
         pprint(api_response)
     except ApiException as e:
         print("Exception when calling ModelRegistryServiceApi->create_artifact: %s\n" % e)
+
 ```
 
 ## Documentation for API Endpoints
