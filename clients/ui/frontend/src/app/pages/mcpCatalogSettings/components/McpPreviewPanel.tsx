@@ -44,8 +44,8 @@ const McpPreviewPanel: React.FC<McpPreviewPanelProps> = ({ preview }) => {
       error={error}
       hasFormChanged={hasFormChanged}
       canPreview={canPreview}
-      onPreview={() => handlePreview()}
-      onLoadMore={() => handleLoadMore()}
+      onPreview={handlePreview}
+      onLoadMore={handleLoadMore}
       onTabChange={handleTabChange}
       pageTitle={MCP_PAGE_TITLES.MCP_CATALOG_PREVIEW}
       previewLabel={MCP_BUTTON_LABELS.PREVIEW}

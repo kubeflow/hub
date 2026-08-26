@@ -25,6 +25,10 @@ const ModelCatalogSettings: React.FC = () => {
   const configs = catalogSourceConfigs?.catalogs || [];
   const isEmpty = catalogSourceConfigsLoaded && configs.length === 0;
 
+  const handleAddSource = React.useCallback(() => {
+    navigate(addSourceUrl());
+  }, [navigate]);
+
   const handleDeleteSource = React.useCallback(
     async (sourceId: string): Promise<void> => {
       if (!apiState.apiAvailable) {
@@ -55,11 +59,11 @@ const ModelCatalogSettings: React.FC = () => {
       emptyStateTestId="catalog-settings-empty-state"
       addSourceLabel={ADD_SOURCE_TITLE}
       addSourceButtonTestId="add-source-button-empty"
-      onAddSource={() => navigate(addSourceUrl())}
+      onAddSource={handleAddSource}
     >
       <CatalogSourceConfigsTable
         catalogSourceConfigs={configs}
-        onAddSource={() => navigate(addSourceUrl())}
+        onAddSource={handleAddSource}
         onDeleteSource={handleDeleteSource}
       />
     </CatalogSettingsListPage>

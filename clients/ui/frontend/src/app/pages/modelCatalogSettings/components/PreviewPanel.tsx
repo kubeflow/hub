@@ -46,8 +46,8 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({ preview }) => {
       error={previewError}
       hasFormChanged={hasFormChanged}
       canPreview={canPreview}
-      onPreview={() => handlePreview()}
-      onLoadMore={() => handleLoadMore()}
+      onPreview={handlePreview}
+      onLoadMore={handleLoadMore}
       onTabChange={handleTabChange}
       pageTitle={PAGE_TITLES.MODEL_CATALOG_PREVIEW}
       previewLabel={BUTTON_LABELS.PREVIEW}

@@ -71,9 +71,9 @@ const SourceConfigsTable = <TConfig extends SourceConfigRowBase>({
     try {
       await onToggleUpdate(checked, config);
     } catch (e) {
-      if (e instanceof Error) {
-        setToggleError(new Error(`Error enabling/disabling source ${config.name}`));
-      }
+      setToggleError(
+        e instanceof Error ? e : new Error(`Error enabling/disabling source ${config.name}`),
+      );
     } finally {
       setUpdatingToggleId(null);
     }

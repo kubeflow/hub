@@ -24,6 +24,10 @@ const McpCatalogSettings: React.FC = () => {
   const configs = mcpCatalogSourceConfigs?.catalogs || [];
   const isEmpty = mcpCatalogSourceConfigsLoaded && configs.length === 0;
 
+  const handleAddSource = React.useCallback(() => {
+    navigate(mcpAddSourceUrl());
+  }, [navigate]);
+
   const handleDeleteSource = React.useCallback(
     async (sourceId: string): Promise<void> => {
       if (!apiState.apiAvailable) {
@@ -53,11 +57,11 @@ const McpCatalogSettings: React.FC = () => {
       emptyStateTestId="mcp-catalog-settings-empty-state"
       addSourceLabel={MCP_ADD_SOURCE_TITLE}
       addSourceButtonTestId="mcp-add-source-button-empty"
-      onAddSource={() => navigate(mcpAddSourceUrl())}
+      onAddSource={handleAddSource}
     >
       <McpCatalogSourceConfigsTable
         mcpCatalogSourceConfigs={configs}
-        onAddSource={() => navigate(mcpAddSourceUrl())}
+        onAddSource={handleAddSource}
         onDeleteSource={handleDeleteSource}
       />
     </CatalogSettingsListPage>
