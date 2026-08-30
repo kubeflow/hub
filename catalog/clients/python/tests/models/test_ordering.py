@@ -14,8 +14,7 @@ from typing import Any
 import pytest
 
 from model_catalog import CatalogAPIClient
-
-from tests.models.sorting_utils import get_field_value, sort_items_by_field
+from tests.models.sorting_utils import sort_items_by_field
 
 
 def _assert_response_valid(response: dict[str, Any]) -> None:
@@ -78,8 +77,9 @@ class TestNameOrdering:
         response = api_client.get_models(order_by="name", sort_order="DESC")
         _assert_response_valid(response)
 
-    def test_name_asc_vs_desc_are_reversed(self, api_client: CatalogAPIClient, suppress_ssl_warnings: None,
-                                           kind_cluster: bool):
+    def test_name_asc_vs_desc_are_reversed(
+        self, api_client: CatalogAPIClient, suppress_ssl_warnings: None, kind_cluster: bool
+    ):
         """Test that ASC and DESC orderings are reversed."""
         # Use large page size to get all models
         page_size = 100 if kind_cluster else 1000
@@ -322,9 +322,7 @@ class TestAccuracyOrdering:
             if acc is None:
                 found_model_without_accuracy = True
             else:
-                assert not found_model_without_accuracy, (
-                    "Found model with accuracy after model without accuracy"
-                )
+                assert not found_model_without_accuracy, "Found model with accuracy after model without accuracy"
                 accuracies_with_values.append(acc)
 
         # Validate accuracy ordering

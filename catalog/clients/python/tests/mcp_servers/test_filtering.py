@@ -40,7 +40,9 @@ class TestMCPServerFiltering:
                 1,
                 {"calculator"},
                 id="boolean_flags",
-                marks=pytest.mark.skipif(not _KIND_CLUSTER, reason="Non-KinD environments have additional MCP sources"),
+                marks=pytest.mark.skipif(
+                    not _KIND_CLUSTER, reason="Non-KinD environments have additional MCP sources"
+                ),
             ),
             pytest.param(
                 "license='MIT' AND (provider='Math Community' OR provider='Weather Community')",
@@ -61,9 +63,10 @@ class TestMCPServerFiltering:
         """Test filterQuery with various filter expressions."""
         response = api_client.get_mcp_servers(filter_query=filter_query)
         items = response.get("items", [])
-        assert len(items) == expected_count, f"Expected {expected_count} servers for '{filter_query}', got {len(items)}"
+        assert len(items) == expected_count, (
+            f"Expected {expected_count} servers for '{filter_query}', got {len(items)}"
+        )
         assert {s["name"] for s in items} == expected_names
-
 
 
 class TestMCPServerNegative:

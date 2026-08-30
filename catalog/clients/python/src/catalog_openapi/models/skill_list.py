@@ -17,16 +17,20 @@ import pprint
 import re  # noqa: F401
 from typing import Any, ClassVar
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr
 from typing_extensions import Self
 
+from catalog_openapi.models.skill import Skill
 
-class ModelPreviewResult(BaseModel):
-    """A model with its inclusion/exclusion status based on the configured catalog source filters.
+
+class SkillList(BaseModel):
+    """A list of skill entities.
     """ # noqa: E501
-    name: StrictStr = Field(description="Name of the model")
-    included: StrictBool = Field(description="Whether this model would be included based on the source configuration")
-    __properties: ClassVar[list[str]] = ["name", "included"]
+    next_page_token: StrictStr = Field(description="Token to use to retrieve next page of results.", alias="nextPageToken")
+    page_size: StrictInt = Field(description="Maximum number of resources to return in the result.", alias="pageSize")
+    size: StrictInt = Field(description="Number of items in result list.")
+    items: list[Skill] = Field(description="Array of `Skill` entities.")
+    __properties: ClassVar[list[str]] = ["nextPageToken", "pageSize", "size", "items"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -46,7 +50,7 @@ class ModelPreviewResult(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Self | None:
-        """Create an instance of ModelPreviewResult from a JSON string"""
+        """Create an instance of SkillList from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> dict[str, Any]:
@@ -67,11 +71,18 @@ class ModelPreviewResult(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of each item in items (list)
+        _items = []
+        if self.items:
+            for _item_items in self.items:
+                if _item_items:
+                    _items.append(_item_items.to_dict())
+            _dict["items"] = _items
         return _dict
 
     @classmethod
     def from_dict(cls, obj: dict[str, Any] | None) -> Self | None:
-        """Create an instance of ModelPreviewResult from a dict"""
+        """Create an instance of SkillList from a dict"""
         if obj is None:
             return None
 
@@ -79,8 +90,10 @@ class ModelPreviewResult(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "name": obj.get("name"),
-            "included": obj.get("included")
+            "nextPageToken": obj.get("nextPageToken"),
+            "pageSize": obj.get("pageSize"),
+            "size": obj.get("size"),
+            "items": [Skill.from_dict(_item) for _item in obj["items"]] if obj.get("items") is not None else None
         })
         return _obj
 

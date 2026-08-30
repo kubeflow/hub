@@ -17,34 +17,40 @@ import pprint
 import re  # noqa: F401
 from typing import Any, ClassVar
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr
 from typing_extensions import Self
 
-from catalog_openapi.models.agent_env_var import AgentEnvVar
-from catalog_openapi.models.agent_image_artifact import AgentImageArtifact
 from catalog_openapi.models.metadata_value import MetadataValue
+from catalog_openapi.models.skill_trust_tier import SkillTrustTier
 
 
-class Agent(BaseModel):
-    """An agent in the agent catalog.
+class Skill(BaseModel):
+    """An agent skill in the skill catalog. Indexed from a `SKILL.md` in a git repository per the Agent Skills specification (https://agentskills.io).
     """ # noqa: E501
     custom_properties: dict[str, MetadataValue] | None = Field(default=None, description="User provided custom properties which are not defined by its type.", alias="customProperties")
-    description: StrictStr | None = Field(default=None, description="Short description of the agent.")
+    description: StrictStr | None = Field(default=None, description="Short description of the skill from the SKILL.md frontmatter.")
     external_id: StrictStr | None = Field(default=None, description="The external id that come from the clients’ system. This field is optional. If set, it must be unique among all resources within a database instance.", alias="externalId")
-    name: StrictStr = Field(description="Agent identifier. Must be unique within a source.")
+    name: StrictStr = Field(description="Skill identifier from the SKILL.md frontmatter. Must be unique within a source and version.")
     id: StrictStr | None = Field(default=None, description="The unique server generated id of the resource.")
     create_time_since_epoch: StrictStr | None = Field(default=None, description="Output only. Create time of the resource in millisecond since epoch.", alias="createTimeSinceEpoch")
     last_update_time_since_epoch: StrictStr | None = Field(default=None, description="Output only. Last update time of the resource since epoch in millisecond since epoch.", alias="lastUpdateTimeSinceEpoch")
+    license: StrictStr | None = Field(default=None, description="Short name of the skill's license (e.g., apache-2.0).")
+    author: StrictStr | None = Field(default=None, description="Author of the skill, from the SKILL.md frontmatter (`author`, or `metadata.author`).")
+    compatibility: StrictStr | None = Field(default=None, description="Compatibility information declared in the SKILL.md frontmatter (e.g., supported clients or versions).")
+    allowed_tools: list[StrictStr] | None = Field(default=None, description="Tools the skill is permitted to use (`allowed-tools` in the SKILL.md frontmatter).", alias="allowedTools")
+    readme: StrictStr | None = Field(default=None, description="The SKILL.md body rendered as Markdown documentation.")
+    repository: StrictStr | None = Field(default=None, description="Canonical upstream git repository URL. Together with `path` this forms the skill's permanent identity, stable across index rebuilds and mirror deployments.")
+    path: StrictStr | None = Field(default=None, description="Directory of the skill within the repository (the folder containing its SKILL.md).")
+    version: StrictStr | None = Field(default=None, description="The ref this entry was resolved at (tag, release, or commit). A branch ref is surfaced as `latest` rather than the raw branch name.")
+    resolved_commit: StrictStr | None = Field(default=None, description="The exact commit SHA the `version` ref resolved to at sync, used to pin reproducible installs.", alias="resolvedCommit")
     source_id: StrictStr | None = Field(default=None, description="Catalog source that provides this entity.", alias="sourceId")
-    display_name: StrictStr | None = Field(default=None, description="Human-readable display name.", alias="displayName")
-    readme: StrictStr | None = Field(default=None, description="Full Markdown documentation.")
-    framework: StrictStr | None = Field(default=None, description="Agent framework (e.g., langgraph, crewai, autogen).")
+    trust_tier: SkillTrustTier | None = Field(default=None, alias="trustTier")
+    provider: StrictStr | None = Field(default=None, description="Name of the organization or entity that provides the skill.")
+    category: StrictStr | None = Field(default=None, description="Category assigned to the skill in the source configuration.")
     labels: list[StrictStr] | None = Field(default=None, description="Labels for categorization and filtering.")
-    logo: StrictStr | None = Field(default=None, description="URL or path to the agent logo image.")
-    repository_url: StrictStr | None = Field(default=None, description="URL to the agent source code repository.", alias="repositoryUrl")
-    env: list[AgentEnvVar] | None = Field(default=None, description="Environment variables required for deployment.")
-    artifacts: list[AgentImageArtifact] | None = Field(default=None, description="OCI image artifacts for agent deployment.")
-    __properties: ClassVar[list[str]] = ["customProperties", "description", "externalId", "name", "id", "createTimeSinceEpoch", "lastUpdateTimeSinceEpoch", "sourceId", "displayName", "readme", "framework", "labels", "logo", "repositoryUrl", "env", "artifacts"]
+    supporting_files: list[StrictStr] | None = Field(default=None, description="Paths of files that accompany the SKILL.md in the skill directory. Contents are not stored; these link back to the repository.", alias="supportingFiles")
+    body_line_count: StrictInt | None = Field(default=None, description="Number of lines in the SKILL.md body, surfaced for skills whose body exceeds recommended length.", alias="bodyLineCount")
+    __properties: ClassVar[list[str]] = ["customProperties", "description", "externalId", "name", "id", "createTimeSinceEpoch", "lastUpdateTimeSinceEpoch", "license", "author", "compatibility", "allowedTools", "readme", "repository", "path", "version", "resolvedCommit", "sourceId", "trustTier", "provider", "category", "labels", "supportingFiles", "bodyLineCount"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -64,7 +70,7 @@ class Agent(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Self | None:
-        """Create an instance of Agent from a JSON string"""
+        """Create an instance of Skill from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> dict[str, Any]:
@@ -96,25 +102,11 @@ class Agent(BaseModel):
                 if self.custom_properties[_key_custom_properties]:
                     _field_dict[_key_custom_properties] = self.custom_properties[_key_custom_properties].to_dict()
             _dict["customProperties"] = _field_dict
-        # override the default output from pydantic by calling `to_dict()` of each item in env (list)
-        _items = []
-        if self.env:
-            for _item_env in self.env:
-                if _item_env:
-                    _items.append(_item_env.to_dict())
-            _dict["env"] = _items
-        # override the default output from pydantic by calling `to_dict()` of each item in artifacts (list)
-        _items = []
-        if self.artifacts:
-            for _item_artifacts in self.artifacts:
-                if _item_artifacts:
-                    _items.append(_item_artifacts.to_dict())
-            _dict["artifacts"] = _items
         return _dict
 
     @classmethod
     def from_dict(cls, obj: dict[str, Any] | None) -> Self | None:
-        """Create an instance of Agent from a dict"""
+        """Create an instance of Skill from a dict"""
         if obj is None:
             return None
 
@@ -134,15 +126,22 @@ class Agent(BaseModel):
             "id": obj.get("id"),
             "createTimeSinceEpoch": obj.get("createTimeSinceEpoch"),
             "lastUpdateTimeSinceEpoch": obj.get("lastUpdateTimeSinceEpoch"),
-            "sourceId": obj.get("sourceId"),
-            "displayName": obj.get("displayName"),
+            "license": obj.get("license"),
+            "author": obj.get("author"),
+            "compatibility": obj.get("compatibility"),
+            "allowedTools": obj.get("allowedTools"),
             "readme": obj.get("readme"),
-            "framework": obj.get("framework"),
+            "repository": obj.get("repository"),
+            "path": obj.get("path"),
+            "version": obj.get("version"),
+            "resolvedCommit": obj.get("resolvedCommit"),
+            "sourceId": obj.get("sourceId"),
+            "trustTier": obj.get("trustTier"),
+            "provider": obj.get("provider"),
+            "category": obj.get("category"),
             "labels": obj.get("labels"),
-            "logo": obj.get("logo"),
-            "repositoryUrl": obj.get("repositoryUrl"),
-            "env": [AgentEnvVar.from_dict(_item) for _item in obj["env"]] if obj.get("env") is not None else None,
-            "artifacts": [AgentImageArtifact.from_dict(_item) for _item in obj["artifacts"]] if obj.get("artifacts") is not None else None
+            "supportingFiles": obj.get("supportingFiles"),
+            "bodyLineCount": obj.get("bodyLineCount")
         })
         return _obj
 

@@ -60,7 +60,6 @@ def sort_items_by_field(items: list[dict], field: str, order: str) -> list[dict]
     raise ValueError(f"Invalid sort order: {order}")
 
 
-
 def sort_items_by_custom_property(items: list[dict], property_field: str, sort_order: str) -> list[dict]:
     """Sort items by a custom property value with fallback behavior.
 

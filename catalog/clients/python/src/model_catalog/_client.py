@@ -323,7 +323,7 @@ class CatalogAPIClient:
 
         _param = self.api_client.param_serialize(
             method="GET",
-            resource_path="/api/model_catalog/v1alpha1/sources",
+            resource_path="/api/model_catalog/v1/sources",
             query_params=query_params,
             header_params={"Accept": "application/json"},
             auth_settings=["Bearer"],
@@ -405,7 +405,7 @@ class CatalogAPIClient:
 
         _param = self.api_client.param_serialize(
             method="GET",
-            resource_path="/api/model_catalog/v1alpha1/labels",
+            resource_path="/api/model_catalog/v1/labels",
             query_params=query_params,
             header_params={"Accept": "application/json"},
             auth_settings=["Bearer"],
@@ -669,7 +669,6 @@ class CatalogAPIClient:
             next_page_token=next_page_token,
         )
         return response.to_dict()
-
 
     def get_named_queries(self, source: str | None = None) -> dict[str, Any]:
         """Get named queries.

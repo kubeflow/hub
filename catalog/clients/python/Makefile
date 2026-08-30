@@ -65,7 +65,7 @@ generate:
 	@echo "Generating Catalog API client from OpenAPI spec..."
 	@mkdir -p src/catalog_openapi
 	../../../bin/openapi-generator-cli generate \
-		-i ../../../api/openapi/catalog.yaml \
+		-i ../../../api/openapi/catalog-v1.yaml \
 		-g python \
 		-o src/ \
 		--package-name catalog_openapi \
@@ -242,7 +242,7 @@ deploy-forward:
 	fi
 	@kubectl port-forward -n "$(CATALOG_NAMESPACE)" svc/model-catalog "$(CATALOG_PORT)":8080 > /dev/null 2>&1 & echo $$! > .port-forward.pid
 	@sleep 3
-	@if curl -s "http://localhost:$(CATALOG_PORT)/api/model_catalog/v1alpha1/sources" > /dev/null 2>&1; then \
+	@if curl -s "http://localhost:$(CATALOG_PORT)/api/model_catalog/v1/sources" > /dev/null 2>&1; then \
 		echo "[OK] Catalog accessible at http://localhost:$(CATALOG_PORT)"; \
 	else \
 		echo "[WARN] Port-forward may not be ready. Try: kubectl port-forward -n $(CATALOG_NAMESPACE) svc/model-catalog $(CATALOG_PORT):8080"; \

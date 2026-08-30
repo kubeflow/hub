@@ -11,7 +11,6 @@ To run these tests:
 import random
 
 from model_catalog import CatalogAPIClient
-
 from tests.constants import MCP_SERVER_REQUIRED_FIELDS
 
 
@@ -114,6 +113,7 @@ class TestMCPServerBasics:
         assert len(items) == 1, f"Expected 1 server named '{target_name}', got {len(items)}"
         assert items[0]["name"] == target_name
 
+
 class TestMCPServerTools:
     """Test suite for MCP server tools functionality."""
 
@@ -126,9 +126,7 @@ class TestMCPServerTools:
     ):
         """Test that toolCount reflects actual tools even without includeTools."""
         response = api_client.get_mcp_servers(page_size=None if kind_cluster else 100)
-        expected_counts = {
-            s["name"]: len(s.get("tools", [])) for s in test_mcp_catalog_data["mcp_servers"]
-        }
+        expected_counts = {s["name"]: len(s.get("tools", [])) for s in test_mcp_catalog_data["mcp_servers"]}
         for server in response.get("items", []):
             name = server["name"]
             if name in expected_counts:
@@ -153,6 +151,7 @@ class TestMCPServerTools:
             if name in expected_tools:
                 actual_tool_names = [t["name"] for t in server.get("tools", [])]
                 assert sorted(actual_tool_names) == sorted(expected_tools[name])
+
 
 class TestMCPServerCustomProperties:
     """Test suite for MCP server custom properties."""

@@ -138,8 +138,9 @@ class TestModels:
         for model in models_with_props:
             model_name = model.get("name")
             custom_properties = model.get("customProperties")
-            if errors := _validate_custom_property_structure(custom_properties=custom_properties,
-                                                             kind_cluster=kind_cluster):
+            if errors := _validate_custom_property_structure(
+                custom_properties=custom_properties, kind_cluster=kind_cluster
+            ):
                 err_lines = "\n".join(errors)
                 all_errors.append(f"Model '{model_name}': {err_lines}")
         assert not all_errors, "\n".join(all_errors)

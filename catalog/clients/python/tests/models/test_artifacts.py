@@ -120,8 +120,9 @@ class TestArtifacts:
                 assert acc is not None, "Accuracy value is None"
                 assert acc > 0.9, f"Expected accuracy > 0.9, got {acc}"
 
-    def test_filter_artifacts_with_and_logic(self, api_client: CatalogAPIClient, model_with_artifacts: tuple[str, str],
-                                             kind_cluster: bool) -> None:
+    def test_filter_artifacts_with_and_logic(
+        self, api_client: CatalogAPIClient, model_with_artifacts: tuple[str, str], kind_cluster: bool
+    ) -> None:
         """Test filtering artifacts with AND logic combining multiple conditions."""
         if not kind_cluster:
             pytest.skip("This test would be skipped on non-kind cluster")
@@ -152,8 +153,9 @@ class TestArtifacts:
             acc = props["accuracy"].get("double_value")
             assert acc is not None and acc > 0.5, f"Expected accuracy > 0.5, got {acc}"
 
-    def test_filter_artifacts_with_or_logic(self, api_client: CatalogAPIClient, model_with_artifacts: tuple[str, str],
-                                           kind_cluster: bool) -> None:
+    def test_filter_artifacts_with_or_logic(
+        self, api_client: CatalogAPIClient, model_with_artifacts: tuple[str, str], kind_cluster: bool
+    ) -> None:
         """Test filtering artifacts with OR logic combining multiple conditions."""
         if not kind_cluster:
             pytest.skip("This test would be skipped on non-kind cluster")
@@ -183,8 +185,9 @@ class TestArtifacts:
                 f"Expected framework_type to be 'pytorch' or 'onnx', got '{framework}'"
             )
 
-    def test_filter_artifacts_returns_empty_for_no_matches(self, api_client: CatalogAPIClient, model_with_artifacts: tuple[str, str],
-                                                          suppress_ssl_warnings: None) -> None:
+    def test_filter_artifacts_returns_empty_for_no_matches(
+        self, api_client: CatalogAPIClient, model_with_artifacts: tuple[str, str], suppress_ssl_warnings: None
+    ) -> None:
         """Test that a valid filter query with no matching artifacts returns empty results."""
         source_id, model_name = model_with_artifacts
 
@@ -201,7 +204,9 @@ class TestArtifacts:
         assert response["items"] == [], "Expected empty results for non-matching filter"
         assert response.get("size", 0) == 0, "Expected size to be 0 for non-matching filter"
 
-    def test_multiple_models_have_different_artifacts(self, api_client: CatalogAPIClient, suppress_ssl_warnings: None) -> None:
+    def test_multiple_models_have_different_artifacts(
+        self, api_client: CatalogAPIClient, suppress_ssl_warnings: None
+    ) -> None:
         """Test that different models have their own artifacts."""
         models = api_client.get_models()
         if not models.get("items") or len(models["items"]) < 2:
@@ -332,8 +337,11 @@ class TestArtifacts:
         ],
     )
     def test_filter_artifacts_by_artifact_type(
-        self, api_client: CatalogAPIClient, model_with_artifacts: tuple[str, str], suppress_ssl_warnings: None,
-            artifact_type: str | list[str]
+        self,
+        api_client: CatalogAPIClient,
+        model_with_artifacts: tuple[str, str],
+        suppress_ssl_warnings: None,
+        artifact_type: str | list[str],
     ) -> None:
         """Test filtering artifacts by single or multiple artifact types."""
         source_id, model_name = model_with_artifacts
@@ -369,6 +377,7 @@ class TestArtifacts:
             f"Filter returned {len(filtered_artifacts)} artifacts, "
             f"but expected {len(expected_artifacts)} artifacts of type(s) {expected_types}"
         )
+
 
 class TestNegativeArtifacts:
     """Test suite for negative artifact functionality."""
@@ -422,9 +431,7 @@ class TestNegativeArtifacts:
 
         invalid_artifact_type = "invalid-artifact-type"
 
-        with pytest.raises(
-            CatalogValidationError, match="Input should be 'model-artifact' or 'metrics-artifact'"
-        ):
+        with pytest.raises(CatalogValidationError, match="Input should be 'model-artifact' or 'metrics-artifact'"):
             api_client.get_artifacts(
                 source_id=source_id,
                 model_name=model_name,
@@ -495,10 +502,7 @@ class TestArtifactsSorting:
         assert items == sort_items_by_custom_property(items, order_by, sort_order)
 
     def test_sorting_by_non_existing_property_falls_back_to_id(
-        self,
-        api_client: CatalogAPIClient,
-        model_with_artifacts: tuple[str, str],
-        suppress_ssl_warnings: None
+        self, api_client: CatalogAPIClient, model_with_artifacts: tuple[str, str], suppress_ssl_warnings: None
     ) -> None:
         """Test that sorting by a non-existing property falls back to ID ASC."""
         source_id, model_name = model_with_artifacts

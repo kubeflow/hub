@@ -7,7 +7,7 @@ import os
 CATALOG_URL = os.environ.get("CATALOG_URL", "http://localhost:8081")
 
 # API base path - keep in sync with server if API version changes
-API_BASE_PATH = "/api/model_catalog/v1alpha1"
+API_BASE_PATH = "/api/model_catalog/v1"
 
 # Client timeout for E2E tests (default 30s is more generous than library default of 10s)
 CLIENT_TIMEOUT = int(os.environ.get("CATALOG_CLIENT_TIMEOUT", "30"))

@@ -13,7 +13,6 @@ import pytest
 
 from model_catalog import CatalogAPIClient
 
-
 SEARCHABLE_FIELDS = ("name", "description", "provider")
 
 
@@ -74,9 +73,7 @@ class TestMCPServerSearch:
 
         names_q = {s["name"] for s in response_q.get("items", [])}
         names_all = {s["name"] for s in response_all.get("items", [])}
-        assert names_q == names_all, (
-            f"q={search_term!r} returned {sorted(names_q)}, expected all: {sorted(names_all)}"
-        )
+        assert names_q == names_all, f"q={search_term!r} returned {sorted(names_q)}, expected all: {sorted(names_all)}"
 
     @pytest.mark.parametrize(
         "search_term",
@@ -96,6 +93,7 @@ class TestMCPServerSearch:
         """TC-ERROR-007: Test that special characters in search query are handled safely."""
         response = api_client.get_mcp_servers(q=search_term)
         assert "items" in response
+
 
 def _get_expected_server_names(catalog_data: dict, search_term: str) -> set[str]:
     """Get MCP server names that should match the search term from test data."""
