@@ -8,7 +8,7 @@ import (
 
 	"github.com/kubeflow/hub/ui/bff/internal/integrations/httpclient"
 
-	"github.com/kubeflow/hub/pkg/openapi"
+	"github.com/kubeflow/hub/pkg/openapi-v1"
 )
 
 const artifactPath = "/artifacts"

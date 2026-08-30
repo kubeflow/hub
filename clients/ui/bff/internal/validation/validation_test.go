@@ -3,7 +3,7 @@ package validation
 import (
 	"testing"
 
-	"github.com/kubeflow/hub/pkg/openapi"
+	"github.com/kubeflow/hub/pkg/openapi-v1"
 )
 
 func TestValidateRegisteredModel(t *testing.T) {
