@@ -26,8 +26,8 @@ var _ = Describe("TestFetchAllModelRegistry", func() {
 
 			By("should match the expected model registries (model-registry has ready Endpoints in test env, model-registry-one has none)")
 			expectedRegistries := []models.ModelRegistryModel{
-				{Name: "model-registry", Description: "Model Registry Description", DisplayName: "Model Registry", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1alpha3", IsAvailable: true},
-				{Name: "model-registry-one", Description: "Model Registry One description", DisplayName: "Model Registry One", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1alpha3", IsAvailable: false},
+				{Name: "model-registry", Description: "Model Registry Description", DisplayName: "Model Registry", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1", IsAvailable: true},
+				{Name: "model-registry-one", Description: "Model Registry One description", DisplayName: "Model Registry One", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1", IsAvailable: false},
 			}
 			Expect(registries).To(ConsistOf(expectedRegistries))
 		})
@@ -44,7 +44,7 @@ var _ = Describe("TestFetchAllModelRegistry", func() {
 
 			By("should match the expected model registries (dora-namespace has no Endpoints in test env, so we assume available per RBAC fallback)")
 			expectedRegistries := []models.ModelRegistryModel{
-				{Name: "model-registry-dora", Description: "Model Registry Dora description", DisplayName: "Model Registry Dora", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1alpha3", IsAvailable: true},
+				{Name: "model-registry-dora", Description: "Model Registry Dora description", DisplayName: "Model Registry Dora", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1", IsAvailable: true},
 			}
 			Expect(registries).To(ConsistOf(expectedRegistries))
 		})
@@ -90,8 +90,8 @@ var _ = Describe("TestFetchAllModelRegistry", func() {
 
 			By("should return all available model registries in the namespace")
 			expectedRegistries := []models.ModelRegistryModel{
-				{Name: "model-registry", Description: "Model Registry Description", DisplayName: "Model Registry", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1alpha3", IsAvailable: true},
-				{Name: "model-registry-one", Description: "Model Registry One description", DisplayName: "Model Registry One", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1alpha3", IsAvailable: false},
+				{Name: "model-registry", Description: "Model Registry Description", DisplayName: "Model Registry", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1", IsAvailable: true},
+				{Name: "model-registry-one", Description: "Model Registry One description", DisplayName: "Model Registry One", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1", IsAvailable: false},
 			}
 			Expect(registries).To(ConsistOf(expectedRegistries))
 		})
@@ -111,7 +111,7 @@ var _ = Describe("TestFetchAllModelRegistry", func() {
 
 			By("should return only the allowed service")
 			expectedRegistries := []models.ModelRegistryModel{
-				{Name: "model-registry", Description: "Model Registry Description", DisplayName: "Model Registry", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1alpha3", IsAvailable: true},
+				{Name: "model-registry", Description: "Model Registry Description", DisplayName: "Model Registry", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1", IsAvailable: true},
 			}
 			Expect(registries).To(ConsistOf(expectedRegistries))
 		})
@@ -131,8 +131,8 @@ var _ = Describe("TestFetchAllModelRegistry", func() {
 
 			By("should return all allowed services")
 			expectedRegistries := []models.ModelRegistryModel{
-				{Name: "model-registry", Description: "Model Registry Description", DisplayName: "Model Registry", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1alpha3", IsAvailable: true},
-				{Name: "model-registry-one", Description: "Model Registry One description", DisplayName: "Model Registry One", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1alpha3", IsAvailable: false},
+				{Name: "model-registry", Description: "Model Registry Description", DisplayName: "Model Registry", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1", IsAvailable: true},
+				{Name: "model-registry-one", Description: "Model Registry One description", DisplayName: "Model Registry One", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1", IsAvailable: false},
 			}
 			Expect(registries).To(ConsistOf(expectedRegistries))
 		})
@@ -186,7 +186,7 @@ var _ = Describe("TestFetchAllModelRegistry", func() {
 
 			By("should return only the existing service")
 			expectedRegistries := []models.ModelRegistryModel{
-				{Name: "model-registry", Description: "Model Registry Description", DisplayName: "Model Registry", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1alpha3", IsAvailable: true},
+				{Name: "model-registry", Description: "Model Registry Description", DisplayName: "Model Registry", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1", IsAvailable: true},
 			}
 			Expect(registries).To(ConsistOf(expectedRegistries))
 		})
@@ -201,8 +201,8 @@ var _ = Describe("TestFetchAllModelRegistry", func() {
 
 			By("should return all available services as fallback behavior")
 			expectedRegistries := []models.ModelRegistryModel{
-				{Name: "model-registry", Description: "Model Registry Description", DisplayName: "Model Registry", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1alpha3", IsAvailable: true},
-				{Name: "model-registry-one", Description: "Model Registry One description", DisplayName: "Model Registry One", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1alpha3", IsAvailable: false},
+				{Name: "model-registry", Description: "Model Registry Description", DisplayName: "Model Registry", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1", IsAvailable: true},
+				{Name: "model-registry-one", Description: "Model Registry One description", DisplayName: "Model Registry One", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1", IsAvailable: false},
 			}
 			Expect(registries).To(ConsistOf(expectedRegistries))
 		})
