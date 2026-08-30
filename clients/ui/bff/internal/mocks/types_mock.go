@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/brianvoe/gofakeit/v7"
-	"github.com/kubeflow/hub/pkg/openapi"
+	"github.com/kubeflow/hub/pkg/openapi-v1"
 )
 
 func GenerateMockRegisteredModelList() openapi.RegisteredModelList {
