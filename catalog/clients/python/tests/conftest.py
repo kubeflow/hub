@@ -310,7 +310,7 @@ def model_with_artifacts(
         pytest.fail("No models available - test data may not be loaded")
 
     for model in models["items"]:
-        source_id = model.get("source_id")
+        source_id = model.get("sourceId")
         model_name = model.get("name")
         if not source_id or not model_name:
             continue

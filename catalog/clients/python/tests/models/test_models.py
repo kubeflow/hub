@@ -31,7 +31,7 @@ class TestModels:
 
         for model in response["items"]:
             assert "name" in model, "Model missing name"
-            assert "source_id" in model, f"Model {model.get('name')} missing source_id"
+            assert "sourceId" in model, f"Model {model.get('name')} missing source_id"
 
     def test_filter_models_by_source(self, api_client: CatalogAPIClient, suppress_ssl_warnings: None):
         """Test filtering models by source."""
@@ -44,7 +44,7 @@ class TestModels:
 
                 # All returned models should be from the specified source
                 for model in response.get("items", []):
-                    assert model.get("source_id") == source_id
+                    assert model.get("sourceId") == source_id
 
     def test_get_models_with_pagination(self, api_client: CatalogAPIClient, suppress_ssl_warnings: None):
         """Test model pagination."""
@@ -81,7 +81,7 @@ class TestModels:
         models = api_client.get_models()
 
         for model in models.get("items", []):
-            source_id = model.get("source_id")
+            source_id = model.get("sourceId")
             assert source_id in enabled_source_ids, f"Model {model.get('name')} has invalid source_id: {source_id}"
 
     def test_models_from_disabled_source_excluded(self, api_client: CatalogAPIClient, suppress_ssl_warnings: None):
@@ -99,7 +99,7 @@ class TestModels:
             pytest.skip("No disabled sources found in test data")
 
         models = api_client.get_models()
-        model_source_ids = [m.get("source_id") for m in models.get("items", [])]
+        model_source_ids = [m.get("sourceId") for m in models.get("items", [])]
 
         for disabled_id in disabled_source_ids:
             assert disabled_id not in model_source_ids, f"Model from disabled source {disabled_id} found in results"
@@ -111,7 +111,7 @@ class TestModels:
 
         model_counts: dict[str, int] = {}
         for model in models.get("items", []):
-            source_id = model.get("source_id")
+            source_id = model.get("sourceId")
             model_counts[source_id] = model_counts.get(source_id, 0) + 1
 
         for source_id in model_counts:

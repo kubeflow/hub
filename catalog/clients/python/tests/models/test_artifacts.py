@@ -216,12 +216,12 @@ class TestArtifacts:
         model2 = models["items"][1]
 
         artifacts1 = api_client.get_artifacts(
-            source_id=model1["source_id"],
+            source_id=model1["sourceId"],
             model_name=model1["name"],
         )
 
         artifacts2 = api_client.get_artifacts(
-            source_id=model2["source_id"],
+            source_id=model2["sourceId"],
             model_name=model2["name"],
         )
 

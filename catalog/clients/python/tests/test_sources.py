@@ -128,7 +128,7 @@ class TestSourceStatus:
 
         # None of the models should be from the disabled source
         for model in all_models.get("items", []):
-            model_source = model.get("source_id")
+            model_source = model.get("sourceId")
             assert model_source != disabled_source_id, (
                 f"Model {model.get('name')} from disabled source {disabled_source_id} should not appear in results"
             )
