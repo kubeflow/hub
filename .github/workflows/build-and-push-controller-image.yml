@@ -90,7 +90,7 @@ jobs:
         run: |
           cosign sign --yes "${{ env.IMG_REGISTRY }}/${{ env.IMG_ORG }}/${{ env.IMG_REPO }}@${{ steps.build-push.outputs.digest }}"
       - name: Generate SBOM
-        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+        uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
         with:
           image: "${{ env.IMG_REGISTRY }}/${{ env.IMG_ORG }}/${{ env.IMG_REPO }}@${{ steps.build-push.outputs.digest }}"
           format: spdx-json # default, but making sure of the format
