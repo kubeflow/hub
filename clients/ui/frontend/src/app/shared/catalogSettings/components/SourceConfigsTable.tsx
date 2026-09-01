@@ -70,10 +70,10 @@ const SourceConfigsTable = <TConfig extends SourceConfigRowBase>({
 
     try {
       await onToggleUpdate(checked, config);
-    } catch (e) {
-      setToggleError(
-        e instanceof Error ? e : new Error(`Error enabling/disabling source ${config.name}`),
-      );
+    } catch {
+      // Match prior domain behavior: always show a source-specific message
+      // (API errors often say "Error communicating with server").
+      setToggleError(new Error(`Error enabling/disabling source ${config.name}`));
     } finally {
       setUpdatingToggleId(null);
     }
