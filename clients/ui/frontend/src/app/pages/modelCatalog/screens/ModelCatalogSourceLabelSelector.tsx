@@ -84,7 +84,9 @@ const ModelCatalogSourceLabelSelector: React.FC<ModelCatalogSourceLabelSelectorP
       onResetAllFilters={onResetAllFilters ?? noop}
       hasFiltersApplied={hasActiveFilters}
       showResetAllButton={
-        Boolean(onResetAllFilters) && !performanceViewEnabled && hasBasicFiltersApplied
+        Boolean(onResetAllFilters) &&
+        !performanceViewEnabled &&
+        (hasBasicFiltersApplied || hasSearchTerm)
       }
       remountToolbarOnFilterChange={false}
       searchPlaceholder="Filter by name, description and provider"

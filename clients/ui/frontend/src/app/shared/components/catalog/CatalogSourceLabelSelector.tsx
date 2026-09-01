@@ -157,6 +157,7 @@ const CatalogSourceLabelSelector: React.FC<CatalogSourceLabelSelectorProps> = ({
           </ToolbarContent>
         </Toolbar>
       </StackItem>
+      {additionalSections}
       {renderSourceLabelBlocks && (
         <StackItem>
           <Flex
@@ -168,7 +169,6 @@ const CatalogSourceLabelSelector: React.FC<CatalogSourceLabelSelectorProps> = ({
           </Flex>
         </StackItem>
       )}
-      {additionalSections}
     </Stack>
   );
 };
