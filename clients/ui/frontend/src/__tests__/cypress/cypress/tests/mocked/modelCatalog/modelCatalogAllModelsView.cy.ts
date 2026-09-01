@@ -229,5 +229,38 @@ describe('Model Catalog All Models View', () => {
       modelCatalog.findCategoryToggle('label-Community').should('be.visible');
       modelCatalog.findCategoryToggle('label-OpenVINO').should('not.exist');
     });
+
+    it('should hide All models toggle when only one non-empty category remains', () => {
+      initIntercepts({
+        sources: [
+          mockCatalogSource({
+            id: 'huggingface',
+            name: 'Hugging Face',
+            labels: ['Hugging Face'],
+          }),
+          mockCatalogSource({
+            id: 'empty-source',
+            name: 'Empty Source',
+            labels: ['Empty Category'],
+          }),
+        ],
+        includeSourcesWithoutLabels: false,
+      });
+
+      cy.interceptApi(
+        `GET /api/:apiVersion/model_catalog/models`,
+        {
+          path: { apiVersion: MODEL_CATALOG_API_VERSION },
+          query: { sourceLabel: 'Empty Category' },
+        },
+        mockCatalogModelList({ items: [] }),
+      );
+
+      modelCatalog.visit();
+
+      modelCatalog.findAllModelsToggle().should('not.exist');
+      modelCatalog.findCategoryToggle('label-Empty Category').should('not.exist');
+      modelCatalog.findCategoryToggle('label-Hugging Face').should('not.exist');
+    });
   });
 });

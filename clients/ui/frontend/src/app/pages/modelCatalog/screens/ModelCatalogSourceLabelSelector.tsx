@@ -49,12 +49,18 @@ const ModelCatalogSourceLabelSelector: React.FC<ModelCatalogSourceLabelSelectorP
     performanceFiltersChangedOnDetailsPage,
     setPerformanceFiltersChangedOnDetailsPage,
     lastViewedModelName,
+    emptyCategoryLabels,
+    categoriesResolved,
   } = React.useContext(ModelCatalogContext);
 
-  const hasMultipleCategories = React.useMemo(
-    () => getActiveSourceLabels(catalogSources, catalogLabels).length > 1,
-    [catalogSources, catalogLabels],
-  );
+  const hasMultipleCategories = React.useMemo(() => {
+    const activeLabels = getActiveSourceLabels(catalogSources, catalogLabels);
+    if (!categoriesResolved) {
+      return activeLabels.length > 1;
+    }
+    const effectiveLabels = activeLabels.filter((label) => !emptyCategoryLabels.has(label));
+    return effectiveLabels.length > 1;
+  }, [catalogSources, catalogLabels, categoriesResolved, emptyCategoryLabels]);
 
   // Only show basic filters in the main chip bar - performance filters have their own section
   const filtersToShow = BASIC_FILTER_KEYS;
