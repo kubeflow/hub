@@ -48,7 +48,7 @@ const ModelCatalogLabels: React.FC<ModelCatalogLabelsProps> = ({
             variant="outline"
             icon={
               isValidatedTask ? (
-                <Icon status="success">
+                <Icon status="success" data-testid="validated-task-icon">
                   <CheckCircleIcon />
                 </Icon>
               ) : undefined
