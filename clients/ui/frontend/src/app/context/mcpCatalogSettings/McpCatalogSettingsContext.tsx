@@ -8,7 +8,6 @@ import type { CatalogSourceList } from '~/app/shared/types/catalogTypes';
 import { BFF_API_VERSION, URL_PREFIX } from '~/app/utilities/const';
 import { createCatalogSettingsContext } from '~/app/shared/catalogSettings/createCatalogSettingsContext';
 
-// MCP preview quirk: preview calls the model_catalog settings host, not mcp_catalog.
 const { useCatalogSettingsValue } = createCatalogSettingsContext<
   McpCatalogSettingsAPIState,
   McpCatalogSourceConfigList

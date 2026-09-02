@@ -318,6 +318,26 @@ func catalogCustomPropertiesWithVariant(variantGroupId string, tensorType string
 	return &result
 }
 
+func hfAccessCustomProperties(accessType string, gatedAccessGranted ...string) *map[string]openapi.MetadataValue {
+	result := map[string]openapi.MetadataValue{
+		"hf_access_type": {
+			MetadataStringValue: &openapi.MetadataStringValue{
+				StringValue:  accessType,
+				MetadataType: "MetadataStringValue",
+			},
+		},
+	}
+	if len(gatedAccessGranted) > 0 {
+		result["hf_gated_access_granted"] = openapi.MetadataValue{
+			MetadataStringValue: &openapi.MetadataStringValue{
+				StringValue:  gatedAccessGranted[0],
+				MetadataType: "MetadataStringValue",
+			},
+		}
+	}
+	return &result
+}
+
 func NewMockSessionContext(parent context.Context) context.Context {
 	if parent == nil {
 		parent = context.TODO()
@@ -793,69 +813,81 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 		Logo: stringToPointer("data:image/svg+xml;base64,PHN2ZyBpZD0iTGF5ZXJfMSIgZGF0YS1uYW1lPSJMYXllciAxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIgMTQ1Ij48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6I2UwMDt9PC9zdHlsZT48L2RlZnM+PHRpdGxlPlJlZEhhdC1Mb2dvLUhhdC1Db2xvcjwvdGl0bGU+PHBhdGggZD0iTTE1Ny43Nyw2Mi42MWExNCwxNCwwLDAsMSwuMzEsMy40MmMwLDE0Ljg4LTE4LjEsMTcuNDYtMzAuNjEsMTcuNDZDNzguODMsODMuNDksNDIuNTMsNTMuMjYsNDIuNTMsNDRhNi40Myw2LjQzLDAsMCwxLC4yMi0xLjk0bC0zLjY2LDkuMDZhMTguNDUsMTguNDUsMCwwLDAtMS41MSw3LjMzYzAsMTguMTEsNDEsNDUuNDgsODcuNzQsNDUuNDgsMjAuNjksMCwzNi40My03Ljc2LDM2LjQzLTIxLjc3LDAtMS4wOCwwLTEuOTQtMS43My0xMC4xM1oiLz48cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0xMjcuNDcsODMuNDljMTIuNTEsMCwzMC42MS0yLjU4LDMwLjYxLTE3LjQ2YTE0LDE0LDAsMCwwLS4zMS0zLjQybC03LjQ1LTMyLjM2Yy0xLjcyLTcuMTItMy4yMy0xMC4zNS0xNS43My0xNi42QzEyNC44OSw4LjY5LDEwMy43Ni41LDk3LjUxLjUsOTEuNjkuNSw5MCw4LDgzLjA2LDhjLTYuNjgsMC0xMS42NC01LjYtMTcuODktNS42LTYsMC05LjkxLDQuMDktMTIuOTMsMTIuNSwwLDAtOC40MSwyMy43Mi05LjQ5LDI3LjE2QTYuNDMsNi40MywwLDAsMCw0Mi41Myw0NGMwLDkuMjIsMzYuMywzOS40NSw4NC45NCwzOS40NU0xNjAsNzIuMDdjMS43Myw4LjE5LDEuNzMsOS4wNSwxLjczLDEwLjEzLDAsMTQtMTUuNzQsMjEuNzctMzYuNDMsMjEuNzdDNzguNTQsMTA0LDM3LjU4LDc2LjYsMzcuNTgsNTguNDlhMTguNDUsMTguNDUsMCwwLDEsMS41MS03LjMzQzIyLjI3LDUyLC41LDU1LC41LDc0LjIyYzAsMzEuNDgsNzQuNTksNzAuMjgsMTMzLjY1LDcwLjI4LDQ1LjI4LDAsNTYuNy0yMC40OCw1Ni43LTM2LjY1LDAtMTIuNzItMTEtMjcuMTYtMzAuODMtMzUuNzgiLz48L3N2Zz4="),
 	}
 
+	// Hugging Face access mock matrix (customProperties.hf_access_type / hf_gated_access_granted):
+	//   public              — full metadata, no hf_gated_access_granted
+	//   private             — full metadata (visible only when source has org token)
+	//   gated_auto + true   — full metadata
+	//   gated_auto + false  — lock / request access; empty readme & description
+	//   gated_manual + true — full metadata
+	//   gated_manual + false— lock / request access; empty readme & description
+	// Non-HF models (sample-source, other-source) have no hf_access_type.
 	huggingFaceModel1 := models.CatalogModel{
-		Name:        "provider2/bert-base-uncased",
-		Description: stringToPointer("BERT base model (uncased) - Pretrained model on English language"),
-		Provider:    stringToPointer("Google"),
-		Tasks:       []string{"audio-to-text", "text-to-text"},
-		License:     stringToPointer("Apache 2.0"),
-		Maturity:    stringToPointer("Generally Available"),
-		Language:    []string{"en"},
-		SourceId:    stringToPointer("huggingface"),
-		LibraryName: stringToPointer("transformers"),
-		Readme: stringToPointer(`# BERT Base Uncased
-
-BERT is a transformers model pretrained on a large corpus of English data.
-
-## Installation
-
-` + "```bash" + `
-pip install transformers torch
-` + "```" + `
-
-## Quick Start
-
-` + "```python" + `
-from transformers import BertTokenizer, BertModel
-
-tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-model = BertModel.from_pretrained('bert-base-uncased')
-
-text = "Replace this with your text"
-encoded = tokenizer(text, return_tensors='pt')
-output = model(**encoded)
-` + "```" + `
-
-## Using with Pipeline
-
-` + "```bash" + `
-python -c "from transformers import pipeline; nlp = pipeline('fill-mask', model='bert-base-uncased'); print(nlp('The capital of France is [MASK].'))"
-` + "```" + `
-`),
+		Name:             "hf-mock/public-model",
+		Description:      stringToPointer("Public Hugging Face model with full metadata (hf_access_type=public)"),
+		Provider:         stringToPointer("hf-mock"),
+		Tasks:            []string{"text-generation"},
+		License:          stringToPointer("apache-2.0"),
+		Maturity:         stringToPointer("Generally Available"),
+		Language:         []string{"en"},
+		SourceId:         stringToPointer("huggingface"),
+		LibraryName:      stringToPointer("transformers"),
+		Readme:           stringToPointer("# Public HF model\n\nFull readme for a public Hugging Face repository."),
+		CustomProperties: hfAccessCustomProperties("public"),
 	}
 
-	huggingFaceModel2 := models.CatalogModel{
-		Name:        "provider3/gpt2",
-		Description: stringToPointer("GPT-2 is a transformers model pretrained on a very large corpus of English data"),
-		Provider:    stringToPointer("provider3"),
-		Tasks:       []string{"video-to-text"},
-		License:     stringToPointer("MIT"),
-		Maturity:    stringToPointer("Generally Available"),
-		Language:    []string{"en"},
-		SourceId:    stringToPointer("huggingface"),
-		LibraryName: stringToPointer("transformers"),
+	hfPrivateModel := models.CatalogModel{
+		Name:             "my-org/private-llm",
+		Description:      stringToPointer("Internal fine-tuned LLM"),
+		Provider:         stringToPointer("my-org"),
+		Tasks:            []string{"text-generation"},
+		SourceId:         stringToPointer("hugging_face_source"),
+		License:          stringToPointer("apache-2.0"),
+		Readme:           stringToPointer("# Private LLM\n\nInternal model for..."),
+		CustomProperties: hfAccessCustomProperties("private"),
 	}
 
-	huggingFaceModel3 := models.CatalogModel{
-		Name:        "huggingface/distilbert-base-uncased",
-		Description: stringToPointer("DistilBERT base model (uncased) - A smaller, faster version of BERT"),
-		Provider:    stringToPointer("Hugging Face"),
-		Tasks:       []string{"fill-mask", "text-classification"},
-		License:     stringToPointer("Apache 2.0"),
-		Maturity:    stringToPointer("Generally Available"),
-		Language:    []string{"en"},
-		SourceId:    stringToPointer("huggingface"),
-		LibraryName: stringToPointer("transformers"),
+	hfGatedAutoGranted := models.CatalogModel{
+		Name:             "meta-llama/Llama-3-8B",
+		Description:      stringToPointer("Meta's Llama 3 8B base model"),
+		Provider:         stringToPointer("meta-llama"),
+		Tasks:            []string{"text-generation"},
+		License:          stringToPointer("llama3"),
+		SourceId:         stringToPointer("huggingface"),
+		Readme:           stringToPointer("# Llama 3\n\nMeta's latest generation..."),
+		CustomProperties: hfAccessCustomProperties("gated_auto", "true"),
+	}
+
+	hfGatedAutoDenied := models.CatalogModel{
+		Name:             "meta-llama/Llama-3-8B-gated",
+		Description:      stringToPointer(""),
+		Provider:         stringToPointer("meta-llama"),
+		Tasks:            []string{},
+		License:          stringToPointer("unknown"),
+		SourceId:         stringToPointer("huggingface"),
+		Readme:           stringToPointer(""),
+		CustomProperties: hfAccessCustomProperties("gated_auto", "false"),
+	}
+
+	hfGatedManualGranted := models.CatalogModel{
+		Name:             "hf-mock/gated-manual-granted",
+		Description:      stringToPointer("Gated manual model with access granted (hf_access_type=gated_manual, hf_gated_access_granted=true)"),
+		Provider:         stringToPointer("hf-mock"),
+		Tasks:            []string{"text-generation"},
+		License:          stringToPointer("custom"),
+		SourceId:         stringToPointer("huggingface"),
+		Readme:           stringToPointer("# Gated manual model\n\nFull metadata when manual gate access is granted."),
+		CustomProperties: hfAccessCustomProperties("gated_manual", "true"),
+	}
+
+	hfGatedManualDenied := models.CatalogModel{
+		Name:             "hf-mock/gated-manual-denied",
+		Description:      stringToPointer(""),
+		Provider:         stringToPointer("hf-mock"),
+		Tasks:            []string{},
+		License:          stringToPointer("unknown"),
+		SourceId:         stringToPointer("huggingface"),
+		Readme:           stringToPointer(""),
+		CustomProperties: hfAccessCustomProperties("gated_manual", "false"),
 	}
 
 	otherModel1 := models.CatalogModel{
@@ -914,7 +946,11 @@ python -c "from transformers import pipeline; nlp = pipeline('fill-mask', model=
 
 	allModels := []models.CatalogModel{
 		sampleModel1, sampleModel2, sampleModel3, sampleModel4,
-		huggingFaceModel1, huggingFaceModel2, huggingFaceModel3, noPerformanceModel,
+		huggingFaceModel1,
+		hfPrivateModel,
+		hfGatedAutoGranted, hfGatedAutoDenied,
+		hfGatedManualGranted, hfGatedManualDenied,
+		noPerformanceModel,
 		otherModel1, otherModel2,
 	}
 	allModels = append(allModels, additionalRepo1Models...)
@@ -939,11 +975,17 @@ func GetCatalogSourceMocks() []models.CatalogSource {
 
 	// Status examples (matching OpenAPI spec)
 	availableStatus := "available"
+	partiallyAvailableStatus := "partially-available"
 	errorStatus := "error"
 	disabledStatus := "disabled"
 
+	hasApiKeyTrue := true
+	authenticatedTrue := true
+	authenticatedFalse := false
+
 	invalidCredentialError := "The provided API key is invalid or has expired. Please update your credentials."
 	invalidOrgError := "The specified organization 'invalid-org' does not exist or you don't have access to it. Please verify the organization name and ensure you have the necessary permissions to access models from this organization."
+	partialAvailabilityError := "2 models returned 403: gated model requires agreement"
 
 	return []models.CatalogSource{
 		{
@@ -954,19 +996,23 @@ func GetCatalogSourceMocks() []models.CatalogSource {
 			Status:  &availableStatus,
 		},
 		{
-			Id:     "huggingface",
-			Name:   "Hugging Face",
-			Labels: []string{"Sample category 2", "Sample category"},
+			Id:            "huggingface",
+			Name:          "Hugging Face",
+			Labels:        []string{"Sample category 2", "Sample category"},
+			HasApiKey:     &hasApiKeyTrue,
+			Authenticated: &authenticatedTrue,
 			// Status is nil - represents "Starting" state (no status yet)
 			Status: nil,
 		},
 		{
-			Id:      "adminModel1",
-			Name:    "Admin model 1",
-			Enabled: &enabled,
-			Labels:  []string{},
-			Status:  &errorStatus,
-			Error:   &invalidCredentialError,
+			Id:            "adminModel1",
+			Name:          "Admin model 1",
+			Enabled:       &enabled,
+			Labels:        []string{},
+			Status:        &errorStatus,
+			Error:         &invalidCredentialError,
+			HasApiKey:     &hasApiKeyTrue,
+			Authenticated: &authenticatedFalse,
 		},
 		{
 			Id:      "adminModel2",
@@ -1005,11 +1051,14 @@ func GetCatalogSourceMocks() []models.CatalogSource {
 			Error:   &invalidCredentialError,
 		},
 		{
-			Id:      "hugging_face_source",
-			Name:    "Hugging face source",
-			Enabled: &enabled,
-			Labels:  []string{},
-			Status:  &availableStatus,
+			Id:            "hugging_face_source",
+			Name:          "Hugging face source",
+			Enabled:       &enabled,
+			Labels:        []string{},
+			Status:        &partiallyAvailableStatus,
+			Error:         &partialAvailabilityError,
+			HasApiKey:     &hasApiKeyTrue,
+			Authenticated: &authenticatedTrue,
 		},
 	}
 }

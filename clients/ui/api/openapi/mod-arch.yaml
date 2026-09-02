@@ -1461,21 +1461,32 @@ paths:
       The REST endpoint/path used to preview the effects of catalog source configuration changes.
     post:
       summary: Preview catalog source configuration effects
-      description: >-
-        Accepts catalog source definitions and returns a preview of which models would be
-        included or excluded based on the configuration. Supports multipart form uploads
-        for YAML catalogs files.
+      description: |-
+        Accepts a catalog source configuration and returns a list of assets showing
+        which would be included or excluded based on the configured filters. This allows
+        users to test and validate their source configurations before applying them.
+
+        The response summary varies based on the `assetType` query parameter (defaults to `models`):
+        - `models`: model-specific summary fields (`totalModels`, `includedModels`, `excludedModels`).
+        - `mcp_servers`: asset summary fields (`totalAssets`, `includedAssets`, `excludedAssets`).
+
+        For MCP server sources, set `assetType=mcp_servers` and use `includedServers` / `excludedServers`
+        in the request body. For model sources, use `includedModels` / `excludedModels`.
+
+        The BFF accepts JSON (`data` wrapper) and translates the request to multipart form data
+        (`config` and optional `catalogData` parts) when calling the catalog service. YAML catalog
+        content for stateless model or MCP preview is provided via `properties.yaml` in the JSON body.
       tags:
         - ModelCatalogService
       parameters:
         - $ref: "#/components/parameters/kubeflowUserId"
         - $ref: "#/components/parameters/assetType"
-        - name: statusFilter
+        - name: filterStatus
           description: |-
-            Filter the response to show specific model statuses.
-            - `all` shows all models (default)
-            - `included` shows only models that would be included
-            - `excluded` shows only models that would be excluded
+            Filter the response to show specific inclusion statuses.
+            - `all` shows all assets (default)
+            - `included` shows only assets that would be included
+            - `excluded` shows only assets that would be excluded
           schema:
             type: string
             enum:
@@ -1488,25 +1499,19 @@ paths:
         - $ref: "#/components/parameters/pageSize"
         - $ref: "#/components/parameters/nextPageToken"
       requestBody:
-        description: Catalog source configuration
+        description: |-
+          Catalog source preview configuration in the `data` field. The BFF builds multipart
+          `config` / `catalogData` parts for the catalog preview API.
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CatalogSourcePreviewRequest"
-          multipart/form-data:
-            schema:
               type: object
+              required:
+                - data
               properties:
-                file:
-                  type: string
-                  format: yaml
-                description:
-                  type: string
-                  description:
-                    Should include a file named `source.json`, and may optionally
-                    include a YAML catalog. The name referenced in the source
-                    definition should match uploaded file name.
+                data:
+                  $ref: "#/components/schemas/CatalogSourcePreviewRequest"
       responses:
         "200":
           $ref: "#/components/responses/CatalogSourcePreviewResponse"
@@ -2947,17 +2952,34 @@ components:
           description: |-
             Operational status of a catalog source.
             - `available`: The source is functioning correctly and models can be retrieved
+            - `partially-available`: Some models loaded successfully but others failed (for example gated models without access)
             - `error`: The source is experiencing issues and cannot provide models
             - `disabled`: The source has been intentionally disabled
           type: string
           enum:
             - available
+            - partially-available
             - error
             - disabled
         error:
           description: |-
-            Error message when status is Failed. Contains details about what went wrong.
+            Error message when status is error or partially-available. Contains details about what went wrong.
+            Null or empty when the source is functioning normally.
           type: string
+          nullable: true
+        hasApiKey:
+          description: |-
+            Whether an API token is stored for this source. The token value is never
+            returned. False for sources that have no stored token.
+          type: boolean
+          readOnly: true
+        authenticated:
+          description: |-
+            Whether the stored API token validated successfully.
+            Null when no token exists (`hasApiKey` is false).
+          type: boolean
+          nullable: true
+          readOnly: true
         assetType:
           $ref: "#/components/schemas/assetType"
           description: |-
@@ -3011,7 +3033,8 @@ components:
       default: models
       description: |-
         The type of assets a source manages. Filters sources by asset type.
-        "models" for model catalog sources, "mcp_servers" for MCP server catalog sources, "agents" for agent catalog sources.
+        `models` for model catalog sources, `mcp_servers` for MCP server catalog sources,
+        `agents` for agent catalog sources.
     FieldFilter:
       type: object
       required:
@@ -3564,22 +3587,37 @@ components:
       properties:
         type:
           type: string
-          description: The type of catalog source (e.g., 'huggingface', 'yaml')
+          description: The type of catalog source (e.g., `yaml`, `huggingface`)
           example: yaml
         includedModels:
           type: array
+          description: Glob patterns for models to include (when assetType=models).
           items:
             type: string
         excludedModels:
           type: array
+          description: Glob patterns for models to exclude (when assetType=models).
+          items:
+            type: string
+        includedServers:
+          type: array
+          description: Glob patterns for MCP servers to include (when assetType=mcp_servers).
+          items:
+            type: string
+        excludedServers:
+          type: array
+          description: Glob patterns for MCP servers to exclude (when assetType=mcp_servers).
           items:
             type: string
         properties:
           type: object
-          description: Type-specific configuration properties
+          description: |-
+            Type-specific configuration properties. For yaml sources, provide `yaml` (catalog
+            content) or `yamlCatalogPath`. For Hugging Face sources, `apiKey` (forwarded for preview;
+            catalog may read from env only) and `allowedOrganization` may be included.
           additionalProperties: true
-    CatalogSourcePreviewModel:
-      description: A model in the preview response with inclusion status.
+    CatalogSourcePreviewItem:
+      description: An asset in the preview response with inclusion status.
       type: object
       required:
         - name
@@ -3587,57 +3625,95 @@ components:
       properties:
         name:
           type: string
-          description: Name of the model
+          description: Name of the model or asset
           example: microsoft/DialoGPT-medium
         included:
           type: boolean
-          description: Whether this model would be included based on the source configuration
-    CatalogSourcePreviewResult:
-      description: Preview result for catalog source configuration.
+          description: Whether this asset would be included based on the source configuration
+    CatalogSourcePreviewModel:
+      description: |-
+        Deprecated alias for `CatalogSourcePreviewItem`. A model or asset with its inclusion status.
+      allOf:
+        - $ref: "#/components/schemas/CatalogSourcePreviewItem"
+    CatalogSourcePreviewModelSummary:
+      description: Summary counts for model preview (`assetType=models`).
+      type: object
+      required:
+        - totalModels
+        - includedModels
+        - excludedModels
+      properties:
+        totalModels:
+          type: integer
+          description: Total number of models evaluated
+          example: 1500
+        includedModels:
+          type: integer
+          description: Number of models that would be included
+          example: 850
+        excludedModels:
+          type: integer
+          description: Number of models that would be excluded
+          example: 650
+    CatalogSourcePreviewAssetSummary:
+      description: Summary counts for MCP server preview (`assetType=mcp_servers`).
+      type: object
+      required:
+        - totalAssets
+        - includedAssets
+        - excludedAssets
+      properties:
+        totalAssets:
+          type: integer
+          description: Total number of assets evaluated
+          example: 25
+        includedAssets:
+          type: integer
+          description: Number of assets that would be included
+          example: 18
+        excludedAssets:
+          type: integer
+          description: Number of assets that would be excluded
+          example: 7
+    CatalogSourcePreviewModelResult:
+      description: Preview result when `assetType` is `models` (default).
       allOf:
         - type: object
           properties:
             items:
-              description: Array of models with their inclusion status.
+              description: Array of model preview results.
               type: array
               items:
-                $ref: "#/components/schemas/CatalogSourcePreviewModel"
+                $ref: "#/components/schemas/CatalogSourcePreviewItem"
             summary:
-              description: Summary of the preview results
-              type: object
-              properties:
-                totalModels:
-                  type: integer
-                  description: Total number of models evaluated (when assetType=models)
-                  example: 1500
-                includedModels:
-                  type: integer
-                  description: Number of models that would be included (when assetType=models)
-                  example: 850
-                excludedModels:
-                  type: integer
-                  description: Number of models that would be excluded (when assetType=models)
-                  example: 650
-                totalAssets:
-                  type: integer
-                  description: Total number of assets evaluated (when assetType=mcp_servers)
-                  example: 25
-                includedAssets:
-                  type: integer
-                  description: Number of assets that would be included (when assetType=mcp_servers)
-                  example: 18
-                excludedAssets:
-                  type: integer
-                  description: Number of assets that would be excluded (when assetType=mcp_servers)
-                  example: 7
-              required:
-                - totalModels
-                - includedModels
-                - excludedModels
+              $ref: "#/components/schemas/CatalogSourcePreviewModelSummary"
           required:
             - items
             - summary
         - $ref: "#/components/schemas/BaseResourceList"
+    CatalogSourcePreviewAssetResult:
+      description: Preview result when `assetType` is `mcp_servers`.
+      allOf:
+        - type: object
+          properties:
+            items:
+              description: Array of asset preview results.
+              type: array
+              items:
+                $ref: "#/components/schemas/CatalogSourcePreviewItem"
+            summary:
+              $ref: "#/components/schemas/CatalogSourcePreviewAssetSummary"
+          required:
+            - items
+            - summary
+        - $ref: "#/components/schemas/BaseResourceList"
+    CatalogSourcePreviewResult:
+      description: |-
+        Polymorphic preview result. Summary fields depend on `assetType`:
+        model counts for `models`, asset counts for `mcp_servers`.
+      oneOf:
+        - $ref: "#/components/schemas/CatalogSourcePreviewModelResult"
+        - $ref: "#/components/schemas/CatalogSourcePreviewAssetResult"
 
     # Schema for catalog settings
     CatalogSourceConfig:
@@ -4310,7 +4386,10 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/CatalogSourcePreviewResult"
+            type: object
+            properties:
+              data:
+                $ref: "#/components/schemas/CatalogSourcePreviewResult"
       description: A response containing the preview results of catalog source configuration effects.
 
     # Catalog settings response
@@ -4500,7 +4579,7 @@ components:
       required: false
     assetType:
       name: assetType
-      description: Filter sources by asset type (models, mcp_servers, or agents).
+      description: Filter by asset type (models, mcp_servers, or agents).
       schema:
         $ref: "#/components/schemas/assetType"
       in: query
