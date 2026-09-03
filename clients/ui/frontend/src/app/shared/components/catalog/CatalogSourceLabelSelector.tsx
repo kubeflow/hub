@@ -98,9 +98,15 @@ const CatalogSourceLabelSelector: React.FC<CatalogSourceLabelSelectorProps> = ({
     [onSearch],
   );
 
+  const handleResetAllFilters = React.useCallback(() => {
+    setInputValue('');
+    onClearSearch();
+    onResetAllFilters();
+  }, [onClearSearch, onResetAllFilters]);
+
   const toolbarClearAllProps = shouldShowResetAll
     ? {
-        clearAllFilters: onResetAllFilters,
+        clearAllFilters: handleResetAllFilters,
         clearFiltersButtonText: RESET_ALL_FILTERS_LABEL,
       }
     : undefined;

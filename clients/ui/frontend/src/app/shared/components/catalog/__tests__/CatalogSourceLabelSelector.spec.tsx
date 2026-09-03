@@ -7,6 +7,33 @@ jest.mock('mod-arch-kubeflow', () => ({
   useThemeContext: () => ({ isMUITheme: false }),
 }));
 
+jest.mock('@patternfly/react-core', () => {
+  const actual = jest.requireActual('@patternfly/react-core');
+  const Toolbar = ({
+    clearAllFilters,
+    clearFiltersButtonText,
+    children,
+  }: {
+    clearAllFilters?: () => void;
+    clearFiltersButtonText?: string;
+    children: React.ReactNode;
+  }) => (
+    <div data-testid="catalog-toolbar">
+      {clearAllFilters && (
+        <button type="button" onClick={clearAllFilters}>
+          {clearFiltersButtonText}
+        </button>
+      )}
+      {children}
+    </div>
+  );
+
+  return {
+    ...actual,
+    Toolbar,
+  };
+});
+
 jest.mock('mod-arch-shared', () => ({
   ThemeAwareSearchInput: ({
     value,
@@ -107,6 +134,56 @@ describe('CatalogSourceLabelSelector', () => {
     );
 
     expect(screen.getByTestId('active-filters')).toBeInTheDocument();
+  });
+
+  it('clears search input and calls reset handlers when reset all is triggered', () => {
+    const onClearSearch = jest.fn();
+    const onResetAllFilters = jest.fn();
+
+    render(
+      <CatalogSourceLabelSelector
+        {...baseProps}
+        searchTerm="llama"
+        hasFiltersApplied
+        onClearSearch={onClearSearch}
+        onResetAllFilters={onResetAllFilters}
+        renderActiveFilters={() => <div data-testid="active-filters">filters</div>}
+      />,
+    );
+
+    expect(screen.getByTestId('catalog-search-input')).toHaveValue('llama');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reset all filters' }));
+
+    expect(onClearSearch).toHaveBeenCalledTimes(1);
+    expect(onResetAllFilters).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('catalog-search-input')).toHaveValue('');
+  });
+
+  it('clears unsubmitted search text when reset all is triggered', () => {
+    const onClearSearch = jest.fn();
+    const onResetAllFilters = jest.fn();
+
+    render(
+      <CatalogSourceLabelSelector
+        {...baseProps}
+        hasFiltersApplied
+        onClearSearch={onClearSearch}
+        onResetAllFilters={onResetAllFilters}
+        renderActiveFilters={() => <div data-testid="active-filters">filters</div>}
+      />,
+    );
+
+    fireEvent.change(screen.getByTestId('catalog-search-input'), {
+      target: { value: 'typed but not submitted' },
+    });
+    expect(screen.getByTestId('catalog-search-input')).toHaveValue('typed but not submitted');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reset all filters' }));
+
+    expect(onClearSearch).toHaveBeenCalledTimes(1);
+    expect(onResetAllFilters).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('catalog-search-input')).toHaveValue('');
   });
 
   it('renders source label blocks and extra row content', () => {
