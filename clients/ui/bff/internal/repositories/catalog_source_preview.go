@@ -82,6 +82,12 @@ func (a CatalogSourcePreview) CreateCatalogSourcePreview(client httpclient.HTTPC
 		}
 	}
 
+	if sourcePreviewPayload.Type == CatalogTypeGitSkills {
+		if repos, ok := sourcePreviewPayload.Properties["repositories"]; ok {
+			properties["repositories"] = repos
+		}
+	}
+
 	if len(properties) > 0 {
 		configData["properties"] = properties
 	}
