@@ -108,6 +108,20 @@ const (
 	McpCatalogSettingsPathPrefix           = SettingsPath + "/mcp_catalog"
 	McpCatalogSettingsSourceConfigListPath = McpCatalogSettingsPathPrefix + "/source_configs"
 	McpCatalogSettingsSourceConfigPath     = McpCatalogSettingsSourceConfigListPath + "/:" + CatalogSourceId
+
+	// Skill catalog
+	SkillId                     = "skill_id"
+	SkillCatalogPathPrefix      = ApiPathPrefix + "/skill_catalog"
+	SkillListPath               = SkillCatalogPathPrefix + "/skills"
+	SkillFilterOptionListPath   = SkillCatalogPathPrefix + "/skills_filter_options"
+	SkillPath                   = SkillListPath + "/:" + SkillId
+	SkillCatalogMarketplacePath = SkillCatalogPathPrefix + "/claude/marketplace.json"
+
+	// Skill catalog settings
+	SkillCatalogSettingsPathPrefix           = SettingsPath + "/skill_catalog"
+	SkillCatalogSettingsSourceConfigListPath = SkillCatalogSettingsPathPrefix + "/source_configs"
+	SkillCatalogSettingsSourceConfigPath     = SkillCatalogSettingsSourceConfigListPath + "/:" + CatalogSourceId
+	SkillCatalogSettingsSourcePreviewPath    = SkillCatalogSettingsPathPrefix + "/source_preview"
 )
 
 type App struct {
@@ -362,6 +376,20 @@ func (app *App) Routes() http.Handler {
 		apiRouter.GET(McpCatalogSettingsSourceConfigPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.GetMcpCatalogSourceConfigHandler)))
 		apiRouter.PATCH(McpCatalogSettingsSourceConfigPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.UpdateMcpCatalogSourceConfigHandler)))
 		apiRouter.DELETE(McpCatalogSettingsSourceConfigPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.DeleteMcpCatalogSourceConfigHandler)))
+
+		// Skill catalog endpoints
+		apiRouter.GET(SkillListPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.AttachModelCatalogRESTClient(app.GetAllSkillsHandler))))
+		apiRouter.GET(SkillFilterOptionListPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.AttachModelCatalogRESTClient(app.GetSkillsFiltersHandler))))
+		apiRouter.GET(SkillPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.AttachModelCatalogRESTClient(app.GetSkillHandler))))
+		apiRouter.GET(SkillCatalogMarketplacePath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.AttachModelCatalogRESTClient(app.GetSkillMarketplaceHandler))))
+
+		// Skill catalog settings page
+		apiRouter.GET(SkillCatalogSettingsSourceConfigListPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.GetAllSkillCatalogSourceConfigsHandler)))
+		apiRouter.POST(SkillCatalogSettingsSourceConfigListPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.CreateSkillCatalogSourceConfigHandler)))
+		apiRouter.GET(SkillCatalogSettingsSourceConfigPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.GetSkillCatalogSourceConfigHandler)))
+		apiRouter.PATCH(SkillCatalogSettingsSourceConfigPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.UpdateSkillCatalogSourceConfigHandler)))
+		apiRouter.DELETE(SkillCatalogSettingsSourceConfigPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.DeleteSkillCatalogSourceConfigHandler)))
+		apiRouter.POST(SkillCatalogSettingsSourcePreviewPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.AttachModelCatalogRESTClient(app.CreateCatalogSourcePreviewHandler))))
 	}
 
 	// App Router
