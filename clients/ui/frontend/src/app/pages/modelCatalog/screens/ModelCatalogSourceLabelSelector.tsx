@@ -212,17 +212,15 @@ const ModelCatalogSourceLabelSelector: React.FC<ModelCatalogSourceLabelSelectorP
           </StackItem>
         </>
       )}
-      {hasMultipleCategories && (
-        <StackItem>
-          <Flex
-            justifyContent={{ default: 'justifyContentSpaceBetween' }}
-            alignItems={{ default: 'alignItemsCenter' }}
-          >
-            <ModelCatalogSourceLabelBlocks />
-            <ModelCatalogSortDropdown performanceViewEnabled={performanceViewEnabled} />
-          </Flex>
-        </StackItem>
-      )}
+      <StackItem>
+        <Flex
+          justifyContent={{ default: 'justifyContentSpaceBetween' }}
+          alignItems={{ default: 'alignItemsCenter' }}
+        >
+          {hasMultipleCategories && <ModelCatalogSourceLabelBlocks />}
+          <ModelCatalogSortDropdown performanceViewEnabled={performanceViewEnabled} />
+        </Flex>
+      </StackItem>
       {shouldShowAlert && (
         <StackItem>
           <Alert
