@@ -286,6 +286,26 @@ func setupMock(mockK8sClient kubernetes.Interface, ctx context.Context) error {
 		return err
 	}
 
+	err = addSkillDataToDefaultCatalogSourcesConfigMap(mockK8sClient, ctx, "kubeflow")
+	if err != nil {
+		return err
+	}
+
+	err = createSkillCatalogSourcesConfigMap(mockK8sClient, ctx, "kubeflow")
+	if err != nil {
+		return err
+	}
+
+	err = addSkillDataToDefaultCatalogSourcesConfigMap(mockK8sClient, ctx, "bella-namespace")
+	if err != nil {
+		return err
+	}
+
+	err = createSkillCatalogSourcesConfigMap(mockK8sClient, ctx, "bella-namespace")
+	if err != nil {
+		return err
+	}
+
 	err = createHuggingFaceSecret(mockK8sClient, ctx, "kubeflow")
 	if err != nil {
 		return err
@@ -1523,6 +1543,82 @@ mcp_catalogs:
 
 	if _, err := k8sClient.CoreV1().ConfigMaps(namespace).Create(ctx, cm, metav1.CreateOptions{}); err != nil {
 		return fmt.Errorf("failed to create mcp-catalog-sources configmap: %w", err)
+	}
+
+	return nil
+}
+
+func addSkillDataToDefaultCatalogSourcesConfigMap(
+	k8sClient kubernetes.Interface,
+	ctx context.Context,
+	namespace string,
+) error {
+	cm, err := k8sClient.CoreV1().ConfigMaps(namespace).Get(ctx, k8s.CatalogSourceDefaultConfigMapName, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to get default-catalog-sources configmap for skill data: %w", err)
+	}
+
+	skillRaw := strings.TrimSpace(`
+skill_catalogs:
+  - name: Community Skills
+    id: community_skills
+    type: git-skills-plugin
+    enabled: true
+    labels:
+      - Community
+    properties:
+      repositories:
+        - url: https://github.com/example/community-skills
+          refs:
+            - v1.0.0
+          provider: Community
+          category: development
+          trustTier: communityContributed
+`)
+
+	existingSources := cm.Data[k8s.SkillCatalogSourceKey]
+	cm.Data[k8s.SkillCatalogSourceKey] = existingSources + "\n" + skillRaw
+
+	if _, err := k8sClient.CoreV1().ConfigMaps(namespace).Update(ctx, cm, metav1.UpdateOptions{}); err != nil {
+		return fmt.Errorf("failed to update default-catalog-sources configmap with skill data: %w", err)
+	}
+
+	return nil
+}
+
+func createSkillCatalogSourcesConfigMap(
+	k8sClient kubernetes.Interface,
+	ctx context.Context,
+	namespace string,
+) error {
+	raw := strings.TrimSpace(`
+skill_catalogs:
+  - name: Custom Skills
+    id: custom_skills
+    type: git-skills-plugin
+    enabled: true
+    labels:
+      - Custom
+    properties:
+      repositories:
+        - url: https://github.com/example/custom-skills
+          refs:
+            - v2.0.0
+          credentialRef: custom_skills
+`)
+
+	cm := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      k8s.SkillCatalogSourceUserConfigMapName,
+			Namespace: namespace,
+		},
+		Data: map[string]string{
+			k8s.SkillCatalogSourceKey: raw,
+		},
+	}
+
+	if _, err := k8sClient.CoreV1().ConfigMaps(namespace).Create(ctx, cm, metav1.CreateOptions{}); err != nil {
+		return fmt.Errorf("failed to create skill-catalog-sources configmap: %w", err)
 	}
 
 	return nil
