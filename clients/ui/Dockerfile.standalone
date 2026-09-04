@@ -33,6 +33,7 @@ ARG TARGETOS
 ARG TARGETARCH
 
 COPY pkg/openapi /usr/src/app/pkg/openapi
+COPY pkg/openapi-v1 /usr/src/app/pkg/openapi-v1
 
 WORKDIR /usr/src/app/clients/ui/bff
 
