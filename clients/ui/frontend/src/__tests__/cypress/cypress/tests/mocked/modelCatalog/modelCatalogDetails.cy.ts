@@ -527,3 +527,56 @@ describe('Model Catalog Registration - Model Type Field', () => {
     modelCatalog.findModelTypeSelect().should('be.disabled');
   });
 });
+
+describe('Model Catalog Details Page - Gated access denied', () => {
+  const gatedDeniedModel = mockCatalogModel({
+    name: 'meta-llama/Llama-3.1-8B-Instruct-INT8',
+    provider: 'Meta',
+    description: '',
+    readme: '',
+    source_id: 'hugging_face_source',
+    customProperties: {
+      hf_access_type: {
+        string_value: 'gated_auto',
+        metadataType: ModelRegistryMetadataType.STRING,
+      },
+      hf_gated_access_granted: {
+        string_value: 'false',
+        metadataType: ModelRegistryMetadataType.STRING,
+      },
+    },
+  });
+
+  beforeEach(() => {
+    cy.intercept('GET', '/model-registry/api/v1/model_registry*', [
+      mockModelRegistry({ name: 'modelregistry-sample' }),
+    ]).as('getModelRegistries');
+
+    setupModelCatalogIntercepts({});
+    cy.interceptApi(
+      `GET /api/:apiVersion/model_catalog/sources/:sourceId/models/:modelName`,
+      {
+        path: {
+          apiVersion: MODEL_CATALOG_API_VERSION,
+          sourceId: 'hugging_face_source',
+          modelName: 'meta-llama%2FLlama-3.1-8B-Instruct-INT8',
+        },
+      },
+      gatedDeniedModel,
+    );
+    interceptArtifactsList({ items: [], size: 0, pageSize: 10, nextPageToken: '' });
+  });
+
+  it('shows gated access required state instead of model details', () => {
+    modelCatalog.visitModelDetails('hugging_face_source', 'meta-llama/Llama-3.1-8B-Instruct-INT8');
+    appChrome.waitForA11y();
+
+    modelCatalog.findGatedAccessRequiredState().should('be.visible');
+    modelCatalog.findGatedAccessRequiredState().should('contain.text', 'Model access required');
+    modelCatalog.findGatedAccessRequestLink().should('be.visible');
+    modelCatalog.findDetailsDescription().should('not.exist');
+    modelCatalog.findModelCardMarkdown().should('not.exist');
+    modelCatalog.findRegisterModelButton().should('be.disabled');
+    modelCatalog.findAccessLabelGatedDenied().should('be.visible');
+  });
+});
