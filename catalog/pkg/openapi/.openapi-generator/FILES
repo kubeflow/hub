@@ -76,6 +76,7 @@ model_skill.go
 model_skill_list.go
 model_skill_trust_tier.go
 model_sort_order.go
+model_source_status.go
 model_tool_calling_config.go
 response.go
 utils.go

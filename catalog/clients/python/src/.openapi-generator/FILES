@@ -83,6 +83,7 @@ catalog_openapi/docs/SkillCatalogServiceApi.md
 catalog_openapi/docs/SkillList.md
 catalog_openapi/docs/SkillTrustTier.md
 catalog_openapi/docs/SortOrder.md
+catalog_openapi/docs/SourceStatus.md
 catalog_openapi/docs/ToolCallingConfig.md
 catalog_openapi/exceptions.py
 catalog_openapi/models/__init__.py
@@ -158,6 +159,7 @@ catalog_openapi/models/skill.py
 catalog_openapi/models/skill_list.py
 catalog_openapi/models/skill_trust_tier.py
 catalog_openapi/models/sort_order.py
+catalog_openapi/models/source_status.py
 catalog_openapi/models/tool_calling_config.py
 catalog_openapi/rest.py
 catalog_openapi/test/__init__.py
@@ -237,5 +239,6 @@ catalog_openapi/test/test_skill_catalog_service_api.py
 catalog_openapi/test/test_skill_list.py
 catalog_openapi/test/test_skill_trust_tier.py
 catalog_openapi/test/test_sort_order.py
+catalog_openapi/test/test_source_status.py
 catalog_openapi/test/test_tool_calling_config.py
 catalog_openapi_README.md

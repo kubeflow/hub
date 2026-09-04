@@ -45,4 +45,8 @@ type CatalogSourceRepository interface {
 
 	// GetAllStatuses returns a map of source ID to status/error for all sources.
 	GetAllStatuses() (map[string]SourceStatus, error)
+
+	// GetStatus returns the status/error persisted for a single source. It returns an empty
+	// SourceStatus (not an error) if the source does not exist.
+	GetStatus(sourceID string) (SourceStatus, error)
 }

@@ -13,6 +13,7 @@ import (
 
 	"github.com/kubeflow/hub/catalog/internal/catalog"
 	"github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog"
+	"github.com/kubeflow/hub/catalog/internal/db/models"
 	model "github.com/kubeflow/hub/catalog/pkg/openapi"
 	mrmodels "github.com/kubeflow/hub/internal/platform/db/entity"
 	"github.com/stretchr/testify/assert"
@@ -2556,4 +2557,136 @@ func TestFindModelsOrderByRecommendedPagination(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.Code, "numeric nextPageToken must be accepted for orderBy=RECOMMENDED")
 	require.NoError(t, err)
+}
+
+// fakeSourceStatusRepository is a minimal in-memory implementation of
+// models.CatalogSourceRepository used to test GetSourceStatus/ClearSourceStatus without a
+// real database. Unlike modelcatalog's MockCatalogSourceRepository, Delete here actually
+// removes the entry so tests can observe a status being cleared.
+type fakeSourceStatusRepository struct {
+	statuses map[string]models.SourceStatus
+}
+
+func (f *fakeSourceStatusRepository) GetBySourceID(sourceID string) (models.CatalogSource, error) {
+	return nil, nil
+}
+
+func (f *fakeSourceStatusRepository) Save(source models.CatalogSource) (models.CatalogSource, error) {
+	return source, nil
+}
+
+func (f *fakeSourceStatusRepository) Delete(sourceID string) error {
+	delete(f.statuses, sourceID)
+	return nil
+}
+
+func (f *fakeSourceStatusRepository) GetAll() ([]models.CatalogSource, error) {
+	return nil, nil
+}
+
+func (f *fakeSourceStatusRepository) GetAllStatuses() (map[string]models.SourceStatus, error) {
+	return f.statuses, nil
+}
+
+func (f *fakeSourceStatusRepository) GetStatus(sourceID string) (models.SourceStatus, error) {
+	return f.statuses[sourceID], nil
+}
+
+func TestGetSourceStatus(t *testing.T) {
+	testCases := []struct {
+		name           string
+		statuses       map[string]models.SourceStatus
+		sourceID       string
+		expectedStatus *model.CatalogSourceStatus
+		expectedError  *string
+	}{
+		{
+			name: "known source with status and error",
+			statuses: map[string]models.SourceStatus{
+				"source1": {Status: "error", Error: "connection refused"},
+			},
+			sourceID:       "source1",
+			expectedStatus: model.CATALOGSOURCESTATUS_ERROR.Ptr(),
+			expectedError:  new("connection refused"),
+		},
+		{
+			name: "known source with status and no error",
+			statuses: map[string]models.SourceStatus{
+				"source1": {Status: "available"},
+			},
+			sourceID:       "source1",
+			expectedStatus: model.CATALOGSOURCESTATUS_AVAILABLE.Ptr(),
+			expectedError:  nil,
+		},
+		{
+			name:           "unknown source returns empty status, not 404",
+			statuses:       map[string]models.SourceStatus{},
+			sourceID:       "unknown-source",
+			expectedStatus: nil,
+			expectedError:  nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			sources := catalog.NewSourceCollection()
+			repo := &fakeSourceStatusRepository{statuses: tc.statuses}
+			service := NewModelCatalogServiceAPIService(&mockModelProvider{}, sources, nil, nil, catalog.NewLabelCollection(), repo)
+
+			resp, err := service.GetSourceStatus(context.Background(), tc.sourceID)
+			require.NoError(t, err)
+			assert.Equal(t, http.StatusOK, resp.Code)
+
+			body, ok := resp.Body.(model.SourceStatus)
+			require.True(t, ok, "expected response body to be a model.SourceStatus")
+
+			if tc.expectedStatus == nil {
+				assert.False(t, body.HasStatus())
+			} else {
+				require.True(t, body.HasStatus())
+				assert.Equal(t, *tc.expectedStatus, body.GetStatus())
+			}
+
+			if tc.expectedError == nil {
+				assert.False(t, body.HasError())
+			} else {
+				require.True(t, body.HasError())
+				assert.Equal(t, *tc.expectedError, body.GetError())
+			}
+		})
+	}
+}
+
+func TestClearSourceStatus(t *testing.T) {
+	sources := catalog.NewSourceCollection()
+	repo := &fakeSourceStatusRepository{
+		statuses: map[string]models.SourceStatus{
+			"source1": {Status: "error", Error: "connection refused"},
+		},
+	}
+	service := NewModelCatalogServiceAPIService(&mockModelProvider{}, sources, nil, nil, catalog.NewLabelCollection(), repo)
+
+	// Clearing a known source's status returns 204 and removes the persisted record.
+	resp, err := service.ClearSourceStatus(context.Background(), "source1")
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusNoContent, resp.Code)
+
+	statusResp, err := service.GetSourceStatus(context.Background(), "source1")
+	require.NoError(t, err)
+	body, ok := statusResp.Body.(model.SourceStatus)
+	require.True(t, ok, "expected response body to be a model.SourceStatus")
+	assert.False(t, body.HasStatus(), "status should be cleared after ClearSourceStatus")
+	assert.False(t, body.HasError(), "error should be cleared after ClearSourceStatus")
+
+	// Clearing a source with no persisted status is a no-op, not an error.
+	resp, err = service.ClearSourceStatus(context.Background(), "never-had-a-status")
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusNoContent, resp.Code)
+}
+
+// strPtr returns a pointer to the given string.
+//
+//go:fix inline
+func strPtr(s string) *string {
+	return new(s)
 }

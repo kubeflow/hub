@@ -103,6 +103,7 @@ __all__ = [
     "SkillList",
     "SkillTrustTier",
     "SortOrder",
+    "SourceStatus",
     "ToolCallingConfig",
 ]
 
@@ -196,5 +197,5 @@ from catalog_openapi.models.skill import Skill as Skill
 from catalog_openapi.models.skill_list import SkillList as SkillList
 from catalog_openapi.models.skill_trust_tier import SkillTrustTier as SkillTrustTier
 from catalog_openapi.models.sort_order import SortOrder as SortOrder
+from catalog_openapi.models.source_status import SourceStatus as SourceStatus
 from catalog_openapi.models.tool_calling_config import ToolCallingConfig as ToolCallingConfig
-

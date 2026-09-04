@@ -1108,6 +1108,14 @@ func (m *MockCatalogSourceRepository) GetAllStatuses() (map[string]sharedmodels.
 	return result, nil
 }
 
+func (m *MockCatalogSourceRepository) GetStatus(sourceID string) (sharedmodels.SourceStatus, error) {
+	statuses, err := m.GetAllStatuses()
+	if err != nil {
+		return sharedmodels.SourceStatus{}, err
+	}
+	return statuses[sourceID], nil
+}
+
 func TestAPIProviderGetPerformanceArtifacts(t *testing.T) {
 	// This test verifies that the APIProvider interface has GetPerformanceArtifacts method
 	// The actual implementation is tested in db_catalog_test.go

@@ -26,6 +26,7 @@ from catalog_openapi.models.filter_options_list import FilterOptionsList
 from catalog_openapi.models.order_by_field import OrderByField
 from catalog_openapi.models.preview_catalog_source_response import PreviewCatalogSourceResponse
 from catalog_openapi.models.sort_order import SortOrder
+from catalog_openapi.models.source_status import SourceStatus
 from catalog_openapi.rest import RESTResponseType
 
 
@@ -40,6 +41,249 @@ class ModelCatalogServiceApi:
         if api_client is None:
             api_client = ApiClient.get_default()
         self.api_client = api_client
+
+
+    @validate_call
+    def clear_source_status(
+        self,
+        source_id: Annotated[StrictStr, Field(description="A unique identifier for a `CatalogSource`.")],
+        _request_timeout: None | Annotated[StrictFloat, Field(gt=0)] | tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]] = None,
+        _request_auth: dict[StrictStr, Any] | None = None,
+        _content_type: StrictStr | None = None,
+        _headers: dict[StrictStr, Any] | None = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> None:
+        """Clear the persisted status of a `CatalogSource`.
+
+        Deletes the operational status persisted for the source. Intended to be called immediately after a source configuration change is saved, so that clients stop displaying a stale status while the backend picks up the new configuration and recomputes it on the next reload.
+
+        :param source_id: A unique identifier for a `CatalogSource`. (required)
+        :type source_id: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+        _param = self._clear_source_status_serialize(
+            source_id=source_id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: dict[str, str | None] = {
+            "204": None,
+            "401": "Error",
+            "500": "Error",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def clear_source_status_with_http_info(
+        self,
+        source_id: Annotated[StrictStr, Field(description="A unique identifier for a `CatalogSource`.")],
+        _request_timeout: None | Annotated[StrictFloat, Field(gt=0)] | tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]] = None,
+        _request_auth: dict[StrictStr, Any] | None = None,
+        _content_type: StrictStr | None = None,
+        _headers: dict[StrictStr, Any] | None = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[None]:
+        """Clear the persisted status of a `CatalogSource`.
+
+        Deletes the operational status persisted for the source. Intended to be called immediately after a source configuration change is saved, so that clients stop displaying a stale status while the backend picks up the new configuration and recomputes it on the next reload.
+
+        :param source_id: A unique identifier for a `CatalogSource`. (required)
+        :type source_id: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+        _param = self._clear_source_status_serialize(
+            source_id=source_id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: dict[str, str | None] = {
+            "204": None,
+            "401": "Error",
+            "500": "Error",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def clear_source_status_without_preload_content(
+        self,
+        source_id: Annotated[StrictStr, Field(description="A unique identifier for a `CatalogSource`.")],
+        _request_timeout: None | Annotated[StrictFloat, Field(gt=0)] | tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]] = None,
+        _request_auth: dict[StrictStr, Any] | None = None,
+        _content_type: StrictStr | None = None,
+        _headers: dict[StrictStr, Any] | None = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Clear the persisted status of a `CatalogSource`.
+
+        Deletes the operational status persisted for the source. Intended to be called immediately after a source configuration change is saved, so that clients stop displaying a stale status while the backend picks up the new configuration and recomputes it on the next reload.
+
+        :param source_id: A unique identifier for a `CatalogSource`. (required)
+        :type source_id: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+        _param = self._clear_source_status_serialize(
+            source_id=source_id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: dict[str, str | None] = {
+            "204": None,
+            "401": "Error",
+            "500": "Error",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _clear_source_status_serialize(
+        self,
+        source_id,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: dict[str, str] = {
+        }
+
+        _path_params: dict[str, str] = {}
+        _query_params: list[tuple[str, str]] = []
+        _header_params: dict[str, str | None] = _headers or {}
+        _form_params: list[tuple[str, str]] = []
+        _files: dict[
+            str, str | bytes | list[str] | list[bytes] | list[tuple[str, bytes]]
+        ] = {}
+        _body_params: bytes | None = None
+
+        # process the path parameters
+        if source_id is not None:
+            _path_params["source_id"] = source_id
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        if "Accept" not in _header_params:
+            _header_params["Accept"] = self.api_client.select_header_accept(
+                [
+                    "application/json"
+                ]
+            )
+
+
+        # authentication setting
+        _auth_settings: list[str] = [
+            "Bearer"
+        ]
+
+        return self.api_client.param_serialize(
+            method="DELETE",
+            resource_path="/api/model_catalog/v1/sources/{source_id}/status",
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
 
 
     @validate_call
@@ -64,7 +308,7 @@ class ModelCatalogServiceApi:
         :type asset_type: CatalogAssetType
         :param page_size: Number of entities in each page.
         :type page_size: str
-        :param order_by: Specifies the key to order catalog labels by. You can provide any string key that may exist in the label maps. Labels that contain the specified key will be sorted by that key's value. Labels that don't contain the key will maintain their original order and appear after labels that do contain the key. 
+        :param order_by: Specifies the key to order catalog labels by. You can provide any string key that may exist in the label maps. Labels that contain the specified key will be sorted by that key's value. Labels that don't contain the key will maintain their original order and appear after labels that do contain the key.
         :type order_by: str
         :param sort_order: Specifies the sort order for listing entities, defaults to ASC.
         :type sort_order: SortOrder
@@ -143,7 +387,7 @@ class ModelCatalogServiceApi:
         :type asset_type: CatalogAssetType
         :param page_size: Number of entities in each page.
         :type page_size: str
-        :param order_by: Specifies the key to order catalog labels by. You can provide any string key that may exist in the label maps. Labels that contain the specified key will be sorted by that key's value. Labels that don't contain the key will maintain their original order and appear after labels that do contain the key. 
+        :param order_by: Specifies the key to order catalog labels by. You can provide any string key that may exist in the label maps. Labels that contain the specified key will be sorted by that key's value. Labels that don't contain the key will maintain their original order and appear after labels that do contain the key.
         :type order_by: str
         :param sort_order: Specifies the sort order for listing entities, defaults to ASC.
         :type sort_order: SortOrder
@@ -222,7 +466,7 @@ class ModelCatalogServiceApi:
         :type asset_type: CatalogAssetType
         :param page_size: Number of entities in each page.
         :type page_size: str
-        :param order_by: Specifies the key to order catalog labels by. You can provide any string key that may exist in the label maps. Labels that contain the specified key will be sorted by that key's value. Labels that don't contain the key will maintain their original order and appear after labels that do contain the key. 
+        :param order_by: Specifies the key to order catalog labels by. You can provide any string key that may exist in the label maps. Labels that contain the specified key will be sorted by that key's value. Labels that don't contain the key will maintain their original order and appear after labels that do contain the key.
         :type order_by: str
         :param sort_order: Specifies the sort order for listing entities, defaults to ASC.
         :type sort_order: SortOrder
@@ -401,7 +645,7 @@ class ModelCatalogServiceApi:
         :type q: str
         :param source_label: Filter models by the label associated with the source. Multiple values can be separated by commas. If one of the values is the string `null`, then models from every source without a label will be returned.
         :type source_label: List[str]
-        :param filter_query: A SQL-like query string to filter the list of entities. The query supports rich filtering capabilities with automatic type inference.  **Supported Operators:** - Comparison: `=`, `!=`, `<>`, `>`, `<`, `>=`, `<=` - Pattern matching: `LIKE`, `ILIKE` (case-insensitive) - Set membership: `IN` - Logical: `AND`, `OR` - Grouping: `()` for complex expressions  **Data Types:** - Strings: `\"value\"` or `'value'` - Numbers: `42`, `3.14`, `1e-5` - Booleans: `true`, `false` (case-insensitive)  **Property Access:** - Standard properties: `name`, `id`, `state`, `createTimeSinceEpoch` - Custom properties: Any user-defined property name - Escaped properties: Use backticks for special characters: `` `custom-property` `` - Type-specific access: `property.string_value`, `property.double_value`, `property.int_value`, `property.bool_value`  **Examples:** - Basic: `name = \"my-model\"` - Comparison: `accuracy > 0.95` - Pattern: `name LIKE \"%tensorflow%\"` - Complex: `(name = \"model-a\" OR name = \"model-b\") AND state = \"LIVE\"` - Custom property: `framework.string_value = \"pytorch\"` - Escaped property: `` `mlflow.source.type` = \"notebook\" `` 
+        :param filter_query: A SQL-like query string to filter the list of entities. The query supports rich filtering capabilities with automatic type inference.  **Supported Operators:** - Comparison: `=`, `!=`, `<>`, `>`, `<`, `>=`, `<=` - Pattern matching: `LIKE`, `ILIKE` (case-insensitive) - Set membership: `IN` - Logical: `AND`, `OR` - Grouping: `()` for complex expressions  **Data Types:** - Strings: `\"value\"` or `'value'` - Numbers: `42`, `3.14`, `1e-5` - Booleans: `true`, `false` (case-insensitive)  **Property Access:** - Standard properties: `name`, `id`, `state`, `createTimeSinceEpoch` - Custom properties: Any user-defined property name - Escaped properties: Use backticks for special characters: `` `custom-property` `` - Type-specific access: `property.string_value`, `property.double_value`, `property.int_value`, `property.bool_value`  **Examples:** - Basic: `name = \"my-model\"` - Comparison: `accuracy > 0.95` - Pattern: `name LIKE \"%tensorflow%\"` - Complex: `(name = \"model-a\" OR name = \"model-b\") AND state = \"LIVE\"` - Custom property: `framework.string_value = \"pytorch\"` - Escaped property: `` `mlflow.source.type` = \"notebook\" ``
         :type filter_query: str
         :param page_size: Number of entities in each page.
         :type page_size: str
@@ -510,7 +754,7 @@ class ModelCatalogServiceApi:
         :type q: str
         :param source_label: Filter models by the label associated with the source. Multiple values can be separated by commas. If one of the values is the string `null`, then models from every source without a label will be returned.
         :type source_label: List[str]
-        :param filter_query: A SQL-like query string to filter the list of entities. The query supports rich filtering capabilities with automatic type inference.  **Supported Operators:** - Comparison: `=`, `!=`, `<>`, `>`, `<`, `>=`, `<=` - Pattern matching: `LIKE`, `ILIKE` (case-insensitive) - Set membership: `IN` - Logical: `AND`, `OR` - Grouping: `()` for complex expressions  **Data Types:** - Strings: `\"value\"` or `'value'` - Numbers: `42`, `3.14`, `1e-5` - Booleans: `true`, `false` (case-insensitive)  **Property Access:** - Standard properties: `name`, `id`, `state`, `createTimeSinceEpoch` - Custom properties: Any user-defined property name - Escaped properties: Use backticks for special characters: `` `custom-property` `` - Type-specific access: `property.string_value`, `property.double_value`, `property.int_value`, `property.bool_value`  **Examples:** - Basic: `name = \"my-model\"` - Comparison: `accuracy > 0.95` - Pattern: `name LIKE \"%tensorflow%\"` - Complex: `(name = \"model-a\" OR name = \"model-b\") AND state = \"LIVE\"` - Custom property: `framework.string_value = \"pytorch\"` - Escaped property: `` `mlflow.source.type` = \"notebook\" `` 
+        :param filter_query: A SQL-like query string to filter the list of entities. The query supports rich filtering capabilities with automatic type inference.  **Supported Operators:** - Comparison: `=`, `!=`, `<>`, `>`, `<`, `>=`, `<=` - Pattern matching: `LIKE`, `ILIKE` (case-insensitive) - Set membership: `IN` - Logical: `AND`, `OR` - Grouping: `()` for complex expressions  **Data Types:** - Strings: `\"value\"` or `'value'` - Numbers: `42`, `3.14`, `1e-5` - Booleans: `true`, `false` (case-insensitive)  **Property Access:** - Standard properties: `name`, `id`, `state`, `createTimeSinceEpoch` - Custom properties: Any user-defined property name - Escaped properties: Use backticks for special characters: `` `custom-property` `` - Type-specific access: `property.string_value`, `property.double_value`, `property.int_value`, `property.bool_value`  **Examples:** - Basic: `name = \"my-model\"` - Comparison: `accuracy > 0.95` - Pattern: `name LIKE \"%tensorflow%\"` - Complex: `(name = \"model-a\" OR name = \"model-b\") AND state = \"LIVE\"` - Custom property: `framework.string_value = \"pytorch\"` - Escaped property: `` `mlflow.source.type` = \"notebook\" ``
         :type filter_query: str
         :param page_size: Number of entities in each page.
         :type page_size: str
@@ -619,7 +863,7 @@ class ModelCatalogServiceApi:
         :type q: str
         :param source_label: Filter models by the label associated with the source. Multiple values can be separated by commas. If one of the values is the string `null`, then models from every source without a label will be returned.
         :type source_label: List[str]
-        :param filter_query: A SQL-like query string to filter the list of entities. The query supports rich filtering capabilities with automatic type inference.  **Supported Operators:** - Comparison: `=`, `!=`, `<>`, `>`, `<`, `>=`, `<=` - Pattern matching: `LIKE`, `ILIKE` (case-insensitive) - Set membership: `IN` - Logical: `AND`, `OR` - Grouping: `()` for complex expressions  **Data Types:** - Strings: `\"value\"` or `'value'` - Numbers: `42`, `3.14`, `1e-5` - Booleans: `true`, `false` (case-insensitive)  **Property Access:** - Standard properties: `name`, `id`, `state`, `createTimeSinceEpoch` - Custom properties: Any user-defined property name - Escaped properties: Use backticks for special characters: `` `custom-property` `` - Type-specific access: `property.string_value`, `property.double_value`, `property.int_value`, `property.bool_value`  **Examples:** - Basic: `name = \"my-model\"` - Comparison: `accuracy > 0.95` - Pattern: `name LIKE \"%tensorflow%\"` - Complex: `(name = \"model-a\" OR name = \"model-b\") AND state = \"LIVE\"` - Custom property: `framework.string_value = \"pytorch\"` - Escaped property: `` `mlflow.source.type` = \"notebook\" `` 
+        :param filter_query: A SQL-like query string to filter the list of entities. The query supports rich filtering capabilities with automatic type inference.  **Supported Operators:** - Comparison: `=`, `!=`, `<>`, `>`, `<`, `>=`, `<=` - Pattern matching: `LIKE`, `ILIKE` (case-insensitive) - Set membership: `IN` - Logical: `AND`, `OR` - Grouping: `()` for complex expressions  **Data Types:** - Strings: `\"value\"` or `'value'` - Numbers: `42`, `3.14`, `1e-5` - Booleans: `true`, `false` (case-insensitive)  **Property Access:** - Standard properties: `name`, `id`, `state`, `createTimeSinceEpoch` - Custom properties: Any user-defined property name - Escaped properties: Use backticks for special characters: `` `custom-property` `` - Type-specific access: `property.string_value`, `property.double_value`, `property.int_value`, `property.bool_value`  **Examples:** - Basic: `name = \"my-model\"` - Comparison: `accuracy > 0.95` - Pattern: `name LIKE \"%tensorflow%\"` - Complex: `(name = \"model-a\" OR name = \"model-b\") AND state = \"LIVE\"` - Custom property: `framework.string_value = \"pytorch\"` - Escaped property: `` `mlflow.source.type` = \"notebook\" ``
         :type filter_query: str
         :param page_size: Number of entities in each page.
         :type page_size: str
@@ -1398,11 +1642,11 @@ class ModelCatalogServiceApi:
         :type model_name: str
         :param artifact_type: Specifies the artifact type for listing artifacts.
         :type artifact_type: List[ArtifactTypeQueryParam]
-        :param filter_query: A SQL-like query string to filter catalog artifacts. The query supports rich filtering capabilities with automatic type inference.  **Supported Operators:** - Comparison: `=`, `!=`, `<>`, `>`, `<`, `>=`, `<=` - Pattern matching: `LIKE`, `ILIKE` (case-insensitive) - Set membership: `IN` - Logical: `AND`, `OR` - Grouping: `()` for complex expressions  **Data Types:** - Strings: `\"value\"` or `'value'` - Numbers: `42`, `3.14`, `1e-5` - Booleans: `true`, `false` (case-insensitive)  **Property Access (Artifacts):** - Standard properties: `name`, `id`, `uri`, `artifactType`, `createTimeSinceEpoch` - Custom properties: Any user-defined property name in `customProperties` - Escaped properties: Use backticks for special characters: `` `custom-property` `` - Type-specific access: `property.string_value`, `property.double_value`, `property.int_value`, `property.bool_value`  **Examples:** - Basic: `name = \"my-artifact\"` - Comparison: `ttft_mean > 90` - Pattern: `uri LIKE \"%s3.amazonaws.com%\"` - Complex: `(artifactType = \"model-artifact\" OR artifactType = \"metrics-artifact\") AND name LIKE \"%pytorch%\"` - Custom property: `format.string_value = \"pytorch\"` - Escaped property: `` `custom-key` = \"value\" `` 
+        :param filter_query: A SQL-like query string to filter catalog artifacts. The query supports rich filtering capabilities with automatic type inference.  **Supported Operators:** - Comparison: `=`, `!=`, `<>`, `>`, `<`, `>=`, `<=` - Pattern matching: `LIKE`, `ILIKE` (case-insensitive) - Set membership: `IN` - Logical: `AND`, `OR` - Grouping: `()` for complex expressions  **Data Types:** - Strings: `\"value\"` or `'value'` - Numbers: `42`, `3.14`, `1e-5` - Booleans: `true`, `false` (case-insensitive)  **Property Access (Artifacts):** - Standard properties: `name`, `id`, `uri`, `artifactType`, `createTimeSinceEpoch` - Custom properties: Any user-defined property name in `customProperties` - Escaped properties: Use backticks for special characters: `` `custom-property` `` - Type-specific access: `property.string_value`, `property.double_value`, `property.int_value`, `property.bool_value`  **Examples:** - Basic: `name = \"my-artifact\"` - Comparison: `ttft_mean > 90` - Pattern: `uri LIKE \"%s3.amazonaws.com%\"` - Complex: `(artifactType = \"model-artifact\" OR artifactType = \"metrics-artifact\") AND name LIKE \"%pytorch%\"` - Custom property: `format.string_value = \"pytorch\"` - Escaped property: `` `custom-key` = \"value\" ``
         :type filter_query: str
         :param page_size: Number of entities in each page.
         :type page_size: str
-        :param order_by: Specifies the order by criteria for listing artifacts.  **Standard Fields:** - `ID` - Order by artifact ID - `NAME` - Order by artifact name - `CREATE_TIME` - Order by creation timestamp - `LAST_UPDATE_TIME` - Order by last update timestamp  **Custom Property Ordering:**  Artifacts can be ordered by custom properties using the format: `<property_name>.<value_type>`  Supported value types: - `double_value` - For numeric (floating-point) properties - `int_value` - For integer properties - `string_value` - For string properties  Examples: - `mmlu.double_value` - Order by the 'mmlu' benchmark score - `accuracy.double_value` - Order by accuracy metric - `framework_type.string_value` - Order by framework type - `hardware_count.int_value` - Order by hardware count - `ttft_mean.double_value` - Order by time-to-first-token mean  **Behavior:** - If an invalid value type is specified (e.g., `accuracy.invalid_type`), an error is returned - If an invalid format is used (e.g., `accuracy` without `.value_type`), it falls back to ID ordering - If a property doesn't exist, it falls back to ID ordering - Artifacts with the specified property are ordered first (by the property value), followed by artifacts without the property (ordered by ID) - Empty property names (e.g., `.double_value`) return an error 
+        :param order_by: Specifies the order by criteria for listing artifacts.  **Standard Fields:** - `ID` - Order by artifact ID - `NAME` - Order by artifact name - `CREATE_TIME` - Order by creation timestamp - `LAST_UPDATE_TIME` - Order by last update timestamp  **Custom Property Ordering:**  Artifacts can be ordered by custom properties using the format: `<property_name>.<value_type>`  Supported value types: - `double_value` - For numeric (floating-point) properties - `int_value` - For integer properties - `string_value` - For string properties  Examples: - `mmlu.double_value` - Order by the 'mmlu' benchmark score - `accuracy.double_value` - Order by accuracy metric - `framework_type.string_value` - Order by framework type - `hardware_count.int_value` - Order by hardware count - `ttft_mean.double_value` - Order by time-to-first-token mean  **Behavior:** - If an invalid value type is specified (e.g., `accuracy.invalid_type`), an error is returned - If an invalid format is used (e.g., `accuracy` without `.value_type`), it falls back to ID ordering - If a property doesn't exist, it falls back to ID ordering - Artifacts with the specified property are ordered first (by the property value), followed by artifacts without the property (ordered by ID) - Empty property names (e.g., `.double_value`) return an error
         :type order_by: str
         :param sort_order: Specifies the sort order for listing entities, defaults to ASC.
         :type sort_order: SortOrder
@@ -1487,11 +1731,11 @@ class ModelCatalogServiceApi:
         :type model_name: str
         :param artifact_type: Specifies the artifact type for listing artifacts.
         :type artifact_type: List[ArtifactTypeQueryParam]
-        :param filter_query: A SQL-like query string to filter catalog artifacts. The query supports rich filtering capabilities with automatic type inference.  **Supported Operators:** - Comparison: `=`, `!=`, `<>`, `>`, `<`, `>=`, `<=` - Pattern matching: `LIKE`, `ILIKE` (case-insensitive) - Set membership: `IN` - Logical: `AND`, `OR` - Grouping: `()` for complex expressions  **Data Types:** - Strings: `\"value\"` or `'value'` - Numbers: `42`, `3.14`, `1e-5` - Booleans: `true`, `false` (case-insensitive)  **Property Access (Artifacts):** - Standard properties: `name`, `id`, `uri`, `artifactType`, `createTimeSinceEpoch` - Custom properties: Any user-defined property name in `customProperties` - Escaped properties: Use backticks for special characters: `` `custom-property` `` - Type-specific access: `property.string_value`, `property.double_value`, `property.int_value`, `property.bool_value`  **Examples:** - Basic: `name = \"my-artifact\"` - Comparison: `ttft_mean > 90` - Pattern: `uri LIKE \"%s3.amazonaws.com%\"` - Complex: `(artifactType = \"model-artifact\" OR artifactType = \"metrics-artifact\") AND name LIKE \"%pytorch%\"` - Custom property: `format.string_value = \"pytorch\"` - Escaped property: `` `custom-key` = \"value\" `` 
+        :param filter_query: A SQL-like query string to filter catalog artifacts. The query supports rich filtering capabilities with automatic type inference.  **Supported Operators:** - Comparison: `=`, `!=`, `<>`, `>`, `<`, `>=`, `<=` - Pattern matching: `LIKE`, `ILIKE` (case-insensitive) - Set membership: `IN` - Logical: `AND`, `OR` - Grouping: `()` for complex expressions  **Data Types:** - Strings: `\"value\"` or `'value'` - Numbers: `42`, `3.14`, `1e-5` - Booleans: `true`, `false` (case-insensitive)  **Property Access (Artifacts):** - Standard properties: `name`, `id`, `uri`, `artifactType`, `createTimeSinceEpoch` - Custom properties: Any user-defined property name in `customProperties` - Escaped properties: Use backticks for special characters: `` `custom-property` `` - Type-specific access: `property.string_value`, `property.double_value`, `property.int_value`, `property.bool_value`  **Examples:** - Basic: `name = \"my-artifact\"` - Comparison: `ttft_mean > 90` - Pattern: `uri LIKE \"%s3.amazonaws.com%\"` - Complex: `(artifactType = \"model-artifact\" OR artifactType = \"metrics-artifact\") AND name LIKE \"%pytorch%\"` - Custom property: `format.string_value = \"pytorch\"` - Escaped property: `` `custom-key` = \"value\" ``
         :type filter_query: str
         :param page_size: Number of entities in each page.
         :type page_size: str
-        :param order_by: Specifies the order by criteria for listing artifacts.  **Standard Fields:** - `ID` - Order by artifact ID - `NAME` - Order by artifact name - `CREATE_TIME` - Order by creation timestamp - `LAST_UPDATE_TIME` - Order by last update timestamp  **Custom Property Ordering:**  Artifacts can be ordered by custom properties using the format: `<property_name>.<value_type>`  Supported value types: - `double_value` - For numeric (floating-point) properties - `int_value` - For integer properties - `string_value` - For string properties  Examples: - `mmlu.double_value` - Order by the 'mmlu' benchmark score - `accuracy.double_value` - Order by accuracy metric - `framework_type.string_value` - Order by framework type - `hardware_count.int_value` - Order by hardware count - `ttft_mean.double_value` - Order by time-to-first-token mean  **Behavior:** - If an invalid value type is specified (e.g., `accuracy.invalid_type`), an error is returned - If an invalid format is used (e.g., `accuracy` without `.value_type`), it falls back to ID ordering - If a property doesn't exist, it falls back to ID ordering - Artifacts with the specified property are ordered first (by the property value), followed by artifacts without the property (ordered by ID) - Empty property names (e.g., `.double_value`) return an error 
+        :param order_by: Specifies the order by criteria for listing artifacts.  **Standard Fields:** - `ID` - Order by artifact ID - `NAME` - Order by artifact name - `CREATE_TIME` - Order by creation timestamp - `LAST_UPDATE_TIME` - Order by last update timestamp  **Custom Property Ordering:**  Artifacts can be ordered by custom properties using the format: `<property_name>.<value_type>`  Supported value types: - `double_value` - For numeric (floating-point) properties - `int_value` - For integer properties - `string_value` - For string properties  Examples: - `mmlu.double_value` - Order by the 'mmlu' benchmark score - `accuracy.double_value` - Order by accuracy metric - `framework_type.string_value` - Order by framework type - `hardware_count.int_value` - Order by hardware count - `ttft_mean.double_value` - Order by time-to-first-token mean  **Behavior:** - If an invalid value type is specified (e.g., `accuracy.invalid_type`), an error is returned - If an invalid format is used (e.g., `accuracy` without `.value_type`), it falls back to ID ordering - If a property doesn't exist, it falls back to ID ordering - Artifacts with the specified property are ordered first (by the property value), followed by artifacts without the property (ordered by ID) - Empty property names (e.g., `.double_value`) return an error
         :type order_by: str
         :param sort_order: Specifies the sort order for listing entities, defaults to ASC.
         :type sort_order: SortOrder
@@ -1576,11 +1820,11 @@ class ModelCatalogServiceApi:
         :type model_name: str
         :param artifact_type: Specifies the artifact type for listing artifacts.
         :type artifact_type: List[ArtifactTypeQueryParam]
-        :param filter_query: A SQL-like query string to filter catalog artifacts. The query supports rich filtering capabilities with automatic type inference.  **Supported Operators:** - Comparison: `=`, `!=`, `<>`, `>`, `<`, `>=`, `<=` - Pattern matching: `LIKE`, `ILIKE` (case-insensitive) - Set membership: `IN` - Logical: `AND`, `OR` - Grouping: `()` for complex expressions  **Data Types:** - Strings: `\"value\"` or `'value'` - Numbers: `42`, `3.14`, `1e-5` - Booleans: `true`, `false` (case-insensitive)  **Property Access (Artifacts):** - Standard properties: `name`, `id`, `uri`, `artifactType`, `createTimeSinceEpoch` - Custom properties: Any user-defined property name in `customProperties` - Escaped properties: Use backticks for special characters: `` `custom-property` `` - Type-specific access: `property.string_value`, `property.double_value`, `property.int_value`, `property.bool_value`  **Examples:** - Basic: `name = \"my-artifact\"` - Comparison: `ttft_mean > 90` - Pattern: `uri LIKE \"%s3.amazonaws.com%\"` - Complex: `(artifactType = \"model-artifact\" OR artifactType = \"metrics-artifact\") AND name LIKE \"%pytorch%\"` - Custom property: `format.string_value = \"pytorch\"` - Escaped property: `` `custom-key` = \"value\" `` 
+        :param filter_query: A SQL-like query string to filter catalog artifacts. The query supports rich filtering capabilities with automatic type inference.  **Supported Operators:** - Comparison: `=`, `!=`, `<>`, `>`, `<`, `>=`, `<=` - Pattern matching: `LIKE`, `ILIKE` (case-insensitive) - Set membership: `IN` - Logical: `AND`, `OR` - Grouping: `()` for complex expressions  **Data Types:** - Strings: `\"value\"` or `'value'` - Numbers: `42`, `3.14`, `1e-5` - Booleans: `true`, `false` (case-insensitive)  **Property Access (Artifacts):** - Standard properties: `name`, `id`, `uri`, `artifactType`, `createTimeSinceEpoch` - Custom properties: Any user-defined property name in `customProperties` - Escaped properties: Use backticks for special characters: `` `custom-property` `` - Type-specific access: `property.string_value`, `property.double_value`, `property.int_value`, `property.bool_value`  **Examples:** - Basic: `name = \"my-artifact\"` - Comparison: `ttft_mean > 90` - Pattern: `uri LIKE \"%s3.amazonaws.com%\"` - Complex: `(artifactType = \"model-artifact\" OR artifactType = \"metrics-artifact\") AND name LIKE \"%pytorch%\"` - Custom property: `format.string_value = \"pytorch\"` - Escaped property: `` `custom-key` = \"value\" ``
         :type filter_query: str
         :param page_size: Number of entities in each page.
         :type page_size: str
-        :param order_by: Specifies the order by criteria for listing artifacts.  **Standard Fields:** - `ID` - Order by artifact ID - `NAME` - Order by artifact name - `CREATE_TIME` - Order by creation timestamp - `LAST_UPDATE_TIME` - Order by last update timestamp  **Custom Property Ordering:**  Artifacts can be ordered by custom properties using the format: `<property_name>.<value_type>`  Supported value types: - `double_value` - For numeric (floating-point) properties - `int_value` - For integer properties - `string_value` - For string properties  Examples: - `mmlu.double_value` - Order by the 'mmlu' benchmark score - `accuracy.double_value` - Order by accuracy metric - `framework_type.string_value` - Order by framework type - `hardware_count.int_value` - Order by hardware count - `ttft_mean.double_value` - Order by time-to-first-token mean  **Behavior:** - If an invalid value type is specified (e.g., `accuracy.invalid_type`), an error is returned - If an invalid format is used (e.g., `accuracy` without `.value_type`), it falls back to ID ordering - If a property doesn't exist, it falls back to ID ordering - Artifacts with the specified property are ordered first (by the property value), followed by artifacts without the property (ordered by ID) - Empty property names (e.g., `.double_value`) return an error 
+        :param order_by: Specifies the order by criteria for listing artifacts.  **Standard Fields:** - `ID` - Order by artifact ID - `NAME` - Order by artifact name - `CREATE_TIME` - Order by creation timestamp - `LAST_UPDATE_TIME` - Order by last update timestamp  **Custom Property Ordering:**  Artifacts can be ordered by custom properties using the format: `<property_name>.<value_type>`  Supported value types: - `double_value` - For numeric (floating-point) properties - `int_value` - For integer properties - `string_value` - For string properties  Examples: - `mmlu.double_value` - Order by the 'mmlu' benchmark score - `accuracy.double_value` - Order by accuracy metric - `framework_type.string_value` - Order by framework type - `hardware_count.int_value` - Order by hardware count - `ttft_mean.double_value` - Order by time-to-first-token mean  **Behavior:** - If an invalid value type is specified (e.g., `accuracy.invalid_type`), an error is returned - If an invalid format is used (e.g., `accuracy` without `.value_type`), it falls back to ID ordering - If a property doesn't exist, it falls back to ID ordering - Artifacts with the specified property are ordered first (by the property value), followed by artifacts without the property (ordered by ID) - Empty property names (e.g., `.double_value`) return an error
         :type order_by: str
         :param sort_order: Specifies the sort order for listing entities, defaults to ASC.
         :type sort_order: SortOrder
@@ -1774,11 +2018,11 @@ class ModelCatalogServiceApi:
         :type hardware_count_property: str
         :param hardware_type_property: Custom property name for hardware type grouping.
         :type hardware_type_property: str
-        :param filter_query: A SQL-like query string to filter catalog artifacts. The query supports rich filtering capabilities with automatic type inference.  **Supported Operators:** - Comparison: `=`, `!=`, `<>`, `>`, `<`, `>=`, `<=` - Pattern matching: `LIKE`, `ILIKE` (case-insensitive) - Set membership: `IN` - Logical: `AND`, `OR` - Grouping: `()` for complex expressions  **Data Types:** - Strings: `\"value\"` or `'value'` - Numbers: `42`, `3.14`, `1e-5` - Booleans: `true`, `false` (case-insensitive)  **Property Access (Artifacts):** - Standard properties: `name`, `id`, `uri`, `artifactType`, `createTimeSinceEpoch` - Custom properties: Any user-defined property name in `customProperties` - Escaped properties: Use backticks for special characters: `` `custom-property` `` - Type-specific access: `property.string_value`, `property.double_value`, `property.int_value`, `property.bool_value`  **Examples:** - Basic: `name = \"my-artifact\"` - Comparison: `ttft_mean > 90` - Pattern: `uri LIKE \"%s3.amazonaws.com%\"` - Complex: `(artifactType = \"model-artifact\" OR artifactType = \"metrics-artifact\") AND name LIKE \"%pytorch%\"` - Custom property: `format.string_value = \"pytorch\"` - Escaped property: `` `custom-key` = \"value\" `` 
+        :param filter_query: A SQL-like query string to filter catalog artifacts. The query supports rich filtering capabilities with automatic type inference.  **Supported Operators:** - Comparison: `=`, `!=`, `<>`, `>`, `<`, `>=`, `<=` - Pattern matching: `LIKE`, `ILIKE` (case-insensitive) - Set membership: `IN` - Logical: `AND`, `OR` - Grouping: `()` for complex expressions  **Data Types:** - Strings: `\"value\"` or `'value'` - Numbers: `42`, `3.14`, `1e-5` - Booleans: `true`, `false` (case-insensitive)  **Property Access (Artifacts):** - Standard properties: `name`, `id`, `uri`, `artifactType`, `createTimeSinceEpoch` - Custom properties: Any user-defined property name in `customProperties` - Escaped properties: Use backticks for special characters: `` `custom-property` `` - Type-specific access: `property.string_value`, `property.double_value`, `property.int_value`, `property.bool_value`  **Examples:** - Basic: `name = \"my-artifact\"` - Comparison: `ttft_mean > 90` - Pattern: `uri LIKE \"%s3.amazonaws.com%\"` - Complex: `(artifactType = \"model-artifact\" OR artifactType = \"metrics-artifact\") AND name LIKE \"%pytorch%\"` - Custom property: `format.string_value = \"pytorch\"` - Escaped property: `` `custom-key` = \"value\" ``
         :type filter_query: str
         :param page_size: Number of entities in each page.
         :type page_size: str
-        :param order_by: Specifies the order by criteria for listing artifacts.  **Standard Fields:** - `ID` - Order by artifact ID - `NAME` - Order by artifact name - `CREATE_TIME` - Order by creation timestamp - `LAST_UPDATE_TIME` - Order by last update timestamp  **Custom Property Ordering:**  Artifacts can be ordered by custom properties using the format: `<property_name>.<value_type>`  Supported value types: - `double_value` - For numeric (floating-point) properties - `int_value` - For integer properties - `string_value` - For string properties  Examples: - `mmlu.double_value` - Order by the 'mmlu' benchmark score - `accuracy.double_value` - Order by accuracy metric - `framework_type.string_value` - Order by framework type - `hardware_count.int_value` - Order by hardware count - `ttft_mean.double_value` - Order by time-to-first-token mean  **Behavior:** - If an invalid value type is specified (e.g., `accuracy.invalid_type`), an error is returned - If an invalid format is used (e.g., `accuracy` without `.value_type`), it falls back to ID ordering - If a property doesn't exist, it falls back to ID ordering - Artifacts with the specified property are ordered first (by the property value), followed by artifacts without the property (ordered by ID) - Empty property names (e.g., `.double_value`) return an error 
+        :param order_by: Specifies the order by criteria for listing artifacts.  **Standard Fields:** - `ID` - Order by artifact ID - `NAME` - Order by artifact name - `CREATE_TIME` - Order by creation timestamp - `LAST_UPDATE_TIME` - Order by last update timestamp  **Custom Property Ordering:**  Artifacts can be ordered by custom properties using the format: `<property_name>.<value_type>`  Supported value types: - `double_value` - For numeric (floating-point) properties - `int_value` - For integer properties - `string_value` - For string properties  Examples: - `mmlu.double_value` - Order by the 'mmlu' benchmark score - `accuracy.double_value` - Order by accuracy metric - `framework_type.string_value` - Order by framework type - `hardware_count.int_value` - Order by hardware count - `ttft_mean.double_value` - Order by time-to-first-token mean  **Behavior:** - If an invalid value type is specified (e.g., `accuracy.invalid_type`), an error is returned - If an invalid format is used (e.g., `accuracy` without `.value_type`), it falls back to ID ordering - If a property doesn't exist, it falls back to ID ordering - Artifacts with the specified property are ordered first (by the property value), followed by artifacts without the property (ordered by ID) - Empty property names (e.g., `.double_value`) return an error
         :type order_by: str
         :param sort_order: Specifies the sort order for listing entities, defaults to ASC.
         :type sort_order: SortOrder
@@ -1883,11 +2127,11 @@ class ModelCatalogServiceApi:
         :type hardware_count_property: str
         :param hardware_type_property: Custom property name for hardware type grouping.
         :type hardware_type_property: str
-        :param filter_query: A SQL-like query string to filter catalog artifacts. The query supports rich filtering capabilities with automatic type inference.  **Supported Operators:** - Comparison: `=`, `!=`, `<>`, `>`, `<`, `>=`, `<=` - Pattern matching: `LIKE`, `ILIKE` (case-insensitive) - Set membership: `IN` - Logical: `AND`, `OR` - Grouping: `()` for complex expressions  **Data Types:** - Strings: `\"value\"` or `'value'` - Numbers: `42`, `3.14`, `1e-5` - Booleans: `true`, `false` (case-insensitive)  **Property Access (Artifacts):** - Standard properties: `name`, `id`, `uri`, `artifactType`, `createTimeSinceEpoch` - Custom properties: Any user-defined property name in `customProperties` - Escaped properties: Use backticks for special characters: `` `custom-property` `` - Type-specific access: `property.string_value`, `property.double_value`, `property.int_value`, `property.bool_value`  **Examples:** - Basic: `name = \"my-artifact\"` - Comparison: `ttft_mean > 90` - Pattern: `uri LIKE \"%s3.amazonaws.com%\"` - Complex: `(artifactType = \"model-artifact\" OR artifactType = \"metrics-artifact\") AND name LIKE \"%pytorch%\"` - Custom property: `format.string_value = \"pytorch\"` - Escaped property: `` `custom-key` = \"value\" `` 
+        :param filter_query: A SQL-like query string to filter catalog artifacts. The query supports rich filtering capabilities with automatic type inference.  **Supported Operators:** - Comparison: `=`, `!=`, `<>`, `>`, `<`, `>=`, `<=` - Pattern matching: `LIKE`, `ILIKE` (case-insensitive) - Set membership: `IN` - Logical: `AND`, `OR` - Grouping: `()` for complex expressions  **Data Types:** - Strings: `\"value\"` or `'value'` - Numbers: `42`, `3.14`, `1e-5` - Booleans: `true`, `false` (case-insensitive)  **Property Access (Artifacts):** - Standard properties: `name`, `id`, `uri`, `artifactType`, `createTimeSinceEpoch` - Custom properties: Any user-defined property name in `customProperties` - Escaped properties: Use backticks for special characters: `` `custom-property` `` - Type-specific access: `property.string_value`, `property.double_value`, `property.int_value`, `property.bool_value`  **Examples:** - Basic: `name = \"my-artifact\"` - Comparison: `ttft_mean > 90` - Pattern: `uri LIKE \"%s3.amazonaws.com%\"` - Complex: `(artifactType = \"model-artifact\" OR artifactType = \"metrics-artifact\") AND name LIKE \"%pytorch%\"` - Custom property: `format.string_value = \"pytorch\"` - Escaped property: `` `custom-key` = \"value\" ``
         :type filter_query: str
         :param page_size: Number of entities in each page.
         :type page_size: str
-        :param order_by: Specifies the order by criteria for listing artifacts.  **Standard Fields:** - `ID` - Order by artifact ID - `NAME` - Order by artifact name - `CREATE_TIME` - Order by creation timestamp - `LAST_UPDATE_TIME` - Order by last update timestamp  **Custom Property Ordering:**  Artifacts can be ordered by custom properties using the format: `<property_name>.<value_type>`  Supported value types: - `double_value` - For numeric (floating-point) properties - `int_value` - For integer properties - `string_value` - For string properties  Examples: - `mmlu.double_value` - Order by the 'mmlu' benchmark score - `accuracy.double_value` - Order by accuracy metric - `framework_type.string_value` - Order by framework type - `hardware_count.int_value` - Order by hardware count - `ttft_mean.double_value` - Order by time-to-first-token mean  **Behavior:** - If an invalid value type is specified (e.g., `accuracy.invalid_type`), an error is returned - If an invalid format is used (e.g., `accuracy` without `.value_type`), it falls back to ID ordering - If a property doesn't exist, it falls back to ID ordering - Artifacts with the specified property are ordered first (by the property value), followed by artifacts without the property (ordered by ID) - Empty property names (e.g., `.double_value`) return an error 
+        :param order_by: Specifies the order by criteria for listing artifacts.  **Standard Fields:** - `ID` - Order by artifact ID - `NAME` - Order by artifact name - `CREATE_TIME` - Order by creation timestamp - `LAST_UPDATE_TIME` - Order by last update timestamp  **Custom Property Ordering:**  Artifacts can be ordered by custom properties using the format: `<property_name>.<value_type>`  Supported value types: - `double_value` - For numeric (floating-point) properties - `int_value` - For integer properties - `string_value` - For string properties  Examples: - `mmlu.double_value` - Order by the 'mmlu' benchmark score - `accuracy.double_value` - Order by accuracy metric - `framework_type.string_value` - Order by framework type - `hardware_count.int_value` - Order by hardware count - `ttft_mean.double_value` - Order by time-to-first-token mean  **Behavior:** - If an invalid value type is specified (e.g., `accuracy.invalid_type`), an error is returned - If an invalid format is used (e.g., `accuracy` without `.value_type`), it falls back to ID ordering - If a property doesn't exist, it falls back to ID ordering - Artifacts with the specified property are ordered first (by the property value), followed by artifacts without the property (ordered by ID) - Empty property names (e.g., `.double_value`) return an error
         :type order_by: str
         :param sort_order: Specifies the sort order for listing entities, defaults to ASC.
         :type sort_order: SortOrder
@@ -1992,11 +2236,11 @@ class ModelCatalogServiceApi:
         :type hardware_count_property: str
         :param hardware_type_property: Custom property name for hardware type grouping.
         :type hardware_type_property: str
-        :param filter_query: A SQL-like query string to filter catalog artifacts. The query supports rich filtering capabilities with automatic type inference.  **Supported Operators:** - Comparison: `=`, `!=`, `<>`, `>`, `<`, `>=`, `<=` - Pattern matching: `LIKE`, `ILIKE` (case-insensitive) - Set membership: `IN` - Logical: `AND`, `OR` - Grouping: `()` for complex expressions  **Data Types:** - Strings: `\"value\"` or `'value'` - Numbers: `42`, `3.14`, `1e-5` - Booleans: `true`, `false` (case-insensitive)  **Property Access (Artifacts):** - Standard properties: `name`, `id`, `uri`, `artifactType`, `createTimeSinceEpoch` - Custom properties: Any user-defined property name in `customProperties` - Escaped properties: Use backticks for special characters: `` `custom-property` `` - Type-specific access: `property.string_value`, `property.double_value`, `property.int_value`, `property.bool_value`  **Examples:** - Basic: `name = \"my-artifact\"` - Comparison: `ttft_mean > 90` - Pattern: `uri LIKE \"%s3.amazonaws.com%\"` - Complex: `(artifactType = \"model-artifact\" OR artifactType = \"metrics-artifact\") AND name LIKE \"%pytorch%\"` - Custom property: `format.string_value = \"pytorch\"` - Escaped property: `` `custom-key` = \"value\" `` 
+        :param filter_query: A SQL-like query string to filter catalog artifacts. The query supports rich filtering capabilities with automatic type inference.  **Supported Operators:** - Comparison: `=`, `!=`, `<>`, `>`, `<`, `>=`, `<=` - Pattern matching: `LIKE`, `ILIKE` (case-insensitive) - Set membership: `IN` - Logical: `AND`, `OR` - Grouping: `()` for complex expressions  **Data Types:** - Strings: `\"value\"` or `'value'` - Numbers: `42`, `3.14`, `1e-5` - Booleans: `true`, `false` (case-insensitive)  **Property Access (Artifacts):** - Standard properties: `name`, `id`, `uri`, `artifactType`, `createTimeSinceEpoch` - Custom properties: Any user-defined property name in `customProperties` - Escaped properties: Use backticks for special characters: `` `custom-property` `` - Type-specific access: `property.string_value`, `property.double_value`, `property.int_value`, `property.bool_value`  **Examples:** - Basic: `name = \"my-artifact\"` - Comparison: `ttft_mean > 90` - Pattern: `uri LIKE \"%s3.amazonaws.com%\"` - Complex: `(artifactType = \"model-artifact\" OR artifactType = \"metrics-artifact\") AND name LIKE \"%pytorch%\"` - Custom property: `format.string_value = \"pytorch\"` - Escaped property: `` `custom-key` = \"value\" ``
         :type filter_query: str
         :param page_size: Number of entities in each page.
         :type page_size: str
-        :param order_by: Specifies the order by criteria for listing artifacts.  **Standard Fields:** - `ID` - Order by artifact ID - `NAME` - Order by artifact name - `CREATE_TIME` - Order by creation timestamp - `LAST_UPDATE_TIME` - Order by last update timestamp  **Custom Property Ordering:**  Artifacts can be ordered by custom properties using the format: `<property_name>.<value_type>`  Supported value types: - `double_value` - For numeric (floating-point) properties - `int_value` - For integer properties - `string_value` - For string properties  Examples: - `mmlu.double_value` - Order by the 'mmlu' benchmark score - `accuracy.double_value` - Order by accuracy metric - `framework_type.string_value` - Order by framework type - `hardware_count.int_value` - Order by hardware count - `ttft_mean.double_value` - Order by time-to-first-token mean  **Behavior:** - If an invalid value type is specified (e.g., `accuracy.invalid_type`), an error is returned - If an invalid format is used (e.g., `accuracy` without `.value_type`), it falls back to ID ordering - If a property doesn't exist, it falls back to ID ordering - Artifacts with the specified property are ordered first (by the property value), followed by artifacts without the property (ordered by ID) - Empty property names (e.g., `.double_value`) return an error 
+        :param order_by: Specifies the order by criteria for listing artifacts.  **Standard Fields:** - `ID` - Order by artifact ID - `NAME` - Order by artifact name - `CREATE_TIME` - Order by creation timestamp - `LAST_UPDATE_TIME` - Order by last update timestamp  **Custom Property Ordering:**  Artifacts can be ordered by custom properties using the format: `<property_name>.<value_type>`  Supported value types: - `double_value` - For numeric (floating-point) properties - `int_value` - For integer properties - `string_value` - For string properties  Examples: - `mmlu.double_value` - Order by the 'mmlu' benchmark score - `accuracy.double_value` - Order by accuracy metric - `framework_type.string_value` - Order by framework type - `hardware_count.int_value` - Order by hardware count - `ttft_mean.double_value` - Order by time-to-first-token mean  **Behavior:** - If an invalid value type is specified (e.g., `accuracy.invalid_type`), an error is returned - If an invalid format is used (e.g., `accuracy` without `.value_type`), it falls back to ID ordering - If a property doesn't exist, it falls back to ID ordering - Artifacts with the specified property are ordered first (by the property value), followed by artifacts without the property (ordered by ID) - Empty property names (e.g., `.double_value`) return an error
         :type order_by: str
         :param sort_order: Specifies the sort order for listing entities, defaults to ASC.
         :type sort_order: SortOrder
@@ -2435,6 +2679,249 @@ class ModelCatalogServiceApi:
 
 
     @validate_call
+    def get_source_status(
+        self,
+        source_id: Annotated[StrictStr, Field(description="A unique identifier for a `CatalogSource`.")],
+        _request_timeout: None | Annotated[StrictFloat, Field(gt=0)] | tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]] = None,
+        _request_auth: dict[StrictStr, Any] | None = None,
+        _content_type: StrictStr | None = None,
+        _headers: dict[StrictStr, Any] | None = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> SourceStatus:
+        """Get the persisted status of a `CatalogSource`.
+
+        Returns the operational status most recently persisted for the source. The persisted status is computed asynchronously when the source is (re)loaded, so it may briefly be empty or stale immediately after a source configuration change. Use the `DELETE` operation on this path to clear a stale status after saving a configuration change.
+
+        :param source_id: A unique identifier for a `CatalogSource`. (required)
+        :type source_id: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+        _param = self._get_source_status_serialize(
+            source_id=source_id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: dict[str, str | None] = {
+            "200": "SourceStatus",
+            "401": "Error",
+            "500": "Error",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def get_source_status_with_http_info(
+        self,
+        source_id: Annotated[StrictStr, Field(description="A unique identifier for a `CatalogSource`.")],
+        _request_timeout: None | Annotated[StrictFloat, Field(gt=0)] | tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]] = None,
+        _request_auth: dict[StrictStr, Any] | None = None,
+        _content_type: StrictStr | None = None,
+        _headers: dict[StrictStr, Any] | None = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[SourceStatus]:
+        """Get the persisted status of a `CatalogSource`.
+
+        Returns the operational status most recently persisted for the source. The persisted status is computed asynchronously when the source is (re)loaded, so it may briefly be empty or stale immediately after a source configuration change. Use the `DELETE` operation on this path to clear a stale status after saving a configuration change.
+
+        :param source_id: A unique identifier for a `CatalogSource`. (required)
+        :type source_id: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+        _param = self._get_source_status_serialize(
+            source_id=source_id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: dict[str, str | None] = {
+            "200": "SourceStatus",
+            "401": "Error",
+            "500": "Error",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def get_source_status_without_preload_content(
+        self,
+        source_id: Annotated[StrictStr, Field(description="A unique identifier for a `CatalogSource`.")],
+        _request_timeout: None | Annotated[StrictFloat, Field(gt=0)] | tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]] = None,
+        _request_auth: dict[StrictStr, Any] | None = None,
+        _content_type: StrictStr | None = None,
+        _headers: dict[StrictStr, Any] | None = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Get the persisted status of a `CatalogSource`.
+
+        Returns the operational status most recently persisted for the source. The persisted status is computed asynchronously when the source is (re)loaded, so it may briefly be empty or stale immediately after a source configuration change. Use the `DELETE` operation on this path to clear a stale status after saving a configuration change.
+
+        :param source_id: A unique identifier for a `CatalogSource`. (required)
+        :type source_id: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+        _param = self._get_source_status_serialize(
+            source_id=source_id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: dict[str, str | None] = {
+            "200": "SourceStatus",
+            "401": "Error",
+            "500": "Error",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _get_source_status_serialize(
+        self,
+        source_id,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: dict[str, str] = {
+        }
+
+        _path_params: dict[str, str] = {}
+        _query_params: list[tuple[str, str]] = []
+        _header_params: dict[str, str | None] = _headers or {}
+        _form_params: list[tuple[str, str]] = []
+        _files: dict[
+            str, str | bytes | list[str] | list[bytes] | list[tuple[str, bytes]]
+        ] = {}
+        _body_params: bytes | None = None
+
+        # process the path parameters
+        if source_id is not None:
+            _path_params["source_id"] = source_id
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        if "Accept" not in _header_params:
+            _header_params["Accept"] = self.api_client.select_header_accept(
+                [
+                    "application/json"
+                ]
+            )
+
+
+        # authentication setting
+        _auth_settings: list[str] = [
+            "Bearer"
+        ]
+
+        return self.api_client.param_serialize(
+            method="GET",
+            resource_path="/api/model_catalog/v1/sources/{source_id}/status",
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
     def preview_catalog_source(
         self,
         config: Annotated[StrictBytes | StrictStr | tuple[StrictStr, StrictBytes], Field(description='YAML file containing the catalog source configuration. The file should contain a source definition with `type` and `properties` fields, and an optional `assetType` field to specify the kind of assets being previewed (defaults to `models`).  **For model sources** (`assetType: models` or omitted): Use `includedModels` and `excludedModels` filter patterns.  **For MCP server sources** (`assetType: mcp_servers`): Use `includedServers` and `excludedServers` filter patterns.  Filter patterns support the `*` wildcard only and are case-insensitive. Patterns match the entire asset name (e.g., `ibm-granite/*` matches all models starting with \\"ibm-granite/\\", `kubernetes*` matches all servers starting with \\"kubernetes\\").')],
@@ -2758,5 +3245,3 @@ class ModelCatalogServiceApi:
             _host=_host,
             _request_auth=_request_auth
         )
-
-

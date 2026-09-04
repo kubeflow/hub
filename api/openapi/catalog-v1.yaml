@@ -816,6 +816,51 @@ paths:
       - $ref: "#/components/parameters/artifactOrderBy"
       - $ref: "#/components/parameters/sortOrder"
       - $ref: "#/components/parameters/nextPageToken"
+  /api/model_catalog/v1/sources/{source_id}/status:
+    description: >-
+      The REST endpoint/path used to read or clear the persisted operational status of a `CatalogSource`.
+    get:
+      summary: Get the persisted status of a `CatalogSource`.
+      description: |-
+        Returns the operational status most recently persisted for the source.
+        The persisted status is computed asynchronously when the source is
+        (re)loaded, so it may briefly be empty or stale immediately after a
+        source configuration change. Use the `DELETE` operation on this path
+        to clear a stale status after saving a configuration change.
+      tags:
+        - ModelCatalogService
+      responses:
+        "200":
+          $ref: "#/components/responses/SourceStatusResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      operationId: getSourceStatus
+    delete:
+      summary: Clear the persisted status of a `CatalogSource`.
+      description: |-
+        Deletes the operational status persisted for the source. Intended to
+        be called immediately after a source configuration change is saved,
+        so that clients stop displaying a stale status while the backend
+        picks up the new configuration and recomputes it on the next reload.
+      tags:
+        - ModelCatalogService
+      responses:
+        "204":
+          description: The source status was cleared successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      operationId: clearSourceStatus
+    parameters:
+      - name: source_id
+        description: A unique identifier for a `CatalogSource`.
+        schema:
+          type: string
+        in: path
+        required: true
   /api/skill_catalog/v1/skills:
     description: >-
       The REST endpoint/path used to list zero or more `Skill` entities.
@@ -2478,6 +2523,23 @@ components:
         - ASC
         - DESC
       type: string
+    SourceStatus:
+      description: |-
+        The persisted operational status of a single catalog source. Returned
+        empty (no `status`/`error`) when no status has been persisted yet, for
+        example immediately after a configuration change is saved and the
+        stale status has been cleared.
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/CatalogSourceStatus"
+          description: Current operational status of the catalog source.
+        error:
+          description: |-
+            Detailed error information when the status is "error".
+            This field is null or empty when the source is functioning normally.
+          type: string
+          nullable: true
     ToolCallingConfig:
       description: >-
         Tool-calling arguments for this model.
@@ -2748,6 +2810,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Skill"
+    SourceStatusResponse:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SourceStatus"
+      description: A response containing the persisted status of a CatalogSource.
     Unauthorized:
       content:
         application/json:

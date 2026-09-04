@@ -366,6 +366,31 @@ class CatalogAPIClient:
         raise CatalogNotFoundError(msg)
 
     @_handle_api_errors
+    def get_source_status(self, source_id: str) -> dict[str, Any]:
+        """Get the persisted operational status of a source.
+
+        Args:
+            source_id: The source identifier.
+
+        Returns:
+            Dict with "status" (or None) and "error" (or None). Unknown
+            sources return an empty status rather than raising.
+        """
+        response = self.catalog_api.get_source_status(source_id)
+        return response.to_dict()
+
+    @_handle_api_errors
+    def clear_source_status(self, source_id: str) -> None:
+        """Clear the persisted operational status of a source.
+
+        Args:
+            source_id: The source identifier.
+
+        This is a no-op (no error) when the source has no persisted status.
+        """
+        self.catalog_api.clear_source_status(source_id)
+
+    @_handle_api_errors
     def get_labels(
         self,
         asset_type: str | None = None,

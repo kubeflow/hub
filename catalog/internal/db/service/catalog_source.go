@@ -8,8 +8,8 @@ import (
 	"github.com/kubeflow/hub/catalog/internal/db/models"
 	"github.com/kubeflow/hub/internal/platform/db/dbutil"
 	dbmodels "github.com/kubeflow/hub/internal/platform/db/entity"
-	"github.com/kubeflow/hub/internal/platform/db/schema"
 	service "github.com/kubeflow/hub/internal/platform/db/repository"
+	"github.com/kubeflow/hub/internal/platform/db/schema"
 	"gorm.io/gorm"
 )
 
@@ -188,28 +188,47 @@ func (r *CatalogSourceRepositoryImpl) GetAllStatuses() (map[string]models.Source
 			continue
 		}
 
-		status := models.SourceStatus{}
-
-		// Extract status and error from properties
-		if props := source.GetProperties(); props != nil {
-			for _, prop := range *props {
-				switch prop.Name {
-				case "status":
-					if prop.StringValue != nil {
-						status.Status = *prop.StringValue
-					}
-				case "error":
-					if prop.StringValue != nil {
-						status.Error = *prop.StringValue
-					}
-				}
-			}
-		}
-
-		result[*attrs.Name] = status
+		result[*attrs.Name] = extractStatus(source)
 	}
 
 	return result, nil
+}
+
+// GetStatus returns the status/error persisted for a single source. If the source does not exist,
+// it returns an empty SourceStatus rather than an error, since callers treat "no persisted status"
+// and "unknown source" the same way.
+func (r *CatalogSourceRepositoryImpl) GetStatus(sourceID string) (models.SourceStatus, error) {
+	source, err := r.GetBySourceID(sourceID)
+	if err != nil {
+		if errors.Is(err, ErrCatalogSourceNotFound) {
+			return models.SourceStatus{}, nil
+		}
+		return models.SourceStatus{}, err
+	}
+
+	return extractStatus(source), nil
+}
+
+// extractStatus reads the "status" and "error" properties off a catalog source.
+func extractStatus(source models.CatalogSource) models.SourceStatus {
+	status := models.SourceStatus{}
+
+	if props := source.GetProperties(); props != nil {
+		for _, prop := range *props {
+			switch prop.Name {
+			case "status":
+				if prop.StringValue != nil {
+					status.Status = *prop.StringValue
+				}
+			case "error":
+				if prop.StringValue != nil {
+					status.Error = *prop.StringValue
+				}
+			}
+		}
+	}
+
+	return status
 }
 
 // mapSchemaToEntity converts database schema to domain model.

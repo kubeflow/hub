@@ -334,3 +334,75 @@ class TestSourceAssetTypeFilter:
             assert set(actual_by_id) == set(expected_by_id)
             for source_id, actual in actual_by_id.items():
                 assert actual["name"] == expected_by_id[source_id]["name"]
+
+
+class TestGetSourceStatusEndpoint:
+    """Test suite for GET /sources/{source_id}/status."""
+
+    def _find_source_with_status(self, api_client: CatalogAPIClient, status: str) -> dict | None:
+        sources = api_client.get_sources()
+        return next((s for s in sources.get("items", []) if s.get("status") == status), None)
+
+    def test_get_status_available_source(self, api_client: CatalogAPIClient, suppress_ssl_warnings: None):
+        """Test that an available source reports status 'available' with no error."""
+        src = self._find_source_with_status(api_client, "available")
+        if not src:
+            pytest.skip("No available source in test data")
+
+        status = api_client.get_source_status(src["id"])
+        assert status["status"] == "available"
+        assert not status.get("error")
+
+    def test_get_status_error_source(self, api_client: CatalogAPIClient, suppress_ssl_warnings: None):
+        """Test that an errored source reports status 'error' with an error message."""
+        src = self._find_source_with_status(api_client, "error")
+        if not src:
+            pytest.skip("No error source in test data")
+
+        status = api_client.get_source_status(src["id"])
+        assert status["status"] == "error"
+        assert status.get("error"), "error source should include an error message"
+
+    def test_get_status_unknown_source_returns_empty(self, api_client: CatalogAPIClient, suppress_ssl_warnings: None):
+        """Test that an unknown source returns an empty status (200), not a 404."""
+        status = api_client.get_source_status("does_not_exist_xyz")
+        assert status.get("status") is None
+        assert status.get("error") is None
+
+    def test_get_status_agrees_with_listing(self, api_client: CatalogAPIClient, suppress_ssl_warnings: None):
+        """Test that the status endpoint agrees with the status embedded in /sources."""
+        sources = api_client.get_sources()
+        assert sources.get("items"), "No sources found"
+
+        for src in sources["items"]:
+            status = api_client.get_source_status(src["id"])
+            assert status.get("status") == src.get("status")
+
+
+class TestClearSourceStatusEndpoint:
+    """Test suite for DELETE /sources/{source_id}/status.
+
+    Defined last in this module: clearing a status mutates what /sources
+    reports for that source, so these tests run after every status-reading
+    assertion above to avoid polluting them.
+    """
+
+    def test_clear_unknown_source_is_noop(self, api_client: CatalogAPIClient, suppress_ssl_warnings: None):
+        """Test that clearing an unknown source's status does not raise."""
+        assert api_client.clear_source_status("does_not_exist_xyz") is None
+
+    def test_clear_then_get_returns_empty(self, api_client: CatalogAPIClient, suppress_ssl_warnings: None):
+        """Test that clearing a source's status makes it read back empty."""
+        sources = api_client.get_sources()
+        src = next((s for s in sources.get("items", []) if s.get("status") == "error"), None)
+        if not src:
+            pytest.skip("No error source to clear in test data")
+
+        # Pre-condition: it has a persisted status.
+        assert api_client.get_source_status(src["id"]).get("status") == "error"
+
+        api_client.clear_source_status(src["id"])
+
+        after = api_client.get_source_status(src["id"])
+        assert after.get("status") is None
+        assert after.get("error") is None

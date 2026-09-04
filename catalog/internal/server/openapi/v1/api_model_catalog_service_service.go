@@ -460,15 +460,7 @@ func (m *ModelCatalogServiceAPIService) FindSources(ctx context.Context, name st
 		// Merge status from database if available
 		if statuses != nil {
 			if status, ok := statuses[v.Id]; ok {
-				if status.Status != "" {
-					statusEnum := model.CatalogSourceStatus(status.Status)
-					v.Status = &statusEnum
-				}
-				if status.Error != "" {
-					v.Error = *model.NewNullableString(&status.Error)
-				} else {
-					v.Error = *model.NewNullableString(nil)
-				}
+				v.Status, v.Error = sourceStatusFields(status)
 			}
 		}
 
@@ -490,6 +482,61 @@ func (m *ModelCatalogServiceAPIService) FindSources(ctx context.Context, name st
 		NextPageToken: next.Token(),
 	}
 	return Response(http.StatusOK, res), nil
+}
+
+// sourceStatusFields converts a persisted models.SourceStatus into the Status/Error fields shared
+// by the CatalogSource and SourceStatus API models.
+func sourceStatusFields(status models.SourceStatus) (*model.CatalogSourceStatus, model.NullableString) {
+	var statusEnum *model.CatalogSourceStatus
+	if status.Status != "" {
+		e := model.CatalogSourceStatus(status.Status)
+		statusEnum = &e
+	}
+
+	var errNullable model.NullableString
+	if status.Error != "" {
+		errNullable = *model.NewNullableString(&status.Error)
+	}
+	return statusEnum, errNullable
+}
+
+// GetSourceStatus returns the operational status most recently persisted for the given source.
+// The status is computed asynchronously by the loaders when a source is (re)loaded, so it may be
+// empty immediately after a configuration change — for example, right after ClearSourceStatus has
+// been called to discard a stale status. An empty SourceStatus (no status/error set) is returned in
+// that case rather than a 404, since the source itself may still exist and simply has no persisted
+// status yet.
+func (m *ModelCatalogServiceAPIService) GetSourceStatus(ctx context.Context, sourceID string) (ImplResponse, error) {
+	out := model.SourceStatus{}
+
+	if m.sourceRepository == nil {
+		return Response(http.StatusOK, out), nil
+	}
+
+	status, err := m.sourceRepository.GetStatus(sourceID)
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, err), err
+	}
+
+	out.Status, out.Error = sourceStatusFields(status)
+
+	return Response(http.StatusOK, out), nil
+}
+
+// ClearSourceStatus deletes the operational status persisted for the given source. It is intended
+// to be called immediately after a source configuration change is saved, so that FindSources and
+// GetSourceStatus stop reporting a stale status while the backend picks up the new configuration on
+// its next reload. Clearing a source with no persisted status is a no-op, not an error.
+func (m *ModelCatalogServiceAPIService) ClearSourceStatus(ctx context.Context, sourceID string) (ImplResponse, error) {
+	if m.sourceRepository == nil {
+		return Response(http.StatusNoContent, nil), nil
+	}
+
+	if err := m.sourceRepository.Delete(sourceID); err != nil {
+		return ErrorResponse(http.StatusInternalServerError, err), err
+	}
+
+	return Response(http.StatusNoContent, nil), nil
 }
 
 // mcpSourceToCatalogSource converts an internal MCPSource to the API CatalogSource type.

@@ -188,6 +188,9 @@ func (noopSourceRepo) GetAll() ([]sharedmodels.CatalogSource, error) { return ni
 func (noopSourceRepo) GetAllStatuses() (map[string]sharedmodels.SourceStatus, error) {
 	return nil, nil
 }
+func (noopSourceRepo) GetStatus(string) (sharedmodels.SourceStatus, error) {
+	return sharedmodels.SourceStatus{}, nil
+}
 
 // scriptedResolver returns a fixed set of skills (or an error) for every job.
 type scriptedResolver struct {
@@ -649,11 +652,9 @@ func TestPerformLeaderOperations_SerializesTerms(t *testing.T) {
 
 	var wg sync.WaitGroup
 	for range 8 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			_ = l.PerformLeaderOperations(context.Background(), mapset.NewSet[string]())
-		}()
+		})
 	}
 	wg.Wait()
 
@@ -788,8 +789,7 @@ func TestPerformLeaderOperations_RefreshesPropertyOptionsAfterSync(t *testing.T)
 		tickerWG: &sync.WaitGroup{},
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	require.NoError(t, l.PerformLeaderOperations(ctx, mapset.NewSet[string]()))
 	l.state.WaitForInflightWrites(5 * time.Second)
 

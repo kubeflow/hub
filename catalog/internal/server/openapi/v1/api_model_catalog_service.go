@@ -101,6 +101,18 @@ func (c *ModelCatalogServiceAPIController) Routes() Routes {
 			"/api/model_catalog/v1/sources/{source_id}/models/{model_name}/artifacts/performance",
 			c.GetAllModelPerformanceArtifacts,
 		},
+		"GetSourceStatus": Route{
+			"GetSourceStatus",
+			strings.ToUpper("Get"),
+			"/api/model_catalog/v1/sources/{source_id}/status",
+			c.GetSourceStatus,
+		},
+		"ClearSourceStatus": Route{
+			"ClearSourceStatus",
+			strings.ToUpper("Delete"),
+			"/api/model_catalog/v1/sources/{source_id}/status",
+			c.ClearSourceStatus,
+		},
 	}
 }
 
@@ -154,6 +166,18 @@ func (c *ModelCatalogServiceAPIController) OrderedRoutes() []Route {
 			strings.ToUpper("Get"),
 			"/api/model_catalog/v1/sources/{source_id}/models/{model_name}/artifacts/performance",
 			c.GetAllModelPerformanceArtifacts,
+		},
+		Route{
+			"GetSourceStatus",
+			strings.ToUpper("Get"),
+			"/api/model_catalog/v1/sources/{source_id}/status",
+			c.GetSourceStatus,
+		},
+		Route{
+			"ClearSourceStatus",
+			strings.ToUpper("Delete"),
+			"/api/model_catalog/v1/sources/{source_id}/status",
+			c.ClearSourceStatus,
 		},
 	}
 }
@@ -705,6 +729,40 @@ func (c *ModelCatalogServiceAPIController) GetAllModelPerformanceArtifacts(w htt
 	} else {
 	}
 	result, err := c.service.GetAllModelPerformanceArtifacts(r.Context(), sourceIdParam, modelNameParam, targetRPSParam, recommendationsParam, rpsPropertyParam, latencyPropertyParam, hardwareCountPropertyParam, hardwareTypePropertyParam, filterQueryParam, pageSizeParam, orderByParam, sortOrderParam, nextPageTokenParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	_ = EncodeJSONResponse(result.Body, &result.Code, w)
+}
+
+// GetSourceStatus - Get the persisted status of a `CatalogSource`.
+func (c *ModelCatalogServiceAPIController) GetSourceStatus(w http.ResponseWriter, r *http.Request) {
+	sourceIdParam := chi.URLParam(r, "source_id")
+	if sourceIdParam == "" {
+		c.errorHandler(w, r, &RequiredError{"source_id"}, nil)
+		return
+	}
+	result, err := c.service.GetSourceStatus(r.Context(), sourceIdParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	_ = EncodeJSONResponse(result.Body, &result.Code, w)
+}
+
+// ClearSourceStatus - Clear the persisted status of a `CatalogSource`.
+func (c *ModelCatalogServiceAPIController) ClearSourceStatus(w http.ResponseWriter, r *http.Request) {
+	sourceIdParam := chi.URLParam(r, "source_id")
+	if sourceIdParam == "" {
+		c.errorHandler(w, r, &RequiredError{"source_id"}, nil)
+		return
+	}
+	result, err := c.service.ClearSourceStatus(r.Context(), sourceIdParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)

@@ -85,5 +85,5 @@ from catalog_openapi.models.skill import Skill
 from catalog_openapi.models.skill_list import SkillList
 from catalog_openapi.models.skill_trust_tier import SkillTrustTier
 from catalog_openapi.models.sort_order import SortOrder
+from catalog_openapi.models.source_status import SourceStatus
 from catalog_openapi.models.tool_calling_config import ToolCallingConfig
-
