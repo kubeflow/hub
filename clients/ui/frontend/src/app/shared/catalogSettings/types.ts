@@ -51,7 +51,6 @@ export type CatalogSettingsContextDefinition<TAPIState, TConfigList> = {
  * Each catalog's `definition.ts` satisfies this type.
  */
 export type CatalogSettingsDefinition = {
-  id: string;
   ContextProvider: React.ComponentType<{ children: React.ReactNode }>;
   ListPage: React.ComponentType;
   ManagePage: React.ComponentType;

@@ -1,16 +1,6 @@
 import * as React from 'react';
-import {
-  PageSection,
-  Stack,
-  StackItem,
-  Button,
-  ActionList,
-  ActionListItem,
-  ActionListGroup,
-  Alert,
-} from '@patternfly/react-core';
-import { ERROR_MESSAGES } from '~/app/pages/modelCatalogSettings/constants';
-import PreviewButton from './PreviewButton';
+import { ManageSourceFormFooter as SharedManageSourceFormFooter } from '~/app/shared/catalogSettings';
+import { ERROR_MESSAGES, BUTTON_LABELS } from '~/app/pages/modelCatalogSettings/constants';
 
 type ManageSourceFormFooterProps = {
   submitLabel: string;
@@ -24,66 +14,13 @@ type ManageSourceFormFooterProps = {
   onPreview: () => void;
 };
 
-const ManageSourceFormFooter: React.FC<ManageSourceFormFooterProps> = ({
-  submitLabel,
-  submitError,
-  isSubmitDisabled,
-  isSubmitting,
-  onSubmit,
-  onCancel,
-  isPreviewDisabled,
-  isPreviewLoading,
-  onPreview,
-}) => (
-  <PageSection hasBodyWrapper={false} stickyOnBreakpoint={{ default: 'bottom' }}>
-    <Stack hasGutter>
-      {submitError && (
-        <StackItem>
-          <Alert variant="danger" isInline title={ERROR_MESSAGES.SAVE_FAILED}>
-            {submitError.message}
-          </Alert>
-        </StackItem>
-      )}
-      <StackItem>
-        <ActionList>
-          <ActionListGroup>
-            <ActionListItem>
-              <Button
-                isDisabled={isSubmitDisabled || isPreviewLoading}
-                variant="primary"
-                id="submit-button"
-                data-testid="submit-button"
-                isLoading={isSubmitting}
-                onClick={onSubmit}
-              >
-                {submitLabel}
-              </Button>
-            </ActionListItem>
-            <ActionListItem>
-              <PreviewButton
-                onClick={onPreview}
-                isDisabled={isPreviewDisabled}
-                isLoading={isPreviewLoading}
-                variant="secondary"
-                testId="preview-button"
-              />
-            </ActionListItem>
-            <ActionListItem>
-              <Button
-                isDisabled={isSubmitting || isPreviewLoading}
-                variant="link"
-                id="cancel-button"
-                data-testid="cancel-button"
-                onClick={onCancel}
-              >
-                Cancel
-              </Button>
-            </ActionListItem>
-          </ActionListGroup>
-        </ActionList>
-      </StackItem>
-    </Stack>
-  </PageSection>
+const ManageSourceFormFooter: React.FC<ManageSourceFormFooterProps> = (props) => (
+  <SharedManageSourceFormFooter
+    {...props}
+    saveFailedTitle={ERROR_MESSAGES.SAVE_FAILED}
+    previewLabel={BUTTON_LABELS.PREVIEW}
+    cancelLabel={BUTTON_LABELS.CANCEL}
+  />
 );
 
 export default ManageSourceFormFooter;

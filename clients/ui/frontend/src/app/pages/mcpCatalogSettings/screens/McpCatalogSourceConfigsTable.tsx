@@ -1,22 +1,17 @@
 import * as React from 'react';
-import {
-  Alert,
-  AlertActionCloseButton,
-  Button,
-  Flex,
-  FlexItem,
-  Stack,
-  StackItem,
-  Toolbar,
-  ToolbarContent,
-  ToolbarItem,
-} from '@patternfly/react-core';
-import { Table } from 'mod-arch-shared';
+import { SourceConfigsTable, SourceVisibilityLabelInfo } from '~/app/shared/catalogSettings';
 import { McpCatalogSourceConfig } from '~/app/mcpServerCatalogTypes';
 import { McpCatalogSettingsContext } from '~/app/context/mcpCatalogSettings/McpCatalogSettingsContext';
-import { MCP_ADD_SOURCE_TITLE } from '~/app/routes/mcpCatalogSettings/mcpCatalogSettings';
+import {
+  MCP_ADD_SOURCE_TITLE,
+  mcpManageSourceUrl,
+} from '~/app/routes/mcpCatalogSettings/mcpCatalogSettings';
+import {
+  McpServerVisibilityBadgeColor,
+  MCP_SOURCE_TYPE_LABELS,
+} from '~/app/pages/mcpCatalogSettings/const';
+import McpCatalogSourceStatus from '~/app/pages/mcpCatalogSettings/components/McpCatalogSourceStatus';
 import { mcpCatalogSourceConfigsColumns } from './McpCatalogSourceConfigsTableColumns';
-import McpCatalogSourceConfigsTableRow from './McpCatalogSourceConfigsTableRow';
 
 type McpCatalogSourceConfigsTableProps = {
   mcpCatalogSourceConfigs: McpCatalogSourceConfig[];
@@ -24,104 +19,71 @@ type McpCatalogSourceConfigsTableProps = {
   onDeleteSource: (sourceId: string) => Promise<void>;
 };
 
+const hasFilters = (config: McpCatalogSourceConfig): boolean =>
+  (config.includedServers?.length ?? 0) > 0 || (config.excludedServers?.length ?? 0) > 0;
+
+const getVisibilityLabel = (config: McpCatalogSourceConfig): SourceVisibilityLabelInfo =>
+  hasFilters(config)
+    ? {
+        text: 'Filtered',
+        color: McpServerVisibilityBadgeColor.FILTERED,
+        testId: `mcp-server-visibility-filtered-${config.id}`,
+      }
+    : {
+        text: 'All servers',
+        color: McpServerVisibilityBadgeColor.UNFILTERED,
+        variant: 'outline',
+        testId: `mcp-server-visibility-unfiltered-${config.id}`,
+      };
+
+const StatusComponent: React.FC<{ sourceConfig: McpCatalogSourceConfig }> = ({ sourceConfig }) => (
+  <McpCatalogSourceStatus mcpCatalogSourceConfig={sourceConfig} />
+);
+
 const McpCatalogSourceConfigsTable: React.FC<McpCatalogSourceConfigsTableProps> = ({
   mcpCatalogSourceConfigs,
   onAddSource,
   onDeleteSource,
 }) => {
-  const [toggleError, setToggleError] = React.useState<Error | undefined>(undefined);
-  const [updatingToggleId, setUpdatingToggleId] = React.useState<string | null>(null);
   const { apiState, refreshMcpCatalogSourceConfigs, mcpCatalogSourcesLoadError } =
     React.useContext(McpCatalogSettingsContext);
 
-  const handleEnableToggle = async (
-    checked: boolean,
-    catalogSourceConfig: McpCatalogSourceConfig,
-  ) => {
-    if (!apiState.apiAvailable) {
-      setToggleError(new Error('API is not available'));
-      return;
-    }
-    setUpdatingToggleId(catalogSourceConfig.id);
-    setToggleError(undefined);
-
-    try {
-      await apiState.api.updateMcpCatalogSourceConfig({}, catalogSourceConfig.id, {
-        enabled: checked,
-      });
+  const handleToggleUpdate = React.useCallback(
+    async (checked: boolean, config: McpCatalogSourceConfig) => {
+      await apiState.api.updateMcpCatalogSourceConfig({}, config.id, { enabled: checked });
       refreshMcpCatalogSourceConfigs();
-    } catch (e) {
-      if (e instanceof Error) {
-        setToggleError(new Error(`Error enabling/disabling source ${catalogSourceConfig.name}`));
-      }
-    } finally {
-      setUpdatingToggleId(null);
-    }
-  };
+    },
+    [apiState.api, refreshMcpCatalogSourceConfigs],
+  );
+
+  const deleteModalBody = React.useCallback(
+    (config: McpCatalogSourceConfig) => (
+      <>
+        The <strong>{config.name}</strong> source will be deleted, and its MCP servers will be
+        removed from the MCP catalog.
+      </>
+    ),
+    [],
+  );
 
   return (
-    <Stack hasGutter>
-      {mcpCatalogSourcesLoadError && (
-        <StackItem>
-          <Alert
-            variant="danger"
-            isInline
-            title="Error fetching source statuses"
-            data-testid="mcp-source-status-error-alert"
-          >
-            {mcpCatalogSourcesLoadError.message}
-          </Alert>
-        </StackItem>
-      )}
-      <StackItem>
-        <Table
-          data-testid="mcp-catalog-source-configs-table"
-          data={mcpCatalogSourceConfigs}
-          columns={mcpCatalogSourceConfigsColumns}
-          toolbarContent={
-            <Flex direction={{ default: 'column' }}>
-              <FlexItem>
-                <Toolbar>
-                  <ToolbarContent>
-                    <ToolbarItem>
-                      <Button
-                        variant="primary"
-                        onClick={onAddSource}
-                        data-testid="mcp-add-source-button"
-                      >
-                        {MCP_ADD_SOURCE_TITLE}
-                      </Button>
-                    </ToolbarItem>
-                  </ToolbarContent>
-                </Toolbar>
-              </FlexItem>
-              {toggleError && (
-                <FlexItem>
-                  <Alert
-                    variant="danger"
-                    data-testid="mcp-toggle-alert"
-                    title={toggleError.message}
-                    actionClose={
-                      <AlertActionCloseButton onClose={() => setToggleError(undefined)} />
-                    }
-                  />
-                </FlexItem>
-              )}
-            </Flex>
-          }
-          rowRenderer={(config) => (
-            <McpCatalogSourceConfigsTableRow
-              key={config.id}
-              mcpCatalogSourceConfig={config}
-              isUpdatingToggle={updatingToggleId === config.id}
-              onToggleUpdate={handleEnableToggle}
-              onDeleteSource={onDeleteSource}
-            />
-          )}
-          variant="compact"
-        />
-      </StackItem>
-    </Stack>
+    <SourceConfigsTable
+      sourceConfigs={mcpCatalogSourceConfigs}
+      columns={mcpCatalogSourceConfigsColumns}
+      onAddSource={onAddSource}
+      addSourceLabel={MCP_ADD_SOURCE_TITLE}
+      onDeleteSource={onDeleteSource}
+      apiAvailable={apiState.apiAvailable}
+      onToggleUpdate={handleToggleUpdate}
+      loadError={mcpCatalogSourcesLoadError}
+      getManageSourceUrl={mcpManageSourceUrl}
+      visibilityColumnLabel="Server visibility"
+      getVisibilityLabel={getVisibilityLabel}
+      getSourceTypeLabel={(config) => MCP_SOURCE_TYPE_LABELS[config.type] ?? config.type}
+      StatusComponent={StatusComponent}
+      testIdPrefix="mcp-"
+      deleteModalBody={deleteModalBody}
+    />
   );
 };
 
