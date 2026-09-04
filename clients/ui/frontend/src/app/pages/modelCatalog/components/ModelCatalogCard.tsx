@@ -39,7 +39,7 @@ const ModelCatalogCard: React.FC<ModelCatalogCardProps> = ({ model, source }) =>
   const isValidated = isModelValidated(model);
 
   return (
-    <Card isFullHeight data-testid="model-catalog-card" key={`${model.name}/${model.source_id}`}>
+    <Card isFullHeight data-testid="model-catalog-card" key={`${model.name}/${model.sourceId}`}>
       <CardHeader>
         <CardTitle>
           <Flex alignItems={{ default: 'alignItemsFlexStart' }} className="pf-v6-u-mb-md">

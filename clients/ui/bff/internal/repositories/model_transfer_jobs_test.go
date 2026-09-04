@@ -699,32 +699,32 @@ func TestRegistryOriginOnly(t *testing.T) {
 	}{
 		{
 			name:     "ClusterIP with explicit port",
-			input:    "http://10.43.0.100:8080/api/model_registry/v1alpha3",
+			input:    "http://10.43.0.100:8080/api/model_registry/v1",
 			expected: "http://10.43.0.100:8080",
 		},
 		{
 			name:     "Route-based HTTPS (no explicit port)",
-			input:    "https://my-registry-rest.apps.example.com/api/model_registry/v1alpha3",
+			input:    "https://my-registry-rest.apps.example.com/api/model_registry/v1",
 			expected: "https://my-registry-rest.apps.example.com:443",
 		},
 		{
 			name:     "Route-based HTTPS with explicit port",
-			input:    "https://my-registry-rest.apps.example.com:443/api/model_registry/v1alpha3",
+			input:    "https://my-registry-rest.apps.example.com:443/api/model_registry/v1",
 			expected: "https://my-registry-rest.apps.example.com:443",
 		},
 		{
 			name:     "Gateway-based URL preserves path prefix",
-			input:    "https://gateway.apps.example.com/model-registry/my-registry/api/model_registry/v1alpha3",
+			input:    "https://gateway.apps.example.com/model-registry/my-registry/api/model_registry/v1",
 			expected: "https://gateway.apps.example.com:443/model-registry/my-registry",
 		},
 		{
 			name:     "Gateway-based URL with explicit port preserves path prefix",
-			input:    "https://gateway.apps.example.com:443/model-registry/my-registry/api/model_registry/v1alpha3",
+			input:    "https://gateway.apps.example.com:443/model-registry/my-registry/api/model_registry/v1",
 			expected: "https://gateway.apps.example.com:443/model-registry/my-registry",
 		},
 		{
 			name:     "HTTP defaults to port 80",
-			input:    "http://gateway.apps.example.com/model-registry/my-registry/api/model_registry/v1alpha3",
+			input:    "http://gateway.apps.example.com/model-registry/my-registry/api/model_registry/v1",
 			expected: "http://gateway.apps.example.com:80/model-registry/my-registry",
 		},
 		{
@@ -800,7 +800,7 @@ func TestBuildK8sJobMountsTrustedCAForRegistry(t *testing.T) {
 		trustConfig,
 		"",
 		"destination-secret",
-		"https://my-registry-rest.apps.example.com/api/model_registry/v1alpha3",
+		"https://my-registry-rest.apps.example.com/api/model_registry/v1",
 		"registry-id",
 		"example.com/async-upload:latest",
 	)
@@ -922,7 +922,7 @@ func TestBuildK8sJobSkipsTrustedCAForInsecureRegistry(t *testing.T) {
 		asyncUploadResolvedTrust{},
 		"",
 		"destination-secret",
-		"http://my-registry-rest.apps.example.com/api/model_registry/v1alpha3",
+		"http://my-registry-rest.apps.example.com/api/model_registry/v1",
 		"registry-id",
 		"example.com/async-upload:latest",
 	)
@@ -1118,7 +1118,7 @@ func TestResolveAsyncUploadTrustReturnsPartialStateOnDestinationTrustError(t *te
 		testNamespace,
 		"job-id",
 		true,
-		"https://example.apps.test/api/model_registry/v1alpha3",
+		"https://example.apps.test/api/model_registry/v1",
 		"image-registry.openshift-image-registry.svc:5000",
 		[]string{bundleFile},
 	)

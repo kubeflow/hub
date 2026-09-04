@@ -53,8 +53,8 @@ var _ = Describe("TestModelRegistryHandler", func() {
 
 			By("should match the expected model registries")
 			var expected = []models.ModelRegistryModel{
-				{Name: "model-registry", Description: "Model Registry Description", DisplayName: "Model Registry", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1alpha3", IsAvailable: true},
-				{Name: "model-registry-one", Description: "Model Registry One description", DisplayName: "Model Registry One", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1alpha3", IsAvailable: false},
+				{Name: "model-registry", Description: "Model Registry Description", DisplayName: "Model Registry", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1", IsAvailable: true},
+				{Name: "model-registry-one", Description: "Model Registry One description", DisplayName: "Model Registry One", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1", IsAvailable: false},
 			}
 			Expect(actual.Data).To(ConsistOf(expected))
 		})

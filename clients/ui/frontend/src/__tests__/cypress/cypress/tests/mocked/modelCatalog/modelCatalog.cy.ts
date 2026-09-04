@@ -51,18 +51,18 @@ const generateMockModels = (
     return [
       mockCatalogModel({
         name: 'validated-model',
-        source_id: sourceId,
+        sourceId,
         customProperties: {
           validated: { metadataType: ModelRegistryMetadataType.STRING, string_value: '' },
         },
       }),
       ...Array.from({ length: count - 1 }, (_, i) =>
-        mockCatalogModel({ name: `${namePrefix}-${i + 1}`, source_id: sourceId }),
+        mockCatalogModel({ name: `${namePrefix}-${i + 1}`, sourceId }),
       ),
     ];
   }
   return Array.from({ length: count }, (_, i) =>
-    mockCatalogModel({ name: `${namePrefix}-${i + 1}`, source_id: sourceId }),
+    mockCatalogModel({ name: `${namePrefix}-${i + 1}`, sourceId }),
   );
 };
 
@@ -156,7 +156,7 @@ const initIntercepts = ({
         items: Array.from({ length: modelsPerCategory }, (_, i) =>
           mockCatalogModel({
             name: `custom-model-${i + 1}`,
-            source_id: sources.find((s) => s.labels.length === 0)?.id || 'custom-source',
+            sourceId: sources.find((s) => s.labels.length === 0)?.id || 'custom-source',
           }),
         ),
       }),

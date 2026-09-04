@@ -63,7 +63,7 @@ const buildAgentsForSources = (sources: CatalogSource[], agentsPerCategory: numb
           id: `${label}-agent-${i + 1}`,
           name: `${label}-agent-${i + 1}`,
           displayName: `${label} Agent ${i + 1}`,
-          source_id: source.id,
+          sourceId: source.id,
         }),
       ),
     ),
@@ -80,7 +80,7 @@ export const interceptAgentsByLabel = (
           id: `${label}-agent-${i + 1}`,
           name: `${label}-agent-${i + 1}`,
           displayName: `${label} Agent ${i + 1}`,
-          source_id: source.id,
+          sourceId: source.id,
         }),
       );
 
