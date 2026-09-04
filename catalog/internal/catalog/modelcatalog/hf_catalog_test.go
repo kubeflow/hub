@@ -1770,3 +1770,69 @@ func TestNewHFModelProvider_SanitizesSecurityProperties(t *testing.T) {
 	_, envVarExists := source.Properties[apiKeyEnvVarKey]
 	assert.False(t, envVarExists, "apiKeyEnvVar property must be removed to prevent env var oracle")
 }
+
+func TestEnvVarSuffix(t *testing.T) {
+	tests := []struct {
+		name     string
+		sourceID string
+		want     string
+	}{
+		{"lowercase with dash", "my-source", "MY_SOURCE"},
+		{"mixed case", "MySource", "MYSOURCE"},
+		{"dots and slashes", "org.name/sub", "ORG_NAME_SUB"},
+		{"already valid", "ABC_123", "ABC_123"},
+		{"digits", "abc123", "ABC123"},
+		{"empty", "", ""},
+		{"leading underscore", "_test", "TEST"},
+		{"trailing slash", "org/", "ORG"},
+		{"leading and trailing special chars", "-my-source-", "MY_SOURCE"},
+		{"all underscores", "___", "___"},
+		{"longer than 63 chars", strings.Repeat("a", 70), strings.Repeat("A", 63)},
+		{"truncation lands on underscore", strings.Repeat("a", 62) + "_bbb", strings.Repeat("A", 62)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, envVarSuffix(tt.sourceID))
+		})
+	}
+}
+
+func TestResolveHFAPIKey(t *testing.T) {
+	t.Run("property env var takes precedence", func(t *testing.T) {
+		t.Setenv("HF_API_KEY_ORG1", "hf_org1")
+		t.Setenv("HF_API_KEY_MY_SOURCE", "hf_derived")
+		t.Setenv("HF_API_KEY", "hf_global")
+		assert.Equal(t, "hf_org1", resolveHFAPIKey("my-source", "HF_API_KEY_ORG1"))
+	})
+
+	t.Run("falls back to source-specific var", func(t *testing.T) {
+		t.Setenv("HF_API_KEY_MY_SOURCE", "hf_derived")
+		t.Setenv("HF_API_KEY", "hf_global")
+		assert.Equal(t, "hf_derived", resolveHFAPIKey("my-source", ""))
+	})
+
+	t.Run("source id is sanitized when building the derived var", func(t *testing.T) {
+		t.Setenv("HF_API_KEY_ORG_NAME_SUB", "hf_sanitized")
+		t.Setenv("HF_API_KEY", "hf_global")
+		assert.Equal(t, "hf_sanitized", resolveHFAPIKey("org.name/sub", ""))
+	})
+
+	t.Run("falls back to global var", func(t *testing.T) {
+		t.Setenv("HF_API_KEY_MY_SOURCE", "")
+		t.Setenv("HF_API_KEY", "hf_global")
+		assert.Equal(t, "hf_global", resolveHFAPIKey("my-source", ""))
+	})
+
+	t.Run("property var empty falls through to derived", func(t *testing.T) {
+		t.Setenv("HF_API_KEY_ORG1", "")
+		t.Setenv("HF_API_KEY_MY_SOURCE", "hf_derived")
+		t.Setenv("HF_API_KEY", "hf_global")
+		assert.Equal(t, "hf_derived", resolveHFAPIKey("my-source", "HF_API_KEY_ORG1"))
+	})
+
+	t.Run("returns empty when nothing is set", func(t *testing.T) {
+		t.Setenv("HF_API_KEY_MY_SOURCE", "")
+		t.Setenv("HF_API_KEY", "")
+		assert.Equal(t, "", resolveHFAPIKey("my-source", ""))
+	})
+}

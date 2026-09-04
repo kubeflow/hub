@@ -852,12 +852,13 @@ func (p *hfModelProvider) validateCredentials(ctx context.Context) error {
 }
 
 // sanitizeHFProperties validates security-sensitive properties and returns the env var name to
-// use for the API key. The apiKeyEnvVar property is accepted only when it equals defaultAPIKeyEnvVar
-// ("HF_API_KEY") or starts with apiKeyEnvVarPrefix ("HF_API_KEY_"); all other values are rejected
-// and the default is used. Custom URLs are always rejected to prevent SSRF. In both cases the
-// property is removed from the map to prevent it from leaking into downstream metadata.
+// use for the API key, or "" when no valid apiKeyEnvVar property is set. The apiKeyEnvVar property
+// is accepted only when it equals defaultAPIKeyEnvVar ("HF_API_KEY") or starts with
+// apiKeyEnvVarPrefix ("HF_API_KEY_"); all other values are rejected. Custom URLs are always
+// rejected to prevent SSRF. In both cases the property is removed from the map to prevent it from
+// leaking into downstream metadata.
 func sanitizeHFProperties(props map[string]any, label string) string {
-	envVarName := defaultAPIKeyEnvVar
+	var envVarName string
 	if envVar, ok := props[apiKeyEnvVarKey].(string); ok && envVar != "" {
 		if envVar == defaultAPIKeyEnvVar || strings.HasPrefix(envVar, apiKeyEnvVarPrefix) {
 			envVarName = envVar
@@ -874,6 +875,68 @@ func sanitizeHFProperties(props map[string]any, label string) string {
 	return envVarName
 }
 
+// envVarSuffixMaxLen bounds envVarSuffix's output to 63 characters — the same
+// limit Kubernetes enforces on label values — so a source ID always yields a
+// value usable both as an env var suffix here and as the
+// "hub.kubeflow.org/hf-source" label value set by the BFF (see
+// hfSourceLabelValue in
+// clients/ui/bff/internal/repositories/model_catalog_settings.go). The two
+// must stay in sync: whatever normalization changes here should be mirrored
+// there, and vice versa.
+const envVarSuffixMaxLen = 63
+
+// envVarSuffix converts a source ID into a suffix usable in an environment
+// variable name (and, via the same normalization in the BFF, as a Kubernetes
+// label value): it uppercases the ID, replaces every character that is not
+// A-Z, 0-9, or '_' with '_', trims leading/trailing '_', and truncates to
+// envVarSuffixMaxLen characters (re-trimming any trailing '_' left by the
+// truncation). For example "my-source" becomes "MY_SOURCE", and "_test"
+// becomes "TEST".
+func envVarSuffix(sourceID string) string {
+	var b strings.Builder
+	b.Grow(len(sourceID))
+	for _, r := range strings.ToUpper(sourceID) {
+		switch {
+		case r >= 'A' && r <= 'Z', r >= '0' && r <= '9', r == '_':
+			b.WriteRune(r)
+		default:
+			b.WriteRune('_')
+		}
+	}
+	raw := b.String()
+
+	trimmed := strings.Trim(raw, "_")
+	if len(trimmed) > envVarSuffixMaxLen {
+		trimmed = strings.TrimRight(trimmed[:envVarSuffixMaxLen], "_")
+	}
+
+	// Degenerate case: the ID normalized to all underscores (e.g. "___").
+	// Fall back to the untrimmed form rather than returning "".
+	if trimmed == "" {
+		return raw
+	}
+	return trimmed
+}
+
+// resolveHFAPIKey resolves the Hugging Face API key for the regular (non-preview)
+// provider from the environment. Precedence (first non-empty wins):
+//  1. The env var named by a validly-set apiKeyEnvVar property (propertyEnvVar).
+//  2. HF_API_KEY_<SOURCEID>, where <SOURCEID> is the source ID transformed by envVarSuffix.
+//  3. HF_API_KEY, the global fallback.
+//
+// Returns "" when none are set, meaning requests are made unauthenticated.
+func resolveHFAPIKey(sourceID, propertyEnvVar string) string {
+	if propertyEnvVar != "" {
+		if key := os.Getenv(propertyEnvVar); key != "" {
+			return key
+		}
+	}
+	if key := os.Getenv(apiKeyEnvVarPrefix + envVarSuffix(sourceID)); key != "" {
+		return key
+	}
+	return os.Getenv(defaultAPIKeyEnvVar)
+}
+
 func newHFModelProvider(ctx context.Context, source *basecatalog.ModelSource, reldir string) (<-chan ModelProviderRecord, error) {
 	p := &hfModelProvider{}
 	p.client = &http.Client{Timeout: 30 * time.Second}
@@ -886,8 +949,9 @@ func newHFModelProvider(ctx context.Context, source *basecatalog.ModelSource, re
 	p.sourceId = sourceId
 
 	// Reject custom URLs (SSRF prevention) and validate apiKeyEnvVar (must be HF_API_KEY or HF_API_KEY_*).
+	// Resolve the API key with precedence: apiKeyEnvVar property > HF_API_KEY_<SOURCEID> > HF_API_KEY.
 	apiKeyEnvVar := sanitizeHFProperties(source.Properties, "HuggingFace catalog")
-	apiKey := os.Getenv(apiKeyEnvVar)
+	apiKey := resolveHFAPIKey(sourceId, apiKeyEnvVar)
 	if apiKey == "" {
 		glog.Infof("No API key configured for Hugging Face. Only public models and limited data for gated models will be available.")
 	}
@@ -962,6 +1026,9 @@ func NewHFPreviewProvider(config *PreviewConfig) (*hfModelProvider, error) {
 
 	// Reject custom URLs (SSRF prevention) and validate apiKeyEnvVar (must be HF_API_KEY or HF_API_KEY_*).
 	apiKeyEnvVar := sanitizeHFProperties(config.Properties, "HuggingFace preview")
+	if apiKeyEnvVar == "" {
+		apiKeyEnvVar = defaultAPIKeyEnvVar
+	}
 	apiKey := os.Getenv(apiKeyEnvVar)
 	if apiKey == "" {
 		glog.Infof("No API key configured for Hugging Face preview. Only public models and limited data for gated models will be available.")

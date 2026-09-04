@@ -31,6 +31,7 @@ var (
 	ErrCannotChangeDefaultSource = errors.New("cannot change the default source")
 	ErrCannotDeleteDefaultSource = errors.New("cannot delete the default source")
 	ErrCatalogIDTooLong          = errors.New("catalog source ID exceeds maximum length for secret name")
+	ErrCatalogIdInvalid          = errors.New("catalog source ID must contain at least one letter or digit")
 	ErrCannotChangeType          = errors.New("cannot change catalog source type")
 	ErrValidationFailed          = errors.New("validation failed")
 	ErrCatalogSourceConflict     = errors.New("catalog source was modified by another request")
@@ -499,6 +500,7 @@ func createSecretForHuggingFace(ctx context.Context,
 			Namespace: namespace,
 			Labels: map[string]string{
 				"app.kubernetes.io/component": "model-catalog",
+				"hub.kubeflow.org/hf-source":  hfSourceLabelValue(catalogId),
 			},
 		},
 		Type: corev1.SecretTypeOpaque,
@@ -529,6 +531,51 @@ func deleteSecretForHuggingFace(ctx context.Context,
 	}
 }
 
+// hfSourceLabelValueMaxLen bounds hfSourceLabelValue's output to 63 characters,
+// the Kubernetes limit on label values.
+const hfSourceLabelValueMaxLen = 63
+
+// hfSourceLabelValue converts a catalog source ID into a value usable both as
+// the "hub.kubeflow.org/hf-source" label on the HuggingFace API key secret and
+// as the suffix of the HF_API_KEY_<SUFFIX> environment variable the catalog
+// service resolves the key from (see envVarSuffix in
+// catalog/internal/catalog/modelcatalog/hf_catalog.go). The two must stay in
+// sync: whatever normalization changes here should be mirrored there, and
+// vice versa.
+//
+// It uppercases the ID, replaces every character that is not A-Z, 0-9, or '_'
+// with '_', trims leading/trailing '_' (a Kubernetes label value must begin
+// and end with an alphanumeric), and truncates to hfSourceLabelValueMaxLen
+// characters (re-trimming any trailing '_' left by the truncation).
+// validateCatalogId already restricts source IDs to [a-z0-9_]+, so the only
+// normalization this performs in practice is uppercasing, trimming leading or
+// trailing underscores, and truncating IDs longer than 63 characters.
+func hfSourceLabelValue(id string) string {
+	var b strings.Builder
+	b.Grow(len(id))
+	for _, r := range strings.ToUpper(id) {
+		switch {
+		case r >= 'A' && r <= 'Z', r >= '0' && r <= '9', r == '_':
+			b.WriteRune(r)
+		default:
+			b.WriteRune('_')
+		}
+	}
+	raw := b.String()
+
+	trimmed := strings.Trim(raw, "_")
+	if len(trimmed) > hfSourceLabelValueMaxLen {
+		trimmed = strings.TrimRight(trimmed[:hfSourceLabelValueMaxLen], "_")
+	}
+
+	// Degenerate case: the ID normalized to all underscores (e.g. "___").
+	// Fall back to the untrimmed form rather than returning "".
+	if trimmed == "" {
+		return raw
+	}
+	return trimmed
+}
+
 var validCatalogIdRegex = regexp.MustCompile(`^[a-z0-9_]+$`)
 
 func validateCatalogId(id string) error {
@@ -538,6 +585,10 @@ func validateCatalogId(id string) error {
 
 	if !validCatalogIdRegex.MatchString(id) {
 		return fmt.Errorf("invalid catalog ID: must contain only lowercase letters, numbers, and underscores")
+	}
+
+	if strings.Trim(id, "_") == "" {
+		return ErrCatalogIdInvalid
 	}
 
 	if len(id) > 238 {
