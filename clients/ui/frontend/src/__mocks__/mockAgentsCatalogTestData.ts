@@ -8,7 +8,7 @@ export const mockAgent = (partial?: Partial<Agent>): Agent => ({
   displayName: 'Research Assistant',
   description: 'An agent that performs research tasks using web search and summarization.',
   framework: 'langgraph',
-  source_id: 'agent-templates-source',
+  sourceId: 'agent-templates-source',
   labels: ['Web search', 'General purpose'],
   logo: undefined,
   env: [{ name: 'OPENAI_API_KEY', required: true, description: 'API key for the LLM provider' }],

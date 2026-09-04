@@ -162,7 +162,7 @@ describe('MCP Catalog Empty Category Hiding', () => {
             id: 'server-1',
             name: 'Test Server',
             description: 'test',
-            source_id: 'org-mcp-source', // eslint-disable-line camelcase
+            sourceId: 'org-mcp-source',
           },
         ],
         size: 1,
