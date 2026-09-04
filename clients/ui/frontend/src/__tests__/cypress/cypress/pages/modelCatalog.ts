@@ -148,6 +148,10 @@ class ModelCatalog {
     );
   }
 
+  findModelCatalogCardDetailLinkByName(modelName: string) {
+    return this.findModelCatalogCardByName(modelName).findByTestId('model-catalog-detail-link');
+  }
+
   findAccessLabelPrivate() {
     return cy.findByTestId('model-catalog-access-label-private');
   }
@@ -186,7 +190,7 @@ class ModelCatalog {
   }
 
   selectOtherModelsCategory() {
-    this.findCategoryToggle('null').click();
+    this.findCategoryToggle('no-labels').click();
     this.findLoadingState().should('not.exist');
     return this;
   }
