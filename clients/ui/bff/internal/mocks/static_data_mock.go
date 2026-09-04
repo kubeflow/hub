@@ -814,13 +814,14 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 	}
 
 	// Hugging Face access mock matrix (customProperties.hf_access_type / hf_gated_access_granted):
+	//   All HF models use source: hugging_face_source (Other models tab)
 	//   public              — full metadata, no hf_gated_access_granted
-	//   private             — full metadata (visible only when source has org token)
+	//   private             — full metadata
 	//   gated_auto + true   — full metadata
 	//   gated_auto + false  — lock / request access; empty readme & description
 	//   gated_manual + true — full metadata
 	//   gated_manual + false— lock / request access; empty readme & description
-	// Non-HF models (sample-source, other-source) have no hf_access_type.
+	// Non-HF models (sample-source, admin sources) have no hf_access_type.
 	huggingFaceModel1 := models.CatalogModel{
 		Name:             "hf-mock/public-model",
 		Description:      stringToPointer("Public Hugging Face model with full metadata (hf_access_type=public)"),
@@ -829,41 +830,43 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 		License:          stringToPointer("apache-2.0"),
 		Maturity:         stringToPointer("Generally Available"),
 		Language:         []string{"en"},
-		SourceId:         stringToPointer("huggingface"),
+		SourceId:         stringToPointer("hugging_face_source"),
 		LibraryName:      stringToPointer("transformers"),
 		Readme:           stringToPointer("# Public HF model\n\nFull readme for a public Hugging Face repository."),
 		CustomProperties: hfAccessCustomProperties("public"),
 	}
 
 	hfPrivateModel := models.CatalogModel{
-		Name:             "my-org/private-llm",
-		Description:      stringToPointer("Internal fine-tuned LLM"),
-		Provider:         stringToPointer("my-org"),
-		Tasks:            []string{"text-generation"},
+		Name:             "my-org/Llama-3.1-8B-Instruct-FP8-dynamic",
+		Description:      stringToPointer("Prototype variant of Llama 3.1 8B Instruct with FP8 weights/activations for higher throughput on supported accelerators."),
+		Provider:         stringToPointer("Meta"),
+		Tasks:            []string{"text-to-text"},
+		Language:         []string{"en"},
 		SourceId:         stringToPointer("hugging_face_source"),
-		License:          stringToPointer("apache-2.0"),
-		Readme:           stringToPointer("# Private LLM\n\nInternal model for..."),
+		License:          stringToPointer("llama3.1"),
+		Readme:           stringToPointer("# Llama 3.1 8B Instruct FP8\n\nPrototype FP8 variant."),
 		CustomProperties: hfAccessCustomProperties("private"),
 	}
 
 	hfGatedAutoGranted := models.CatalogModel{
-		Name:             "meta-llama/Llama-3-8B",
-		Description:      stringToPointer("Meta's Llama 3 8B base model"),
-		Provider:         stringToPointer("meta-llama"),
-		Tasks:            []string{"text-generation"},
-		License:          stringToPointer("llama3"),
-		SourceId:         stringToPointer("huggingface"),
-		Readme:           stringToPointer("# Llama 3\n\nMeta's latest generation..."),
+		Name:             "meta-llama/Llama-3.1-8B-Instruct-INT4",
+		Description:      stringToPointer("Prototype INT4-weight variant of Llama 3.1 8B Instruct emphasizing peak throughput; prefill latency may be slightly higher than FP16."),
+		Provider:         stringToPointer("Meta"),
+		Tasks:            []string{"text-to-text"},
+		Language:         []string{"en"},
+		License:          stringToPointer("llama3.1"),
+		SourceId:         stringToPointer("hugging_face_source"),
+		Readme:           stringToPointer("# Llama 3.1 8B Instruct INT4\n\nMeta's latest generation..."),
 		CustomProperties: hfAccessCustomProperties("gated_auto", "true"),
 	}
 
 	hfGatedAutoDenied := models.CatalogModel{
-		Name:             "meta-llama/Llama-3-8B-gated",
+		Name:             "meta-llama/Llama-3.1-8B-Instruct",
 		Description:      stringToPointer(""),
-		Provider:         stringToPointer("meta-llama"),
+		Provider:         stringToPointer("Meta"),
 		Tasks:            []string{},
 		License:          stringToPointer("unknown"),
-		SourceId:         stringToPointer("huggingface"),
+		SourceId:         stringToPointer("hugging_face_source"),
 		Readme:           stringToPointer(""),
 		CustomProperties: hfAccessCustomProperties("gated_auto", "false"),
 	}
@@ -874,7 +877,7 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 		Provider:         stringToPointer("hf-mock"),
 		Tasks:            []string{"text-generation"},
 		License:          stringToPointer("custom"),
-		SourceId:         stringToPointer("huggingface"),
+		SourceId:         stringToPointer("hugging_face_source"),
 		Readme:           stringToPointer("# Gated manual model\n\nFull metadata when manual gate access is granted."),
 		CustomProperties: hfAccessCustomProperties("gated_manual", "true"),
 	}
@@ -885,7 +888,7 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 		Provider:         stringToPointer("hf-mock"),
 		Tasks:            []string{},
 		License:          stringToPointer("unknown"),
-		SourceId:         stringToPointer("huggingface"),
+		SourceId:         stringToPointer("hugging_face_source"),
 		Readme:           stringToPointer(""),
 		CustomProperties: hfAccessCustomProperties("gated_manual", "false"),
 	}

@@ -136,6 +136,65 @@ class ModelCatalog {
     return cy.get('.pf-v6-c-label');
   }
 
+  findModelCatalogCardByName(modelName: string) {
+    return cy
+      .contains('[data-testid="model-catalog-card-name"]', modelName)
+      .closest('[data-testid="model-catalog-card"]');
+  }
+
+  findModelCatalogCardDescriptionByName(modelName: string) {
+    return this.findModelCatalogCardByName(modelName).findByTestId(
+      'model-catalog-card-description',
+    );
+  }
+
+  findModelCatalogCardDetailLinkByName(modelName: string) {
+    return this.findModelCatalogCardByName(modelName).findByTestId('model-catalog-detail-link');
+  }
+
+  findAccessLabelPrivate() {
+    return cy.findByTestId('model-catalog-access-label-private');
+  }
+
+  findAccessLabelGated() {
+    return cy.findByTestId('model-catalog-access-label-gated');
+  }
+
+  findAccessLabelGatedDenied() {
+    return cy.findByTestId('model-catalog-access-label-gated-denied');
+  }
+
+  openPrivateAccessLabelPopover() {
+    this.findAccessLabelPrivate().click();
+    return this;
+  }
+
+  openGatedAccessLabelPopover() {
+    this.findAccessLabelGated().click();
+    return this;
+  }
+
+  openGatedDeniedAccessLabelPopover() {
+    this.findAccessLabelGatedDenied().click();
+    return this;
+  }
+
+  openAccessLabelPopover(labelTestId: string) {
+    cy.findByTestId(labelTestId).click();
+    return this;
+  }
+
+  expectAccessLabelPopoverText(expectedText: string) {
+    cy.get('.pf-v6-c-popover__content').should('be.visible').and('contain.text', expectedText);
+    return this;
+  }
+
+  selectOtherModelsCategory() {
+    this.findCategoryToggle('no-labels').click();
+    this.findLoadingState().should('not.exist');
+    return this;
+  }
+
   findModelLogo() {
     return cy.get('img[alt="model logo"]');
   }
@@ -171,6 +230,20 @@ class ModelCatalog {
 
   findDetailsDescription() {
     return cy.findByTestId('model-long-description');
+  }
+
+  findGatedAccessRequiredState() {
+    return cy.findByTestId('model-gated-access-required');
+  }
+
+  findGatedAccessRequestLink() {
+    return cy.findByTestId('model-gated-access-request-link');
+  }
+
+  visitModelDetails(sourceId: string, modelName: string) {
+    const encodedModelName = encodeURIComponent(modelName).replace(/\./g, '%252E');
+    cy.visit(`/model-catalog/${sourceId}/${encodedModelName}`);
+    cy.findByTestId('app-page-title').should('exist');
   }
 
   findModelCardMarkdown() {

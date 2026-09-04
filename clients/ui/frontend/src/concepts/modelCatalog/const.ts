@@ -260,12 +260,35 @@ export enum ModelCatalogTensorType {
   MXFP4 = 'MXFP4',
 }
 
+export const MODEL_CATALOG_GATED_ACCESS_REQUIRED = {
+  TITLE: 'Model access required',
+  DESCRIPTION:
+    'You do not have access to this model, so it cannot be deployed or registered. Go to Hugging Face to request permission for this model.',
+  REQUEST_ACCESS_LINK_TEXT: 'Request access on Hugging Face',
+} as const;
+
+export const HUGGING_FACE_BASE_URL = 'https://huggingface.co';
+
 export const MODEL_CATALOG_POPOVER_MESSAGES = {
   VALIDATED:
     'Validated models undergo comprehensive benchmarking to ensure reliable performance and compatibility. Some of these include validated runtime arguments for enabling additional capabilities.',
+  HF_PRIVATE: 'Private Hugging Face model configured by admin.',
+  HF_GATED:
+    'This model is gated on Hugging Face. Accept the model license on Hugging Face and configure an access token to access full metadata.',
+  HF_GATED_ACCESS_DENIED:
+    'You do not have access to this gated model on Hugging Face. Request access on Hugging Face before you can deploy or download model files.',
 } as const;
 
+export enum HfAccessType {
+  PUBLIC = 'public',
+  PRIVATE = 'private',
+  GATED_AUTO = 'gated_auto',
+  GATED_MANUAL = 'gated_manual',
+}
+
 export enum CatalogModelCustomPropertyKey {
+  HF_ACCESS_TYPE = 'hf_access_type',
+  HF_GATED_ACCESS_GRANTED = 'hf_gated_access_granted',
   VALIDATED_ON = 'validated_on',
   TENSOR_TYPE = 'tensor_type',
   SIZE = 'size',

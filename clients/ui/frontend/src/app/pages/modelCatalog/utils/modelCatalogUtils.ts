@@ -27,9 +27,11 @@ import {
   SortOrder,
   SortField,
   CatalogModelCustomPropertyKey,
+  HfAccessType,
   ModelType,
   ModelCatalogTask,
   MATCH_ALL_FILTER_KEYS,
+  HUGGING_FACE_BASE_URL,
 } from '~/concepts/modelCatalog/const';
 import { ModelRegistryCustomProperties, ModelRegistryMetadataType } from '~/app/types';
 import {
@@ -151,6 +153,68 @@ export const hasPerformanceArtifacts = (artifacts: CatalogArtifacts[]): boolean 
       'metricsType' in artifact &&
       artifact.metricsType === MetricsType.performanceMetrics,
   );
+
+export type HfAccessLabelVariant = 'private' | 'gated' | 'gated-denied';
+
+const isGatedAccessType = (accessType: string): boolean => accessType.startsWith('gated');
+
+export const getHfGatedAccessGranted = (model: CatalogModel): boolean => {
+  if (!model.customProperties) {
+    return false;
+  }
+
+  const gatedAccessKey = CatalogModelCustomPropertyKey.HF_GATED_ACCESS_GRANTED;
+  if (!(gatedAccessKey in model.customProperties)) {
+    return false;
+  }
+
+  const prop = model.customProperties[gatedAccessKey];
+
+  if (prop.metadataType === ModelRegistryMetadataType.BOOL) {
+    return prop.bool_value === true;
+  }
+
+  if (prop.metadataType === ModelRegistryMetadataType.STRING) {
+    return prop.string_value === 'true';
+  }
+
+  return false;
+};
+
+export const getHfAccessType = (model: CatalogModel): string | null => {
+  if (!model.customProperties) {
+    return null;
+  }
+  const accessType = getCustomPropString(
+    model.customProperties,
+    CatalogModelCustomPropertyKey.HF_ACCESS_TYPE,
+  );
+  return accessType || null;
+};
+
+export const getHfAccessLabelVariant = (model: CatalogModel): HfAccessLabelVariant | null => {
+  const accessType = getHfAccessType(model);
+  if (!accessType) {
+    return null;
+  }
+
+  if (accessType === HfAccessType.PRIVATE) {
+    return 'private';
+  }
+
+  if (isGatedAccessType(accessType)) {
+    return getHfGatedAccessGranted(model) ? 'gated' : 'gated-denied';
+  }
+
+  return null;
+};
+
+export const isHfGatedAccessDenied = (model: CatalogModel): boolean =>
+  getHfAccessLabelVariant(model) === 'gated-denied';
+
+// TODO: this needs to be updated with the customProperties of the model, where we will have the HF link
+export const getHuggingFaceModelUrl = (model: CatalogModel): string =>
+  `${HUGGING_FACE_BASE_URL}/${model.name}`;
 
 // Utility function to check if a model is validated
 export const isModelValidated = (model: CatalogModel): boolean => {
