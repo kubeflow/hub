@@ -155,18 +155,6 @@ const ManageSourceForm: React.FC<ManageSourceFormProps> = ({
               )}
 
               <StackItem>
-                <ModelVisibilitySection
-                  formData={formData}
-                  setData={setData}
-                  isDefaultExpanded={
-                    existingData?.isDefault ||
-                    !!existingData?.allowedModels ||
-                    !!existingData?.excludedModels
-                  }
-                />
-              </StackItem>
-
-              <StackItem>
                 <FormSection>
                   <FormGroup fieldId="enable-source">
                     <Checkbox
@@ -184,6 +172,17 @@ const ManageSourceForm: React.FC<ManageSourceFormProps> = ({
                     />
                   </FormGroup>
                 </FormSection>
+              </StackItem>
+              <StackItem>
+                <ModelVisibilitySection
+                  formData={formData}
+                  setData={setData}
+                  isDefaultExpanded={
+                    existingData?.isDefault ||
+                    !!existingData?.allowedModels ||
+                    !!existingData?.excludedModels
+                  }
+                />
               </StackItem>
             </Stack>
           </Form>

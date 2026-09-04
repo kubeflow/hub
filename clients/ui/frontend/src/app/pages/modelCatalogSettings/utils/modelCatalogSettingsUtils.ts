@@ -92,11 +92,16 @@ export const getPayloadForConfig = (
       excludedModels: sourceConfig.excludedModels,
       ...(sourceConfig.type === CatalogSourceType.YAML && { yaml: sourceConfig.yaml }),
       ...(sourceConfig.type === CatalogSourceType.HUGGING_FACE && {
-        apiKey: sourceConfig.apiKey,
         allowedOrganization: sourceConfig.allowedOrganization,
+        ...(sourceConfig.apiKey ? { apiKey: sourceConfig.apiKey } : {}),
       }),
     };
   }
 
+  if (sourceConfig.type === CatalogSourceType.HUGGING_FACE && !sourceConfig.apiKey) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { apiKey, ...rest } = sourceConfig;
+    return rest;
+  }
   return sourceConfig;
 };

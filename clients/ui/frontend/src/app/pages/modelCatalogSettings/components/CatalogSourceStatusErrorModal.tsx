@@ -46,11 +46,11 @@ const CatalogSourceStatusErrorModal: React.FC<CatalogSourceStatusErrorModalProps
         <Alert
           variant="danger"
           isInline
-          title={ERROR_MESSAGES.VALIDATION_FAILED}
+          title={ERROR_MESSAGES.SOURCE_VALIDATION_FAILED}
           data-testid="catalog-source-status-error-alert"
         >
           <p data-testid="catalog-source-status-error-details">
-            {ERROR_MESSAGES.VALIDATION_FAILED_BODY}
+            {ERROR_MESSAGES.SOURCE_VALIDATION_FAILED_BODY}
           </p>
           {errorMessage && <p data-testid="catalog-source-status-error-message">{errorMessage}</p>}
         </Alert>

@@ -35,9 +35,9 @@ export const VALIDATION_MESSAGES = {
 
 export const DESCRIPTION_TEXT = {
   ACCESS_TOKEN:
-    'Enter your fine-grained Hugging Face access token. The token must have the following permissions: read repos in your namespace, read public repos that you can access, access webhooks, and create webhooks.',
+    'To fetch metadata for private or gated models, enter a fine-grained Hugging Face access token. The token must allow read access to the relevant repositories, including your namespace and public repos that you can access.',
   ORGANIZATION:
-    'Enter the name of the organization (for example, meta-llama) to sync models from. Hugging Face sources are limited to 1 organization to prevent performance issues related to loading large model sets.',
+    'Limiting each Hugging Face source to a single organization helps prevent performance issues when loading large model sets.',
   ENABLE_SOURCE:
     'Enable users in your organization to view models from this source in the model catalog.',
   FILTER_INFO_GENERIC:
@@ -45,16 +45,24 @@ export const DESCRIPTION_TEXT = {
 } as const;
 
 export const HELPER_TEXT = {
-  ACCESS_TOKEN: 'Enter your Hugging Face access token.',
   YAML: 'Upload or paste a YAML string.',
   ORGANIZATION_SLUG:
-    'Hugging Face organization’s name is case-sensitive and should match the organization’s URL, which may differ from the displayed name. Use the organization’s URL slug found in the URL (e.g., Input: meta-llama from huggingface.co/meta-llama).',
+    'Use the Hugging Face URL slug (for example, meta-llama). Names are case-sensitive and might differ from the displayed organization name.',
+  ACCESS_TOKEN_HIDDEN: 'The access token is hidden. To replace or remove it, clear the token.',
 } as const;
 
 export const PLACEHOLDERS = {
-  ORGANIZATION: 'Example: meta-llama',
+  ORGANIZATION: 'Example: Google/',
   ALLOWED_MODELS: 'Example: Llama*, Llama-3.1-8B-Instruct',
   EXCLUDED_MODELS: 'Example: Llama*, Llama-3.1-8B-Instruct',
+} as const;
+
+export const CLEAR_ACCESS_TOKEN_MODAL = {
+  MODAL_TITLE: 'Clear access token?',
+  MODAL_BODY:
+    'The access token will be removed, and the metadata of any models using this token will no longer be accessible from the model catalog. Remove the access token, or cancel to continue editing.',
+  CONFIRM_BTN: 'Clear access token',
+  CANCEL_BTN: 'Cancel',
 } as const;
 
 export const EXPECTED_YAML_FORMAT_LABEL = 'View expected file format';
@@ -70,13 +78,16 @@ export const ERROR_MESSAGES = {
   FILE_UPLOAD_FAILED: 'File upload failed',
   FILE_UPLOAD_FAILED_BODY:
     "The YAML file couldn't be uploaded. Check its syntax and structure, then try again.",
-  VALIDATION_FAILED: 'Validation failed',
-  VALIDATION_FAILED_BODY: 'The system cannot establish a connection to the source.',
+  VALIDATION_FAILED: 'Credentials validation failed',
+  VALIDATION_FAILED_BODY:
+    'Could not validate your organization or access token. Check your entries and try again.',
+  SOURCE_VALIDATION_FAILED: 'Validation failed',
+  SOURCE_VALIDATION_FAILED_BODY: 'The source validation failed. Check the error details below.',
 } as const;
 
 export const SUCCESS_MESSAGES = {
-  VALIDATION_SUCCESSFUL: 'Validation successful',
-  VALIDATION_SUCCESSFUL_BODY: 'The organization and access token are valid for connection.',
+  VALIDATION_SUCCESSFUL: 'Credentials validated',
+  VALIDATION_SUCCESSFUL_BODY: 'Organization and access token were validated successfully.',
 } as const;
 
 export const TABLE_COLUMN_LABELS = {

@@ -1322,3 +1322,219 @@ describe('Manage Source Page', () => {
     cy.wait('@sourcesRefresh');
   });
 });
+
+describe('HuggingFace Credentials Validation', () => {
+  const previewSuccessResponse = {
+    data: {
+      items: [{ name: 'google/gemma-2b', included: true }],
+      summary: { totalAssets: 1, includedAssets: 1, excludedAssets: 0 },
+      nextPageToken: '',
+      pageSize: 20,
+      size: 1,
+    },
+  };
+
+  const previewFailResponse = {
+    statusCode: 401,
+    body: {
+      code: 'UNAUTHORIZED',
+      message:
+        "Invalid credentials: the organization 'qwen' could not be validated with the provided access token",
+    },
+  };
+
+  beforeEach(() => {
+    setupMocks([], mockCatalogSourceConfigList({}));
+  });
+
+  describe('Feature flag behavior', () => {
+    it('should show credentials section when flag is enabled', () => {
+      manageSourcePage.visitAddSource({ enableTempDevCatalogHuggingFaceApiKeyFeature: true });
+      manageSourcePage.findCredentialsSection().should('exist');
+      manageSourcePage.findAccessTokenInput().should('exist');
+    });
+
+    it('should hide credentials section when flag is disabled', () => {
+      manageSourcePage.visitAddSource({ enableTempDevCatalogHuggingFaceApiKeyFeature: false });
+      manageSourcePage.findCredentialsSection().should('not.exist');
+    });
+  });
+
+  describe('Validation success/fail (mocked with qwen)', () => {
+    it('should show success alert when org and token are valid', () => {
+      cy.intercept('POST', '/model-registry/api/v1/settings/model_catalog/source_preview*', {
+        statusCode: 200,
+        body: previewSuccessResponse,
+      }).as('validateSuccess');
+
+      manageSourcePage.visitAddSource({ enableTempDevCatalogHuggingFaceApiKeyFeature: true });
+      manageSourcePage.fillOrganization('Google');
+      manageSourcePage.fillAccessToken('valid-token-123');
+
+      cy.findByRole('button', { name: 'Validate' }).click();
+      cy.wait('@validateSuccess');
+
+      cy.findByTestId('access-token-hidden-helper').should('exist');
+      cy.contains('Credentials validated').should('exist');
+    });
+
+    it('should show error alert when org is qwen (mocked failure)', () => {
+      cy.intercept('POST', '/model-registry/api/v1/settings/model_catalog/source_preview*', {
+        statusCode: 401,
+        body: previewFailResponse,
+      }).as('validateFail');
+
+      manageSourcePage.visitAddSource({ enableTempDevCatalogHuggingFaceApiKeyFeature: true });
+      manageSourcePage.fillOrganization('qwen');
+      manageSourcePage.fillAccessToken('any-token');
+
+      cy.findByRole('button', { name: 'Validate' }).click();
+      cy.wait('@validateFail');
+
+      cy.contains('Credentials validation failed').should('exist');
+    });
+  });
+
+  describe('Eye/mask toggle behavior', () => {
+    it('should toggle password visibility with eye button', () => {
+      manageSourcePage.visitAddSource({ enableTempDevCatalogHuggingFaceApiKeyFeature: true });
+      manageSourcePage.fillAccessToken('my-secret-token');
+
+      manageSourcePage.findAccessTokenInput().should('have.attr', 'type', 'password');
+
+      cy.findByRole('button', { name: 'Show access token' }).click();
+      manageSourcePage.findAccessTokenInput().should('have.attr', 'type', 'text');
+
+      cy.findByRole('button', { name: 'Hide access token' }).click();
+      manageSourcePage.findAccessTokenInput().should('have.attr', 'type', 'password');
+    });
+
+    it('should hide toggle button and force mask when validation succeeds', () => {
+      cy.intercept('POST', '/model-registry/api/v1/settings/model_catalog/source_preview*', {
+        statusCode: 200,
+        body: previewSuccessResponse,
+      }).as('validateSuccess');
+
+      manageSourcePage.visitAddSource({ enableTempDevCatalogHuggingFaceApiKeyFeature: true });
+      manageSourcePage.fillOrganization('Google');
+      manageSourcePage.fillAccessToken('my-secret-token');
+
+      cy.findByRole('button', { name: 'Show access token' }).click();
+      manageSourcePage.findAccessTokenInput().should('have.attr', 'type', 'text');
+
+      cy.findByRole('button', { name: 'Validate' }).click();
+      cy.wait('@validateSuccess');
+
+      cy.findByRole('button', { name: 'Show access token' }).should('not.exist');
+      cy.findByRole('button', { name: 'Hide access token' }).should('not.exist');
+      manageSourcePage.findAccessTokenInput().should('have.attr', 'type', 'password');
+    });
+  });
+
+  describe('Organization field read-only after validation success', () => {
+    it('should keep organization value visible after validation success', () => {
+      cy.intercept('POST', '/model-registry/api/v1/settings/model_catalog/source_preview*', {
+        statusCode: 200,
+        body: previewSuccessResponse,
+      }).as('validateSuccess');
+
+      manageSourcePage.visitAddSource({ enableTempDevCatalogHuggingFaceApiKeyFeature: true });
+      manageSourcePage.fillOrganization('Google');
+      manageSourcePage.fillAccessToken('valid-token-123');
+
+      cy.findByRole('button', { name: 'Validate' }).click();
+      cy.wait('@validateSuccess');
+
+      manageSourcePage.findOrganizationInput().should('have.value', 'Google');
+    });
+  });
+
+  describe('Clear access token modal', () => {
+    beforeEach(() => {
+      cy.intercept('POST', '/model-registry/api/v1/settings/model_catalog/source_preview*', {
+        statusCode: 200,
+        body: previewSuccessResponse,
+      }).as('validateSuccess');
+
+      manageSourcePage.visitAddSource({ enableTempDevCatalogHuggingFaceApiKeyFeature: true });
+      manageSourcePage.fillOrganization('Google');
+      manageSourcePage.fillAccessToken('valid-token-123');
+      cy.findByRole('button', { name: 'Validate' }).click();
+      cy.wait('@validateSuccess');
+    });
+
+    it('should open clear token modal when Clear button is clicked', () => {
+      cy.findByRole('button', { name: 'Clear' }).click();
+      cy.findByTestId('clear-access-token-modal').should('exist');
+    });
+
+    it('should close modal and keep org and token when Cancel is clicked', () => {
+      cy.findByRole('button', { name: 'Clear' }).click();
+      cy.findByTestId('clear-access-token-modal').should('exist');
+
+      cy.findByRole('button', { name: 'Cancel' }).click();
+      cy.findByTestId('clear-access-token-modal').should('not.exist');
+
+      manageSourcePage.findOrganizationInput().should('have.value', 'Google');
+      cy.contains('Credentials validated').should('exist');
+    });
+
+    it('should clear token and close preview when Confirm is clicked', () => {
+      cy.findByRole('button', { name: 'Clear' }).click();
+      cy.findByTestId('clear-access-token-modal').should('exist');
+
+      cy.findByTestId('clear-access-token-confirm-button').click();
+      cy.findByTestId('clear-access-token-modal').should('not.exist');
+
+      manageSourcePage.findAccessTokenInput().should('have.value', '');
+      cy.contains('Credentials validated').should('not.exist');
+    });
+  });
+
+  describe('Payload apiKey handling', () => {
+    it('should include apiKey in payload when token is provided', () => {
+      cy.intercept('POST', '/model-registry/api/v1/settings/model_catalog/source_configs', {
+        data: mockHuggingFaceCatalogSourceConfig({}),
+      }).as('addSource');
+
+      manageSourcePage.visitAddSource({ enableTempDevCatalogHuggingFaceApiKeyFeature: true });
+      manageSourcePage.fillSourceName('My HF Source');
+      manageSourcePage.fillOrganization('Google');
+      manageSourcePage.fillAccessToken('my-secret-token');
+
+      manageSourcePage.findSubmitButton().click();
+
+      cy.wait('@addSource').then((interception) => {
+        expect(interception.request.body.data).to.have.property('apiKey', 'my-secret-token');
+      });
+    });
+
+    it('should omit apiKey from payload when token is cleared after validation', () => {
+      cy.intercept('POST', '/model-registry/api/v1/settings/model_catalog/source_preview*', {
+        statusCode: 200,
+        body: previewSuccessResponse,
+      }).as('validateSuccess');
+
+      cy.intercept('POST', '/model-registry/api/v1/settings/model_catalog/source_configs', {
+        data: mockHuggingFaceCatalogSourceConfig({}),
+      }).as('addSource');
+
+      manageSourcePage.visitAddSource({ enableTempDevCatalogHuggingFaceApiKeyFeature: true });
+      manageSourcePage.fillSourceName('My HF Source');
+      manageSourcePage.fillOrganization('Google');
+      manageSourcePage.fillAccessToken('my-secret-token');
+
+      cy.findByRole('button', { name: 'Validate' }).click();
+      cy.wait('@validateSuccess');
+
+      cy.findByRole('button', { name: 'Clear' }).click();
+      cy.findByTestId('clear-access-token-confirm-button').click();
+
+      manageSourcePage.findSubmitButton().click();
+
+      cy.wait('@addSource').then((interception) => {
+        expect(interception.request.body.data).to.not.have.property('apiKey');
+      });
+    });
+  });
+});

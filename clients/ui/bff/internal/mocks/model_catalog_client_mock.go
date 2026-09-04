@@ -324,6 +324,20 @@ func (m *ModelCatalogClientMock) GetCatalogLabels(client httpclient.HTTPClientIn
 }
 
 func (m *ModelCatalogClientMock) CreateCatalogSourcePreview(client httpclient.HTTPClientInterface, sourcePreviewPayload models.CatalogSourcePreviewRequest, pageValues url.Values) (*models.CatalogSourcePreviewResult, error) {
+	if sourcePreviewPayload.Type == "hf" {
+		if org, ok := sourcePreviewPayload.Properties["allowedOrganization"]; ok {
+			if orgStr, isStr := org.(string); isStr && orgStr == "qwen" {
+				return nil, &httpclient.HTTPError{
+					StatusCode: http.StatusUnauthorized,
+					ErrorResponse: httpclient.ErrorResponse{
+						Code:    "UNAUTHORIZED",
+						Message: "Invalid credentials: the organization 'qwen' could not be validated with the provided access token",
+					},
+				}
+			}
+		}
+	}
+
 	filterStatus := pageValues.Get("filterStatus")
 	if filterStatus == "" {
 		filterStatus = "all"
