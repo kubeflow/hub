@@ -110,7 +110,7 @@ export const createMockModelsForLabel = (
 
       return mockCatalogModel({
         name,
-        source_id: source.id,
+        sourceId: source.id,
         customProperties,
         ...(isValidated && {
           validatedTasks: [ValidatedConfiguration.TOOL_CALLING],
@@ -181,7 +181,7 @@ export const interceptAllModels = (modelsPerCategory: number, useValidatedModel:
       const name = isValidated ? 'validated-model' : `all-models-model-${i + 1}`;
       return mockCatalogModel({
         name,
-        source_id: 'sample-source',
+        sourceId: 'sample-source',
         customProperties,
         ...(isValidated && {
           validatedTasks: [ValidatedConfiguration.TOOL_CALLING],
