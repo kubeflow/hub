@@ -113,7 +113,7 @@ def generated_schema(
         FileNotFoundError: If the schema file or config file cannot be found.
         schemathesis.SchemaError: If the schema is invalid.
     """
-    schema_file = getattr(request, "param", "catalog.yaml")
+    schema_file = getattr(request, "param", "catalog-v1.yaml")
     os.environ["API_HOST"] = CATALOG_URL
 
     # Read and modify schemathesis.toml if verify_ssl is False

@@ -161,77 +161,6 @@ def validate_artifact_response(response: requests.Response, expected_payload: di
     return response_json["id"]
 
 
-def create_experiment_and_run(auth_headers: dict[str, str], verify_tls: bool) -> tuple[str, str]:
-    """Create an experiment and an experiment run.
-
-    Args:
-        auth_headers: Authentication headers for the API
-        verify_tls: Verify TLS
-    Returns:
-        Tuple of (experiment_id, experiment_run_id)
-
-    Raises:
-        AssertionError: If creation fails
-    """
-    # Create an experiment
-    experiment_payload = {
-        "name": f"test-experiment-{secrets.randbelow(1000000)}",
-        "externalId": generate_random_id(),
-        "description": "Test experiment for artifact testing"
-    }
-    exp_response = requests.post(
-        f"{REGISTRY_URL}/api/model_registry/v1alpha3/experiments",
-        headers=auth_headers,
-        json=experiment_payload,
-        timeout=DEFAULT_API_TIMEOUT, verify=verify_tls
-    )
-    assert exp_response.status_code in {200, 201}, f"Failed to create experiment: {exp_response.text}"
-    experiment_id = exp_response.json()["id"]
-
-    # Create an experiment run
-    experiment_run_payload = {
-        "experimentId": experiment_id,
-        "name": f"test-run-{secrets.randbelow(1000000)}",
-        "externalId": generate_random_id(),
-        "description": "Test experiment run for artifact testing"
-    }
-    run_response = requests.post(
-        f"{REGISTRY_URL}/api/model_registry/v1alpha3/experiment_runs",
-        headers=auth_headers,
-        json=experiment_run_payload,
-        timeout=DEFAULT_API_TIMEOUT, verify=verify_tls
-    )
-    assert run_response.status_code in {200, 201}, f"Failed to create experiment run: {run_response.text}"
-    experiment_run_id = run_response.json()["id"]
-
-    return experiment_id, experiment_run_id
-
-
-def cleanup_experiment_and_run(auth_headers: dict[str, str], experiment_id: str, experiment_run_id: str,
-                               verify_tls: bool) -> None:
-    """Best effort cleanup of experiment run and experiment.
-
-    Args:
-        auth_headers: Authentication headers for the API
-        experiment_id: ID of the experiment to delete
-        experiment_run_id: ID of the experiment run to delete
-        verify_tls: Verify TLS
-    """
-    try:
-        requests.delete(
-            f"{REGISTRY_URL}/api/model_registry/v1alpha3/experiment_runs/{experiment_run_id}",
-            headers=auth_headers,
-            timeout=DEFAULT_API_TIMEOUT, verify=verify_tls
-        )
-        requests.delete(
-            f"{REGISTRY_URL}/api/model_registry/v1alpha3/experiments/{experiment_id}",
-            headers=auth_headers,
-            timeout=DEFAULT_API_TIMEOUT, verify=verify_tls
-        )
-    except Exception as e:
-        logging.warning(f"Failed to cleanup experiment (id={experiment_id}) and/or experiment run (id={experiment_run_id}): {e}")
-
-
 # Null byte validation for Model Registry API endpoints specifically
 @schemathesis.check
 def check_null_byte_validation_mr(ctx, response, case):
@@ -249,15 +178,11 @@ schema = schemathesis.pytest.from_fixture("generated_schema")
 base_schema = (
     schema
     .exclude(
-        path="/api/model_registry/v1alpha3/artifacts/{id}",
+        path="/api/model_registry/v1/artifacts/{id}",
         method="PATCH"
     )
     .exclude(
-        path="/api/model_registry/v1alpha3/model_versions/{modelversionId}/artifacts",
-        method="POST"
-    )
-    .exclude(
-        path="/api/model_registry/v1alpha3/experiment_runs/{experimentrunId}/artifacts",
+        path="/api/model_registry/v1/model_versions/{model_version_id}/artifacts",
         method="POST"
     )
 )
@@ -266,7 +191,7 @@ base_schema = (
 # This creates many small test functions that can be distributed across workers
 
 # GET endpoints - split by resource type
-@pytest.mark.parametrize("generated_schema", ["model-registry.yaml"], indirect=True)
+@pytest.mark.parametrize("generated_schema", ["model-registry-v1.yaml"], indirect=True)
 @base_schema.include(method="GET", path_regex=".*/(registered_model|model_version).*").parametrize()
 @settings(
     max_examples=100,
@@ -283,7 +208,7 @@ def test_mr_api_stateless_get_models(auth_headers: dict, case: schemathesis.Case
     call_and_validate_with_null_byte_handling(case, auth_headers, verify_ssl)
 
 
-@pytest.mark.parametrize("generated_schema", ["model-registry.yaml"], indirect=True)
+@pytest.mark.parametrize("generated_schema", ["model-registry-v1.yaml"], indirect=True)
 @base_schema.include(method="GET", path_regex=".*/artifact.*").parametrize()
 @settings(
     max_examples=100,
@@ -300,24 +225,7 @@ def test_mr_api_stateless_get_artifacts(auth_headers: dict, case: schemathesis.C
     call_and_validate_with_null_byte_handling(case, auth_headers, verify_ssl)
 
 
-@pytest.mark.parametrize("generated_schema", ["model-registry.yaml"], indirect=True)
-@base_schema.include(method="GET", path_regex=".*/experiment.*").parametrize()
-@settings(
-    max_examples=100,
-    deadline=None,
-    suppress_health_check=[
-        HealthCheck.filter_too_much,
-        HealthCheck.too_slow,
-        HealthCheck.data_too_large,
-    ],
-)
-@pytest.mark.fuzz
-def test_mr_api_stateless_get_experiments(auth_headers: dict, case: schemathesis.Case, verify_ssl: bool) -> None:
-    """Test GET endpoints for Experiments and ExperimentRuns."""
-    call_and_validate_with_null_byte_handling(case, auth_headers, verify_ssl)
-
-
-@pytest.mark.parametrize("generated_schema", ["model-registry.yaml"], indirect=True)
+@pytest.mark.parametrize("generated_schema", ["model-registry-v1.yaml"], indirect=True)
 @base_schema.include(method="GET", path_regex=".*/inference_service.*|.*/serving_environment.*|.*/serve.*").parametrize()
 @settings(
     max_examples=100,
@@ -335,7 +243,7 @@ def test_mr_api_stateless_get_serving(auth_headers: dict, case: schemathesis.Cas
 
 
 # POST endpoints - split by resource type
-@pytest.mark.parametrize("generated_schema", ["model-registry.yaml"], indirect=True)
+@pytest.mark.parametrize("generated_schema", ["model-registry-v1.yaml"], indirect=True)
 @base_schema.include(method="POST", path_regex=".*/(registered_model|model_version).*").parametrize()
 @settings(
     max_examples=100,
@@ -352,7 +260,7 @@ def test_mr_api_stateless_post_models(auth_headers: dict, case: schemathesis.Cas
     call_and_validate_with_null_byte_handling(case, auth_headers, verify_ssl)
 
 
-@pytest.mark.parametrize("generated_schema", ["model-registry.yaml"], indirect=True)
+@pytest.mark.parametrize("generated_schema", ["model-registry-v1.yaml"], indirect=True)
 @base_schema.include(method="POST", path_regex=".*/artifact.*").parametrize()
 @settings(
     max_examples=100,
@@ -369,24 +277,7 @@ def test_mr_api_stateless_post_artifacts(auth_headers: dict, case: schemathesis.
     call_and_validate_with_null_byte_handling(case, auth_headers, verify_ssl)
 
 
-@pytest.mark.parametrize("generated_schema", ["model-registry.yaml"], indirect=True)
-@base_schema.include(method="POST", path_regex=".*/experiment.*").parametrize()
-@settings(
-    max_examples=100,
-    deadline=None,
-    suppress_health_check=[
-        HealthCheck.filter_too_much,
-        HealthCheck.too_slow,
-        HealthCheck.data_too_large,
-    ],
-)
-@pytest.mark.fuzz
-def test_mr_api_stateless_post_experiments(auth_headers: dict, case: schemathesis.Case, verify_ssl: bool) -> None:
-    """Test POST endpoints for Experiments and ExperimentRuns."""
-    call_and_validate_with_null_byte_handling(case, auth_headers, verify_ssl)
-
-
-@pytest.mark.parametrize("generated_schema", ["model-registry.yaml"], indirect=True)
+@pytest.mark.parametrize("generated_schema", ["model-registry-v1.yaml"], indirect=True)
 @base_schema.include(method="POST", path_regex=".*/inference_service.*|.*/serving_environment.*").parametrize()
 @settings(
     max_examples=100,
@@ -404,7 +295,7 @@ def test_mr_api_stateless_post_serving(auth_headers: dict, case: schemathesis.Ca
 
 
 # PATCH endpoints - split by resource type
-@pytest.mark.parametrize("generated_schema", ["model-registry.yaml"], indirect=True)
+@pytest.mark.parametrize("generated_schema", ["model-registry-v1.yaml"], indirect=True)
 @base_schema.include(method="PATCH", path_regex=".*/(registered_model|model_version).*").parametrize()
 @settings(
     max_examples=100,
@@ -421,8 +312,8 @@ def test_mr_api_stateless_patch_models(auth_headers: dict, case: schemathesis.Ca
     call_and_validate_with_null_byte_handling(case, auth_headers, verify_ssl)
 
 
-@pytest.mark.parametrize("generated_schema", ["model-registry.yaml"], indirect=True)
-@base_schema.include(method="PATCH", path_regex=".*/artifact.*|.*/experiment.*|.*/inference_service.*|.*/serving_environment.*").parametrize()
+@pytest.mark.parametrize("generated_schema", ["model-registry-v1.yaml"], indirect=True)
+@base_schema.include(method="PATCH", path_regex=".*/artifact.*|.*/inference_service.*|.*/serving_environment.*").parametrize()
 @settings(
     max_examples=100,
     deadline=None,
@@ -434,7 +325,7 @@ def test_mr_api_stateless_patch_models(auth_headers: dict, case: schemathesis.Ca
 )
 @pytest.mark.fuzz
 def test_mr_api_stateless_patch_others(auth_headers: dict, case: schemathesis.Case, verify_ssl: bool) -> None:
-    """Test PATCH endpoints for Artifacts, Experiments, and Serving resources."""
+    """Test PATCH endpoints for Artifacts and Serving resources."""
     call_and_validate_with_null_byte_handling(case, auth_headers, verify_ssl)
 
 @pytest.mark.fuzz
@@ -443,10 +334,10 @@ def test_mr_api_stateless_patch_others(auth_headers: dict, case: schemathesis.Ca
 def test_post_model_version_artifacts(auth_headers: dict, artifact_type: str, uri_prefix: str, state: str,
                                       cleanup_artifacts: Callable, verify_ssl: bool):
     """
-    Direct test for POST /api/model_registry/v1alpha3/model_versions/{modelversionId}/artifacts.
+    Direct test for POST /api/model_registry/v1/model_versions/{model_version_id}/artifacts.
     """
     model_version_id = generate_random_id()
-    endpoint = f"{REGISTRY_URL}/api/model_registry/v1alpha3/model_versions/{model_version_id}/artifacts"
+    endpoint = f"{REGISTRY_URL}/api/model_registry/v1/model_versions/{model_version_id}/artifacts"
 
     # Build payload using helper function
     payload = build_artifact_payload(
@@ -470,46 +361,10 @@ def test_post_model_version_artifacts(auth_headers: dict, artifact_type: str, ur
 
 @pytest.mark.fuzz
 @pytest.mark.parametrize(("artifact_type", "uri_prefix"), ARTIFACT_TYPE_PARAMS)
-@pytest.mark.parametrize("state", ARTIFACT_STATES)
-def test_post_experiment_run_artifacts(auth_headers: dict, artifact_type: str, uri_prefix: str, state: str,
-                                       cleanup_artifacts: Callable, verify_ssl: bool):
-    """
-    Direct test for POST /api/model_registry/v1alpha3/experiment_runs/{experimentrunId}/artifacts.
-    """
-    # Create experiment and experiment run using helper
-    experiment_id, experiment_run_id = create_experiment_and_run(auth_headers=auth_headers, verify_tls=verify_ssl)
-
-    endpoint = f"{REGISTRY_URL}/api/model_registry/v1alpha3/experiment_runs/{experiment_run_id}/artifacts"
-
-    # Build payload using helper function
-    payload = build_artifact_payload(
-        artifact_type=artifact_type,
-        uri_prefix=uri_prefix,
-        state=state,
-        name=f"my-test-experiment-artifact-post-{secrets.randbelow(1000000)}",
-        description="A test experiment artifact created via direct POST test."
-    )
-
-    # Make the API request
-    response = requests.post(endpoint, headers=auth_headers, json=payload, timeout=DEFAULT_API_TIMEOUT, verify=verify_ssl)
-
-    # Validate response and get artifact ID
-    artifact_id = validate_artifact_response(response, payload)
-
-    # Cleanup artifacts (only if artifact was created)
-    if artifact_id is not None:
-        cleanup_artifacts(artifact_id)
-
-    # Cleanup experiment and run
-    cleanup_experiment_and_run(auth_headers=auth_headers, experiment_id=experiment_id, experiment_run_id=experiment_run_id, verify_tls=verify_ssl)
-
-
-@pytest.mark.fuzz
-@pytest.mark.parametrize(("artifact_type", "uri_prefix"), ARTIFACT_TYPE_PARAMS)
 def test_patch_artifact(auth_headers: dict, artifact_resource: Callable, artifact_type: str, uri_prefix: str,
                         verify_ssl: bool):
     """
-    Direct test for PATCH /api/model_registry/v1alpha3/artifacts/{id}.
+    Direct test for PATCH /api/model_registry/v1/artifacts/{id}.
     """
     initial_state = "PENDING"
     target_state = "LIVE"
@@ -548,7 +403,7 @@ def test_patch_artifact(auth_headers: dict, artifact_resource: Callable, artifac
         create_payload["parameterType"] = "string"
 
     with artifact_resource(auth_headers, create_payload) as artifact_id:
-        patch_endpoint = f"{REGISTRY_URL}/api/model_registry/v1alpha3/artifacts/{artifact_id}"
+        patch_endpoint = f"{REGISTRY_URL}/api/model_registry/v1/artifacts/{artifact_id}"
         patch_payload = {
             "artifactType": artifact_type,
             "description": f"Updated description for {artifact_type} ({target_state})",
