@@ -1,6 +1,9 @@
 import * as React from 'react';
 import { isPreviewReady } from '~/app/pages/modelCatalogSettings/utils/validation';
-import { transformFormDataToConfig } from '~/app/pages/modelCatalogSettings/utils/modelCatalogSettingsUtils';
+import {
+  transformFormDataToConfig,
+  resolveHuggingFaceApiKeyField,
+} from '~/app/pages/modelCatalogSettings/utils/modelCatalogSettingsUtils';
 import {
   CatalogSourceConfig,
   CatalogSourceType,
@@ -84,6 +87,7 @@ export interface UseSourcePreviewOptions {
   existingSourceConfig?: CatalogSourceConfig;
   apiState: ModelCatalogSettingsAPIState;
   isEditMode: boolean;
+  hasExistingApiKey?: boolean;
 }
 
 export interface UseSourcePreviewResult {
@@ -106,6 +110,7 @@ export const useSourcePreview = ({
   existingSourceConfig,
   apiState,
   isEditMode,
+  hasExistingApiKey = false,
 }: UseSourcePreviewOptions): UseSourcePreviewResult => {
   const [credentialsValidationStatus, setCredentialsValidationStatus] =
     React.useState<CredentialsValidationStatus>('unknown');
@@ -125,6 +130,7 @@ export const useSourcePreview = ({
     const payload = transformFormDataToConfig(formData, existingSourceConfig);
 
     const request: CatalogSourcePreviewRequest = {
+      id: payload.id,
       type: payload.type,
       includedModels: payload.includedModels,
       excludedModels: payload.excludedModels,
@@ -133,7 +139,11 @@ export const useSourcePreview = ({
     if (payload.type === CatalogSourceType.HUGGING_FACE) {
       request.properties = {
         allowedOrganization: payload.allowedOrganization,
-        apiKey: payload.apiKey,
+        ...resolveHuggingFaceApiKeyField(payload.apiKey, {
+          tokenModified: formData.tokenModified,
+          hasExistingApiKey,
+          forPreview: true,
+        }),
       };
     } else {
       request.properties = {
@@ -143,7 +153,7 @@ export const useSourcePreview = ({
     }
 
     return request;
-  }, [formData, existingSourceConfig]);
+  }, [formData, existingSourceConfig, hasExistingApiKey]);
 
   const previewApi = React.useCallback(
     (

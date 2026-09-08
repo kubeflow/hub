@@ -4,6 +4,7 @@ import {
   catalogSourceConfigToFormData,
   getPayloadForConfig,
   transformFormDataToConfig,
+  resolveHuggingFaceApiKeyField,
 } from '~/app/pages/modelCatalogSettings/utils/modelCatalogSettingsUtils';
 import { ManageSourceFormData } from '~/app/pages/modelCatalogSettings/useManageSourceData';
 
@@ -57,7 +58,7 @@ describe('catalogSourceConfigToFormData', () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { tokenModified: tokenModifiedDefault, ...yamlDefaultExpected } = yamlDefaultFormData;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { tokenModified: tokenModifiedHf, ...hfExpected } = hfFormData;
+    const { tokenModified, accessToken, ...hfExpected } = hfFormData;
 
     expect(catalogSourceConfigToFormData(catalogSourceDefaultConfigYAMLMock)).toEqual(
       yamlDefaultExpected,
@@ -74,7 +75,10 @@ describe('catalogSourceConfigToFormData', () => {
       sourceType: CatalogSourceType.YAML,
       yamlContent: '',
     });
-    expect(catalogSourceConfigToFormData(catalogSourceConfigHFMock)).toEqual(hfExpected);
+    expect(catalogSourceConfigToFormData(catalogSourceConfigHFMock)).toEqual({
+      ...hfExpected,
+      accessToken: '',
+    });
   });
 });
 
@@ -198,5 +202,77 @@ describe('getPayloadForConfig', () => {
       includedModels: [],
       excludedModels: [],
     });
+  });
+
+  it('should omit apiKey in edit mode when token is unchanged', () => {
+    const config = transformFormDataToConfig(hfFormData);
+    expect(getPayloadForConfig(config, true, false)).toEqual({
+      name: 'Huggingface source 2',
+      enabled: true,
+      isDefault: false,
+      type: CatalogSourceType.HUGGING_FACE,
+      allowedOrganization: 'org1',
+      includedModels: [],
+      excludedModels: [],
+    });
+  });
+
+  it('should send empty apiKey in edit mode when token was cleared', () => {
+    const clearedFormData = { ...hfFormData, accessToken: '', tokenModified: true };
+    const config = transformFormDataToConfig(clearedFormData);
+    expect(getPayloadForConfig(config, true, true)).toEqual({
+      name: 'Huggingface source 2',
+      enabled: true,
+      isDefault: false,
+      type: CatalogSourceType.HUGGING_FACE,
+      allowedOrganization: 'org1',
+      apiKey: '',
+      includedModels: [],
+      excludedModels: [],
+    });
+  });
+});
+
+describe('resolveHuggingFaceApiKeyField', () => {
+  it('omits apiKey for preview when token is unchanged and source has existing key', () => {
+    expect(
+      resolveHuggingFaceApiKeyField('secret', {
+        tokenModified: false,
+        hasExistingApiKey: true,
+        forPreview: true,
+      }),
+    ).toEqual({});
+  });
+
+  it('includes apiKey for preview when token was modified', () => {
+    expect(
+      resolveHuggingFaceApiKeyField('hf_token', {
+        tokenModified: true,
+        hasExistingApiKey: false,
+        forPreview: true,
+      }),
+    ).toEqual({
+      apiKey: 'hf_token',
+    });
+  });
+
+  it('omits apiKey for preview when token is empty', () => {
+    expect(
+      resolveHuggingFaceApiKeyField('', {
+        tokenModified: true,
+        hasExistingApiKey: false,
+        forPreview: true,
+      }),
+    ).toEqual({});
+  });
+
+  it('sends empty apiKey on save when token was cleared', () => {
+    expect(
+      resolveHuggingFaceApiKeyField('', {
+        tokenModified: true,
+        hasExistingApiKey: true,
+        forPreview: false,
+      }),
+    ).toEqual({ apiKey: '' });
   });
 });

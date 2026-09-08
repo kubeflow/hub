@@ -37,6 +37,10 @@ func (a CatalogSourcePreview) CreateCatalogSourcePreview(client httpclient.HTTPC
 		"type": sourcePreviewPayload.Type,
 	}
 
+	if sourcePreviewPayload.Id != "" {
+		configData["id"] = sourcePreviewPayload.Id
+	}
+
 	if assetType := pageValues.Get("assetType"); assetType != "" {
 		configData["assetType"] = assetType
 	}

@@ -1,6 +1,7 @@
 package models
 
 type CatalogSourcePreviewRequest struct {
+	Id              string                 `json:"id,omitempty"`
 	Type            string                 `json:"type"`
 	IncludedModels  []string               `json:"includedModels,omitempty"`
 	ExcludedModels  []string               `json:"excludedModels,omitempty"`

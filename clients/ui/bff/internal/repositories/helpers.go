@@ -314,6 +314,7 @@ func UpdateCatalogSourceInYAML(
 	payload models.CatalogSourceConfigPayload,
 	secretName string,
 	yamlFilePath string,
+	clearApiKey bool,
 ) (string, error) {
 	var parsed struct {
 		Catalogs []map[string]interface{} `yaml:"catalogs"`
@@ -364,7 +365,9 @@ func UpdateCatalogSourceInYAML(
 			if payload.AllowedOrganization != nil {
 				properties["allowedOrganization"] = *payload.AllowedOrganization
 			}
-			if secretName != "" {
+			if clearApiKey {
+				delete(properties, ApiKey)
+			} else if secretName != "" {
 				properties["apiKey"] = secretName
 			}
 			if yamlFilePath != "" && payload.Yaml != nil {

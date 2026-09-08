@@ -3613,8 +3613,9 @@ components:
           type: object
           description: |-
             Type-specific configuration properties. For yaml sources, provide `yaml` (catalog
-            content) or `yamlCatalogPath`. For Hugging Face sources, `apiKey` (forwarded for preview;
-            catalog may read from env only) and `allowedOrganization` may be included.
+            content) or `yamlCatalogPath`. For Hugging Face sources, `apiKey` (raw Hugging Face
+            access token forwarded to catalog for preview; omitted on edit when no credentials exist)
+            and `allowedOrganization` may be included.
           additionalProperties: true
     CatalogSourcePreviewItem:
       description: An asset in the preview response with inclusion status.

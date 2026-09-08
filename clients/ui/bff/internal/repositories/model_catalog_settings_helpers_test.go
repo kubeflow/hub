@@ -6,8 +6,49 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
+
+func TestIsHuggingFaceApiKeySecretName(t *testing.T) {
+	assert.True(t, isHuggingFaceApiKeySecretName("catalog-my-source-apikey"))
+	assert.False(t, isHuggingFaceApiKeySecretName("hf_abc123"))
+	assert.False(t, isHuggingFaceApiKeySecretName(""))
+}
+
+func TestIsRawHuggingFaceApiKey(t *testing.T) {
+	assert.True(t, isRawHuggingFaceApiKey("hf_abc123"))
+	assert.False(t, isRawHuggingFaceApiKey("catalog-my-source-apikey"))
+	assert.False(t, isRawHuggingFaceApiKey("hugging-face-source-secret"))
+}
+
+func TestClassifyHuggingFaceApiKeyValue(t *testing.T) {
+	raw, secret := classifyHuggingFaceApiKeyValue("hf_abc123")
+	assert.Equal(t, "hf_abc123", raw)
+	assert.Empty(t, secret)
+
+	raw, secret = classifyHuggingFaceApiKeyValue("catalog-my-source-apikey")
+	assert.Empty(t, raw)
+	assert.Equal(t, "catalog-my-source-apikey", secret)
+}
+
+func TestHuggingFaceApiKeyFromSecret(t *testing.T) {
+	assert.Empty(t, huggingFaceApiKeyFromSecret(nil))
+
+	secret := &corev1.Secret{
+		StringData: map[string]string{ApiKey: "hf_from_string_data"},
+	}
+	assert.Equal(t, "hf_from_string_data", huggingFaceApiKeyFromSecret(secret))
+
+	secret = &corev1.Secret{
+		Data: map[string][]byte{ApiKey: []byte("hf_from_data")},
+	}
+	assert.Equal(t, "hf_from_data", huggingFaceApiKeyFromSecret(secret))
+}
+
+func TestHuggingFaceSecretNameForCatalogId(t *testing.T) {
+	assert.Equal(t, "catalog-my-source-apikey", huggingFaceSecretNameForCatalogId("my_source"))
+}
 
 func TestHfSourceLabelValue(t *testing.T) {
 	tests := []struct {

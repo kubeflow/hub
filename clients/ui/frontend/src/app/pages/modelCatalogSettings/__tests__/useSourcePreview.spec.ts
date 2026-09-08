@@ -16,8 +16,9 @@ jest.mock('~/app/pages/modelCatalogSettings/utils/validation', () => ({
   isPreviewReady: jest.fn(() => true),
 }));
 
-// Mock the transform utility
+// Mock the transform utility; keep resolveHuggingFaceApiKeyField real for preview payload tests
 jest.mock('~/app/pages/modelCatalogSettings/utils/modelCatalogSettingsUtils', () => ({
+  ...jest.requireActual('~/app/pages/modelCatalogSettings/utils/modelCatalogSettingsUtils'),
   transformFormDataToConfig: jest.fn((formData: ManageSourceFormData) => {
     if (formData.sourceType === CatalogSourceType.HUGGING_FACE) {
       return {
@@ -75,6 +76,7 @@ const createMockApiState = (
     createCatalogSourceConfig: jest.fn(),
     updateCatalogSourceConfig: jest.fn(),
     deleteCatalogSourceConfig: jest.fn(),
+    deleteCatalogSourceCredentials: jest.fn(),
     previewCatalogSource: jest.fn().mockResolvedValue(mockPreviewResult),
   },
   ...overrides,

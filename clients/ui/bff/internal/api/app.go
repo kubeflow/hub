@@ -72,10 +72,11 @@ const (
 	CatalogModelPerformanceArtifacts    = CatalogPathPrefix + "/sources/:" + CatalogSourceId + "/performance_artifacts/*" + CatalogModelName
 	CatalogModelSecurityArtifacts       = CatalogPathPrefix + "/sources/:" + CatalogSourceId + "/security_artifacts/*" + CatalogModelName
 
-	ModelCatalogSettingsPathPrefix           = SettingsPath + "/model_catalog"
-	ModelCatalogSettingsSourceConfigListPath = ModelCatalogSettingsPathPrefix + "/source_configs"
-	ModelCatalogSettingsSourceConfigPath     = ModelCatalogSettingsSourceConfigListPath + "/:" + CatalogSourceId
-	CatalogSourcePreviewPath                 = ModelCatalogSettingsPathPrefix + "/source_preview"
+	ModelCatalogSettingsPathPrefix                  = SettingsPath + "/model_catalog"
+	ModelCatalogSettingsSourceConfigListPath        = ModelCatalogSettingsPathPrefix + "/source_configs"
+	ModelCatalogSettingsSourceConfigPath            = ModelCatalogSettingsSourceConfigListPath + "/:" + CatalogSourceId
+	ModelCatalogSettingsSourceConfigCredentialsPath = ModelCatalogSettingsSourceConfigPath + "/credentials"
+	CatalogSourcePreviewPath                        = ModelCatalogSettingsPathPrefix + "/source_preview"
 
 	// Model Transfer Jobs
 	ModelTransferJobName       = "job_name"
@@ -341,6 +342,7 @@ func (app *App) Routes() http.Handler {
 		apiRouter.GET(ModelCatalogSettingsSourceConfigPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.GetCatalogSourceConfigHandler)))
 		apiRouter.PATCH(ModelCatalogSettingsSourceConfigPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.UpdateCatalogSourceConfigHandler)))
 		apiRouter.DELETE(ModelCatalogSettingsSourceConfigPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.DeleteCatalogSourceConfigHandler)))
+		apiRouter.DELETE(ModelCatalogSettingsSourceConfigCredentialsPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.ClearCatalogSourceCredentialsHandler)))
 		apiRouter.POST(CatalogSourcePreviewPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.AttachModelCatalogRESTClient(app.CreateCatalogSourcePreviewHandler))))
 
 		// Agent catalog endpoints

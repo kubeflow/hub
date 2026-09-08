@@ -41,6 +41,7 @@ jest.mock('~/app/hooks/modelCatalogSettings/useModelCatalogSettingsAPIState', ()
         getCatalogSourceConfig: jest.fn(),
         updateCatalogSourceConfig: jest.fn(),
         deleteCatalogSourceConfig: jest.fn(),
+        deleteCatalogSourceCredentials: jest.fn(),
         previewCatalogSource: jest.fn(),
       },
     },

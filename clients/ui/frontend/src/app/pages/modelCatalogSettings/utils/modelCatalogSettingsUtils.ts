@@ -31,7 +31,7 @@ export const catalogSourceConfigToFormData = (
 
   return {
     ...common,
-    accessToken: sourceConfig.apiKey ?? '',
+    accessToken: '',
     organization: sourceConfig.allowedOrganization ?? '',
     yamlContent: '',
   };
@@ -70,6 +70,31 @@ export const transformFormDataToConfig = (
   };
 };
 
+export const resolveHuggingFaceApiKeyField = (
+  apiKey: string | undefined,
+  options: {
+    tokenModified: boolean;
+    hasExistingApiKey: boolean;
+    forPreview: boolean;
+  },
+): { apiKey?: string } => {
+  const { tokenModified, hasExistingApiKey, forPreview } = options;
+
+  if (!tokenModified && hasExistingApiKey) {
+    return {};
+  }
+
+  if (forPreview) {
+    return apiKey ? { apiKey } : {};
+  }
+
+  if (!tokenModified) {
+    return {};
+  }
+
+  return { apiKey: apiKey ?? '' };
+};
+
 export const getPayloadForConfig = (
   sourceConfig: CatalogSourceConfig,
   isEditMode = false,
@@ -94,7 +119,11 @@ export const getPayloadForConfig = (
       ...(sourceConfig.type === CatalogSourceType.YAML && { yaml: sourceConfig.yaml }),
       ...(sourceConfig.type === CatalogSourceType.HUGGING_FACE && {
         allowedOrganization: sourceConfig.allowedOrganization,
-        ...(tokenModified && sourceConfig.apiKey ? { apiKey: sourceConfig.apiKey } : {}),
+        ...resolveHuggingFaceApiKeyField(sourceConfig.apiKey, {
+          tokenModified,
+          hasExistingApiKey: false,
+          forPreview: false,
+        }),
       }),
     };
   }

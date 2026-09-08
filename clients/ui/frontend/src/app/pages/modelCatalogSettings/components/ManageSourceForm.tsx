@@ -60,17 +60,6 @@ const ManageSourceForm: React.FC<ManageSourceFormProps> = ({
     markSourcePending,
   } = React.useContext(ModelCatalogSettingsContext);
 
-  // Use the preview hook
-  const preview = useSourcePreview({
-    formData,
-    existingSourceConfig,
-    apiState,
-    isEditMode,
-  });
-
-  const isHuggingFaceMode = formData.sourceType === CatalogSourceType.HUGGING_FACE;
-  const isFormComplete = isFormValid(formData);
-
   const hasExistingApiKey = React.useMemo(() => {
     if (!isEditMode || !formData.id) {
       return false;
@@ -78,6 +67,26 @@ const ManageSourceForm: React.FC<ManageSourceFormProps> = ({
     const source = catalogSources?.items?.find((s) => s.id === formData.id);
     return source?.hasApiKey ?? false;
   }, [isEditMode, formData.id, catalogSources]);
+
+  const preview = useSourcePreview({
+    formData,
+    existingSourceConfig,
+    apiState,
+    isEditMode,
+    hasExistingApiKey,
+  });
+
+  const handleClearCredentials = React.useCallback(async () => {
+    if (!apiState.apiAvailable || !formData.id) {
+      return;
+    }
+    await apiState.api.deleteCatalogSourceCredentials({}, formData.id);
+    refreshCatalogSourceConfigs();
+    refreshCatalogSources();
+  }, [apiState, formData.id, refreshCatalogSourceConfigs, refreshCatalogSources]);
+
+  const isHuggingFaceMode = formData.sourceType === CatalogSourceType.HUGGING_FACE;
+  const isFormComplete = isFormValid(formData);
 
   const handleSubmit = async () => {
     if (!apiState.apiAvailable) {
@@ -149,6 +158,7 @@ const ManageSourceForm: React.FC<ManageSourceFormProps> = ({
                     isValidationSuccess={preview.isValidationSuccess}
                     onClearValidationSuccess={preview.clearValidationSuccess}
                     hasExistingApiKey={hasExistingApiKey}
+                    onClearCredentials={handleClearCredentials}
                   />
                 </StackItem>
               )}

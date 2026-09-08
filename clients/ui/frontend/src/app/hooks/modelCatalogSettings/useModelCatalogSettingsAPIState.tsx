@@ -3,6 +3,7 @@ import React from 'react';
 import {
   createCatalogSourceConfig,
   deleteCatalogSourceConfig,
+  deleteCatalogSourceCredentials,
   getCatalogSourceConfig,
   getCatalogSourceConfigs,
   updateCatalogSourceConfig,
@@ -23,6 +24,7 @@ const useModelCatalogSettingsAPIState = (
       getCatalogSourceConfig: getCatalogSourceConfig(path, queryParameters),
       updateCatalogSourceConfig: updateCatalogSourceConfig(path, queryParameters),
       deleteCatalogSourceConfig: deleteCatalogSourceConfig(path, queryParameters),
+      deleteCatalogSourceCredentials: deleteCatalogSourceCredentials(path, queryParameters),
       previewCatalogSource: previewCatalogSource(path, queryParameters),
     }),
     [queryParameters],

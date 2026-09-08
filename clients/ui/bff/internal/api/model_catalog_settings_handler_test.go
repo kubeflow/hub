@@ -330,6 +330,19 @@ var _ = Describe("TestModelCatalogSettings", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(rs.StatusCode).To(Equal(http.StatusForbidden))
 		})
+
+		It("DELETE credentials returns 204", func() {
+			rs, _, err := serveApiTest(
+				http.MethodDelete,
+				"/api/v1/settings/model_catalog/source_configs/hf_test_source/credentials?namespace=kubeflow",
+				nil,
+				kubernetesMockedStaticClientFactory,
+				requestIdentity,
+				"kubeflow",
+			)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(rs.StatusCode).To(Equal(http.StatusNoContent))
+		})
 	})
 
 })

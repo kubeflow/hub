@@ -232,3 +232,43 @@ func (app *App) DeleteCatalogSourceConfigHandler(w http.ResponseWriter, r *http.
 		app.serverErrorResponse(w, r, err)
 	}
 }
+
+func (app *App) ClearCatalogSourceCredentialsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	ctx := r.Context()
+
+	namespace, ok := ctx.Value(constants.NamespaceHeaderParameterKey).(string)
+	if !ok || namespace == "" {
+		app.badRequestResponse(w, r, fmt.Errorf("missing namespace in context"))
+		return
+	}
+
+	client, err := app.kubernetesClientFactory.GetClient(ctx)
+	if err != nil {
+		app.serverErrorResponse(w, r, errors.New("catalog client not found"))
+		return
+	}
+
+	catalogSourceId := ps.ByName(CatalogSourceId)
+	if catalogSourceId == "" {
+		app.badRequestResponse(w, r, repositories.ErrCatalogSourceIdRequired)
+		return
+	}
+
+	err = app.repositories.ModelCatalogSettingsRepository.ClearHuggingFaceCatalogSourceCredentials(
+		ctx, client, namespace, catalogSourceId,
+	)
+	if err != nil {
+		if errors.Is(err, repositories.ErrCatalogSourceIdRequired) ||
+			errors.Is(err, repositories.ErrCatalogIdInvalid) ||
+			errors.Is(err, repositories.ErrCatalogIDTooLong) {
+			app.badRequestResponse(w, r, err)
+		} else if errors.Is(err, repositories.ErrCatalogSourceConflict) {
+			app.conflictResponse(w, r, err.Error())
+		} else {
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

@@ -1,3 +1,4 @@
+import { APIOptions, handleRestFailures, restDELETE } from 'mod-arch-core';
 import {
   CatalogSourceConfig,
   CatalogSourceConfigList,
@@ -21,3 +22,10 @@ export const getCatalogSourceConfig = service.getSourceConfig;
 export const updateCatalogSourceConfig = service.updateSourceConfig;
 export const deleteCatalogSourceConfig = service.deleteSourceConfig;
 export const previewCatalogSource = service.previewSource;
+
+export const deleteCatalogSourceCredentials =
+  (hostPath: string, queryParams: Record<string, unknown> = {}) =>
+  (opts: APIOptions, sourceId: string): Promise<void> =>
+    handleRestFailures(
+      restDELETE(hostPath, `/source_configs/${sourceId}/credentials`, {}, queryParams, opts),
+    ).then(() => undefined);

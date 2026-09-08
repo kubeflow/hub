@@ -572,6 +572,115 @@ var _ = Describe("ModelCatalogSettingRepository", func() {
 			Expect(deleted.Id).To(Equal("delete_test_hf"))
 		})
 	})
+
+	Describe("PrepareCatalogSourcePreviewRequest", func() {
+		It("should forward raw apiKey unchanged for huggingface preview", func() {
+			request := models.CatalogSourcePreviewRequest{
+				Id:   "preview_hf_source",
+				Type: "hf",
+				Properties: map[string]interface{}{
+					ApiKey:                "hf_preview_token",
+					"allowedOrganization": "test-org",
+				},
+			}
+
+			err := repo.PrepareCatalogSourcePreviewRequest(ctx, k8sClient, "kubeflow", &request)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(request.Properties[ApiKey]).To(Equal("hf_preview_token"))
+		})
+
+		It("should forward updated raw tokens without persisting secrets", func() {
+			request := models.CatalogSourcePreviewRequest{
+				Id:   "preview_hf_patch",
+				Type: "hf",
+				Properties: map[string]interface{}{
+					ApiKey:                "hf_first_token",
+					"allowedOrganization": "test-org",
+				},
+			}
+			err := repo.PrepareCatalogSourcePreviewRequest(ctx, k8sClient, "kubeflow", &request)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(request.Properties[ApiKey]).To(Equal("hf_first_token"))
+
+			request.Properties[ApiKey] = "hf_second_token"
+			err = repo.PrepareCatalogSourcePreviewRequest(ctx, k8sClient, "kubeflow", &request)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(request.Properties[ApiKey]).To(Equal("hf_second_token"))
+		})
+
+		It("should resolve a secret reference to the raw apiKey", func() {
+			request := models.CatalogSourcePreviewRequest{
+				Id:   "hugging_face_source",
+				Type: "hf",
+				Properties: map[string]interface{}{
+					ApiKey:                "hugging-face-source-secret",
+					"allowedOrganization": "test-org",
+				},
+			}
+
+			err := repo.PrepareCatalogSourcePreviewRequest(ctx, k8sClient, "kubeflow", &request)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(request.Properties[ApiKey]).To(Equal("hf_test_api_key_12345"))
+		})
+
+		It("should attach the raw apiKey when apiKey is omitted and a secret already exists", func() {
+			request := models.CatalogSourcePreviewRequest{
+				Id:   "hugging_face_source",
+				Type: "hf",
+				Properties: map[string]interface{}{
+					"allowedOrganization": "org",
+				},
+			}
+
+			err := repo.PrepareCatalogSourcePreviewRequest(ctx, k8sClient, "kubeflow", &request)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(request.Properties[ApiKey]).To(Equal("hf_test_api_key_12345"))
+		})
+
+		It("should omit apiKey when apiKey is omitted and no secret exists yet", func() {
+			request := models.CatalogSourcePreviewRequest{
+				Id:   "preview_hf_no_secret_yet",
+				Type: "hf",
+				Properties: map[string]interface{}{
+					"allowedOrganization": "org",
+				},
+			}
+
+			err := repo.PrepareCatalogSourcePreviewRequest(ctx, k8sClient, "kubeflow", &request)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(request.Properties).NotTo(HaveKey(ApiKey))
+		})
+
+		It("should forward a raw access token without creating a secret", func() {
+			request := models.CatalogSourcePreviewRequest{
+				Id:   "preview_hf_new_credentials",
+				Type: "hf",
+				Properties: map[string]interface{}{
+					ApiKey:                "hf_new_preview_token",
+					"allowedOrganization": "org",
+				},
+			}
+
+			err := repo.PrepareCatalogSourcePreviewRequest(ctx, k8sClient, "kubeflow", &request)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(request.Properties[ApiKey]).To(Equal("hf_new_preview_token"))
+
+			_, err = k8sClient.GetSecret(ctx, "kubeflow", "catalog-preview-hf-new-credentials-apikey")
+			Expect(apierrors.IsNotFound(err)).To(BeTrue())
+		})
+
+		It("should skip secret handling for non-huggingface preview types", func() {
+			request := models.CatalogSourcePreviewRequest{
+				Type: "yaml",
+				Properties: map[string]interface{}{
+					"yaml": "models: []",
+				},
+			}
+
+			err := repo.PrepareCatalogSourcePreviewRequest(ctx, k8sClient, "kubeflow", &request)
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
 })
 
 func boolPtr(b bool) *bool {

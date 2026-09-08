@@ -79,6 +79,7 @@ export const ERROR_MESSAGES = {
   FILE_UPLOAD_FAILED: 'File upload failed',
   FILE_UPLOAD_FAILED_BODY:
     "The YAML file couldn't be uploaded. Check its syntax and structure, then try again.",
+  CLEAR_CREDENTIALS_FAILED: 'Failed to clear access token',
   VALIDATION_FAILED: 'Credentials validation failed',
   VALIDATION_FAILED_BODY:
     'Could not validate your organization or access token. Check your entries and try again.',
