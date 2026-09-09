@@ -147,23 +147,15 @@ const CredentialsSection: React.FC<CredentialsSectionProps> = ({
     />
   );
 
-  const organizationHelperTxtNode =
-    isOrganizationTouched && !isOrganizationValid ? (
-      <>
-        <FormHelperText>
-          <HelperText>
-            <HelperTextItem variant="error" data-testid="organization-error">
-              {VALIDATION_MESSAGES.ORGANIZATION_REQUIRED}
-            </HelperTextItem>
-          </HelperText>
-        </FormHelperText>
-      </>
-    ) : undefined;
-
-  const formGroupOrgHelpTextNode = (
+  const organizationHelperTxtNode = (
     <>
       <FormHelperText>
         <HelperText>
+          {isOrganizationTouched && !isOrganizationValid ? (
+            <HelperTextItem variant="error" data-testid="organization-error">
+              {VALIDATION_MESSAGES.ORGANIZATION_REQUIRED}
+            </HelperTextItem>
+          ) : undefined}
           <HelperTextItem>{HELPER_TEXT.ORGANIZATION_SLUG}</HelperTextItem>
         </HelperText>
       </FormHelperText>
@@ -172,19 +164,15 @@ const CredentialsSection: React.FC<CredentialsSectionProps> = ({
 
   const organizationFormGroup = (
     <>
-      <Flex direction={{ default: 'column' }} gap={{ default: 'gapNone' }}>
-        <ThemeAwareFormGroupWrapper
-          label={FORM_LABELS.ORGANIZATION}
-          fieldId="organization"
-          isRequired
-          hasError={!!organizationHelperTxtNode}
-          helperTextNode={organizationHelperTxtNode}
-          popoverHelpText={DESCRIPTION_TEXT.ORGANIZATION}
-        >
-          {organizationInput}
-        </ThemeAwareFormGroupWrapper>
-        {formGroupOrgHelpTextNode}
-      </Flex>
+      <ThemeAwareFormGroupWrapper
+        label={FORM_LABELS.ORGANIZATION}
+        fieldId="organization"
+        isRequired
+        helperTextNode={organizationHelperTxtNode}
+        popoverHelpText={DESCRIPTION_TEXT.ORGANIZATION}
+      >
+        {organizationInput}
+      </ThemeAwareFormGroupWrapper>
     </>
   );
 
@@ -257,7 +245,7 @@ const CredentialsSection: React.FC<CredentialsSectionProps> = ({
 
   const accessTokenFormGroup = (
     <>
-      <Flex direction={{ default: 'column' }} gap={{ default: 'gapNone' }}>
+      <Flex direction={{ default: 'column' }}>
         <ThemeAwareFormGroupWrapper
           label={FORM_LABELS.ACCESS_TOKEN}
           fieldId="access-token"

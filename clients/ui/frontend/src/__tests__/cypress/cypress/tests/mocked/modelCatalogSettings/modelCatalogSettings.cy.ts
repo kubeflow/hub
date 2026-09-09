@@ -1624,4 +1624,106 @@ describe('HuggingFace Credentials Validation', () => {
       });
     });
   });
+
+  describe('Edit flow - existing access token (hasApiKey)', () => {
+    it('should show locked access token field when hasApiKey is true', () => {
+      setupMocks(
+        [mockCatalogSource({ id: 'hf-edit-locked', name: 'HF Edit Locked', hasApiKey: true })],
+        mockCatalogSourceConfigList({}),
+      );
+
+      cy.intercept('GET', '/model-registry/api/v1/settings/model_catalog/source_configs/**', {
+        data: mockHuggingFaceCatalogSourceConfig({
+          id: 'hf-edit-locked',
+          name: 'HF Edit Locked',
+          allowedOrganization: 'org1',
+          isDefault: false,
+        }),
+      });
+
+      manageSourcePage.visitManageSource('hf-edit-locked', {
+        enableTempDevCatalogHuggingFaceApiKeyFeature: true,
+      });
+
+      manageSourcePage.findAccessTokenInput().should('be.disabled');
+      manageSourcePage.findAccessTokenInput().should('have.value', '••••••••');
+      manageSourcePage.findAccessTokenHiddenHelper().should('exist');
+      manageSourcePage.findCredentialsSection().within(() => {
+        cy.findByRole('button', { name: 'Clear' }).should('exist');
+        cy.findByRole('button', { name: 'Validate' }).should('not.exist');
+      });
+    });
+
+    it('should unlock access token field after clearing when hasApiKey is true', () => {
+      setupMocks(
+        [
+          mockCatalogSource({
+            id: 'hf-edit-clear-flow',
+            name: 'HF Edit Clear Flow',
+            hasApiKey: true,
+          }),
+        ],
+        mockCatalogSourceConfigList({}),
+      );
+
+      cy.intercept('GET', '/model-registry/api/v1/settings/model_catalog/source_configs/**', {
+        data: mockHuggingFaceCatalogSourceConfig({
+          id: 'hf-edit-clear-flow',
+          name: 'HF Edit Clear Flow',
+          allowedOrganization: 'org1',
+          isDefault: false,
+        }),
+      });
+
+      manageSourcePage.visitManageSource('hf-edit-clear-flow', {
+        enableTempDevCatalogHuggingFaceApiKeyFeature: true,
+      });
+
+      manageSourcePage.findCredentialsSection().within(() => {
+        cy.findByRole('button', { name: 'Clear' }).click();
+      });
+      manageSourcePage.findClearAccessTokenModal().should('exist');
+      manageSourcePage.findClearAccessTokenConfirmButton().click();
+      manageSourcePage.findClearAccessTokenModal().should('not.exist');
+
+      manageSourcePage.findAccessTokenInput().should('not.be.disabled');
+      manageSourcePage.findAccessTokenInput().should('have.value', '');
+      manageSourcePage.findAccessTokenHiddenHelper().should('not.exist');
+      manageSourcePage.findCredentialsSection().within(() => {
+        cy.findByRole('button', { name: 'Validate' }).should('exist');
+      });
+    });
+
+    it('should show editable access token field when hasApiKey is false', () => {
+      setupMocks(
+        [
+          mockCatalogSource({
+            id: 'hf-edit-no-key',
+            name: 'HF Edit No Key',
+            hasApiKey: false,
+          }),
+        ],
+        mockCatalogSourceConfigList({}),
+      );
+
+      cy.intercept('GET', '/model-registry/api/v1/settings/model_catalog/source_configs/**', {
+        data: mockHuggingFaceCatalogSourceConfig({
+          id: 'hf-edit-no-key',
+          name: 'HF Edit No Key',
+          allowedOrganization: 'org1',
+          isDefault: false,
+        }),
+      });
+
+      manageSourcePage.visitManageSource('hf-edit-no-key', {
+        enableTempDevCatalogHuggingFaceApiKeyFeature: true,
+      });
+
+      manageSourcePage.findAccessTokenInput().should('not.be.disabled');
+      manageSourcePage.findAccessTokenHiddenHelper().should('not.exist');
+      manageSourcePage.findCredentialsSection().within(() => {
+        cy.findByRole('button', { name: 'Validate' }).should('exist');
+      });
+    });
+  });
 });
