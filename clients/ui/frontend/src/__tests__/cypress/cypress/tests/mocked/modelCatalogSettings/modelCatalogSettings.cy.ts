@@ -1273,12 +1273,27 @@ describe('Manage Source Page', () => {
   });
 
   it('should successfully update the source with huggingface type', () => {
+    cy.interceptApi(
+      `GET /api/:apiVersion/model_catalog/sources`,
+      { path: { apiVersion: MODEL_CATALOG_API_VERSION } },
+      mockCatalogSourceList({
+        items: [
+          mockCatalogSource({
+            id: 'huggingface_source_3',
+            name: 'Huggingface source 3',
+            hasApiKey: true,
+          }),
+        ],
+      }),
+    );
+
     cy.intercept('GET', '/model-registry/api/v1/settings/model_catalog/source_configs/**', {
       data: mockHuggingFaceCatalogSourceConfig({
         id: 'huggingface_source_3',
         name: 'Huggingface source 3',
         allowedOrganization: 'org1',
         isDefault: false,
+        apiKey: undefined,
       }),
     });
 
@@ -1303,7 +1318,7 @@ describe('Manage Source Page', () => {
     });
     manageSourcePage.findNameInput().should('have.value', 'Huggingface source 3');
 
-    manageSourcePage.findAccessTokenInput().should('have.value', 'apikey');
+    manageSourcePage.findAccessTokenInput().should('have.value', '••••••••');
     manageSourcePage.findOrganizationInput().should('have.value', 'org1');
 
     manageSourcePage.toggleModelVisibility();
