@@ -608,19 +608,19 @@ var _ = Describe("ModelCatalogSettingRepository", func() {
 			Expect(request.Properties[ApiKey]).To(Equal("hf_second_token"))
 		})
 
-		It("should resolve a secret reference to the raw apiKey", func() {
+		It("should forward apiKey unchanged regardless of format", func() {
 			request := models.CatalogSourcePreviewRequest{
 				Id:   "hugging_face_source",
 				Type: "hf",
 				Properties: map[string]interface{}{
-					ApiKey:                "hugging-face-source-secret",
+					ApiKey:                "test",
 					"allowedOrganization": "test-org",
 				},
 			}
 
 			err := repo.PrepareCatalogSourcePreviewRequest(ctx, k8sClient, "kubeflow", &request)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(request.Properties[ApiKey]).To(Equal("hf_test_api_key_12345"))
+			Expect(request.Properties[ApiKey]).To(Equal("test"))
 		})
 
 		It("should attach the raw apiKey when apiKey is omitted and a secret already exists", func() {

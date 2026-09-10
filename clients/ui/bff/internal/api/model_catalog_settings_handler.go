@@ -270,5 +270,8 @@ func (app *App) ClearCatalogSourceCredentialsHandler(w http.ResponseWriter, r *h
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	// Return JSON (not 204) so mod-arch-core restDELETE can parse the response body.
+	if err := app.WriteJSON(w, http.StatusOK, struct{}{}, nil); err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
 }

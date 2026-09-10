@@ -598,12 +598,9 @@ func (r *ModelCatalogSettingsRepository) PrepareCatalogSourcePreviewRequest(
 		}
 	}
 
-	if isRawHuggingFaceApiKey(apiKey) {
-		return nil
-	}
-
+	// Caller-provided apiKey is forwarded as-is; catalog validates format and credentials.
 	if apiKey != "" {
-		return setPreviewHuggingFaceApiKeyFromSecret(ctx, client, namespace, request, apiKey)
+		return nil
 	}
 
 	if request.Id == "" {

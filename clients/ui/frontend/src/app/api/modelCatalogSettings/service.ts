@@ -27,5 +27,8 @@ export const deleteCatalogSourceCredentials =
   (hostPath: string, queryParams: Record<string, unknown> = {}) =>
   (opts: APIOptions, sourceId: string): Promise<void> =>
     handleRestFailures(
-      restDELETE(hostPath, `/source_configs/${sourceId}/credentials`, {}, queryParams, opts),
+      restDELETE(hostPath, `/source_configs/${sourceId}/credentials`, {}, queryParams, {
+        ...opts,
+        parseJSON: false,
+      }),
     ).then(() => undefined);
