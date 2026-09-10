@@ -241,7 +241,7 @@ describe('PreviewPanel', () => {
     expect(screen.getByTestId('refresh-preview-link')).toBeInTheDocument();
   });
 
-  it('shows refresh alert with disabled link when hasFormChanged is true and preview is disabled', () => {
+  it('keeps refresh alert link enabled when preview is otherwise disabled', () => {
     const preview = createMockPreview({ hasFormChanged: true, canPreview: false });
     render(<PreviewPanel preview={preview} />);
 
@@ -249,7 +249,7 @@ describe('PreviewPanel', () => {
       screen.getByText('Source configuration changed. Refresh the preview.'),
     ).toBeInTheDocument();
     expect(screen.getByTestId('refresh-preview-link')).toBeInTheDocument();
-    expect(screen.getByTestId('refresh-preview-link')).toBeDisabled();
+    expect(screen.getByTestId('refresh-preview-link')).not.toBeDisabled();
   });
 
   it('shows preview disabled tooltip when token validation is required', async () => {

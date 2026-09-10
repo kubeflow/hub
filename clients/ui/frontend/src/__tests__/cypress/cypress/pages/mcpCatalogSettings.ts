@@ -79,20 +79,40 @@ class McpCatalogSettings {
   }
 }
 
+const mcpPreviewIntercept = () => {
+  cy.intercept('POST', '/model-registry/api/v1/settings/model_catalog/source_preview*', {
+    data: {
+      items: [{ name: 'server1', included: true }],
+      summary: { totalAssets: 1, includedAssets: 1, excludedAssets: 0 },
+      nextPageToken: '',
+      pageSize: 10,
+      size: 1,
+    },
+  }).as('mcpSourcePreview');
+};
+
 class McpManageSourcePage {
   visitAddSource() {
     cy.visit('/mcp-catalog-settings/add-source');
-    this.wait();
+    this.waitForAddSource();
   }
 
   visitManageSource(catalogSourceId: string) {
+    mcpPreviewIntercept();
     cy.visit(`/mcp-catalog-settings/manage-source/${encodeURIComponent(catalogSourceId)}`);
-    this.wait();
+    this.waitForManageSource();
   }
 
-  private wait() {
+  private waitForAddSource() {
     this.findHeading();
     cy.testA11y();
+  }
+
+  private waitForManageSource() {
+    this.findHeading();
+    cy.wait('@mcpSourcePreview');
+    // Preview panel uses decorative status icons; scan the form only.
+    cy.testA11y({ exclude: ['[data-testid="mcp-preview-panel"]'] });
   }
 
   findHeading() {

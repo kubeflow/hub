@@ -334,7 +334,7 @@ var _ = Describe("TestModelCatalogSettings", func() {
 		It("DELETE credentials returns 200 with empty JSON body", func() {
 			rs, body, err := serveApiTest(
 				http.MethodDelete,
-				"/api/v1/settings/model_catalog/source_configs/hf_test_source/credentials?namespace=kubeflow",
+				"/api/v1/settings/model_catalog/source_configs/hugging_face_source/credentials?namespace=kubeflow",
 				nil,
 				kubernetesMockedStaticClientFactory,
 				requestIdentity,

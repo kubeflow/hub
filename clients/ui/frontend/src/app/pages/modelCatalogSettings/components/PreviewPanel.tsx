@@ -135,11 +135,7 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({ preview }) => {
               title="Source configuration changed. Refresh the preview."
               className="pf-v6-u-mb-md"
               actionLinks={
-                <AlertActionLink
-                  onClick={onPreview}
-                  isDisabled={!canPreview}
-                  data-testid="refresh-preview-link"
-                >
+                <AlertActionLink onClick={onPreview} data-testid="refresh-preview-link">
                   Refresh preview
                 </AlertActionLink>
               }

@@ -77,8 +77,11 @@ const ManageSourceForm: React.FC<ManageSourceFormProps> = ({
   });
 
   const handleClearCredentials = React.useCallback(async () => {
-    if (!apiState.apiAvailable || !formData.id) {
+    if (!formData.id) {
       return;
+    }
+    if (!apiState.apiAvailable) {
+      throw new Error('API is not available');
     }
     await apiState.api.deleteCatalogSourceCredentials({}, formData.id);
     refreshCatalogSourceConfigs();

@@ -418,17 +418,25 @@ func (r *ModelCatalogSettingsRepository) ClearHuggingFaceCatalogSourceCredential
 		return err
 	}
 
+	existingCatalog, err := r.GetCatalogSourceConfig(ctx, client, namespace, catalogSourceId)
+	if err != nil {
+		return err
+	}
+	if existingCatalog.Type != CatalogTypeHuggingFace {
+		return fmt.Errorf("%w: credentials can only be cleared for huggingface sources", ErrValidationFailed)
+	}
+
 	if err := deleteHuggingFaceApiKeySecret(ctx, client, namespace, catalogSourceId); err != nil {
 		return fmt.Errorf("failed to delete huggingface api key secret: %w", err)
 	}
 
-	defaultCM, userCM, err := client.GetAllCatalogSourceConfigs(ctx, namespace)
+	_, userCM, err := client.GetAllCatalogSourceConfigs(ctx, namespace)
 	if err != nil {
 		return fmt.Errorf("failed to fetch catalog source configmaps: %w", err)
 	}
 
 	existingUserSource := FindCatalogSourceById(userCM.Data[k8s.CatalogSourceKey], catalogSourceId, false)
-	if existingUserSource == nil || existingUserSource.Type != CatalogTypeHuggingFace {
+	if existingUserSource == nil {
 		return nil
 	}
 
@@ -436,12 +444,17 @@ func (r *ModelCatalogSettingsRepository) ClearHuggingFaceCatalogSourceCredential
 		userCM.Data = make(map[string]string)
 	}
 
-	secretName, yamlFilePath := FindCatalogSourceProperties(userCM.Data[k8s.CatalogSourceKey], catalogSourceId)
+	_, yamlFilePath := FindCatalogSourceProperties(userCM.Data[k8s.CatalogSourceKey], catalogSourceId)
+	payload := models.CatalogSourceConfigPayload{}
+	if existingCatalog.AllowedOrganization != nil {
+		payload.AllowedOrganization = existingCatalog.AllowedOrganization
+	}
+
 	updatedYAML, err := UpdateCatalogSourceInYAML(
 		userCM.Data[k8s.CatalogSourceKey],
 		catalogSourceId,
-		models.CatalogSourceConfigPayload{},
-		secretName,
+		payload,
+		"",
 		yamlFilePath,
 		true,
 	)
@@ -458,7 +471,6 @@ func (r *ModelCatalogSettingsRepository) ClearHuggingFaceCatalogSourceCredential
 		return fmt.Errorf("failed to update user configmap: %w", err)
 	}
 
-	_ = defaultCM
 	return nil
 }
 

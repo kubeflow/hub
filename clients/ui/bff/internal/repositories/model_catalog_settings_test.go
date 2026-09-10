@@ -573,6 +573,41 @@ var _ = Describe("ModelCatalogSettingRepository", func() {
 		})
 	})
 
+	Describe("ClearHuggingFaceCatalogSourceCredentials", func() {
+		It("should delete the secret and remove apiKey from user sources.yaml", func() {
+			sourceID := "clear_hf_credentials"
+			createPayload := models.CatalogSourceConfigPayload{
+				Id:                  sourceID,
+				Name:                "Clear HF Credentials",
+				Type:                "hf",
+				Enabled:             boolPtr(true),
+				ApiKey:              stringPtr("hf_clear_credentials_test"),
+				AllowedOrganization: stringPtr("test-org"),
+			}
+			_, err := repo.CreateCatalogSourceConfig(ctx, k8sClient, "kubeflow", createPayload)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = repo.ClearHuggingFaceCatalogSourceCredentials(ctx, k8sClient, "kubeflow", sourceID)
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = k8sClient.GetSecret(ctx, "kubeflow", "catalog-clear-hf-credentials-apikey")
+			Expect(err).To(HaveOccurred())
+			Expect(apierrors.IsNotFound(err)).To(BeTrue())
+
+			_, userCM, err := k8sClient.GetAllCatalogSourceConfigs(ctx, "kubeflow")
+			Expect(err).NotTo(HaveOccurred())
+
+			userApiKey, _ := FindCatalogSourceProperties(userCM.Data[k8s.CatalogSourceKey], sourceID)
+			Expect(userApiKey).To(BeEmpty())
+		})
+
+		It("should fail for non-huggingface sources", func() {
+			err := repo.ClearHuggingFaceCatalogSourceCredentials(ctx, k8sClient, "kubeflow", "custom_yaml_models")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("huggingface sources"))
+		})
+	})
+
 	Describe("PrepareCatalogSourcePreviewRequest", func() {
 		It("should forward raw apiKey unchanged for huggingface preview", func() {
 			request := models.CatalogSourcePreviewRequest{

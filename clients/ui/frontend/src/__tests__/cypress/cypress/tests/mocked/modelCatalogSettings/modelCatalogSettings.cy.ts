@@ -1009,7 +1009,7 @@ describe('Manage Source Page', () => {
       manageSourcePage.findPreviewPanelBodyButton().should('be.disabled');
     });
 
-    it('should show refresh alert with disabled link when token is typed after preview without token', () => {
+    it('should show refresh alert with enabled link when token is typed after preview without token', () => {
       cy.intercept('POST', '/model-registry/api/v1/settings/model_catalog/source_preview*', {
         data: {
           items: [{ name: 'Google/model-1', included: true }],
@@ -1033,7 +1033,7 @@ describe('Manage Source Page', () => {
       manageSourcePage.findPreviewPanelHeaderButton().should('be.disabled');
       manageSourcePage.findPreviewPanelBodyButton().should('not.exist');
       manageSourcePage.findRefreshPreviewAlert().should('exist');
-      manageSourcePage.findRefreshPreviewLink().should('exist').and('be.disabled');
+      manageSourcePage.findRefreshPreviewLink().should('exist').and('not.be.disabled');
       manageSourcePage.findPreviewModelsIncludedSummary(1, 1).should('exist');
     });
 

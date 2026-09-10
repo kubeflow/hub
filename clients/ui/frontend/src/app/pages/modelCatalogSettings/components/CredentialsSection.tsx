@@ -232,7 +232,7 @@ const CredentialsSection: React.FC<CredentialsSectionProps> = ({
   const tokenValidationBtn =
     isValidationSuccess || isTokenLocked ? undefined : (
       <Button
-        isDisabled={!isOrganizationValid || isValidating}
+        isDisabled={!isOrganizationValid || isValidating || !formData.accessToken.trim()}
         variant="link"
         onClick={onValidate}
         isLoading={isValidating}

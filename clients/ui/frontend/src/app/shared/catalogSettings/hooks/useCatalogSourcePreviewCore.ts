@@ -187,15 +187,24 @@ export const useCatalogSourcePreviewCore = <TItem, TSummary, TRequest>({
     handlePreviewInternal({ loadMore: true });
   }, [handlePreviewInternal]);
 
-  // mount-only: auto-preview when entering edit mode
+  // Auto-preview when entering edit mode once preview is ready and API is available.
   React.useEffect(() => {
-    const hasNoResults =
-      previewState.tabStates[CatalogSettingsPreviewTab.INCLUDED].items.length === 0;
-    if (isEditMode && canPreview && hasNoResults) {
-      handlePreviewInternal();
+    if (!isEditMode || !apiAvailable || !canPreview) {
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+
+    const state = previewStateRef.current;
+    if (state.lastPreviewedData) {
+      return;
+    }
+
+    const hasNoResults = state.tabStates[CatalogSettingsPreviewTab.INCLUDED].items.length === 0;
+    if (!hasNoResults) {
+      return;
+    }
+
+    void handlePreviewInternal();
+  }, [isEditMode, apiAvailable, canPreview, handlePreviewInternal]);
 
   return {
     previewState,

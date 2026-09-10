@@ -119,9 +119,9 @@ describe('isPreviewEnabled', () => {
     expect(isPreviewEnabled(hfFormData, 'invalid')).toBe(false);
   });
 
-  it('allows preview for HF in edit mode without token validation', () => {
-    expect(isPreviewEnabled(hfFormData, 'unknown', true)).toBe(true);
-    expect(isPreviewEnabled(hfFormData, 'invalid', true)).toBe(true);
+  it('disables preview for HF with token in edit mode until validated', () => {
+    expect(isPreviewEnabled(hfFormData, 'unknown')).toBe(false);
+    expect(isPreviewEnabled(hfFormData, 'valid')).toBe(true);
   });
 });
 
@@ -142,8 +142,10 @@ describe('getPreviewDisabledTooltip', () => {
     expect(getPreviewDisabledTooltip(hfFormData, 'valid')).toBeUndefined();
   });
 
-  it('returns undefined in edit mode even when HF token is not validated', () => {
-    expect(getPreviewDisabledTooltip(hfFormData, 'unknown', true)).toBeUndefined();
+  it('returns validation tooltip when HF token is present and not validated', () => {
+    expect(getPreviewDisabledTooltip(hfFormData, 'unknown')).toBe(
+      'Validate the access token to preview models.',
+    );
   });
 });
 
@@ -338,23 +340,76 @@ describe('useSourcePreview', () => {
     expect(apiState.api.previewCatalogSource).toHaveBeenCalledTimes(1);
   });
 
-  it('should auto-preview on mount in edit mode for HF sources with token', async () => {
+  it('should auto-preview on mount in edit mode when saved credentials use secret lookup', async () => {
     const apiState = createMockApiState();
+    const editFormData: ManageSourceFormData = {
+      ...hfFormData,
+      accessToken: '',
+      tokenModified: false,
+    };
 
-    testHook(useSourcePreview)(createHookParams(hfFormData, { apiState, isEditMode: true }));
+    testHook(useSourcePreview)(
+      createHookParams(editFormData, { apiState, isEditMode: true, hasExistingApiKey: true }),
+    );
 
     await waitFor(() => {
       expect(apiState.api.previewCatalogSource).toHaveBeenCalledTimes(1);
     });
   });
 
-  it('should enable preview on mount in edit mode without requiring validation', () => {
+  it('should auto-preview in edit mode when API becomes available after mount', async () => {
+    const apiState = createMockApiState({ apiAvailable: false });
+    const editFormData: ManageSourceFormData = {
+      ...hfFormData,
+      accessToken: '',
+      tokenModified: false,
+    };
+    const initialParams = createHookParams(editFormData, {
+      apiState,
+      isEditMode: true,
+      hasExistingApiKey: true,
+    });
+
+    const renderResult = testHook(useSourcePreview)(initialParams);
+
+    expect(apiState.api.previewCatalogSource).not.toHaveBeenCalled();
+
+    renderResult.rerender(
+      createHookParams(editFormData, {
+        apiState: { ...apiState, apiAvailable: true },
+        isEditMode: true,
+        hasExistingApiKey: true,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(apiState.api.previewCatalogSource).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('should enable preview on mount in edit mode without a token in the form field', () => {
+    const editFormData: ManageSourceFormData = {
+      ...hfFormData,
+      accessToken: '',
+      tokenModified: false,
+    };
     const { result } = testHook(useSourcePreview)(
-      createHookParams(hfFormData, { isEditMode: true }),
+      createHookParams(editFormData, { isEditMode: true, hasExistingApiKey: true }),
     );
 
     expect(result.current.canPreview).toBe(true);
     expect(result.current.previewDisabledTooltip).toBeUndefined();
+  });
+
+  it('should disable preview in edit mode while typing a new access token', () => {
+    const { result } = testHook(useSourcePreview)(
+      createHookParams(hfFormData, { isEditMode: true }),
+    );
+
+    expect(result.current.canPreview).toBe(false);
+    expect(result.current.previewDisabledTooltip).toBe(
+      'Validate the access token to preview models.',
+    );
   });
 
   it('should enable preview after successful token validation for HF sources', async () => {
