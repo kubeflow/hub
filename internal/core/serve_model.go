@@ -114,6 +114,7 @@ func (b *ModelRegistryService) GetServeModels(listOptions api.ListOptions, infer
 			OrderBy:       listOptions.OrderBy,
 			SortOrder:     listOptions.SortOrder,
 			NextPageToken: listOptions.NextPageToken,
+			FilterQuery:   listOptions.FilterQuery,
 		},
 		InferenceServiceID: inferenceServiceID,
 	})

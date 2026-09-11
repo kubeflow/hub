@@ -1288,3 +1288,132 @@ func TestUpsertServeModel_HFModelValidation(t *testing.T) {
 		assert.Equal(t, "non-hf-serve-model", *result.Name)
 	})
 }
+
+// TestGetServeModelsWithFilterQuery verifies that the filterQuery parameter
+// is correctly propagated and applied when listing ServeModels.
+//
+// Regression test for: filterQuery silently ignored on GET /serve_models
+// Root cause was missing FilterQuery field propagation in GetServeModels.
+func TestGetServeModelsWithFilterQuery(t *testing.T) {
+	_service, cleanup := SetupModelRegistryService(t)
+	defer cleanup()
+
+	// Create prerequisites
+	rm, err := _service.UpsertRegisteredModel(&openapi.RegisteredModel{Name: "sm-filter-rm"})
+	require.NoError(t, err)
+
+	env, err := _service.UpsertServingEnvironment(&openapi.ServingEnvironment{Name: "sm-filter-env"})
+	require.NoError(t, err)
+
+	mv, err := _service.UpsertModelVersion(&openapi.ModelVersion{
+		Name:              "sm-filter-mv",
+		RegisteredModelId: *rm.Id,
+	}, rm.Id)
+	require.NoError(t, err)
+
+	infSvc, err := _service.UpsertInferenceService(&openapi.InferenceService{
+		Name:                 new("sm-filter-isvc"),
+		ServingEnvironmentId: *env.Id,
+		RegisteredModelId:    *rm.Id,
+	})
+	require.NoError(t, err)
+
+	// Create serve models with distinct names
+	smDefs := []struct {
+		name   string
+		extID  string
+		state  openapi.ExecutionState
+	}{
+		{"serve-model-alpha", "ext-alpha-001", openapi.EXECUTIONSTATE_RUNNING},
+		{"serve-model-beta", "ext-beta-002", openapi.EXECUTIONSTATE_COMPLETE},
+		{"serve-model-gamma", "ext-gamma-003", openapi.EXECUTIONSTATE_RUNNING},
+	}
+
+	for _, sm := range smDefs {
+		name := sm.name
+		eid := sm.extID
+		state := sm.state
+		_, err := _service.UpsertServeModel(&openapi.ServeModel{
+			Name:           &name,
+			ExternalId:     &eid,
+			ModelVersionId: *mv.Id,
+			LastKnownState: &state,
+		}, infSvc.Id)
+		require.NoError(t, err)
+	}
+
+	testCases := []struct {
+		name          string
+		filterQuery   string
+		expectedCount int
+		expectedNames []string
+	}{
+		{
+			name:          "Filter by exact name",
+			filterQuery:   "name = 'serve-model-alpha'",
+			expectedCount: 1,
+			expectedNames: []string{"serve-model-alpha"},
+		},
+		{
+			name:          "Filter by name pattern",
+			filterQuery:   "name LIKE 'serve-model-%'",
+			expectedCount: 3,
+			expectedNames: []string{"serve-model-alpha", "serve-model-beta", "serve-model-gamma"},
+		},
+		{
+			name:          "Filter by externalId",
+			filterQuery:   "externalId = 'ext-beta-002'",
+			expectedCount: 1,
+			expectedNames: []string{"serve-model-beta"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			pageSize := int32(20)
+			fq := tc.filterQuery
+			result, err := _service.GetServeModels(api.ListOptions{
+				PageSize:    &pageSize,
+				FilterQuery: &fq,
+			}, infSvc.Id)
+
+			require.NoError(t, err)
+			require.NotNil(t, result)
+
+			var matchedNames []string
+			for _, item := range result.Items {
+				if slices.Contains(tc.expectedNames, *item.Name) {
+					matchedNames = append(matchedNames, *item.Name)
+				}
+			}
+
+			assert.Equal(t, tc.expectedCount, len(matchedNames),
+				"filterQuery %q: expected %d items, got %d (filter may be silently ignored)",
+				tc.filterQuery, tc.expectedCount, len(matchedNames))
+			assert.ElementsMatch(t, tc.expectedNames, matchedNames,
+				"filterQuery %q: unexpected items returned", tc.filterQuery)
+		})
+	}
+
+	t.Run("Invalid filter syntax returns error", func(t *testing.T) {
+		invalidFilter := "invalid <<<syntax"
+		result, err := _service.GetServeModels(api.ListOptions{
+			FilterQuery: &invalidFilter,
+		}, infSvc.Id)
+
+		assert.Error(t, err, "invalid filter syntax should return an error, not silently ignore the filter")
+		assert.Nil(t, result)
+	})
+
+	t.Run("Filter with no matches returns empty list", func(t *testing.T) {
+		fq := "name = 'nonexistent-serve-model'"
+		result, err := _service.GetServeModels(api.ListOptions{
+			FilterQuery: &fq,
+		}, infSvc.Id)
+
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.Equal(t, 0, len(result.Items), "filter with no matches should return empty items")
+		assert.Equal(t, int32(0), result.Size)
+	})
+}
