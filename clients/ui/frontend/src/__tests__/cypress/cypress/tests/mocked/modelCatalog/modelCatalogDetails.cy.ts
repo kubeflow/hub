@@ -4,14 +4,15 @@ import { modelCatalog } from '~/__tests__/cypress/cypress/pages/modelCatalog';
 import { appChrome } from '~/__tests__/cypress/cypress/pages/appChrome';
 import { mockModelRegistry } from '~/__mocks__/mockModelRegistry';
 import {
-  defaultSources,
-  interceptSources,
+  GATED_DENIED_DETAILS_MODEL_NAME,
+  GATED_DENIED_DETAILS_SOURCE_ID,
+  setupGatedDeniedDetailsIntercepts,
   setupModelCatalogIntercepts,
   setupValidatedModelIntercepts,
   interceptArtifactsList,
   interceptPerformanceArtifactsList,
 } from '~/__tests__/cypress/cypress/support/interceptHelpers/modelCatalog';
-import { mockCatalogModelArtifact, mockCatalogModel, mockCatalogSource } from '~/__mocks__';
+import { mockCatalogModelArtifact, mockCatalogModel } from '~/__mocks__';
 import { mockRegisteredModelList } from '~/__mocks__/mockRegisteredModelsList';
 import { ModelRegistryMetadataType } from '~/app/types';
 import {
@@ -531,58 +532,10 @@ describe('Model Catalog Registration - Model Type Field', () => {
 });
 
 describe('Model Catalog Details Page - Gated access denied', () => {
-  const gatedDeniedModel = mockCatalogModel({
-    name: 'meta-llama/Llama-3.1-8B-Instruct-INT8',
-    provider: 'Meta',
-    description: '',
-    readme: '',
-    source_id: 'hugging_face_source',
-    customProperties: {
-      hf_access_type: {
-        string_value: 'gated_auto',
-        metadataType: ModelRegistryMetadataType.STRING,
-      },
-      hf_gated_access_granted: {
-        string_value: 'false',
-        metadataType: ModelRegistryMetadataType.STRING,
-      },
-    },
-  });
-
-  beforeEach(() => {
-    cy.intercept('GET', '/model-registry/api/v1/model_registry*', [
-      mockModelRegistry({ name: 'modelregistry-sample' }),
-    ]).as('getModelRegistries');
-
-    setupModelCatalogIntercepts({
-      sources: [
-        ...defaultSources(),
-        mockCatalogSource({
-          id: 'hugging_face_source',
-          name: 'Hugging face source',
-          labels: [],
-          hfUsername: 'alice',
-          hasApiKey: true,
-          authenticated: true,
-        }),
-      ],
-    });
-    cy.interceptApi(
-      `GET /api/:apiVersion/model_catalog/sources/:sourceId/models/:modelName`,
-      {
-        path: {
-          apiVersion: MODEL_CATALOG_API_VERSION,
-          sourceId: 'hugging_face_source',
-          modelName: 'meta-llama%2FLlama-3.1-8B-Instruct-INT8',
-        },
-      },
-      gatedDeniedModel,
-    );
-    interceptArtifactsList({ items: [], size: 0, pageSize: 10, nextPageToken: '' });
-  });
-
   it('shows gated access required state instead of model details', () => {
-    modelCatalog.visitModelDetails('hugging_face_source', 'meta-llama/Llama-3.1-8B-Instruct-INT8');
+    setupGatedDeniedDetailsIntercepts({ hfUsername: 'alice' });
+
+    modelCatalog.visitModelDetails(GATED_DENIED_DETAILS_SOURCE_ID, GATED_DENIED_DETAILS_MODEL_NAME);
     appChrome.waitForA11y();
 
     modelCatalog.findGatedAccessRequiredState().should('be.visible');
@@ -604,16 +557,9 @@ describe('Model Catalog Details Page - Gated access denied', () => {
   });
 
   it('shows generic gated access guidance when hfUsername is unavailable', () => {
-    interceptSources([
-      ...defaultSources(),
-      mockCatalogSource({
-        id: 'hugging_face_source',
-        name: 'Hugging face source',
-        labels: [],
-      }),
-    ]);
+    setupGatedDeniedDetailsIntercepts();
 
-    modelCatalog.visitModelDetails('hugging_face_source', 'meta-llama/Llama-3.1-8B-Instruct-INT8');
+    modelCatalog.visitModelDetails(GATED_DENIED_DETAILS_SOURCE_ID, GATED_DENIED_DETAILS_MODEL_NAME);
 
     modelCatalog.findGatedAccessRequiredState().should('be.visible');
     modelCatalog

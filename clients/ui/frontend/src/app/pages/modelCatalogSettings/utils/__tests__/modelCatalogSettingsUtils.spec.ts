@@ -3,7 +3,6 @@ import { CatalogSourceType } from '~/app/modelCatalogTypes';
 import {
   catalogSourceConfigToFormData,
   getPayloadForConfig,
-  isPreviewModelGatedAccessDenied,
   transformFormDataToConfig,
   resolveHuggingFaceApiKeyField,
 } from '~/app/pages/modelCatalogSettings/utils/modelCatalogSettingsUtils';
@@ -275,39 +274,5 @@ describe('resolveHuggingFaceApiKeyField', () => {
         forPreview: false,
       }),
     ).toEqual({ apiKey: '' });
-  });
-});
-
-describe('isPreviewModelGatedAccessDenied', () => {
-  it('returns true for gated models without granted access', () => {
-    expect(
-      isPreviewModelGatedAccessDenied({
-        name: 'meta-llama/gated-auto-denied',
-        included: false,
-        hfAccessType: 'gated_auto',
-        hfGatedAccessGranted: false,
-      }),
-    ).toBe(true);
-  });
-
-  it('returns false for gated models with granted access', () => {
-    expect(
-      isPreviewModelGatedAccessDenied({
-        name: 'meta-llama/gated-auto-granted',
-        included: true,
-        hfAccessType: 'gated_auto',
-        hfGatedAccessGranted: true,
-      }),
-    ).toBe(false);
-  });
-
-  it('returns false for non-gated models', () => {
-    expect(
-      isPreviewModelGatedAccessDenied({
-        name: 'hf-mock/public-model',
-        included: true,
-        hfAccessType: 'public',
-      }),
-    ).toBe(false);
   });
 });

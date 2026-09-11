@@ -1,4 +1,5 @@
 /* eslint-disable camelcase */
+import { render } from '@testing-library/react';
 import { CatalogModel } from '~/app/modelCatalogTypes';
 import { CatalogModelCustomPropertyKey, HfAccessType } from '~/concepts/modelCatalog/const';
 import { ModelRegistryMetadataType } from '~/app/types';
@@ -8,7 +9,13 @@ import {
   getHfGatedAccessGranted,
   getHuggingFaceModelUrl,
   isHfGatedAccessDenied,
+  isHfGatedAccessDeniedFromFields,
 } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
+import {
+  getGatedAccessRequiredDescriptionText,
+  renderGatedAccessRequiredDescription,
+} from '~/app/pages/modelCatalog/utils/gatedAccessRequiredUtils';
+import { isPreviewModelGatedAccessDenied } from '~/app/pages/modelCatalogSettings/utils/modelCatalogSettingsUtils';
 import { createHfAccessCatalogModel } from '~/__tests__/utils/createHfAccessModel';
 
 describe('HF access utilities', () => {
@@ -93,5 +100,60 @@ describe('HF access utilities', () => {
     expect(getHuggingFaceModelUrl(model)).toBe(
       'https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct-INT8',
     );
+  });
+});
+
+describe('isHfGatedAccessDeniedFromFields', () => {
+  it('returns true for gated models without granted access', () => {
+    expect(isHfGatedAccessDeniedFromFields('gated_auto', false)).toBe(true);
+    expect(isHfGatedAccessDeniedFromFields('gated_manual', undefined)).toBe(true);
+  });
+
+  it('returns false for gated models with granted access', () => {
+    expect(isHfGatedAccessDeniedFromFields('gated_auto', true)).toBe(false);
+  });
+
+  it('returns false for non-gated access types', () => {
+    expect(isHfGatedAccessDeniedFromFields('public', false)).toBe(false);
+    expect(isHfGatedAccessDeniedFromFields(undefined, false)).toBe(false);
+  });
+});
+
+describe('gated access required description', () => {
+  it('formats generic and personalized descriptions from shared copy', () => {
+    expect(getGatedAccessRequiredDescriptionText()).toBe(
+      'This model is gated on Hugging Face. Request access on Hugging Face. After access is granted on Hugging Face, it might take a few hours for this model to show as available in the catalog.',
+    );
+    expect(getGatedAccessRequiredDescriptionText('johndoe')).toBe(
+      'This model is gated on Hugging Face. Log in to the Hugging Face account johndoe and request access. After access is granted on Hugging Face, it might take a few hours for this model to show as available in the catalog.',
+    );
+  });
+
+  it('renders personalized description with bold username', () => {
+    const { container } = render(renderGatedAccessRequiredDescription('alice'));
+    expect(container.textContent).toContain('Log in to the Hugging Face account');
+    expect(container.querySelector('strong')?.textContent).toBe('alice');
+  });
+});
+
+describe('isPreviewModelGatedAccessDenied', () => {
+  it('uses the shared gated access rule for preview fields', () => {
+    expect(
+      isPreviewModelGatedAccessDenied({
+        name: 'sample-source/included-model-2',
+        included: true,
+        hfAccessType: 'gated_manual',
+        hfGatedAccessGranted: false,
+      }),
+    ).toBe(true);
+
+    expect(
+      isPreviewModelGatedAccessDenied({
+        name: 'sample-source/included-model-1',
+        included: true,
+        hfAccessType: 'gated_auto',
+        hfGatedAccessGranted: true,
+      }),
+    ).toBe(false);
   });
 });

@@ -9,6 +9,7 @@ import {
 } from '@patternfly/react-core';
 import { ExclamationTriangleIcon } from '@patternfly/react-icons';
 import type { CatalogModel } from '~/app/modelCatalogTypes';
+import { renderGatedAccessRequiredDescription } from '~/app/pages/modelCatalog/utils/gatedAccessRequiredUtils';
 import { getHuggingFaceModelUrl } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
 import ExternalLink from '~/app/shared/components/ExternalLink';
 import { MODEL_CATALOG_GATED_ACCESS_REQUIRED } from '~/concepts/modelCatalog/const';
@@ -30,17 +31,7 @@ const ModelGatedAccessRequiredView: React.FC<ModelGatedAccessRequiredViewProps> 
       variant={EmptyStateVariant.lg}
       data-testid="model-gated-access-required"
     >
-      <EmptyStateBody>
-        {hfUsername ? (
-          <>
-            This model is gated on Hugging Face. Log in to the Hugging Face account{' '}
-            <strong>{hfUsername}</strong> and request access. After access is granted on Hugging
-            Face, it might take a few hours for this model to show as available in the catalog.
-          </>
-        ) : (
-          MODEL_CATALOG_GATED_ACCESS_REQUIRED.DESCRIPTION_WITHOUT_USERNAME
-        )}
-      </EmptyStateBody>
+      <EmptyStateBody>{renderGatedAccessRequiredDescription(hfUsername)}</EmptyStateBody>
       <EmptyStateFooter>
         <EmptyStateActions>
           <ExternalLink

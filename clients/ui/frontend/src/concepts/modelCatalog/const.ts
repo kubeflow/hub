@@ -260,10 +260,18 @@ export enum ModelCatalogTensorType {
   MXFP4 = 'MXFP4',
 }
 
+export const MODEL_CATALOG_GATED_ACCESS_REQUIRED_COPY = {
+  INTRO: 'This model is gated on Hugging Face.',
+  USERNAME_PROMPT: 'Log in to the Hugging Face account',
+  USERNAME_ACTION: 'and request access.',
+  GENERIC_ACTION: 'Request access on Hugging Face.',
+  OUTRO:
+    'After access is granted on Hugging Face, it might take a few hours for this model to show as available in the catalog.',
+} as const;
+
 export const MODEL_CATALOG_GATED_ACCESS_REQUIRED = {
   TITLE: 'Model access required',
-  DESCRIPTION_WITHOUT_USERNAME:
-    'This model is gated on Hugging Face. Request access on Hugging Face. After access is granted on Hugging Face, it might take a few hours for this model to show as available in the catalog.',
+  ...MODEL_CATALOG_GATED_ACCESS_REQUIRED_COPY,
   REQUEST_ACCESS_LINK_TEXT: 'Request access on Hugging Face',
   REGISTER_BUTTON_TOOLTIP: 'Model access is required to deploy or register this model.',
 } as const;

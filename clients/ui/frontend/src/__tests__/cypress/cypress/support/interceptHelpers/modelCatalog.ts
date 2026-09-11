@@ -618,3 +618,50 @@ export const setupHfAccessCardIntercepts = (models: CatalogModel[]): void => {
     mockCatalogModelList({ items: models }),
   );
 };
+
+export const GATED_DENIED_DETAILS_SOURCE_ID = 'hugging_face_source';
+export const GATED_DENIED_DETAILS_MODEL_NAME = 'meta-llama/Llama-3.1-8B-Instruct-INT8';
+
+export type GatedDeniedDetailsInterceptOptions = {
+  hfUsername?: string;
+};
+
+export const createGatedDeniedDetailsModel = (): CatalogModel =>
+  mockCatalogModel({
+    name: GATED_DENIED_DETAILS_MODEL_NAME,
+    provider: 'Meta',
+    description: '',
+    readme: '',
+    source_id: GATED_DENIED_DETAILS_SOURCE_ID,
+    customProperties: buildHfAccessCustomProperties('gated_auto', 'false'),
+  });
+
+/**
+ * Sets up intercepts for gated-denied model details tests without relying on
+ * setupModelCatalogIntercepts override behavior.
+ */
+export const setupGatedDeniedDetailsIntercepts = (
+  options: GatedDeniedDetailsInterceptOptions = {},
+): void => {
+  const { hfUsername } = options;
+  const gatedDeniedModel = createGatedDeniedDetailsModel();
+
+  cy.intercept('GET', '/model-registry/api/v1/model_registry*', [
+    mockModelRegistry({ name: 'modelregistry-sample' }),
+  ]).as('getModelRegistries');
+
+  interceptSources([
+    ...defaultSources(),
+    mockCatalogSource({
+      id: GATED_DENIED_DETAILS_SOURCE_ID,
+      name: 'Hugging face source',
+      labels: [],
+      ...(hfUsername ? { hfUsername, hasApiKey: true, authenticated: true } : {}),
+    }),
+  ]);
+  interceptLabels();
+  interceptFilterOptions();
+  interceptSingleModel(GATED_DENIED_DETAILS_SOURCE_ID, gatedDeniedModel);
+  interceptSingleModelRegex(gatedDeniedModel);
+  interceptArtifactsList({ items: [], size: 0, pageSize: 10, nextPageToken: '' });
+};

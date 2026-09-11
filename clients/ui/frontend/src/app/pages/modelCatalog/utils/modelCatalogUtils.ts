@@ -156,7 +156,18 @@ export const hasPerformanceArtifacts = (artifacts: CatalogArtifacts[]): boolean 
 
 export type HfAccessLabelVariant = 'private' | 'gated' | 'gated-denied';
 
-const isGatedAccessType = (accessType: string): boolean => accessType.startsWith('gated');
+export const isGatedAccessType = (accessType: string): boolean => accessType.startsWith('gated');
+
+export const isHfGatedAccessDeniedFromFields = (
+  accessType?: string | null,
+  gatedAccessGranted?: boolean | null,
+): boolean => {
+  if (!accessType || !isGatedAccessType(accessType)) {
+    return false;
+  }
+
+  return gatedAccessGranted !== true;
+};
 
 export const getHfGatedAccessGranted = (model: CatalogModel): boolean => {
   if (!model.customProperties) {
@@ -202,15 +213,25 @@ export const getHfAccessLabelVariant = (model: CatalogModel): HfAccessLabelVaria
     return 'private';
   }
 
+  if (isHfGatedAccessDeniedFromFields(accessType, getHfGatedAccessGranted(model))) {
+    return 'gated-denied';
+  }
+
   if (isGatedAccessType(accessType)) {
-    return getHfGatedAccessGranted(model) ? 'gated' : 'gated-denied';
+    return 'gated';
   }
 
   return null;
 };
 
-export const isHfGatedAccessDenied = (model: CatalogModel): boolean =>
-  getHfAccessLabelVariant(model) === 'gated-denied';
+export const isHfGatedAccessDenied = (model: CatalogModel): boolean => {
+  const accessType = getHfAccessType(model);
+  if (!accessType) {
+    return false;
+  }
+
+  return isHfGatedAccessDeniedFromFields(accessType, getHfGatedAccessGranted(model));
+};
 
 // TODO: this needs to be updated with the customProperties of the model, where we will have the HF link
 export const getHuggingFaceModelUrl = (model: CatalogModel): string =>
