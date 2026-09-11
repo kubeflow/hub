@@ -23,6 +23,7 @@ import {
   PAGE_TITLES,
   ERROR_MESSAGES,
   EMPTY_STATE_TEXT,
+  WARNING_MESSAGES,
 } from '~/app/pages/modelCatalogSettings/constants';
 import { UseSourcePreviewResult } from '~/app/pages/modelCatalogSettings/useSourcePreview';
 import { CatalogSettingsPreviewTab } from '~/app/shared/catalogSettings/hooks/previewTypes';
@@ -30,9 +31,10 @@ import PreviewButton from './PreviewButton';
 
 type PreviewPanelProps = {
   preview: UseSourcePreviewResult;
+  isSourceEnabled: boolean;
 };
 
-const PreviewPanel: React.FC<PreviewPanelProps> = ({ preview }) => {
+const PreviewPanel: React.FC<PreviewPanelProps> = ({ preview, isSourceEnabled }) => {
   // Derive values from preview
   const {
     previewState,
@@ -46,6 +48,7 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({ preview }) => {
   const { isLoadingInitial, isLoadingMore, activeTab, summary, tabStates, error } = previewState;
   const { items, hasMore } = tabStates[activeTab];
   const previewError = error;
+  const showSourceDisabledWarning = !isSourceEnabled && !!summary;
 
   const onPreview = () => handlePreview();
   const onLoadMore = () => handleLoadMore();
@@ -221,6 +224,17 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({ preview }) => {
           />
         </FlexItem>
       </Flex>
+      {showSourceDisabledWarning && (
+        <Alert
+          variant="warning"
+          isInline
+          title={WARNING_MESSAGES.SOURCE_DISABLED}
+          className="pf-v6-u-mb-md"
+          data-testid="source-disabled-warning"
+        >
+          {WARNING_MESSAGES.SOURCE_DISABLED_BODY}
+        </Alert>
+      )}
       {renderContent()}
     </div>
   );

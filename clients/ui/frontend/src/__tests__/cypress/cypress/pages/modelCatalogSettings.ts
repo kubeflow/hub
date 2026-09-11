@@ -522,6 +522,10 @@ class ManageSourcePage {
   findPreviewModelsIncludedSummary(count: number, total: number) {
     return cy.contains(`${count} of ${total} models included:`);
   }
+
+  findSourceDisabledWarning() {
+    return cy.findByTestId('source-disabled-warning');
+  }
 }
 
 export const modelCatalogSettings = new ModelCatalogSettings();

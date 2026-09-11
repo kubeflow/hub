@@ -96,6 +96,12 @@ export const TOOLTIP_MESSAGES = {
   PREVIEW_REQUIRES_VALIDATION: 'Validate the access token to preview models.',
 } as const;
 
+export const WARNING_MESSAGES = {
+  SOURCE_DISABLED: 'Source disabled.',
+  SOURCE_DISABLED_BODY:
+    'Models from this source will not appear in the model catalog until the source is enabled.',
+} as const;
+
 export const TABLE_COLUMN_LABELS = {
   SOURCE_NAME: 'Source name',
   ORGANIZATION: 'Organization',
