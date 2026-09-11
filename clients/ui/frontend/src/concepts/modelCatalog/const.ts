@@ -262,9 +262,10 @@ export enum ModelCatalogTensorType {
 
 export const MODEL_CATALOG_GATED_ACCESS_REQUIRED = {
   TITLE: 'Model access required',
-  DESCRIPTION:
-    'You do not have access to this model, so it cannot be deployed or registered. Go to Hugging Face to request permission for this model.',
+  DESCRIPTION_WITHOUT_USERNAME:
+    'This model is gated on Hugging Face. Request access on Hugging Face. After access is granted on Hugging Face, it might take a few hours for this model to show as available in the catalog.',
   REQUEST_ACCESS_LINK_TEXT: 'Request access on Hugging Face',
+  REGISTER_BUTTON_TOOLTIP: 'Model access is required to deploy or register this model.',
 } as const;
 
 export const HUGGING_FACE_BASE_URL = 'https://huggingface.co';

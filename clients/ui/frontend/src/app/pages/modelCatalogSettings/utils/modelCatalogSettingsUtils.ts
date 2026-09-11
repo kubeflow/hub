@@ -1,11 +1,21 @@
 import {
   CatalogSourceConfig,
   CatalogSourceConfigPayload,
+  CatalogSourcePreviewModel,
   CatalogSourceType,
 } from '~/app/modelCatalogTypes';
 import { ManageSourceFormData } from '~/app/pages/modelCatalogSettings/useManageSourceData';
 import { generateSourceIdFromName } from '~/app/shared/catalogSettings/utils/generateSourceIdFromName';
 import { parseCommaSeparatedList } from '~/app/shared/catalogSettings/utils/parseCommaSeparatedList';
+
+export const isPreviewModelGatedAccessDenied = (model: CatalogSourcePreviewModel): boolean => {
+  const accessType = model.hfAccessType;
+  if (!accessType?.startsWith('gated')) {
+    return false;
+  }
+
+  return model.hfGatedAccessGranted !== true;
+};
 
 export const catalogSourceConfigToFormData = (
   sourceConfig: CatalogSourceConfig,

@@ -522,6 +522,23 @@ class ManageSourcePage {
   findPreviewModelsIncludedSummary(count: number, total: number) {
     return cy.contains(`${count} of ${total} models included:`);
   }
+
+  findPreviewModelsExcludedSummary(count: number, total: number) {
+    return cy.contains(`${count} of ${total} models excluded:`);
+  }
+
+  clickPreviewExcludedTab() {
+    this.findPreviewPanel().contains('Models excluded').click();
+    return this;
+  }
+
+  findPreviewModelRow(modelName: string) {
+    return this.findPreviewPanel().contains('li', modelName);
+  }
+
+  findPreviewGatedAccessWarningIcon(modelName: string) {
+    return this.findPreviewModelRow(modelName).findByLabelText('Gated access warning');
+  }
 }
 
 export const modelCatalogSettings = new ModelCatalogSettings();

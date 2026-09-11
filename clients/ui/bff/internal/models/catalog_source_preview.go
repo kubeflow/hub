@@ -11,8 +11,10 @@ type CatalogSourcePreviewRequest struct {
 }
 
 type CatalogSourcePreviewModel struct {
-	Name     string `json:"name"`
-	Included bool   `json:"included"`
+	Name                 string  `json:"name"`
+	Included             bool    `json:"included"`
+	HfAccessType         *string `json:"hfAccessType,omitempty"`
+	HfGatedAccessGranted *bool   `json:"hfGatedAccessGranted,omitempty"`
 }
 
 type CatalogSourcePreviewSummary struct {

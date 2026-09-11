@@ -9,6 +9,7 @@ type CatalogSource struct {
 	Error         *string  `json:"error,omitempty"`
 	HasApiKey     *bool    `json:"hasApiKey,omitempty"`
 	Authenticated *bool    `json:"authenticated,omitempty"`
+	HfUsername    string   `json:"hfUsername,omitempty"`
 }
 
 type CatalogSourceList struct {

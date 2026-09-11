@@ -1009,6 +1009,57 @@ describe('Manage Source Page', () => {
       manageSourcePage.findPreviewPanelBodyButton().should('be.disabled');
     });
 
+    it('should show warning icon for gated models without access in preview tabs', () => {
+      cy.intercept('POST', '/model-registry/api/v1/settings/model_catalog/source_preview*', {
+        data: {
+          items: [
+            {
+              name: 'sample-source/included-model-1',
+              included: true,
+              hfAccessType: 'gated_auto',
+              hfGatedAccessGranted: true,
+            },
+            {
+              name: 'sample-source/included-model-2',
+              included: true,
+              hfAccessType: 'gated_manual',
+              hfGatedAccessGranted: false,
+            },
+            {
+              name: 'meta-llama/gated-auto-denied',
+              included: false,
+              hfAccessType: 'gated_auto',
+              hfGatedAccessGranted: false,
+            },
+          ],
+          summary: { totalModels: 3, includedModels: 2, excludedModels: 1 },
+          nextPageToken: '',
+          pageSize: 20,
+          size: 3,
+        },
+      }).as('previewGatedModels');
+
+      manageSourcePage.visitAddSource({ enableTempDevCatalogHuggingFaceApiKeyFeature: true });
+      manageSourcePage.fillOrganization('Google');
+      manageSourcePage.findPreviewButton().click();
+      cy.wait('@previewGatedModels');
+
+      manageSourcePage.findPreviewModelsIncludedSummary(2, 3).should('exist');
+      manageSourcePage
+        .findPreviewModelRow('sample-source/included-model-1')
+        .findByLabelText('Included model')
+        .should('exist');
+      manageSourcePage
+        .findPreviewGatedAccessWarningIcon('sample-source/included-model-2')
+        .should('exist');
+
+      manageSourcePage.clickPreviewExcludedTab();
+      manageSourcePage.findPreviewModelsExcludedSummary(1, 3).should('exist');
+      manageSourcePage
+        .findPreviewGatedAccessWarningIcon('meta-llama/gated-auto-denied')
+        .should('exist');
+    });
+
     it('should show refresh alert with enabled link when token is typed after preview without token', () => {
       cy.intercept('POST', '/model-registry/api/v1/settings/model_catalog/source_preview*', {
         data: {

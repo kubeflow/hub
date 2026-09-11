@@ -4,12 +4,14 @@ import { modelCatalog } from '~/__tests__/cypress/cypress/pages/modelCatalog';
 import { appChrome } from '~/__tests__/cypress/cypress/pages/appChrome';
 import { mockModelRegistry } from '~/__mocks__/mockModelRegistry';
 import {
+  defaultSources,
+  interceptSources,
   setupModelCatalogIntercepts,
   setupValidatedModelIntercepts,
   interceptArtifactsList,
   interceptPerformanceArtifactsList,
 } from '~/__tests__/cypress/cypress/support/interceptHelpers/modelCatalog';
-import { mockCatalogModelArtifact, mockCatalogModel } from '~/__mocks__';
+import { mockCatalogModelArtifact, mockCatalogModel, mockCatalogSource } from '~/__mocks__';
 import { mockRegisteredModelList } from '~/__mocks__/mockRegisteredModelsList';
 import { ModelRegistryMetadataType } from '~/app/types';
 import {
@@ -552,7 +554,19 @@ describe('Model Catalog Details Page - Gated access denied', () => {
       mockModelRegistry({ name: 'modelregistry-sample' }),
     ]).as('getModelRegistries');
 
-    setupModelCatalogIntercepts({});
+    setupModelCatalogIntercepts({
+      sources: [
+        ...defaultSources(),
+        mockCatalogSource({
+          id: 'hugging_face_source',
+          name: 'Hugging face source',
+          labels: [],
+          hfUsername: 'alice',
+          hasApiKey: true,
+          authenticated: true,
+        }),
+      ],
+    });
     cy.interceptApi(
       `GET /api/:apiVersion/model_catalog/sources/:sourceId/models/:modelName`,
       {
@@ -573,10 +587,43 @@ describe('Model Catalog Details Page - Gated access denied', () => {
 
     modelCatalog.findGatedAccessRequiredState().should('be.visible');
     modelCatalog.findGatedAccessRequiredState().should('contain.text', 'Model access required');
+    modelCatalog
+      .findGatedAccessRequiredState()
+      .should('contain.text', 'Log in to the Hugging Face account');
+    modelCatalog.findGatedAccessRequiredState().should('contain.text', 'alice');
     modelCatalog.findGatedAccessRequestLink().should('be.visible');
     modelCatalog.findDetailsDescription().should('not.exist');
     modelCatalog.findModelCardMarkdown().should('not.exist');
-    modelCatalog.findRegisterModelButton().should('be.disabled');
+    modelCatalog.findRegisterModelButton().should('have.attr', 'aria-disabled', 'true');
+    modelCatalog.findRegisterModelButton().trigger('mouseenter');
+    modelCatalog
+      .findRegisterCatalogModelTooltip()
+      .should('be.visible')
+      .and('contain.text', 'Model access is required to deploy or register this model.');
     modelCatalog.findAccessLabelGatedDenied().should('be.visible');
+  });
+
+  it('shows generic gated access guidance when hfUsername is unavailable', () => {
+    interceptSources([
+      ...defaultSources(),
+      mockCatalogSource({
+        id: 'hugging_face_source',
+        name: 'Hugging face source',
+        labels: [],
+      }),
+    ]);
+
+    modelCatalog.visitModelDetails('hugging_face_source', 'meta-llama/Llama-3.1-8B-Instruct-INT8');
+
+    modelCatalog.findGatedAccessRequiredState().should('be.visible');
+    modelCatalog
+      .findGatedAccessRequiredState()
+      .should(
+        'contain.text',
+        'This model is gated on Hugging Face. Request access on Hugging Face.',
+      );
+    modelCatalog
+      .findGatedAccessRequiredState()
+      .should('not.contain.text', 'Log in to the Hugging Face account');
   });
 });

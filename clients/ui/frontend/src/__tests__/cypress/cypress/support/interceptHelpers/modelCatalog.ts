@@ -591,6 +591,9 @@ export const setupHfAccessCardIntercepts = (models: CatalogModel[]): void => {
     id: 'hugging_face_source',
     name: 'Hugging face source',
     labels: [],
+    hfUsername: 'alice',
+    hasApiKey: true,
+    authenticated: true,
   });
 
   interceptSources([hfSource]);

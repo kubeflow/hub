@@ -17,13 +17,16 @@ import {
   Spinner,
   Button,
   AlertActionLink,
+  Icon,
 } from '@patternfly/react-core';
-import { CheckCircleIcon, TimesCircleIcon } from '@patternfly/react-icons';
+import { CheckCircleIcon, ExclamationTriangleIcon, TimesCircleIcon } from '@patternfly/react-icons';
 import {
   PAGE_TITLES,
   ERROR_MESSAGES,
   EMPTY_STATE_TEXT,
 } from '~/app/pages/modelCatalogSettings/constants';
+import { isPreviewModelGatedAccessDenied } from '~/app/pages/modelCatalogSettings/utils/modelCatalogSettingsUtils';
+import { CatalogSourcePreviewModel } from '~/app/modelCatalogTypes';
 import { UseSourcePreviewResult } from '~/app/pages/modelCatalogSettings/useSourcePreview';
 import { CatalogSettingsPreviewTab } from '~/app/shared/catalogSettings/hooks/previewTypes';
 import PreviewButton from './PreviewButton';
@@ -54,6 +57,22 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({ preview }) => {
     handleTabChange(
       tabIndex === 0 ? CatalogSettingsPreviewTab.INCLUDED : CatalogSettingsPreviewTab.EXCLUDED,
     );
+  };
+
+  const renderModelIcon = (model: CatalogSourcePreviewModel) => {
+    if (isPreviewModelGatedAccessDenied(model)) {
+      return (
+        <Icon status="warning">
+          <ExclamationTriangleIcon aria-label="Gated access warning" />
+        </Icon>
+      );
+    }
+
+    if (model.included) {
+      return <CheckCircleIcon color="green" aria-label="Included model" />;
+    }
+
+    return <TimesCircleIcon color="red" aria-label="Excluded model" />;
   };
 
   const renderEmptyState = () => {
@@ -150,16 +169,7 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({ preview }) => {
               </strong>
               <List isPlain className="pf-v6-u-mt-md">
                 {items.map((model) => (
-                  <ListItem
-                    key={model.name}
-                    icon={
-                      model.included ? (
-                        <CheckCircleIcon color="green" />
-                      ) : (
-                        <TimesCircleIcon color="red" />
-                      )
-                    }
-                  >
+                  <ListItem key={model.name} icon={renderModelIcon(model)}>
                     {model.name}
                   </ListItem>
                 ))}

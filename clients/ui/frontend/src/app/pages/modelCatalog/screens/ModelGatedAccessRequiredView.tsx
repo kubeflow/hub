@@ -15,9 +15,13 @@ import { MODEL_CATALOG_GATED_ACCESS_REQUIRED } from '~/concepts/modelCatalog/con
 
 type ModelGatedAccessRequiredViewProps = {
   model: CatalogModel;
+  hfUsername?: string;
 };
 
-const ModelGatedAccessRequiredView: React.FC<ModelGatedAccessRequiredViewProps> = ({ model }) => (
+const ModelGatedAccessRequiredView: React.FC<ModelGatedAccessRequiredViewProps> = ({
+  model,
+  hfUsername,
+}) => (
   <PageSection hasBodyWrapper={false} isFilled padding={{ default: 'noPadding' }}>
     <EmptyState
       headingLevel="h2"
@@ -26,7 +30,17 @@ const ModelGatedAccessRequiredView: React.FC<ModelGatedAccessRequiredViewProps> 
       variant={EmptyStateVariant.lg}
       data-testid="model-gated-access-required"
     >
-      <EmptyStateBody>{MODEL_CATALOG_GATED_ACCESS_REQUIRED.DESCRIPTION}</EmptyStateBody>
+      <EmptyStateBody>
+        {hfUsername ? (
+          <>
+            This model is gated on Hugging Face. Log in to the Hugging Face account{' '}
+            <strong>{hfUsername}</strong> and request access. After access is granted on Hugging
+            Face, it might take a few hours for this model to show as available in the catalog.
+          </>
+        ) : (
+          MODEL_CATALOG_GATED_ACCESS_REQUIRED.DESCRIPTION_WITHOUT_USERNAME
+        )}
+      </EmptyStateBody>
       <EmptyStateFooter>
         <EmptyStateActions>
           <ExternalLink
