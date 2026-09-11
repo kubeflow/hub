@@ -29,7 +29,6 @@ import {
   SUCCESS_MESSAGES,
   CLEAR_ACCESS_TOKEN_MODAL,
 } from '~/app/pages/modelCatalogSettings/constants';
-import { TempDevFeature, useTempDevFeatureAvailable } from '~/app/hooks/useTempDevFeatureAvailable';
 
 type CredentialsSectionProps = {
   formData: ManageSourceFormData;
@@ -82,53 +81,6 @@ const CredentialsSection: React.FC<CredentialsSectionProps> = ({
       setIsClearing(false);
     }
   }, [setData, onClearValidationSuccess, onClearCredentials]);
-
-  const accessTokenFeatureAvailable = useTempDevFeatureAvailable(
-    TempDevFeature.CatalogHuggingFaceApiKey,
-  );
-
-  if (!accessTokenFeatureAvailable) {
-    return (
-      <>
-        <ThemeAwareFormGroupWrapper
-          label={FORM_LABELS.ORGANIZATION}
-          fieldId="organization"
-          isRequired
-          hasError={isOrganizationTouched && !isOrganizationValid}
-          helperTextNode={
-            isOrganizationTouched && !isOrganizationValid ? (
-              <FormHelperText>
-                <HelperText>
-                  <HelperTextItem variant="error" data-testid="organization-error">
-                    {VALIDATION_MESSAGES.ORGANIZATION_REQUIRED}
-                  </HelperTextItem>
-                </HelperText>
-              </FormHelperText>
-            ) : undefined
-          }
-          popoverHelpText={DESCRIPTION_TEXT.ORGANIZATION}
-        >
-          <TextInput
-            isRequired
-            type="text"
-            id="organization"
-            name="organization"
-            data-testid="organization-input"
-            placeholder={PLACEHOLDERS.ORGANIZATION}
-            value={formData.organization}
-            onChange={(_event, value) => setData('organization', value)}
-            onBlur={() => setIsOrganizationTouched(true)}
-            validated={isOrganizationTouched && !isOrganizationValid ? 'error' : 'default'}
-          />
-        </ThemeAwareFormGroupWrapper>
-        <FormHelperText>
-          <HelperText>
-            <HelperTextItem>{HELPER_TEXT.ORGANIZATION_SLUG}</HelperTextItem>
-          </HelperText>
-        </FormHelperText>
-      </>
-    );
-  }
 
   const organizationInput = (
     <TextInput

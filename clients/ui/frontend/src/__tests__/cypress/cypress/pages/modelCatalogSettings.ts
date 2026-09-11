@@ -1,4 +1,3 @@
-import { TempDevFeature } from '~/app/hooks/useTempDevFeatureAvailable';
 import { appChrome } from './appChrome';
 import { TableRow } from './components/table';
 import { Modal } from './components/Modal';
@@ -153,13 +152,7 @@ class CatalogSourceStatusErrorModal extends Modal {
 }
 
 class ModelCatalogSettings {
-  visit({
-    wait = true,
-    enableTempDevCatalogHuggingFaceApiKeyFeature = false,
-  }: { wait?: boolean; enableTempDevCatalogHuggingFaceApiKeyFeature?: boolean } = {}) {
-    if (enableTempDevCatalogHuggingFaceApiKeyFeature) {
-      window.localStorage.setItem(TempDevFeature.CatalogHuggingFaceApiKey, 'true');
-    }
+  visit({ wait = true }: { wait?: boolean } = {}) {
     cy.visit('/model-catalog-settings');
     if (wait) {
       this.wait();
@@ -243,29 +236,14 @@ class ModelCatalogSettings {
 }
 
 class ManageSourcePage {
-  visitAddSource({
-    wait = true,
-    enableTempDevCatalogHuggingFaceApiKeyFeature = false,
-  }: { wait?: boolean; enableTempDevCatalogHuggingFaceApiKeyFeature?: boolean } = {}) {
-    if (enableTempDevCatalogHuggingFaceApiKeyFeature) {
-      window.localStorage.setItem(TempDevFeature.CatalogHuggingFaceApiKey, 'true');
-    }
+  visitAddSource({ wait = true }: { wait?: boolean } = {}) {
     cy.visit('/model-catalog-settings/add-source');
     if (wait) {
       this.wait();
     }
   }
 
-  visitManageSource(
-    catalogSourceId: string,
-    {
-      wait = true,
-      enableTempDevCatalogHuggingFaceApiKeyFeature = false,
-    }: { wait?: boolean; enableTempDevCatalogHuggingFaceApiKeyFeature?: boolean } = {},
-  ) {
-    if (enableTempDevCatalogHuggingFaceApiKeyFeature) {
-      window.localStorage.setItem(TempDevFeature.CatalogHuggingFaceApiKey, 'true');
-    }
+  visitManageSource(catalogSourceId: string, { wait = true }: { wait?: boolean } = {}) {
     cy.visit(`/model-catalog-settings/manage-source/${encodeURIComponent(catalogSourceId)}`);
     if (wait) {
       this.wait();
