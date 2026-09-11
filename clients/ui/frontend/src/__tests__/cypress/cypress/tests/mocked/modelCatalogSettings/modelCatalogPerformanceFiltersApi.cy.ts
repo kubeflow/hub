@@ -370,7 +370,7 @@ describe('Model Catalog Performance Filters API Behavior', () => {
     it('should pass cold_start_time_to_load_seconds as orderBy when cold start sort is selected', () => {
       visitWithPerformanceToggle(true);
 
-      modelCatalog.selectSortOption('sort-option-lowest-cold-start');
+      modelCatalog.selectAnySortOption('sort-option-lowest-cold-start');
 
       cy.intercept('GET', '**/model_catalog/models*').as('getModelsSortedColdStart');
 

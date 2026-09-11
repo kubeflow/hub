@@ -486,6 +486,14 @@ class ModelCatalog {
     return this;
   }
 
+  selectAnySortOption(testId: string) {
+    cy.get(
+      '[data-testid="model-catalog-sort-dropdown"], [data-testid="model-catalog-category-sort-dropdown"]',
+    ).click();
+    cy.findByTestId(testId).click();
+    return this;
+  }
+
   // Compression Comparison Card
   findCompressionComparisonCard() {
     return cy.findByTestId('compression-comparison-card');
