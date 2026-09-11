@@ -116,13 +116,16 @@ func (p *paginator[T]) Token() string {
 func (p *paginator[T]) Paginate(items []T) ([]T, *paginator[T]) {
 	startIndex := 0
 	if p.cursor != nil {
+		seen := 0
 		for i, item := range items {
-			itemValue := item.SortValue(p.OrderBy)
-			id := item.SortValue(model.ORDERBYFIELD_ID)
-			if id != "" && id == p.cursor.ID && itemValue == p.cursor.Value {
+			if !p.cursor.matches(item, p.OrderBy) {
+				continue
+			}
+			if seen == p.cursor.Skip {
 				startIndex = i + 1
 				break
 			}
+			seen++
 		}
 	}
 
@@ -140,14 +143,20 @@ func (p *paginator[T]) Paginate(items []T) ([]T, *paginator[T]) {
 		lastItem := pagedItems[len(pagedItems)-1]
 		lastItemID := lastItem.SortValue(model.ORDERBYFIELD_ID)
 		if lastItemID != "" {
+			cursor := &stringCursor{
+				Value: lastItem.SortValue(p.OrderBy),
+				ID:    lastItemID,
+			}
+			for _, item := range items[:endIndex-1] {
+				if cursor.matches(item, p.OrderBy) {
+					cursor.Skip++
+				}
+			}
 			next = &paginator[T]{
 				PageSize:  p.PageSize,
 				OrderBy:   p.OrderBy,
 				SortOrder: p.SortOrder,
-				cursor: &stringCursor{
-					Value: lastItem.SortValue(p.OrderBy),
-					ID:    lastItemID,
-				},
+				cursor:    cursor,
 			}
 		}
 	}
@@ -158,10 +167,19 @@ func (p *paginator[T]) Paginate(items []T) ([]T, *paginator[T]) {
 type stringCursor struct {
 	Value string
 	ID    string
+	// Skip is the number of items with the same Value and ID that precede the
+	// item this cursor points at. Preview results are keyed by name, and names
+	// can repeat, so Value and ID alone cannot say which duplicate ended the page.
+	Skip int
+}
+
+func (c *stringCursor) matches(item model.Sortable, orderBy model.OrderByField) bool {
+	id := item.SortValue(model.ORDERBYFIELD_ID)
+	return id != "" && id == c.ID && item.SortValue(orderBy) == c.Value
 }
 
 func (c *stringCursor) String() string {
-	return base64.StdEncoding.EncodeToString(fmt.Appendf(nil, "%s:%s", c.Value, c.ID))
+	return base64.StdEncoding.EncodeToString(fmt.Appendf(nil, "%d:%s:%s", c.Skip, c.Value, c.ID))
 }
 
 func decodeStringCursor(encoded string) (*stringCursor, error) {
@@ -169,6 +187,14 @@ func decodeStringCursor(encoded string) (*stringCursor, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid token encoding: %w", err)
 	}
+	// "skip:value:id"; the id is last so it can contain colons.
+	if parts := strings.SplitN(string(decoded), ":", 3); len(parts) == 3 {
+		if skip, err := strconv.Atoi(parts[0]); err == nil && skip >= 0 {
+			return &stringCursor{Value: parts[1], ID: parts[2], Skip: skip}, nil
+		}
+	}
+	// Tokens issued before Skip existed are "value:id". Keep accepting them so
+	// a client walking pages across an upgrade does not get a 400.
 	parts := strings.SplitN(string(decoded), ":", 2)
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid token format")

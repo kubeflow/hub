@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"encoding/base64"
 	"fmt"
 	"math"
 	"strconv"
@@ -376,4 +377,53 @@ func TestPaginateSources_NoDuplicates(t *testing.T) {
 	}
 
 	assert.Equal(t, len(allSources), totalSeen, "Total number of items seen should match the original slice")
+}
+
+// Preview results are keyed by name, and names repeat: a YAML catalog can list
+// the same model twice, an HF source can match a model through both "org/*" and
+// "org/model", and a skill repository previewed at two refs reports every skill
+// twice. A cursor that only carries the name cannot say which duplicate ended
+// the page, so the walk either loops on one token or serves an item twice.
+func TestPaginateDuplicateIDs(t *testing.T) {
+	items := []model.AssetPreviewResult{
+		{Name: "code-review", Included: true},
+		{Name: "code-review", Included: true},
+		{Name: "deploy", Included: true},
+	}
+	want := []string{"code-review", "code-review", "deploy"}
+
+	for _, pageSize := range []string{"1", "2", "3"} {
+		t.Run("pageSize="+pageSize, func(t *testing.T) {
+			var got []string
+			token := ""
+			for range 10 {
+				p, err := newPaginator[model.AssetPreviewResult](pageSize, "", "", token)
+				require.NoError(t, err)
+				page, next := p.Paginate(items)
+				for _, item := range page {
+					got = append(got, item.Name)
+				}
+				if next == nil {
+					break
+				}
+				require.NotEqual(t, token, next.Token(), "nextPageToken did not advance")
+				token = next.Token()
+			}
+			assert.Equal(t, want, got)
+		})
+	}
+}
+
+func TestDecodeStringCursorLegacyFormat(t *testing.T) {
+	// Tokens minted before the position field existed are "value:id".
+	legacy := base64.StdEncoding.EncodeToString([]byte("Source 4:source4"))
+	cursor, err := decodeStringCursor(legacy)
+	require.NoError(t, err)
+	assert.Equal(t, &stringCursor{Value: "Source 4", ID: "source4"}, cursor)
+
+	// The id may still contain colons, as stored model names do.
+	current := (&stringCursor{Value: "v", ID: "src:model", Skip: 2}).String()
+	cursor, err = decodeStringCursor(current)
+	require.NoError(t, err)
+	assert.Equal(t, &stringCursor{Value: "v", ID: "src:model", Skip: 2}, cursor)
 }

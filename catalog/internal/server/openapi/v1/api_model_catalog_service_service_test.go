@@ -2690,3 +2690,44 @@ func TestClearSourceStatus(t *testing.T) {
 func strPtr(s string) *string {
 	return new(s)
 }
+
+func TestPreviewCatalogSourceDuplicateNames(t *testing.T) {
+	service := newTestServiceWithSources(map[string]*model.CatalogModel{})
+	catalogData := `
+models:
+  - name: "acme/granite-3b"
+    description: "first entry"
+  - name: "acme/granite-3b"
+    description: "second entry, same name"
+  - name: "acme/llama-7b"
+    description: "third entry"
+`
+	want := []string{"acme/granite-3b", "acme/granite-3b", "acme/llama-7b"}
+
+	for _, pageSize := range []string{"1", "2"} {
+		t.Run("pageSize="+pageSize, func(t *testing.T) {
+			var got []string
+			token := ""
+			for range 10 {
+				configFile := writeTempYAML(t, "config", "type: yaml\n")
+				catalogDataFile := writeTempYAML(t, "catalogdata", catalogData)
+
+				resp, err := service.PreviewCatalogSource(context.Background(), configFile, pageSize, token, "", catalogDataFile)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, resp.Code)
+				body, ok := resp.Body.(model.CatalogSourcePreviewResponse)
+				require.True(t, ok, "expected CatalogSourcePreviewResponse, got %T", resp.Body)
+
+				for _, item := range body.Items {
+					got = append(got, item.Name)
+				}
+				if body.NextPageToken == "" {
+					break
+				}
+				require.NotEqual(t, token, body.NextPageToken, "nextPageToken did not advance")
+				token = body.NextPageToken
+			}
+			assert.Equal(t, want, got)
+		})
+	}
+}
