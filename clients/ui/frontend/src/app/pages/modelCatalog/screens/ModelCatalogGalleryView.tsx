@@ -210,10 +210,10 @@ const ModelCatalogGalleryView: React.FC<ModelCatalogPageProps> = ({
       renderCard={(model: CatalogModel) => (
         <ModelCatalogCard
           model={model}
-          source={getSourceFromSourceId(model.source_id || '', catalogSources)}
+          source={getSourceFromSourceId(model.sourceId || '', catalogSources)}
         />
       )}
-      getItemKey={(model: CatalogModel) => `${model.name}/${model.source_id}`}
+      getItemKey={(model: CatalogModel) => `${model.name}/${model.sourceId}`}
       hasMore={catalogModels.hasMore}
       isLoadingMore={catalogModels.isLoadingMore}
       onLoadMore={catalogModels.loadMore}

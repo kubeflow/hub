@@ -138,10 +138,10 @@ func (m *ModelRegistryRepository) ResolveServerAddress(clusterIP string, httpPor
 	// In federated mode, if external address is available, use it
 	if isFederatedMode && externalAddressRest != "" {
 		// External address is assumed to be HTTPS
-		url := fmt.Sprintf("%s://%s/api/model_registry/v1alpha3", protocol, externalAddressRest)
+		url := fmt.Sprintf("%s://%s/api/model_registry/v1", protocol, externalAddressRest)
 		return url
 	}
 
-	url := fmt.Sprintf("%s://%s:%d/api/model_registry/v1alpha3", protocol, clusterIP, httpPort)
+	url := fmt.Sprintf("%s://%s:%d/api/model_registry/v1", protocol, clusterIP, httpPort)
 	return url
 }

@@ -31,7 +31,7 @@ const TensorTypeComparisonCard: React.FC<TensorTypeComparisonCardProps> = ({ mod
   const variantFilterQuery = `variant_group_id.string_value="${variantGroupId}"`;
 
   const { catalogModels, catalogModelsLoaded, catalogModelsLoadError } = useCatalogModelsBySources(
-    model.source_id || '',
+    model.sourceId || '',
     undefined,
     10,
     '',
@@ -160,7 +160,7 @@ const TensorTypeComparisonCard: React.FC<TensorTypeComparisonCardProps> = ({ mod
                                     to={catalogModelDetailsTabFromModel(
                                       ModelDetailsTab.PERFORMANCE_INSIGHTS,
                                       variant.name || '',
-                                      variant.source_id,
+                                      variant.sourceId,
                                     )}
                                     data-testid={`compression-link-${index}`}
                                   >

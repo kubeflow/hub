@@ -46,7 +46,7 @@ const ModelCatalogCard: React.FC<ModelCatalogCardProps> = ({ model, source }) =>
   const isGatedAccessDenied = accessLabelVariant === 'gated-denied';
 
   return (
-    <Card isFullHeight data-testid="model-catalog-card" key={`${model.name}/${model.source_id}`}>
+    <Card isFullHeight data-testid="model-catalog-card" key={`${model.name}/${model.sourceId}`}>
       <CardHeader>
         <CardTitle>
           <Flex alignItems={{ default: 'alignItemsFlexStart' }} className="pf-v6-u-mb-md">

@@ -18,7 +18,7 @@ const customServer = mockMcpServer({
   description: 'A custom MCP server without README.',
   deploymentMode: 'local',
   securityIndicators: {},
-  source_id: 'sample', // eslint-disable-line camelcase
+  sourceId: 'sample',
   toolCount: 0,
   readme: undefined,
   serverJson: undefined,
