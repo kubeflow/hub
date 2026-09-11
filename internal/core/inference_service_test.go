@@ -1092,3 +1092,189 @@ func TestInferenceServiceRoundTrip(t *testing.T) {
 		assert.Equal(t, "new_value", finalProps["new_prop"].MetadataStringValue.StringValue)
 	})
 }
+
+// TestGetInferenceServicesWithFilterQuery verifies that the filterQuery parameter
+// is correctly propagated and applied when listing InferenceServices.
+//
+// Regression test for: filterQuery silently ignored on GET /inference_services
+// Root cause was missing FilterQuery field propagation in GetInferenceServices
+// and missing GetRestEntityType() on InferenceServiceListOptions.
+func TestGetInferenceServicesWithFilterQuery(t *testing.T) {
+	_service, cleanup := SetupModelRegistryService(t)
+	defer cleanup()
+
+	// Create shared prerequisites
+	rm, err := _service.UpsertRegisteredModel(&openapi.RegisteredModel{Name: "filter-test-rm"})
+	require.NoError(t, err)
+
+	env, err := _service.UpsertServingEnvironment(&openapi.ServingEnvironment{Name: "filter-test-env"})
+	require.NoError(t, err)
+
+	// Create inference services with distinct properties for filtering
+	type svcDef struct {
+		name    string
+		runtime string
+		extID   string
+	}
+	svcDefs := []svcDef{
+		{"fraud-detector", "tensorflow", "ext-fraud-001"},
+		{"image-classifier", "pytorch", "ext-image-002"},
+		{"nlp-pipeline", "tensorflow", "ext-nlp-003"},
+		{"recommendation-engine", "sklearn", "ext-rec-004"},
+	}
+	for _, svc := range svcDefs {
+		name := svc.name
+		rt := svc.runtime
+		eid := svc.extID
+		_, err := _service.UpsertInferenceService(&openapi.InferenceService{
+			Name:                 &name,
+			ExternalId:           &eid,
+			Runtime:              &rt,
+			ServingEnvironmentId: *env.Id,
+			RegisteredModelId:    *rm.Id,
+		})
+		require.NoError(t, err)
+	}
+
+	testCases := []struct {
+		name          string
+		filterQuery   string
+		expectedCount int
+		expectedNames []string
+	}{
+		{
+			name:          "Filter by exact name",
+			filterQuery:   "name = 'fraud-detector'",
+			expectedCount: 1,
+			expectedNames: []string{"fraud-detector"},
+		},
+		{
+			name:          "Filter by name pattern",
+			filterQuery:   "name LIKE '%-detector'",
+			expectedCount: 1,
+			expectedNames: []string{"fraud-detector"},
+		},
+		{
+			name:          "Filter by externalId",
+			filterQuery:   "externalId = 'ext-image-002'",
+			expectedCount: 1,
+			expectedNames: []string{"image-classifier"},
+		},
+		{
+			name:          "Filter by runtime - tensorflow",
+			filterQuery:   "runtime = 'tensorflow'",
+			expectedCount: 2,
+			expectedNames: []string{"fraud-detector", "nlp-pipeline"},
+		},
+		{
+			name:          "Filter by runtime - pytorch",
+			filterQuery:   "runtime = 'pytorch'",
+			expectedCount: 1,
+			expectedNames: []string{"image-classifier"},
+		},
+		{
+			name:          "Complex filter with AND",
+			filterQuery:   "runtime = 'tensorflow' AND name = 'fraud-detector'",
+			expectedCount: 1,
+			expectedNames: []string{"fraud-detector"},
+		},
+		{
+			name:          "Complex filter with OR",
+			filterQuery:   "runtime = 'pytorch' OR runtime = 'sklearn'",
+			expectedCount: 2,
+			expectedNames: []string{"image-classifier", "recommendation-engine"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			pageSize := int32(20)
+			fq := tc.filterQuery
+			result, err := _service.GetInferenceServices(api.ListOptions{
+				PageSize:    &pageSize,
+				FilterQuery: &fq,
+			}, nil, nil)
+
+			require.NoError(t, err)
+			require.NotNil(t, result)
+
+			var matchedNames []string
+			for _, item := range result.Items {
+				if slices.Contains(tc.expectedNames, *item.Name) {
+					matchedNames = append(matchedNames, *item.Name)
+				}
+			}
+
+			assert.Equal(t, tc.expectedCount, len(matchedNames),
+				"filterQuery %q: expected %d items, got %d (filter may be silently ignored)",
+				tc.filterQuery, tc.expectedCount, len(matchedNames))
+			assert.ElementsMatch(t, tc.expectedNames, matchedNames,
+				"filterQuery %q: unexpected items returned", tc.filterQuery)
+		})
+	}
+
+	t.Run("Invalid filter syntax returns error", func(t *testing.T) {
+		invalidFilter := "invalid <<<syntax"
+		result, err := _service.GetInferenceServices(api.ListOptions{
+			FilterQuery: &invalidFilter,
+		}, nil, nil)
+
+		assert.Error(t, err, "invalid filter syntax should return an error, not silently ignore the filter")
+		assert.Nil(t, result)
+	})
+
+	t.Run("Filter with no matches returns empty list", func(t *testing.T) {
+		fq := "runtime = 'nonexistent-runtime'"
+		result, err := _service.GetInferenceServices(api.ListOptions{
+			FilterQuery: &fq,
+		}, nil, nil)
+
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.Equal(t, 0, len(result.Items), "filter with no matches should return empty items")
+		assert.Equal(t, int32(0), result.Size)
+	})
+
+	t.Run("Filter combined with pagination", func(t *testing.T) {
+		fq := "runtime = 'tensorflow'"
+		pageSize := int32(1)
+
+		firstPage, err := _service.GetInferenceServices(api.ListOptions{
+			PageSize:    &pageSize,
+			FilterQuery: &fq,
+		}, nil, nil)
+		require.NoError(t, err)
+		assert.Equal(t, 1, len(firstPage.Items))
+		assert.NotEmpty(t, firstPage.NextPageToken,
+			"should have a next page token for 2 tensorflow services with pageSize=1")
+
+		secondPage, err := _service.GetInferenceServices(api.ListOptions{
+			PageSize:      &pageSize,
+			FilterQuery:   &fq,
+			NextPageToken: &firstPage.NextPageToken,
+		}, nil, nil)
+		require.NoError(t, err)
+		assert.Equal(t, 1, len(secondPage.Items))
+		assert.NotEqual(t, firstPage.Items[0].Id, secondPage.Items[0].Id,
+			"each page should return a different item")
+	})
+
+	t.Run("Filter scoped to serving environment", func(t *testing.T) {
+		fq := "runtime = 'tensorflow'"
+		pageSize := int32(20)
+
+		result, err := _service.GetInferenceServices(api.ListOptions{
+			PageSize:    &pageSize,
+			FilterQuery: &fq,
+		}, env.Id, nil)
+
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.Equal(t, 2, len(result.Items),
+			"environment-scoped filter should return 2 tensorflow services")
+		for _, item := range result.Items {
+			assert.Equal(t, "tensorflow", *item.Runtime,
+				"all returned items should match the runtime filter")
+		}
+	})
+}
