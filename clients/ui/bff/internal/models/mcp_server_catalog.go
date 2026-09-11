@@ -1,6 +1,9 @@
 package models
 
-import "github.com/kubeflow/hub/pkg/openapi"
+import (
+	"github.com/kubeflow/hub/pkg/openapi"
+	corev1 "k8s.io/api/core/v1"
+)
 
 type McpDeploymentMode string
 
@@ -129,6 +132,21 @@ type McpRuntimeMetadata struct {
 	Capabilities                 *McpRuntimeMetadataCapabilities    `json:"capabilities,omitempty"`
 	McpPath                      *string                            `json:"mcpPath,omitempty"`
 	Prerequisites                *McpPrerequisites                  `json:"prerequisites,omitempty"`
+	Storage                      []McpStorageMount                  `json:"storage,omitempty"`
+}
+
+// McpStorageMount matches an MCPServer spec.config.storage entry.
+type McpStorageMount struct {
+	Path        string           `json:"path"`
+	Permissions string           `json:"permissions,omitempty"`
+	Source      McpStorageSource `json:"source"`
+}
+
+type McpStorageSource struct {
+	Type      string                        `json:"type"`
+	EmptyDir  *corev1.EmptyDirVolumeSource  `json:"emptyDir,omitempty"`
+	ConfigMap *corev1.ConfigMapVolumeSource `json:"configMap,omitempty"`
+	Secret    *corev1.SecretVolumeSource    `json:"secret,omitempty"`
 }
 
 type McpToolParameter struct {
