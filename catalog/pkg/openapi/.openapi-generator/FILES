@@ -57,6 +57,8 @@ model_mcp_security_indicator.go
 model_mcp_server.go
 model_mcp_server_list.go
 model_mcp_service_account_requirement.go
+model_mcp_storage_mount.go
+model_mcp_storage_source.go
 model_mcp_tool.go
 model_mcp_tool_parameter.go
 model_mcp_tool_with_server.go

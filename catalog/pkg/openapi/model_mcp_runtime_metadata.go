@@ -33,6 +33,8 @@ type MCPRuntimeMetadata struct {
 	// HTTP path where MCP server accepts requests. Used for HTTP and SSE transports. Aligns with MCP Lifecycle operator conventions.
 	McpPath       *string           `json:"mcpPath,omitempty" validate:"regexp=^\\/[a-zA-Z0-9\\/_.-]*$"`
 	Prerequisites *MCPPrerequisites `json:"prerequisites,omitempty"`
+	// Storage mounts applied directly to the generated MCPServer's spec.config.storage. Use an EmptyDir mount to grant writable scratch space (e.g. /tmp or /app/logs) while the container root filesystem stays read-only, avoiding a manual patch after deployment.
+	Storage []MCPStorageMount `json:"storage,omitempty"`
 }
 
 // NewMCPRuntimeMetadata instantiates a new MCPRuntimeMetadata object
@@ -344,6 +346,38 @@ func (o *MCPRuntimeMetadata) SetPrerequisites(v MCPPrerequisites) {
 	o.Prerequisites = &v
 }
 
+// GetStorage returns the Storage field value if set, zero value otherwise.
+func (o *MCPRuntimeMetadata) GetStorage() []MCPStorageMount {
+	if o == nil || IsNil(o.Storage) {
+		var ret []MCPStorageMount
+		return ret
+	}
+	return o.Storage
+}
+
+// GetStorageOk returns a tuple with the Storage field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *MCPRuntimeMetadata) GetStorageOk() ([]MCPStorageMount, bool) {
+	if o == nil || IsNil(o.Storage) {
+		return nil, false
+	}
+	return o.Storage, true
+}
+
+// HasStorage returns a boolean if a field has been set.
+func (o *MCPRuntimeMetadata) HasStorage() bool {
+	if o != nil && !IsNil(o.Storage) {
+		return true
+	}
+
+	return false
+}
+
+// SetStorage gets a reference to the given []MCPStorageMount and assigns it to the Storage field.
+func (o *MCPRuntimeMetadata) SetStorage(v []MCPStorageMount) {
+	o.Storage = v
+}
+
 func (o MCPRuntimeMetadata) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -380,6 +414,9 @@ func (o MCPRuntimeMetadata) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.Prerequisites) {
 		toSerialize["prerequisites"] = o.Prerequisites
+	}
+	if !IsNil(o.Storage) {
+		toSerialize["storage"] = o.Storage
 	}
 	return toSerialize, nil
 }

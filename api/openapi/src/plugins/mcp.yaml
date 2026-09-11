@@ -547,6 +547,51 @@ components:
           description: |-
             Kubernetes prerequisites discovery metadata.
             Helps users understand what K8s resources to create before deployment.
+        storage:
+          type: array
+          description: |-
+            Storage mounts applied directly to the generated MCPServer's
+            spec.config.storage. Use an EmptyDir mount to grant writable scratch
+            space (e.g. /tmp or /app/logs) while the container root filesystem
+            stays read-only, avoiding a manual patch after deployment.
+          items:
+            $ref: "#/components/schemas/MCPStorageMount"
+    MCPStorageMount:
+      type: object
+      required:
+        - path
+        - source
+      properties:
+        path:
+          type: string
+          description: Absolute mount path inside the container.
+          example: /tmp
+        permissions:
+          type: string
+          enum: [ReadOnly, ReadWrite]
+          description: Mount permissions. Defaults to ReadOnly when unset.
+          example: ReadWrite
+        source:
+          $ref: "#/components/schemas/MCPStorageSource"
+    MCPStorageSource:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum: [EmptyDir, ConfigMap, Secret]
+          description: Volume source type for the mount.
+          example: EmptyDir
+        emptyDir:
+          type: object
+          description: EmptyDir volume source; use {} for defaults.
+        configMap:
+          type: object
+          description: ConfigMap volume source.
+        secret:
+          type: object
+          description: Secret volume source.
     MCPEnvVarMetadata:
       type: object
       required:
