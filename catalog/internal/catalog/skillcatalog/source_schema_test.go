@@ -3,6 +3,7 @@ package skillcatalog
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -276,12 +277,13 @@ repositories:
 // still accepts several repositories now that the inline form is single-repo.
 func multiRepoFileSource(t *testing.T, urls ...string) basecatalog.PluginSource {
 	t.Helper()
-	repoYAML := "repositories:\n"
+	var repoYAML strings.Builder
+	repoYAML.WriteString("repositories:\n")
 	for _, u := range urls {
-		repoYAML += "  - url: " + u + "\n"
+		repoYAML.WriteString("  - url: " + u + "\n")
 	}
 	dir := t.TempDir()
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "repos.yaml"), []byte(repoYAML), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "repos.yaml"), []byte(repoYAML.String()), 0o600))
 
 	src := skillSource(mustProps(t, `yamlCatalogPath: repos.yaml`))
 	src.Origin = filepath.Join(dir, "catalog-sources.yaml")
