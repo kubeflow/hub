@@ -99,7 +99,7 @@ func init() {
 func runCatalogServer(cmd *cobra.Command, _ []string) error {
 	if !cmd.Flags().Changed("cors-allowed-origins") {
 		if envVal := os.Getenv("CATALOG_CORS_ALLOWED_ORIGINS"); envVal != "" {
-			for _, origin := range strings.Split(envVal, ",") {
+			for origin := range strings.SplitSeq(envVal, ",") {
 				if o := strings.TrimSpace(origin); o != "" {
 					catalogCfg.CORSAllowedOrigins = append(catalogCfg.CORSAllowedOrigins, o)
 				}
