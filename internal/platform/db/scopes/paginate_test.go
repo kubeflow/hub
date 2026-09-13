@@ -2,6 +2,8 @@ package scopes
 
 import (
 	"encoding/base64"
+	"math"
+	"strconv"
 	"testing"
 
 	"github.com/kubeflow/hub/internal/platform/db/entity"
@@ -272,4 +274,33 @@ func createMaliciousCursor() string {
 	maliciousValue := "'; DROP TABLE test_table; --"
 	cursor := "1:" + maliciousValue
 	return base64.StdEncoding.EncodeToString([]byte(cursor))
+}
+
+// TestCreateNextPageTokenFloatRoundTrip ensures a float sort value survives the
+// token unchanged, so the WHERE clause built from the cursor matches the row
+// the token was created from.
+func TestCreateNextPageTokenFloatRoundTrip(t *testing.T) {
+	values := []float64{
+		0.9512,              // few decimals
+		0.8523489932885906,  // 16 significant digits, typical benchmark output
+		0.7999999999999999,  // mean of 0.7, 0.8 and 0.9
+		0.1 + 0.2,           // 0.30000000000000004
+		1e-7,                // small value
+		123456789.12345679,  // large value with a fraction
+		math.MaxFloat64,     // largest finite value
+		-0.8523489932885906, // negative
+		0,                   // zero
+	}
+
+	for _, v := range values {
+		v := v
+		token := CreateNextPageToken(42, &v)
+		cursor, err := DecodeCursor(token)
+		assert.NoError(t, err)
+		assert.Equal(t, int32(42), cursor.ID)
+
+		parsed, err := strconv.ParseFloat(cursor.Value, 64)
+		assert.NoError(t, err)
+		assert.Equal(t, v, parsed, "value %v came back as %q", v, cursor.Value)
+	}
 }
