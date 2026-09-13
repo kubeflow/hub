@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	platformmw "github.com/kubeflow/hub/internal/platform/server/middleware"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -64,6 +65,14 @@ func (p *leaderPlugin) OnBecomeLeader(ctx context.Context) error {
 	<-ctx.Done()
 	return ctx.Err()
 }
+
+// basePathPlugin implements BasePathProvider.
+type basePathPlugin struct {
+	mockPlugin
+	basePath string
+}
+
+func (p *basePathPlugin) BasePath() string { return p.basePath }
 
 // routePlugin registers a test route when RegisterRoutes is called.
 type routePlugin struct {
@@ -535,4 +544,65 @@ func getJSON(t *testing.T, handler http.Handler, path string) map[string]any {
 	var result map[string]any
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
 	return result
+}
+
+func TestAlphaDeprecatedPaths(t *testing.T) {
+	plugins := []CatalogPlugin{
+		&mockPlugin{name: "model", version: "v1alpha1"},
+		&mockPlugin{name: "skill", version: "v1"},
+		&basePathPlugin{mockPlugin: mockPlugin{name: "mcp", version: "v1alpha1"}, basePath: "/api/mcp_catalog/v1alpha1"},
+	}
+
+	got := alphaDeprecatedPaths(plugins)
+
+	assert.Equal(t, []platformmw.DeprecatedPath{
+		{Prefix: "/api/model_catalog/v1alpha1/", Successor: "/api/model_catalog/v1/"},
+		{Prefix: "/api/mcp_catalog/v1alpha1/", Successor: "/api/mcp_catalog/v1/"},
+	}, got)
+}
+
+func TestMountRoutesAlphaDeprecationHeaders(t *testing.T) {
+	Reset()
+	defer Reset()
+
+	sunset := time.Date(2027, 6, 1, 0, 0, 0, 0, time.UTC)
+
+	for _, tt := range []struct {
+		name        string
+		sunsetDate  *time.Time
+		wantHeaders bool
+	}{
+		{"headers on alpha routes when a sunset date is set", &sunset, true},
+		{"no headers when no sunset date is set", nil, false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			Reset()
+			Register(&routePlugin{mockPlugin: mockPlugin{name: "test", version: "v1alpha1", healthy: true}})
+
+			s := NewServer(ServerConfig{AlphaSunsetDate: tt.sunsetDate})
+			require.NoError(t, s.Init(context.Background()))
+			router, err := s.MountRoutes()
+			require.NoError(t, err)
+
+			rr := httptest.NewRecorder()
+			router.ServeHTTP(rr, httptest.NewRequest("GET", "/api/test_catalog/v1alpha1/items", nil))
+			assert.Equal(t, http.StatusOK, rr.Code)
+
+			if !tt.wantHeaders {
+				assert.Empty(t, rr.Header().Get("Deprecation"))
+				assert.Empty(t, rr.Header().Get("Sunset"))
+				assert.Empty(t, rr.Header().Get("Link"))
+				return
+			}
+			assert.Equal(t, "true", rr.Header().Get("Deprecation"))
+			assert.Equal(t, sunset.Format(http.TimeFormat), rr.Header().Get("Sunset"))
+			assert.Equal(t, `</api/test_catalog/v1/>; rel="successor-version"`, rr.Header().Get("Link"))
+
+			// Non-alpha paths are untouched.
+			rr = httptest.NewRecorder()
+			router.ServeHTTP(rr, httptest.NewRequest("GET", "/healthz", nil))
+			assert.Equal(t, http.StatusOK, rr.Code)
+			assert.Empty(t, rr.Header().Get("Deprecation"))
+		})
+	}
 }

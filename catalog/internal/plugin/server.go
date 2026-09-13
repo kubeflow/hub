@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -25,6 +27,11 @@ type ServerConfig struct {
 	RepoSet                datastore.RepoSet
 	Logger                 *slog.Logger
 	CORSAllowedOrigins     []string
+
+	// AlphaSunsetDate, when set, enables RFC 8594 deprecation headers on
+	// every plugin route served under an alpha API version, pointing at the
+	// plugin's v1 base path as the successor.
+	AlphaSunsetDate *time.Time
 }
 
 // readinessCheck is a named readiness check evaluated by the /readyz handler.
@@ -105,6 +112,19 @@ func (s *Server) MountRoutes() (chi.Router, error) {
 	s.router = chi.NewRouter()
 	s.router.Use(middleware.Logger)
 	s.router.Use(platformmw.CORSMiddleware(s.cfg.CORSAllowedOrigins))
+
+	if s.cfg.AlphaSunsetDate != nil {
+		paths := alphaDeprecatedPaths(s.plugins)
+		if len(paths) > 0 {
+			s.router.Use(platformmw.DeprecationMiddleware(platformmw.DeprecationConfig{
+				SunsetDate: *s.cfg.AlphaSunsetDate,
+				Paths:      paths,
+			}))
+			for _, p := range paths {
+				s.cfg.Logger.Info("alpha API deprecation headers enabled", "prefix", p.Prefix, "successor", p.Successor, "sunset", s.cfg.AlphaSunsetDate.Format("2006-01-02"))
+			}
+		}
+	}
 
 	for _, p := range s.plugins {
 		s.cfg.Logger.Info("mounting plugin routes", "plugin", p.Name())
@@ -279,6 +299,30 @@ func (s *Server) readyHandler(w http.ResponseWriter, _ *http.Request) {
 	}
 
 	_ = json.NewEncoder(w).Encode(response)
+}
+
+// alphaDeprecatedPaths returns a deprecated prefix and its v1 successor for
+// every plugin whose API version is an alpha (for example "v1alpha1").
+// Plugins already on v1 contribute nothing.
+func alphaDeprecatedPaths(plugins []CatalogPlugin) []platformmw.DeprecatedPath {
+	var paths []platformmw.DeprecatedPath
+	for _, p := range plugins {
+		version := p.Version()
+		if !strings.Contains(version, "alpha") {
+			continue
+		}
+		base := computeBasePath(p)
+		versionSegment := "/" + version
+		if !strings.HasSuffix(base, versionSegment) {
+			continue
+		}
+		successor := strings.TrimSuffix(base, versionSegment) + "/v1"
+		paths = append(paths, platformmw.DeprecatedPath{
+			Prefix:    base + "/",
+			Successor: successor + "/",
+		})
+	}
+	return paths
 }
 
 func computeBasePath(p CatalogPlugin) string {

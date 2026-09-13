@@ -17,6 +17,7 @@ import (
 	"github.com/kubeflow/hub/internal/db/service"
 	"github.com/kubeflow/hub/internal/platform/datastore"
 	platformproxy "github.com/kubeflow/hub/internal/platform/proxy"
+	platformmw "github.com/kubeflow/hub/internal/platform/server/middleware"
 	"github.com/kubeflow/hub/internal/platform/tls"
 	"github.com/kubeflow/hub/internal/proxy"
 	"github.com/kubeflow/hub/internal/server/middleware"
@@ -187,7 +188,12 @@ func runProxyServer(cmd *cobra.Command, args []string) error {
 				errChan <- fmt.Errorf("invalid --alpha-sunset-date %q: must be YYYY-MM-DD: %w", cfg.AlphaSunsetDate, err)
 				return
 			}
-			mux.Use(middleware.DeprecationMiddleware(middleware.DeprecationConfig{SunsetDate: sunsetDate}))
+			mux.Use(platformmw.DeprecationMiddleware(platformmw.DeprecationConfig{
+				SunsetDate: sunsetDate,
+				Paths: []platformmw.DeprecatedPath{
+					{Prefix: "/api/model_registry/v1alpha3/", Successor: "/api/model_registry/v1/"},
+				},
+			}))
 			glog.Infof("Alpha API (v1alpha3) deprecation headers enabled; sunset date: %s", cfg.AlphaSunsetDate)
 		}
 
