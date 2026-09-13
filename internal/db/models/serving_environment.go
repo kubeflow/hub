@@ -1,9 +1,16 @@
 package models
 
+import "github.com/kubeflow/hub/internal/db/filter"
+
 type ServingEnvironmentListOptions struct {
 	Pagination
 	Name       *string
 	ExternalID *string
+}
+
+// GetRestEntityType implements the FilterApplier interface
+func (s *ServingEnvironmentListOptions) GetRestEntityType() filter.RestEntityType {
+	return filter.RestEntityServingEnvironment
 }
 
 type ServingEnvironmentAttributes struct {

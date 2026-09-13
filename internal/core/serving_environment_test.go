@@ -581,3 +581,141 @@ func TestServingEnvironmentRoundTrip(t *testing.T) {
 		assert.Equal(t, "new_value", finalProps["new_prop"].MetadataStringValue.StringValue)
 	})
 }
+
+// TestGetServingEnvironmentsWithFilterQuery verifies that the filterQuery parameter
+// is correctly propagated and applied when listing ServingEnvironments.
+//
+// Regression test for: filterQuery silently ignored on GET /serving_environments
+// Root cause was missing FilterQuery field propagation in GetServingEnvironments
+// and missing GetRestEntityType() on ServingEnvironmentListOptions.
+func TestGetServingEnvironmentsWithFilterQuery(t *testing.T) {
+	_service, cleanup := SetupModelRegistryService(t)
+	defer cleanup()
+
+	type envDef struct {
+		name  string
+		extID string
+	}
+	envDefs := []envDef{
+		{"prod-serving-env", "ext-prod-001"},
+		{"staging-serving-env", "ext-staging-002"},
+		{"dev-serving-env", "ext-dev-003"},
+		{"qa-cluster", "ext-qa-004"},
+	}
+	for _, env := range envDefs {
+		_, err := _service.UpsertServingEnvironment(&openapi.ServingEnvironment{
+			Name:       env.name,
+			ExternalId: new(env.extID),
+		})
+		require.NoError(t, err)
+	}
+
+	testCases := []struct {
+		name          string
+		filterQuery   string
+		expectedCount int
+		expectedNames []string
+	}{
+		{
+			name:          "Filter by exact name",
+			filterQuery:   "name = 'prod-serving-env'",
+			expectedCount: 1,
+			expectedNames: []string{"prod-serving-env"},
+		},
+		{
+			name:          "Filter by name pattern",
+			filterQuery:   "name LIKE '%-serving-env'",
+			expectedCount: 3,
+			expectedNames: []string{"prod-serving-env", "staging-serving-env", "dev-serving-env"},
+		},
+		{
+			name:          "Filter by externalId",
+			filterQuery:   "externalId = 'ext-staging-002'",
+			expectedCount: 1,
+			expectedNames: []string{"staging-serving-env"},
+		},
+		{
+			name:          "Complex filter with AND",
+			filterQuery:   "name = 'dev-serving-env' AND externalId = 'ext-dev-003'",
+			expectedCount: 1,
+			expectedNames: []string{"dev-serving-env"},
+		},
+		{
+			name:          "Complex filter with OR",
+			filterQuery:   "name = 'prod-serving-env' OR externalId = 'ext-qa-004'",
+			expectedCount: 2,
+			expectedNames: []string{"prod-serving-env", "qa-cluster"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			pageSize := int32(20)
+			fq := tc.filterQuery
+			result, err := _service.GetServingEnvironments(api.ListOptions{
+				PageSize:    &pageSize,
+				FilterQuery: &fq,
+			})
+
+			require.NoError(t, err)
+			require.NotNil(t, result)
+
+			var returnedNames []string
+			for _, item := range result.Items {
+				returnedNames = append(returnedNames, item.Name)
+			}
+
+			assert.Equal(t, tc.expectedCount, len(returnedNames),
+				"filterQuery %q: expected %d items, got %d (filter may be silently ignored)",
+				tc.filterQuery, tc.expectedCount, len(returnedNames))
+			assert.ElementsMatch(t, tc.expectedNames, returnedNames,
+				"filterQuery %q: unexpected items returned", tc.filterQuery)
+		})
+	}
+
+	t.Run("Invalid filter syntax returns error", func(t *testing.T) {
+		invalidFilter := "invalid <<<syntax"
+		result, err := _service.GetServingEnvironments(api.ListOptions{
+			FilterQuery: &invalidFilter,
+		})
+
+		assert.Error(t, err, "invalid filter syntax should return an error, not silently ignore the filter")
+		assert.Nil(t, result)
+	})
+
+	t.Run("Filter with no matches returns empty list", func(t *testing.T) {
+		fq := "name = 'nonexistent-serving-env'"
+		result, err := _service.GetServingEnvironments(api.ListOptions{
+			FilterQuery: &fq,
+		})
+
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.Equal(t, 0, len(result.Items), "filter with no matches should return empty items")
+		assert.Equal(t, int32(0), result.Size)
+	})
+
+	t.Run("Filter combined with pagination", func(t *testing.T) {
+		fq := "name = 'prod-serving-env' OR name = 'staging-serving-env'"
+		pageSize := int32(1)
+
+		firstPage, err := _service.GetServingEnvironments(api.ListOptions{
+			PageSize:    &pageSize,
+			FilterQuery: &fq,
+		})
+		require.NoError(t, err)
+		assert.Equal(t, 1, len(firstPage.Items))
+		assert.NotEmpty(t, firstPage.NextPageToken,
+			"should have a next page token for 2 matching serving environments with pageSize=1")
+
+		secondPage, err := _service.GetServingEnvironments(api.ListOptions{
+			PageSize:      &pageSize,
+			FilterQuery:   &fq,
+			NextPageToken: &firstPage.NextPageToken,
+		})
+		require.NoError(t, err)
+		assert.Equal(t, 1, len(secondPage.Items))
+		assert.NotEqual(t, firstPage.Items[0].Id, secondPage.Items[0].Id,
+			"each page should return a different item")
+	})
+}
