@@ -28,6 +28,10 @@ func NewMCPCatalogServiceAPIService(mcpProvider catalog.MCPProvider, mcpSources 
 
 // FindMCPServers - List MCP servers.
 func (m *MCPCatalogServiceAPIService) FindMCPServers(ctx context.Context, name string, q string, sourceLabel []string, filterQuery string, namedQuery string, includeTools bool, toolLimit int32, pageSize string, orderBy model.OrderByField, sortOrder model.SortOrder, nextPageToken string) (ImplResponse, error) {
+	if err := enumOrderBy.validate(string(orderBy)); err != nil {
+		return ErrorResponse(http.StatusBadRequest, err), err
+	}
+
 	pageSizeInt, err := parsePaginationParams(pageSize, nextPageToken)
 	if err != nil {
 		return ErrorResponse(http.StatusBadRequest, err), err
@@ -102,6 +106,10 @@ func (m *MCPCatalogServiceAPIService) GetMCPServer(ctx context.Context, serverID
 
 // FindMCPServerTools - List MCP server tools.
 func (m *MCPCatalogServiceAPIService) FindMCPServerTools(ctx context.Context, serverID string, filterQuery string, pageSize string, orderBy model.OrderByField, sortOrder model.SortOrder, nextPageToken string) (ImplResponse, error) {
+	if err := enumOrderBy.validate(string(orderBy)); err != nil {
+		return ErrorResponse(http.StatusBadRequest, err), err
+	}
+
 	pageSizeInt, err := parsePaginationParams(pageSize, nextPageToken)
 	if err != nil {
 		return ErrorResponse(http.StatusBadRequest, err), err

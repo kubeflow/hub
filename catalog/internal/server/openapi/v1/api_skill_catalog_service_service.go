@@ -26,6 +26,10 @@ func NewSkillCatalogServiceAPIService(provider *skillcatalog.DBSkillCatalog, sou
 
 // FindSkills lists skills.
 func (s *SkillCatalogServiceAPIService) FindSkills(ctx context.Context, name string, q string, source []string, sourceLabel []string, filterQuery string, pageSize string, orderBy model.OrderByField, sortOrder model.SortOrder, nextPageToken string) (ImplResponse, error) {
+	if err := caseInsensitiveOrderBy.validate(string(orderBy)); err != nil {
+		return ErrorResponse(http.StatusBadRequest, err), err
+	}
+
 	pageSizeInt, err := parsePaginationParams(pageSize, nextPageToken)
 	if err != nil {
 		return ErrorResponse(http.StatusBadRequest, err), err

@@ -621,6 +621,9 @@ func (s *ModelRegistryServiceAPIService) buildListOption(filterQuery string, pag
 	}
 	var orderByString *string
 	if orderBy != "" {
+		if !orderBy.IsValid() {
+			return api.ListOptions{}, fmt.Errorf("invalid orderBy %q: must be one of %v: %w", orderBy, model.AllowedOrderByFieldEnumValues, api.ErrBadRequest)
+		}
 		orderByString = (*string)(&orderBy)
 	}
 	var sortOrderString *string

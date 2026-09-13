@@ -464,7 +464,7 @@ class CatalogAPIClient:
             source: Filter by source ID.
             q: Free-form keyword search to filter the response.
             filter_query: Filter query string.
-            order_by: Field to order by (NAME, CREATE_TIME, ACCURACY, etc.).
+            order_by: Field to order by (ID, NAME, CREATE_TIME, LAST_UPDATE_TIME, RECOMMENDED, or a custom property such as artifacts.accuracy.double_value).
             sort_order: Sort order (ASC or DESC).
             page_size: Number of items per page.
             next_page_token: Token for pagination.
