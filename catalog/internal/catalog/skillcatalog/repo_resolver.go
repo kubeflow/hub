@@ -241,7 +241,7 @@ func (r *RepoResolver) RemoteCommit(ctx context.Context, repo SkillRepository, r
 // object (matching what Resolve records). Returns "" when nothing matched.
 func peelLsRemote(out, ref string) string {
 	var direct, peeled string
-	for _, line := range strings.Split(strings.TrimSpace(out), "\n") {
+	for line := range strings.SplitSeq(strings.TrimSpace(out), "\n") {
 		fields := strings.Fields(line)
 		if len(fields) < 2 {
 			continue
@@ -274,12 +274,12 @@ func (r *RepoResolver) checkProtocol(rawURL string) error {
 }
 
 func transportOf(rawURL string) string {
-	if i := strings.Index(rawURL, "://"); i >= 0 {
-		return strings.ToLower(rawURL[:i])
+	if before, _, ok := strings.Cut(rawURL, "://"); ok {
+		return strings.ToLower(before)
 	}
 	// git remote-helper syntax: transport::address (e.g. ext::sh -c ...).
-	if i := strings.Index(rawURL, "::"); i >= 0 {
-		return strings.ToLower(rawURL[:i])
+	if before, _, ok := strings.Cut(rawURL, "::"); ok {
+		return strings.ToLower(before)
 	}
 	if scpLikeRe.MatchString(rawURL) {
 		return "ssh"

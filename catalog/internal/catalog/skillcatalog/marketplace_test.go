@@ -9,15 +9,13 @@ import (
 	model "github.com/kubeflow/hub/catalog/pkg/openapi"
 )
 
-func ptr(s string) *string { return &s }
-
 func skill(name, repo, path, version, commit string) model.Skill {
 	return model.Skill{
 		Name:           name,
-		Repository:     ptr(repo),
-		Path:           ptr(path),
-		Version:        ptr(version),
-		ResolvedCommit: ptr(commit),
+		Repository:     new(repo),
+		Path:           new(path),
+		Version:        new(version),
+		ResolvedCommit: new(commit),
 	}
 }
 
@@ -82,8 +80,8 @@ func TestBuildMarketplace_DeterministicOrder(t *testing.T) {
 
 func TestBuildMarketplace_SkipsIncompleteIdentity(t *testing.T) {
 	skills := []model.Skill{
-		{Name: "no-repo"},                                              // missing repository
-		{Repository: ptr("https://github.com/org/repo.git")},          // missing name
+		{Name: "no-repo"}, // missing repository
+		{Repository: new("https://github.com/org/repo.git")}, // missing name
 		skill("ok", "https://github.com/org/repo.git", "s/ok", "v1", "c"),
 	}
 	m := BuildMarketplace(skills, MarketplaceOptions{Name: "cat"})
@@ -93,7 +91,7 @@ func TestBuildMarketplace_SkipsIncompleteIdentity(t *testing.T) {
 
 func TestBuildMarketplace_AuthorFallsBackToProvider(t *testing.T) {
 	s := skill("deploy", "https://github.com/org/repo.git", "skills/deploy", "v1.0", "c")
-	s.Provider = ptr("Example Org")
+	s.Provider = new("Example Org")
 	m := BuildMarketplace([]model.Skill{s}, MarketplaceOptions{Name: "cat"})
 	require.Len(t, m.Plugins, 1)
 	require.NotNil(t, m.Plugins[0].Author)
