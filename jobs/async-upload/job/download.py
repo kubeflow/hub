@@ -47,7 +47,7 @@ def download_from_s3(config: S3StorageConfig, storage_path: str):
     )
 
     bucket_name = config.bucket
-    prefix = config.key
+    prefix = config.key if config.key.endswith("/") else f"{config.key}/"
 
     # TODO: It might make sense to check if the provided key points to a single file first before assuming the directory needs to be traversed
 
