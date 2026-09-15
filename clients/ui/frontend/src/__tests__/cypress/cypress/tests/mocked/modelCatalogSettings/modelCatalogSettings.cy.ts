@@ -1039,12 +1039,13 @@ describe('Manage Source Page', () => {
         },
       }).as('previewGatedModels');
 
-      manageSourcePage.visitAddSource({ enableTempDevCatalogHuggingFaceApiKeyFeature: true });
+      manageSourcePage.visitAddSource({});
       manageSourcePage.fillOrganization('Google');
       manageSourcePage.findPreviewButton().click();
       cy.wait('@previewGatedModels');
 
       manageSourcePage.findPreviewModelsIncludedSummary(2, 3).should('exist');
+      manageSourcePage.findPreviewGatedAccessAlert().should('exist');
       manageSourcePage
         .findPreviewModelRow('sample-source/included-model-1')
         .findByLabelText('Included model')
@@ -1060,7 +1061,7 @@ describe('Manage Source Page', () => {
         .should('exist');
     });
 
-    it('should show refresh alert with enabled link when token is typed after preview without token', () => {
+    it('should hide refresh alert when token is typed after preview without token', () => {
       cy.intercept('POST', '/model-registry/api/v1/settings/model_catalog/source_preview*', {
         data: {
           items: [{ name: 'Google/model-1', included: true }],
@@ -1083,8 +1084,7 @@ describe('Manage Source Page', () => {
       manageSourcePage.findPreviewButton().should('be.disabled');
       manageSourcePage.findPreviewPanelHeaderButton().should('be.disabled');
       manageSourcePage.findPreviewPanelBodyButton().should('not.exist');
-      manageSourcePage.findRefreshPreviewAlert().should('exist');
-      manageSourcePage.findRefreshPreviewLink().should('exist').and('not.be.disabled');
+      manageSourcePage.findRefreshPreviewAlert().should('not.exist');
       manageSourcePage.findPreviewModelsIncludedSummary(1, 1).should('exist');
     });
 

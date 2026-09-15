@@ -73,6 +73,12 @@ export const PAGE_TITLES = {
   PREVIEW_MODELS: 'Preview models',
 } as const;
 
+export const PREVIEW_ALERTS = {
+  GATED_ACCESS_REQUIRED_TITLE: 'Some models require access',
+  GATED_ACCESS_REQUIRED_BODY:
+    'A few included models are gated on Hugging Face and require permission to use. Request access on Hugging Face to use these models.',
+} as const;
+
 export const ERROR_MESSAGES = {
   PREVIEW_FAILED: 'Preview failed',
   SAVE_FAILED: 'Failed to save source',
