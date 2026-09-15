@@ -4,6 +4,7 @@ import (
 	"context"
 
 	batchv1 "k8s.io/api/batch/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -18,6 +19,9 @@ const CatalogSourceUserConfigMapName = "model-catalog-sources"
 const McpCatalogSourceKey = "sources.yaml"
 const McpCatalogSourceDefaultConfigMapName = CatalogSourceDefaultConfigMapName
 const McpCatalogSourceUserConfigMapName = "mcp-catalog-sources"
+
+// ModelRegistryRBACLabelSelector is the label selector used to scope RoleBindings to model-registry resources.
+const ModelRegistryRBACLabelSelector = "app.kubernetes.io/part-of=model-registry"
 
 type KubernetesClientInterface interface {
 	// Service discovery
@@ -44,6 +48,14 @@ type KubernetesClientInterface interface {
 
 	// Model Registry Settings
 	GetGroups(ctx context.Context) ([]string, error)
+	// ListModelRegistryRoleBindings lists RoleBindings scoped to model-registry (by label) in the given namespace.
+	ListModelRegistryRoleBindings(ctx context.Context, namespace string) ([]rbacv1.RoleBinding, error)
+	// CreateModelRegistryRoleBinding creates a new RoleBinding in the given namespace.
+	CreateModelRegistryRoleBinding(ctx context.Context, namespace string, rb *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
+	// PatchModelRegistryRoleBinding replaces the subjects on an existing RoleBinding using a strategic-merge patch.
+	PatchModelRegistryRoleBinding(ctx context.Context, namespace, name string, rb *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
+	// DeleteModelRegistryRoleBinding deletes a RoleBinding by name in the given namespace.
+	DeleteModelRegistryRoleBinding(ctx context.Context, namespace, name string) error
 
 	//Model Catalog Settings
 	GetAllCatalogSourceConfigs(ctx context.Context, namespace string) (corev1.ConfigMap, corev1.ConfigMap, error)
