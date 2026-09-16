@@ -10,7 +10,7 @@ require (
 	github.com/go-chi/chi/v5 v5.3.2
 	github.com/go-chi/cors v1.2.2
 	github.com/go-sql-driver/mysql v1.10.1
-	github.com/golang-migrate/migrate/v4 v4.19.1
+	github.com/golang-migrate/migrate/v4 v4.20.1
 	github.com/golang/glog v1.2.5
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/kubeflow/hub/catalog/pkg/openapi v0.0.0-00010101000000-000000000000
