@@ -26,10 +26,7 @@ import {
   EMPTY_STATE_TEXT,
   PREVIEW_ALERTS,
 } from '~/app/pages/modelCatalogSettings/constants';
-import {
-  isPreviewModelGatedAccessDenied,
-  previewHasGatedAccessDeniedModels,
-} from '~/app/pages/modelCatalogSettings/utils/modelCatalogSettingsUtils';
+import { isPreviewModelGatedAccessDenied } from '~/app/pages/modelCatalogSettings/utils/modelCatalogSettingsUtils';
 import { CatalogSourcePreviewModel } from '~/app/modelCatalogTypes';
 import { UseSourcePreviewResult } from '~/app/pages/modelCatalogSettings/useSourcePreview';
 import { CatalogSettingsPreviewTab } from '~/app/shared/catalogSettings/hooks/previewTypes';
@@ -56,14 +53,7 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({ preview, isSourceEnabled })
   const previewError = error;
   const showSourceDisabledWarning = !isSourceEnabled && !!summary && !previewError;
 
-  const hasGatedAccessDeniedModels = React.useMemo(
-    () =>
-      previewHasGatedAccessDeniedModels([
-        ...tabStates[CatalogSettingsPreviewTab.INCLUDED].items,
-        ...tabStates[CatalogSettingsPreviewTab.EXCLUDED].items,
-      ]),
-    [tabStates],
-  );
+  const showGatedAccessAlert = summary?.hasGatedModels === true;
 
   const onPreview = () => handlePreview();
   const onLoadMore = () => handleLoadMore();
@@ -153,7 +143,7 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({ preview, isSourceEnabled })
 
     return (
       <>
-        {hasGatedAccessDeniedModels && (
+        {showGatedAccessAlert && (
           <Alert
             variant="warning"
             isInline

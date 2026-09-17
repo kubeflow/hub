@@ -2734,12 +2734,54 @@ func GetModelsWithInclusionStatusListMocks() []models.CatalogSourcePreviewModel 
 	return allModels
 }
 
-func GetCatalogSourcePreviewSummaryMock() models.CatalogSourcePreviewSummary {
-	return models.CatalogSourcePreviewSummary{
-		TotalModels:    70,
-		IncludedModels: 45,
-		ExcludedModels: 25,
+// GetModelsWithInclusionStatusListMocksWithoutGated is a smaller preview set with no gated HF models.
+func GetModelsWithInclusionStatusListMocksWithoutGated() []models.CatalogSourcePreviewModel {
+	return []models.CatalogSourcePreviewModel{
+		hfPreviewModel("hf-mock/public-model", true, "public"),
+		hfPreviewModel("my-org/private-model", true, "private"),
+		{Name: "sample-source/included-model-1", Included: true},
+		{Name: "sample-source/excluded-model-1", Included: false},
 	}
+}
+
+func hasGatedModelsInPreview(items []models.CatalogSourcePreviewModel) bool {
+	for _, item := range items {
+		if item.HfAccessType == nil {
+			continue
+		}
+		switch *item.HfAccessType {
+		case "gated_auto", "gated_manual":
+			return true
+		}
+	}
+	return false
+}
+
+func buildCatalogSourcePreviewSummaryFromItems(allItems []models.CatalogSourcePreviewModel) models.CatalogSourcePreviewSummary {
+	var includedCount, excludedCount int32
+	for _, item := range allItems {
+		if item.Included {
+			includedCount++
+		} else {
+			excludedCount++
+		}
+	}
+	return models.CatalogSourcePreviewSummary{
+		TotalModels:    int32(len(allItems)),
+		IncludedModels: includedCount,
+		ExcludedModels: excludedCount,
+		HasGatedModels: hasGatedModelsInPreview(allItems),
+	}
+}
+
+// GetCatalogSourcePreviewSummaryMock returns summary for GetModelsWithInclusionStatusListMocks (hasGatedModels: true).
+func GetCatalogSourcePreviewSummaryMock() models.CatalogSourcePreviewSummary {
+	return buildCatalogSourcePreviewSummaryFromItems(GetModelsWithInclusionStatusListMocks())
+}
+
+// GetCatalogSourcePreviewSummaryMockWithoutGated returns summary for GetModelsWithInclusionStatusListMocksWithoutGated (hasGatedModels: false).
+func GetCatalogSourcePreviewSummaryMockWithoutGated() models.CatalogSourcePreviewSummary {
+	return buildCatalogSourcePreviewSummaryFromItems(GetModelsWithInclusionStatusListMocksWithoutGated())
 }
 
 func CreateCatalogSourcePreviewMock() models.CatalogSourcePreviewResult {
@@ -2747,6 +2789,7 @@ func CreateCatalogSourcePreviewMock() models.CatalogSourcePreviewResult {
 }
 
 func filterAndPaginatePreviewItems(allItems []models.CatalogSourcePreviewModel, summary models.CatalogSourcePreviewSummary, filterStatus string, pageSize int, nextPageToken string) models.CatalogSourcePreviewResult {
+	summary.HasGatedModels = hasGatedModelsInPreview(allItems)
 	var filtered []models.CatalogSourcePreviewModel
 	switch filterStatus {
 	case "included":
@@ -2796,7 +2839,23 @@ func filterAndPaginatePreviewItems(allItems []models.CatalogSourcePreviewModel, 
 }
 
 func CreateCatalogSourcePreviewMockWithFilter(filterStatus string, pageSize int, nextPageToken string) models.CatalogSourcePreviewResult {
-	return filterAndPaginatePreviewItems(GetModelsWithInclusionStatusListMocks(), GetCatalogSourcePreviewSummaryMock(), filterStatus, pageSize, nextPageToken)
+	return filterAndPaginatePreviewItems(
+		GetModelsWithInclusionStatusListMocks(),
+		GetCatalogSourcePreviewSummaryMock(),
+		filterStatus,
+		pageSize,
+		nextPageToken,
+	)
+}
+
+func CreateCatalogSourcePreviewMockWithoutGatedWithFilter(filterStatus string, pageSize int, nextPageToken string) models.CatalogSourcePreviewResult {
+	return filterAndPaginatePreviewItems(
+		GetModelsWithInclusionStatusListMocksWithoutGated(),
+		GetCatalogSourcePreviewSummaryMockWithoutGated(),
+		filterStatus,
+		pageSize,
+		nextPageToken,
+	)
 }
 
 func GetMcpServersWithInclusionStatusListMocks() []models.CatalogSourcePreviewModel {

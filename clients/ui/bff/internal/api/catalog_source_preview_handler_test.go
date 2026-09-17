@@ -45,7 +45,11 @@ var _ = Describe("CreateCatalogSourcePreviewHandler", func() {
 			Expect(actual.Data.PageSize).To(Equal(expected.Data.PageSize))
 			Expect(actual.Data.NextPageToken).To(Equal(expected.Data.NextPageToken))
 			Expect(actual.Data.Items).To(Equal(expected.Data.Items))
+			Expect(actual.Data.Summary.HasGatedModels).To(BeTrue())
 
+			By("creating a source preview without gated models in summary")
+			dataWithoutGated := mocks.CreateCatalogSourcePreviewMockWithoutGatedWithFilter("all", 20, "")
+			Expect(dataWithoutGated.Summary.HasGatedModels).To(BeFalse())
 		})
 
 		It("should return MCP server preview when assetType=mcp_servers", func() {

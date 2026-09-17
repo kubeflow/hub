@@ -21,6 +21,7 @@ type CatalogSourcePreviewSummary struct {
 	TotalModels    int32 `json:"totalModels,omitempty"`
 	IncludedModels int32 `json:"includedModels,omitempty"`
 	ExcludedModels int32 `json:"excludedModels,omitempty"`
+	HasGatedModels bool  `json:"hasGatedModels"`
 	TotalAssets    int32 `json:"totalAssets,omitempty"`
 	IncludedAssets int32 `json:"includedAssets,omitempty"`
 	ExcludedAssets int32 `json:"excludedAssets,omitempty"`

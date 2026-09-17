@@ -12,9 +12,6 @@ import { parseCommaSeparatedList } from '~/app/shared/catalogSettings/utils/pars
 export const isPreviewModelGatedAccessDenied = (model: CatalogSourcePreviewModel): boolean =>
   isHfGatedAccessDeniedFromFields(model.hfAccessType, model.hfGatedAccessGranted);
 
-export const previewHasGatedAccessDeniedModels = (models: CatalogSourcePreviewModel[]): boolean =>
-  models.some(isPreviewModelGatedAccessDenied);
-
 export const catalogSourceConfigToFormData = (
   sourceConfig: CatalogSourceConfig,
 ): Partial<ManageSourceFormData> => {

@@ -3661,6 +3661,7 @@ components:
         - totalModels
         - includedModels
         - excludedModels
+        - hasGatedModels
       properties:
         totalModels:
           type: integer
@@ -3674,6 +3675,10 @@ components:
           type: integer
           description: Number of models that would be excluded
           example: 650
+        hasGatedModels:
+          type: boolean
+          description: Whether any evaluated model is a gated Hugging Face model, including models outside the current page.
+          example: true
     CatalogSourcePreviewAssetSummary:
       description: Summary counts for MCP server preview (`assetType=mcp_servers`).
       type: object

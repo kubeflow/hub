@@ -354,6 +354,8 @@ func (m *ModelCatalogClientMock) CreateCatalogSourcePreview(client httpclient.HT
 	var catalogSourcePreview models.CatalogSourcePreviewResult
 	if assetType == "mcp_servers" {
 		catalogSourcePreview = CreateMcpCatalogSourcePreviewMockWithFilter(filterStatus, pageSize, nextPageToken)
+	} else if sourcePreviewPayload.Id == "hugging_face_public_source" {
+		catalogSourcePreview = CreateCatalogSourcePreviewMockWithoutGatedWithFilter(filterStatus, pageSize, nextPageToken)
 	} else {
 		catalogSourcePreview = CreateCatalogSourcePreviewMockWithFilter(filterStatus, pageSize, nextPageToken)
 	}

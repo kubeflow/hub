@@ -17,6 +17,7 @@ const mockSummary: CatalogSourcePreviewSummary = {
   totalModels: 20,
   includedModels: 15,
   excludedModels: 5,
+  hasGatedModels: false,
 };
 
 const mockIncludedItems: CatalogSourcePreviewModel[] = [
@@ -232,26 +233,14 @@ describe('PreviewPanel', () => {
     expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
 
-  it('shows gated access alert when preview includes gated models without access', () => {
+  it('shows gated access alert when preview summary reports gated models', () => {
     const preview = createMockPreview(
       {},
       {
+        summary: { ...mockSummary, hasGatedModels: true },
         tabStates: {
           [CatalogSettingsPreviewTab.INCLUDED]: {
-            items: [
-              {
-                name: 'org/model-a',
-                included: true,
-                hfAccessType: 'gated_auto',
-                hfGatedAccessGranted: true,
-              },
-              {
-                name: 'org/model-b',
-                included: true,
-                hfAccessType: 'gated_manual',
-                hfGatedAccessGranted: false,
-              },
-            ],
+            items: [{ name: 'org/model-a', included: true }],
             hasMore: false,
           },
           [CatalogSettingsPreviewTab.EXCLUDED]: { items: [], hasMore: false },
@@ -265,20 +254,14 @@ describe('PreviewPanel', () => {
     expect(screen.getByText(PREVIEW_ALERTS.GATED_ACCESS_REQUIRED_BODY)).toBeInTheDocument();
   });
 
-  it('does not show gated access alert when all gated models have access', () => {
+  it('does not show gated access alert when preview summary has no gated models', () => {
     const preview = createMockPreview(
       {},
       {
+        summary: { ...mockSummary, hasGatedModels: false },
         tabStates: {
           [CatalogSettingsPreviewTab.INCLUDED]: {
-            items: [
-              {
-                name: 'org/model-a',
-                included: true,
-                hfAccessType: 'gated_auto',
-                hfGatedAccessGranted: true,
-              },
-            ],
+            items: [{ name: 'org/model-a', included: true }],
             hasMore: false,
           },
           [CatalogSettingsPreviewTab.EXCLUDED]: { items: [], hasMore: false },

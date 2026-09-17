@@ -1032,7 +1032,12 @@ describe('Manage Source Page', () => {
               hfGatedAccessGranted: false,
             },
           ],
-          summary: { totalModels: 3, includedModels: 2, excludedModels: 1 },
+          summary: {
+            totalModels: 3,
+            includedModels: 2,
+            excludedModels: 1,
+            hasGatedModels: true,
+          },
           nextPageToken: '',
           pageSize: 20,
           size: 3,

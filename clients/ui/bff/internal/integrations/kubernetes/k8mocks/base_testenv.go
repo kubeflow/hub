@@ -423,6 +423,21 @@ catalogs:
       - sample-model-*
     labels:
       - Bella AI validated
+
+  - name: Hugging Face public only
+    id: hugging_face_public_source
+    type: hf
+    enabled: true
+    properties:
+      apiKey: hugging-face-source-secret
+      allowedOrganization: google-bert
+    includedModels:
+      - model-*
+      - model-2-*
+    excludedModels:
+      - sample-model-*
+    labels:
+      - Dora AI
 `)
 
 	cm := &corev1.ConfigMap{
