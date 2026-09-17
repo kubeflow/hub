@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/kubeflow/hub/pkg/openapi"
+	"github.com/kubeflow/hub/pkg/openapi-v1"
 	"github.com/kubeflow/hub/ui/bff/internal/integrations/kubernetes"
 	"github.com/kubeflow/hub/ui/bff/internal/mocks"
 	. "github.com/onsi/ginkgo/v2"
