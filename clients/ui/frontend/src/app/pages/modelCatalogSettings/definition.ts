@@ -4,7 +4,6 @@ import ModelCatalogSettings from './screens/ModelCatalogSettings';
 import ManageSourcePage from './screens/ManageSourcePage';
 
 export const modelCatalogSettingsDefinition: CatalogSettingsDefinition = {
-  id: 'models',
   ContextProvider: ModelCatalogSettingsContextProvider,
   ListPage: ModelCatalogSettings,
   ManagePage: ManageSourcePage,

@@ -1,22 +1,20 @@
 import * as React from 'react';
-import {
-  Alert,
-  AlertActionCloseButton,
-  Button,
-  Flex,
-  FlexItem,
-  Stack,
-  StackItem,
-  Toolbar,
-  ToolbarContent,
-  ToolbarItem,
-} from '@patternfly/react-core';
-import { Table } from 'mod-arch-shared';
+import { Td } from '@patternfly/react-table';
+import { SourceConfigsTable, SourceVisibilityLabelInfo } from '~/app/shared/catalogSettings';
 import { CatalogSourceConfig } from '~/app/modelCatalogTypes';
 import { ModelCatalogSettingsContext } from '~/app/context/modelCatalogSettings/ModelCatalogSettingsContext';
-import { ADD_SOURCE_TITLE } from '~/app/routes/modelCatalogSettings/modelCatalogSettings';
+import {
+  ADD_SOURCE_TITLE,
+  manageSourceUrl,
+} from '~/app/routes/modelCatalogSettings/modelCatalogSettings';
+import {
+  CATALOG_SOURCE_TYPE_LABELS,
+  ModelVisibilityBadgeColor,
+} from '~/concepts/modelCatalogSettings/const';
+import { hasSourceFilters, getOrganizationDisplay } from '~/concepts/modelCatalogSettings/utils';
+import { TABLE_COLUMN_LABELS } from '~/app/pages/modelCatalogSettings/constants';
+import CatalogSourceStatus from '~/app/pages/modelCatalogSettings/components/CatalogSourceStatus';
 import { catalogSourceConfigsColumns } from './CatalogSourceConfigsTableColumns';
-import CatalogSourceConfigsTableRow from './CatalogSourceConfigsTableRow';
 
 type CatalogSourceConfigsTableProps = {
   catalogSourceConfigs: CatalogSourceConfig[];
@@ -24,13 +22,29 @@ type CatalogSourceConfigsTableProps = {
   onDeleteSource: (sourceId: string) => Promise<void>;
 };
 
+const getVisibilityLabel = (config: CatalogSourceConfig): SourceVisibilityLabelInfo =>
+  hasSourceFilters(config)
+    ? {
+        text: 'Filtered',
+        color: ModelVisibilityBadgeColor.FILTERED,
+        testId: `model-visibility-filtered-${config.id}`,
+      }
+    : {
+        text: 'All models',
+        color: ModelVisibilityBadgeColor.UNFILTERED,
+        variant: 'outline',
+        testId: `model-visibility-unfiltered-${config.id}`,
+      };
+
+const StatusComponent: React.FC<{ sourceConfig: CatalogSourceConfig }> = ({ sourceConfig }) => (
+  <CatalogSourceStatus catalogSourceConfig={sourceConfig} />
+);
+
 const CatalogSourceConfigsTable: React.FC<CatalogSourceConfigsTableProps> = ({
   catalogSourceConfigs,
   onAddSource,
   onDeleteSource,
 }) => {
-  const [toggleError, setToggleError] = React.useState<Error | undefined>(undefined);
-  const [updatingToggleId, setUpdatingToggleId] = React.useState<string | null>(null);
   const {
     apiState,
     refreshCatalogSourceConfigs,
@@ -40,102 +54,66 @@ const CatalogSourceConfigsTable: React.FC<CatalogSourceConfigsTableProps> = ({
     markSourcePending,
   } = React.useContext(ModelCatalogSettingsContext);
 
-  const handleEnableToggle = async (checked: boolean, catalogSourceConfig: CatalogSourceConfig) => {
-    if (!apiState.apiAvailable) {
-      setToggleError(new Error('API is not available'));
-      return;
-    }
-    setUpdatingToggleId(catalogSourceConfig.id);
-    setToggleError(undefined);
-
-    // ponytail: only mark pending and refresh sources when enabling
-    if (checked) {
-      const previousStatus =
-        catalogSources?.items?.find((s) => s.id === catalogSourceConfig.id)?.status ?? '';
-      markSourcePending(catalogSourceConfig.id, previousStatus);
-    }
-
-    try {
-      await apiState.api.updateCatalogSourceConfig({}, catalogSourceConfig.id, {
-        enabled: checked,
-      });
-      setToggleError(undefined);
+  const handleToggleUpdate = React.useCallback(
+    async (checked: boolean, config: CatalogSourceConfig) => {
+      if (checked) {
+        const previousStatus = catalogSources?.items?.find((s) => s.id === config.id)?.status ?? '';
+        markSourcePending(config.id, previousStatus);
+      }
+      await apiState.api.updateCatalogSourceConfig({}, config.id, { enabled: checked });
       refreshCatalogSourceConfigs();
       if (checked) {
         refreshCatalogSources();
       }
-    } catch (e) {
-      if (e instanceof Error) {
-        setToggleError(new Error(`Error enabling/disabling source ${catalogSourceConfig.name}`));
-      }
-    } finally {
-      setUpdatingToggleId(null);
-    }
-  };
+    },
+    [
+      apiState.api,
+      catalogSources,
+      markSourcePending,
+      refreshCatalogSourceConfigs,
+      refreshCatalogSources,
+    ],
+  );
+
+  const renderExtraCells = React.useCallback(
+    (config: CatalogSourceConfig) => (
+      <Td dataLabel="Organization" style={{ verticalAlign: 'middle' }}>
+        <span data-testid={`source-organization-${config.id}`}>
+          {getOrganizationDisplay(config, config.isDefault ?? false)}
+        </span>
+      </Td>
+    ),
+    [],
+  );
+
+  const deleteModalBody = React.useCallback(
+    (config: CatalogSourceConfig) => (
+      <>
+        The <strong>{config.name}</strong> repository will be deleted, and its models will be
+        removed from the model catalog.
+      </>
+    ),
+    [],
+  );
 
   return (
-    <Stack hasGutter>
-      {catalogSourcesLoadError && (
-        <StackItem>
-          <Alert
-            variant="danger"
-            isInline
-            title="Error fetching source statuses"
-            data-testid="source-status-error-alert"
-          >
-            {catalogSourcesLoadError.message}
-          </Alert>
-        </StackItem>
-      )}
-      <StackItem>
-        <Table
-          data-testid="catalog-source-configs-table"
-          data={catalogSourceConfigs}
-          columns={catalogSourceConfigsColumns}
-          toolbarContent={
-            <Flex direction={{ default: 'column' }}>
-              <FlexItem>
-                <Toolbar>
-                  <ToolbarContent>
-                    <ToolbarItem>
-                      <Button
-                        variant="primary"
-                        onClick={onAddSource}
-                        data-testid="add-source-button"
-                      >
-                        {ADD_SOURCE_TITLE}
-                      </Button>
-                    </ToolbarItem>
-                  </ToolbarContent>
-                </Toolbar>
-              </FlexItem>
-              {toggleError && (
-                <FlexItem>
-                  <Alert
-                    variant="danger"
-                    data-testid="toggle-alert"
-                    title={toggleError.message}
-                    actionClose={
-                      <AlertActionCloseButton onClose={() => setToggleError(undefined)} />
-                    }
-                  />
-                </FlexItem>
-              )}
-            </Flex>
-          }
-          rowRenderer={(config) => (
-            <CatalogSourceConfigsTableRow
-              key={config.id}
-              catalogSourceConfig={config}
-              isUpdatingToggle={updatingToggleId === config.id}
-              onToggleUpdate={handleEnableToggle}
-              onDeleteSource={onDeleteSource}
-            />
-          )}
-          variant="compact"
-        />
-      </StackItem>
-    </Stack>
+    <SourceConfigsTable
+      sourceConfigs={catalogSourceConfigs}
+      columns={catalogSourceConfigsColumns}
+      onAddSource={onAddSource}
+      addSourceLabel={ADD_SOURCE_TITLE}
+      onDeleteSource={onDeleteSource}
+      apiAvailable={apiState.apiAvailable}
+      onToggleUpdate={handleToggleUpdate}
+      loadError={catalogSourcesLoadError}
+      getManageSourceUrl={manageSourceUrl}
+      renderExtraCells={renderExtraCells}
+      visibilityColumnLabel={TABLE_COLUMN_LABELS.MODEL_VISIBILITY}
+      getVisibilityLabel={getVisibilityLabel}
+      getSourceTypeLabel={(config) => CATALOG_SOURCE_TYPE_LABELS[config.type]}
+      StatusComponent={StatusComponent}
+      deleteModalBody={deleteModalBody}
+    />
   );
 };
 

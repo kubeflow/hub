@@ -1,14 +1,6 @@
 import * as React from 'react';
-import { useParams, Link } from 'react-router-dom';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  Drawer,
-  DrawerContent,
-  DrawerContentBody,
-  DrawerPanelContent,
-} from '@patternfly/react-core';
-import { ApplicationsPage } from 'mod-arch-shared';
+import { useParams } from 'react-router-dom';
+import { ManageSourcePageShell } from '~/app/shared/catalogSettings';
 import {
   MCP_ADD_SOURCE_TITLE,
   MCP_ADD_SOURCE_DESCRIPTION,
@@ -32,43 +24,28 @@ const McpManageSourcePage: React.FC = () => {
   const [existingSourceConfig, existingSourceConfigLoaded, existingSourceConfigLoadError] = state;
   const [isExpectedFormatDrawerOpen, setIsExpectedFormatDrawerOpen] = React.useState(false);
 
-  const panelContent = (
-    <DrawerPanelContent isResizable defaultSize="50%">
-      <McpExpectedYamlFormatDrawerPanel onClose={() => setIsExpectedFormatDrawerOpen(false)} />
-    </DrawerPanelContent>
-  );
-
   return (
-    <Drawer isExpanded={isExpectedFormatDrawerOpen}>
-      <DrawerContent panelContent={panelContent}>
-        <DrawerContentBody>
-          <ApplicationsPage
-            breadcrumb={
-              <Breadcrumb>
-                <BreadcrumbItem>
-                  <Link to={mcpCatalogSettingsUrl()}>{MCP_CATALOG_SOURCES_BREADCRUMB}</Link>
-                </BreadcrumbItem>
-                <BreadcrumbItem data-testid="mcp-breadcrumb-source-action" isActive>
-                  {pageTitle}
-                </BreadcrumbItem>
-              </Breadcrumb>
-            }
-            title={pageTitle}
-            description={description}
-            errorMessage={catalogSourceId ? existingSourceConfigLoadError?.message : undefined}
-            empty={catalogSourceId ? !existingSourceConfig : false}
-            loaded={catalogSourceId ? existingSourceConfigLoaded : true}
-            provideChildrenPadding
-          >
-            <McpManageSourceForm
-              existingSourceConfig={existingSourceConfig || undefined}
-              isEditMode={!isAddMode}
-              onToggleExpectedFormatDrawer={() => setIsExpectedFormatDrawerOpen((prev) => !prev)}
-            />
-          </ApplicationsPage>
-        </DrawerContentBody>
-      </DrawerContent>
-    </Drawer>
+    <ManageSourcePageShell
+      listPageUrl={mcpCatalogSettingsUrl()}
+      listPageLabel={MCP_CATALOG_SOURCES_BREADCRUMB}
+      breadcrumbLabel={pageTitle}
+      breadcrumbTestId="mcp-breadcrumb-source-action"
+      title={pageTitle}
+      description={description}
+      errorMessage={catalogSourceId ? existingSourceConfigLoadError?.message : undefined}
+      empty={catalogSourceId ? !existingSourceConfig : false}
+      loaded={catalogSourceId ? existingSourceConfigLoaded : true}
+      isExpectedFormatDrawerOpen={isExpectedFormatDrawerOpen}
+      drawerPanelContent={
+        <McpExpectedYamlFormatDrawerPanel onClose={() => setIsExpectedFormatDrawerOpen(false)} />
+      }
+    >
+      <McpManageSourceForm
+        existingSourceConfig={existingSourceConfig || undefined}
+        isEditMode={!isAddMode}
+        onToggleExpectedFormatDrawer={() => setIsExpectedFormatDrawerOpen((prev) => !prev)}
+      />
+    </ManageSourcePageShell>
   );
 };
 

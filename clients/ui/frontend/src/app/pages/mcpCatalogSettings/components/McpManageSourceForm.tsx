@@ -1,16 +1,8 @@
 import * as React from 'react';
-import {
-  Form,
-  FormGroup,
-  Checkbox,
-  Stack,
-  StackItem,
-  Sidebar,
-  SidebarPanel,
-  SidebarContent,
-} from '@patternfly/react-core';
+import { FormGroup, Checkbox, Stack, StackItem } from '@patternfly/react-core';
 import { useNavigate } from 'react-router-dom';
 import FormSection from '~/app/pages/modelRegistry/components/pf-overrides/FormSection';
+import { ManageSourceFormLayout } from '~/app/shared/catalogSettings';
 import { mcpCatalogSettingsUrl } from '~/app/routes/mcpCatalogSettings/mcpCatalogSettings';
 import { isMcpFormValid } from '~/app/pages/mcpCatalogSettings/utils/validation';
 import { useManageMcpSourceData } from '~/app/pages/mcpCatalogSettings/useManageMcpSourceData';
@@ -94,81 +86,74 @@ const McpManageSourceForm: React.FC<McpManageSourceFormProps> = ({
   };
 
   return (
-    <>
-      <Sidebar hasBorder isPanelRight hasGutter>
-        <SidebarContent>
-          <Form isWidthLimited>
-            <Stack hasGutter>
-              <StackItem>
-                <McpSourceDetailsSection
-                  formData={formData}
-                  setData={setData}
-                  isEditMode={isEditMode}
-                  existingSourceConfig={existingSourceConfig}
-                  serverCount={preview.previewState.summary?.totalAssets}
-                />
-              </StackItem>
+    <ManageSourceFormLayout
+      previewPanel={<McpPreviewPanel preview={preview} />}
+      footer={
+        <McpManageSourceFormFooter
+          submitLabel={isEditMode ? 'Save' : 'Add'}
+          submitError={submitError}
+          isSubmitDisabled={!isFormComplete || isSubmitting}
+          isSubmitting={isSubmitting}
+          onSubmit={handleSubmit}
+          onCancel={handleCancel}
+          isPreviewDisabled={!preview.canPreview}
+          isPreviewLoading={preview.previewState.isLoadingInitial}
+          onPreview={preview.handlePreview}
+        />
+      }
+    >
+      <Stack hasGutter>
+        <StackItem>
+          <McpSourceDetailsSection
+            formData={formData}
+            setData={setData}
+            isEditMode={isEditMode}
+            existingSourceConfig={existingSourceConfig}
+            serverCount={preview.previewState.summary?.totalAssets}
+          />
+        </StackItem>
 
-              {!formData.isDefault && (
-                <StackItem>
-                  <McpYamlSection
-                    formData={formData}
-                    setData={setData}
-                    onToggleExpectedFormatDrawer={onToggleExpectedFormatDrawer}
-                  />
-                </StackItem>
-              )}
+        {!formData.isDefault && (
+          <StackItem>
+            <McpYamlSection
+              formData={formData}
+              setData={setData}
+              onToggleExpectedFormatDrawer={onToggleExpectedFormatDrawer}
+            />
+          </StackItem>
+        )}
 
-              <StackItem>
-                <McpServerFiltersSection
-                  formData={formData}
-                  setData={setData}
-                  isDefaultExpanded={
-                    existingData?.isDefault ||
-                    !!existingData?.includedServers ||
-                    !!existingData?.excludedServers
-                  }
-                />
-              </StackItem>
+        <StackItem>
+          <McpServerFiltersSection
+            formData={formData}
+            setData={setData}
+            isDefaultExpanded={
+              existingData?.isDefault ||
+              !!existingData?.includedServers ||
+              !!existingData?.excludedServers
+            }
+          />
+        </StackItem>
 
-              <StackItem>
-                <FormSection>
-                  <FormGroup fieldId="mcp-enable-source">
-                    <Checkbox
-                      label={
-                        <span className="pf-v6-c-form__label-text">
-                          {MCP_FORM_LABELS.ENABLE_SOURCE}
-                        </span>
-                      }
-                      id="mcp-enable-source"
-                      name="mcp-enable-source"
-                      data-testid="mcp-enable-source-checkbox"
-                      description={MCP_DESCRIPTION_TEXT.ENABLE_SOURCE}
-                      isChecked={formData.enabled}
-                      onChange={(_event, checked) => setData('enabled', checked)}
-                    />
-                  </FormGroup>
-                </FormSection>
-              </StackItem>
-            </Stack>
-          </Form>
-        </SidebarContent>
-        <SidebarPanel width={{ default: 'width_50' }}>
-          <McpPreviewPanel preview={preview} />
-        </SidebarPanel>
-      </Sidebar>
-      <McpManageSourceFormFooter
-        submitLabel={isEditMode ? 'Save' : 'Add'}
-        submitError={submitError}
-        isSubmitDisabled={!isFormComplete || isSubmitting}
-        isSubmitting={isSubmitting}
-        onSubmit={handleSubmit}
-        onCancel={handleCancel}
-        isPreviewDisabled={!preview.canPreview}
-        isPreviewLoading={preview.previewState.isLoadingInitial}
-        onPreview={() => preview.handlePreview()}
-      />
-    </>
+        <StackItem>
+          <FormSection>
+            <FormGroup fieldId="mcp-enable-source">
+              <Checkbox
+                label={
+                  <span className="pf-v6-c-form__label-text">{MCP_FORM_LABELS.ENABLE_SOURCE}</span>
+                }
+                id="mcp-enable-source"
+                name="mcp-enable-source"
+                data-testid="mcp-enable-source-checkbox"
+                description={MCP_DESCRIPTION_TEXT.ENABLE_SOURCE}
+                isChecked={formData.enabled}
+                onChange={(_event, checked) => setData('enabled', checked)}
+              />
+            </FormGroup>
+          </FormSection>
+        </StackItem>
+      </Stack>
+    </ManageSourceFormLayout>
   );
 };
 

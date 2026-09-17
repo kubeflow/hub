@@ -1,14 +1,6 @@
 import * as React from 'react';
-import {
-  FormFieldGroupExpandable,
-  FormFieldGroupHeader,
-  TextArea,
-  FormHelperText,
-  HelperText,
-  HelperTextItem,
-} from '@patternfly/react-core';
-import { UpdateObjectAtPropAndValue, ThemeAwareFormGroupWrapper } from 'mod-arch-shared';
-import FormSection from '~/app/pages/modelRegistry/components/pf-overrides/FormSection';
+import { UpdateObjectAtPropAndValue } from 'mod-arch-shared';
+import { IncludeExcludeFiltersSection } from '~/app/shared/catalogSettings';
 import { ManageMcpSourceFormData } from '~/app/pages/mcpCatalogSettings/useManageMcpSourceData';
 import { MCP_FORM_LABELS, MCP_DESCRIPTION_TEXT } from '~/app/pages/mcpCatalogSettings/constants';
 
@@ -22,81 +14,28 @@ const McpServerFiltersSection: React.FC<McpServerFiltersSectionProps> = ({
   formData,
   setData,
   isDefaultExpanded = false,
-}) => {
-  const includedServersInput = (
-    <TextArea
-      id="mcp-included-servers"
-      name="mcp-included-servers"
-      data-testid="mcp-included-servers-input"
-      value={formData.includedServers}
-      onChange={(_event, value) => setData('includedServers', value)}
-      rows={3}
-      resizeOrientation="vertical"
-    />
-  );
-
-  const includedServersDescriptionTxtNode = (
-    <FormHelperText>
-      <HelperText>
-        <HelperTextItem>{MCP_DESCRIPTION_TEXT.INCLUDED_SERVERS}</HelperTextItem>
-      </HelperText>
-    </FormHelperText>
-  );
-
-  const excludedServersInput = (
-    <TextArea
-      id="mcp-excluded-servers"
-      name="mcp-excluded-servers"
-      data-testid="mcp-excluded-servers-input"
-      value={formData.excludedServers}
-      onChange={(_event, value) => setData('excludedServers', value)}
-      rows={3}
-      resizeOrientation="vertical"
-    />
-  );
-
-  const excludedServersDescriptionTxtNode = (
-    <FormHelperText>
-      <HelperText>
-        <HelperTextItem>{MCP_DESCRIPTION_TEXT.EXCLUDED_SERVERS}</HelperTextItem>
-      </HelperText>
-    </FormHelperText>
-  );
-
-  return (
-    <FormSection>
-      <FormFieldGroupExpandable
-        toggleAriaLabel="Server filters"
-        header={
-          <FormFieldGroupHeader
-            titleText={{
-              text: MCP_FORM_LABELS.SERVER_FILTERS,
-              id: 'mcp-server-filters-title',
-            }}
-            titleDescription={MCP_DESCRIPTION_TEXT.FILTER_INFO}
-          />
-        }
-        isExpanded={isDefaultExpanded}
-        data-testid="mcp-server-filters-section"
-      >
-        <ThemeAwareFormGroupWrapper
-          label={MCP_FORM_LABELS.INCLUDED_SERVERS}
-          fieldId="mcp-included-servers"
-          descriptionTextNode={includedServersDescriptionTxtNode}
-        >
-          {includedServersInput}
-        </ThemeAwareFormGroupWrapper>
-
-        <ThemeAwareFormGroupWrapper
-          label={MCP_FORM_LABELS.EXCLUDED_SERVERS}
-          fieldId="mcp-excluded-servers"
-          descriptionTextNode={excludedServersDescriptionTxtNode}
-        >
-          {excludedServersInput}
-        </ThemeAwareFormGroupWrapper>
-      </FormFieldGroupExpandable>
-    </FormSection>
-  );
-};
+}) => (
+  <IncludeExcludeFiltersSection
+    includedValue={formData.includedServers}
+    onIncludedChange={(value) => setData('includedServers', value)}
+    excludedValue={formData.excludedServers}
+    onExcludedChange={(value) => setData('excludedServers', value)}
+    isDefaultExpanded={isDefaultExpanded}
+    sectionTitle={MCP_FORM_LABELS.SERVER_FILTERS}
+    sectionTitleId="mcp-server-filters-title"
+    sectionDescription={MCP_DESCRIPTION_TEXT.FILTER_INFO}
+    includedFieldId="mcp-included-servers"
+    excludedFieldId="mcp-excluded-servers"
+    includedLabel={MCP_FORM_LABELS.INCLUDED_SERVERS}
+    excludedLabel={MCP_FORM_LABELS.EXCLUDED_SERVERS}
+    includedDescription={MCP_DESCRIPTION_TEXT.INCLUDED_SERVERS}
+    excludedDescription={MCP_DESCRIPTION_TEXT.EXCLUDED_SERVERS}
+    testIds={{
+      section: 'mcp-server-filters-section',
+      includedInput: 'mcp-included-servers-input',
+      excludedInput: 'mcp-excluded-servers-input',
+    }}
+  />
+);
 
 export default McpServerFiltersSection;

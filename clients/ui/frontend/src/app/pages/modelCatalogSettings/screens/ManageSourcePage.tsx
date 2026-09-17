@@ -1,14 +1,6 @@
 import * as React from 'react';
-import { useParams, Link } from 'react-router-dom';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  Drawer,
-  DrawerContent,
-  DrawerContentBody,
-  DrawerPanelContent,
-} from '@patternfly/react-core';
-import { ApplicationsPage } from 'mod-arch-shared';
+import { useParams } from 'react-router-dom';
+import { ManageSourcePageShell } from '~/app/shared/catalogSettings';
 import {
   CATALOG_SETTINGS_PAGE_TITLE,
   ADD_SOURCE_TITLE,
@@ -32,43 +24,28 @@ const ManageSourcePage: React.FC = () => {
   const [existingSourceConfig, existingSourceConfigLoaded, existingSourceConfigLoadError] = state;
   const [isExpectedFormatDrawerOpen, setIsExpectedFormatDrawerOpen] = React.useState(false);
 
-  const panelContent = (
-    <DrawerPanelContent isResizable defaultSize="50%">
-      <ExpectedYamlFormatDrawerPanel onClose={() => setIsExpectedFormatDrawerOpen(false)} />
-    </DrawerPanelContent>
-  );
-
   return (
-    <Drawer isExpanded={isExpectedFormatDrawerOpen}>
-      <DrawerContent panelContent={panelContent}>
-        <DrawerContentBody>
-          <ApplicationsPage
-            breadcrumb={
-              <Breadcrumb>
-                <BreadcrumbItem>
-                  <Link to={catalogSettingsUrl()}>{CATALOG_SETTINGS_PAGE_TITLE}</Link>
-                </BreadcrumbItem>
-                <BreadcrumbItem data-testid="breadcrumb-source-action" isActive>
-                  {breadcrumbLabel}
-                </BreadcrumbItem>
-              </Breadcrumb>
-            }
-            title={pageTitle}
-            description={description}
-            errorMessage={catalogSourceId ? existingSourceConfigLoadError?.message : undefined}
-            empty={catalogSourceId ? !existingSourceConfig : false}
-            loaded={catalogSourceId ? existingSourceConfigLoaded : true}
-            provideChildrenPadding
-          >
-            <ManageSourceForm
-              existingSourceConfig={existingSourceConfig || undefined}
-              isEditMode={!isAddMode}
-              onToggleExpectedFormatDrawer={() => setIsExpectedFormatDrawerOpen((prev) => !prev)}
-            />
-          </ApplicationsPage>
-        </DrawerContentBody>
-      </DrawerContent>
-    </Drawer>
+    <ManageSourcePageShell
+      listPageUrl={catalogSettingsUrl()}
+      listPageLabel={CATALOG_SETTINGS_PAGE_TITLE}
+      breadcrumbLabel={breadcrumbLabel}
+      breadcrumbTestId="breadcrumb-source-action"
+      title={pageTitle}
+      description={description}
+      errorMessage={catalogSourceId ? existingSourceConfigLoadError?.message : undefined}
+      empty={catalogSourceId ? !existingSourceConfig : false}
+      loaded={catalogSourceId ? existingSourceConfigLoaded : true}
+      isExpectedFormatDrawerOpen={isExpectedFormatDrawerOpen}
+      drawerPanelContent={
+        <ExpectedYamlFormatDrawerPanel onClose={() => setIsExpectedFormatDrawerOpen(false)} />
+      }
+    >
+      <ManageSourceForm
+        existingSourceConfig={existingSourceConfig || undefined}
+        isEditMode={!isAddMode}
+        onToggleExpectedFormatDrawer={() => setIsExpectedFormatDrawerOpen((prev) => !prev)}
+      />
+    </ManageSourcePageShell>
   );
 };
 
