@@ -24,8 +24,12 @@ import {
   PAGE_TITLES,
   ERROR_MESSAGES,
   EMPTY_STATE_TEXT,
+  PREVIEW_ALERTS,
 } from '~/app/pages/modelCatalogSettings/constants';
-import { isPreviewModelGatedAccessDenied } from '~/app/pages/modelCatalogSettings/utils/modelCatalogSettingsUtils';
+import {
+  isPreviewModelGatedAccessDenied,
+  previewHasGatedAccessDeniedModels,
+} from '~/app/pages/modelCatalogSettings/utils/modelCatalogSettingsUtils';
 import { CatalogSourcePreviewModel } from '~/app/modelCatalogTypes';
 import { UseSourcePreviewResult } from '~/app/pages/modelCatalogSettings/useSourcePreview';
 import { CatalogSettingsPreviewTab } from '~/app/shared/catalogSettings/hooks/previewTypes';
@@ -49,6 +53,15 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({ preview }) => {
   const { isLoadingInitial, isLoadingMore, activeTab, summary, tabStates, error } = previewState;
   const { items, hasMore } = tabStates[activeTab];
   const previewError = error;
+
+  const hasGatedAccessDeniedModels = React.useMemo(
+    () =>
+      previewHasGatedAccessDeniedModels([
+        ...tabStates[CatalogSettingsPreviewTab.INCLUDED].items,
+        ...tabStates[CatalogSettingsPreviewTab.EXCLUDED].items,
+      ]),
+    [tabStates],
+  );
 
   const onPreview = () => handlePreview();
   const onLoadMore = () => handleLoadMore();
@@ -138,6 +151,17 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({ preview }) => {
 
     return (
       <>
+        {hasGatedAccessDeniedModels && (
+          <Alert
+            variant="warning"
+            isInline
+            title={PREVIEW_ALERTS.GATED_ACCESS_REQUIRED_TITLE}
+            className="pf-v6-u-mb-md"
+            data-testid="preview-gated-access-alert"
+          >
+            {PREVIEW_ALERTS.GATED_ACCESS_REQUIRED_BODY}
+          </Alert>
+        )}
         <Tabs
           activeKey={activeTab === CatalogSettingsPreviewTab.INCLUDED ? 0 : 1}
           onSelect={handleTabSelect}
@@ -147,7 +171,7 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({ preview }) => {
           <Tab eventKey={1} title={<TabTitleText>Models excluded</TabTitleText>} />
         </Tabs>
         <div className="pf-v6-u-mt-md">
-          {hasFormChanged && (
+          {hasFormChanged && canPreview && (
             <Alert
               variant="info"
               isInline

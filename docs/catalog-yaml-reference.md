@@ -9,28 +9,46 @@ This document describes the YAML configuration formats for the Kubeflow Hub cata
 
 ## Table of Contents
 
-- [Sources Configuration](#sources-configuration)
-  - [Top-Level Structure](#top-level-structure)
-  - [Source Types](#source-types)
-  - [YAML Source Type](#yaml-source-type)
-  - [Hugging Face Hub Source Type](#hugging-face-hub-source-type)
-  - [Named Queries](#named-queries)
-  - [Labels](#labels)
-- [Model Catalog Data Files](#model-catalog-data-files)
-  - [Model Fields](#model-fields)
-  - [Validated Tasks and Serving Configuration](#validated-tasks-and-serving-configuration)
-  - [Model Artifacts](#model-artifacts)
-  - [Metrics Artifacts](#metrics-artifacts)
-- [MCP Server Catalog Data Files](#mcp-server-catalog-data-files)
-  - [MCP Server Fields](#mcp-server-fields)
-  - [Tools](#tools)
-  - [Security Indicators](#security-indicators)
-  - [Artifacts (Local Servers)](#artifacts-local-servers)
-  - [Endpoints (Remote Servers)](#endpoints-remote-servers)
-  - [Runtime Metadata](#runtime-metadata)
-- [Custom Properties](#custom-properties)
-- [Minimal Examples](#minimal-examples)
-- [Complete Examples](#complete-examples)
+- [Catalog YAML Reference](#catalog-yaml-reference)
+  - [Table of Contents](#table-of-contents)
+  - [Sources Configuration](#sources-configuration)
+    - [Top-Level Structure](#top-level-structure)
+    - [Source Types](#source-types)
+    - [YAML Source Type](#yaml-source-type)
+    - [Hugging Face Hub Source Type](#hugging-face-hub-source-type)
+      - [Gated Model Behavior](#gated-model-behavior)
+    - [Named Queries](#named-queries)
+    - [Labels](#labels)
+  - [Model Catalog Data Files](#model-catalog-data-files)
+    - [Model Fields](#model-fields)
+    - [Validated Tasks and Serving Configuration](#validated-tasks-and-serving-configuration)
+      - [Three-Tier Capability Model](#three-tier-capability-model)
+      - [validatedTasks](#validatedtasks)
+      - [servingConfig](#servingconfig)
+      - [toolCalling (ToolCallingConfig)](#toolcalling-toolcallingconfig)
+    - [Model Artifacts](#model-artifacts)
+      - [Model Artifact (default)](#model-artifact-default)
+    - [Metrics Artifacts](#metrics-artifacts)
+      - [Performance Metrics](#performance-metrics)
+      - [Accuracy Metrics](#accuracy-metrics)
+  - [MCP Server Catalog Data Files](#mcp-server-catalog-data-files)
+    - [MCP Server Fields](#mcp-server-fields)
+    - [Tools](#tools)
+    - [Security Indicators](#security-indicators)
+    - [Artifacts (Local Servers)](#artifacts-local-servers)
+    - [Endpoints (Remote Servers)](#endpoints-remote-servers)
+    - [Runtime Metadata](#runtime-metadata)
+  - [Custom Properties](#custom-properties)
+  - [Minimal Examples](#minimal-examples)
+    - [Minimal Model (YAML source)](#minimal-model-yaml-source)
+    - [Minimal Model (Hugging Face source)](#minimal-model-hugging-face-source)
+    - [Minimal MCP Server (Local)](#minimal-mcp-server-local)
+    - [Minimal MCP Server (Remote)](#minimal-mcp-server-remote)
+  - [Complete Examples](#complete-examples)
+    - [Full Model with Metrics](#full-model-with-metrics)
+    - [Full Model with Tool-Calling Configuration](#full-model-with-tool-calling-configuration)
+    - [Full MCP Server with Runtime Metadata](#full-mcp-server-with-runtime-metadata)
+    - [Hugging Face Sources with Organization Filtering](#hugging-face-sources-with-organization-filtering)
 
 ---
 
@@ -159,6 +177,30 @@ model_catalogs:
 | `allowedOrganization` | string | No | Restricts to a single HF organization; auto-prefixes all patterns with `org/` |
 
 The API key value itself should be stored in a Kubernetes Secret and exposed as an environment variable in the pod configuration.
+
+#### Gated Model Behavior
+
+Gated models in Hugging Face Hub have access control requirements. The catalog handles them as follows:
+
+**Models with access granted** (`hf_gated_access_granted="true"`):
+- Fully loaded into the catalog
+- Full metadata available (readme, description, tasks, etc.)
+- Can be discovered and used in deployments
+
+**Models without access granted** (`hf_gated_access_granted="false"`):
+- **Blocked from loading into the catalog** — will not appear in search results
+- **Warning logged**: "Blocking gated model {name} ({type}) from catalog: access not granted"
+- Still visible in **preview responses** when configuring the source (allows operators to see what's available)
+- Prevents deployment failures from trying to use inaccessible models
+
+**To gain access to a gated model:**
+1. Visit the model's page on Hugging Face (e.g., `https://huggingface.co/meta-llama/Llama-3-8B`)
+2. Accept the license/access terms presented by the model author
+3. Once approved, the model will have `hf_gated_access_granted="true"` and will be loaded into the catalog on the next sync
+
+**Private models** (not gated):
+- Require a valid API key with organization access to appear in the catalog
+- If accessible, are fully loaded with complete metadata
 
 ### Named Queries
 

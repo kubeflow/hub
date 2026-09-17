@@ -5,6 +5,7 @@ import '@testing-library/jest-dom';
 
 import { CatalogSourcePreviewModel, CatalogSourcePreviewSummary } from '~/app/modelCatalogTypes';
 import PreviewPanel from '~/app/pages/modelCatalogSettings/components/PreviewPanel';
+import { PREVIEW_ALERTS } from '~/app/pages/modelCatalogSettings/constants';
 import {
   UseSourcePreviewResult,
   PreviewState,
@@ -231,6 +232,64 @@ describe('PreviewPanel', () => {
     expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
 
+  it('shows gated access alert when preview includes gated models without access', () => {
+    const preview = createMockPreview(
+      {},
+      {
+        tabStates: {
+          [CatalogSettingsPreviewTab.INCLUDED]: {
+            items: [
+              {
+                name: 'org/model-a',
+                included: true,
+                hfAccessType: 'gated_auto',
+                hfGatedAccessGranted: true,
+              },
+              {
+                name: 'org/model-b',
+                included: true,
+                hfAccessType: 'gated_manual',
+                hfGatedAccessGranted: false,
+              },
+            ],
+            hasMore: false,
+          },
+          [CatalogSettingsPreviewTab.EXCLUDED]: { items: [], hasMore: false },
+        },
+      },
+    );
+    render(<PreviewPanel preview={preview} />);
+
+    expect(screen.getByTestId('preview-gated-access-alert')).toBeInTheDocument();
+    expect(screen.getByText(PREVIEW_ALERTS.GATED_ACCESS_REQUIRED_TITLE)).toBeInTheDocument();
+    expect(screen.getByText(PREVIEW_ALERTS.GATED_ACCESS_REQUIRED_BODY)).toBeInTheDocument();
+  });
+
+  it('does not show gated access alert when all gated models have access', () => {
+    const preview = createMockPreview(
+      {},
+      {
+        tabStates: {
+          [CatalogSettingsPreviewTab.INCLUDED]: {
+            items: [
+              {
+                name: 'org/model-a',
+                included: true,
+                hfAccessType: 'gated_auto',
+                hfGatedAccessGranted: true,
+              },
+            ],
+            hasMore: false,
+          },
+          [CatalogSettingsPreviewTab.EXCLUDED]: { items: [], hasMore: false },
+        },
+      },
+    );
+    render(<PreviewPanel preview={preview} />);
+
+    expect(screen.queryByTestId('preview-gated-access-alert')).not.toBeInTheDocument();
+  });
+
   it('shows refresh alert when hasFormChanged is true', () => {
     const preview = createMockPreview({ hasFormChanged: true });
     render(<PreviewPanel preview={preview} />);
@@ -241,15 +300,23 @@ describe('PreviewPanel', () => {
     expect(screen.getByTestId('refresh-preview-link')).toBeInTheDocument();
   });
 
-  it('keeps refresh alert link enabled when preview is otherwise disabled', () => {
-    const preview = createMockPreview({ hasFormChanged: true, canPreview: false });
+  it('hides refresh alert when preview is disabled', () => {
+    const preview = createMockPreview(
+      { hasFormChanged: true, canPreview: false },
+      {
+        summary: mockSummary,
+        tabStates: {
+          [CatalogSettingsPreviewTab.INCLUDED]: { items: mockIncludedItems, hasMore: false },
+          [CatalogSettingsPreviewTab.EXCLUDED]: { items: mockExcludedItems, hasMore: false },
+        },
+      },
+    );
     render(<PreviewPanel preview={preview} />);
 
     expect(
-      screen.getByText('Source configuration changed. Refresh the preview.'),
-    ).toBeInTheDocument();
-    expect(screen.getByTestId('refresh-preview-link')).toBeInTheDocument();
-    expect(screen.getByTestId('refresh-preview-link')).not.toBeDisabled();
+      screen.queryByText('Source configuration changed. Refresh the preview.'),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('refresh-preview-link')).not.toBeInTheDocument();
   });
 
   it('shows preview disabled tooltip when token validation is required', async () => {

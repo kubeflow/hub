@@ -858,3 +858,165 @@ func (m *MockCatalogModelRepositoryWithListTracking) ListCalled() bool {
 	defer m.mu.Unlock()
 	return m.listCalled
 }
+
+// MockCatalogModelRepositoryWithDeleteTracking tracks deleted model IDs and
+// filters them from List results.
+type MockCatalogModelRepositoryWithDeleteTracking struct {
+	MockCatalogModelRepository
+	mu         sync.Mutex
+	deletedIDs []int32
+}
+
+func (m *MockCatalogModelRepositoryWithDeleteTracking) DeleteByID(id int32) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.deletedIDs = append(m.deletedIDs, id)
+	return nil
+}
+
+func (m *MockCatalogModelRepositoryWithDeleteTracking) List(opts models.CatalogModelListOptions) (*mrmodels.ListWrapper[models.CatalogModel], error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	deletedSet := make(map[int32]bool, len(m.deletedIDs))
+	for _, id := range m.deletedIDs {
+		deletedSet[id] = true
+	}
+
+	var filtered []models.CatalogModel
+	for _, model := range m.SavedModels {
+		if model.GetID() != nil && deletedSet[*model.GetID()] {
+			continue
+		}
+		// Filter by source ID if requested
+		if opts.SourceIDs != nil && len(*opts.SourceIDs) > 0 {
+			props := model.GetProperties()
+			if props != nil {
+				for _, p := range *props {
+					if p.Name == "source_id" && p.StringValue != nil {
+						for _, sid := range *opts.SourceIDs {
+							if *p.StringValue == sid {
+								filtered = append(filtered, model)
+							}
+						}
+					}
+				}
+			}
+		} else {
+			filtered = append(filtered, model)
+		}
+	}
+	return &mrmodels.ListWrapper[models.CatalogModel]{
+		Items:    filtered,
+		PageSize: int32(len(filtered)),
+		Size:     int32(len(filtered)),
+	}, nil
+}
+
+func (m *MockCatalogModelRepositoryWithDeleteTracking) DeletedIDs() []int32 {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return append([]int32{}, m.deletedIDs...)
+}
+
+func strPtr(s string) *string { return &s }
+
+// TestOrphanCleanupPreservesFailedModels verifies that models which fail to
+// load during a partial sync are preserved in the database rather than being
+// deleted as orphans. This covers the case where one model loads successfully
+// but another returns a transient error (e.g., 429/503).
+func TestOrphanCleanupPreservesFailedModels(t *testing.T) {
+	const sourceID = "partial-fail-source"
+	const successModelName = sourceID + ":org/public-model"
+	const failedModelName = sourceID + ":org/gated-model"
+
+	providerName := "partial-fail-provider"
+	require.NoError(t, RegisterModelProvider(providerName, func(ctx context.Context, source *basecatalog.ModelSource, reldir string) (<-chan ModelProviderRecord, error) {
+		ch := make(chan ModelProviderRecord, 3)
+		go func() {
+			defer close(ch)
+			// Send one successful model
+			name := "org/public-model"
+			ch <- ModelProviderRecord{
+				Model: &models.CatalogModelImpl{
+					Attributes: &models.CatalogModelAttributes{
+						Name: &name,
+					},
+				},
+			}
+			// End-of-batch sentinel with partial error indicating one failed model
+			ch <- ModelProviderRecord{
+				Model: nil,
+				Error: &PartiallyAvailableError{FailedModels: []string{"org/gated-model"}},
+			}
+		}()
+		return ch, nil
+	}))
+
+	// Pre-populate repository with both models (as if a previous sync succeeded)
+	successID := int32(1)
+	failedID := int32(2)
+	trackingRepo := &MockCatalogModelRepositoryWithDeleteTracking{
+		MockCatalogModelRepository: MockCatalogModelRepository{
+			SavedModels: []models.CatalogModel{
+				&models.CatalogModelImpl{
+					ID: &successID,
+					Attributes: &models.CatalogModelAttributes{
+						Name: strPtr(successModelName),
+					},
+					Properties: &[]mrmodels.Properties{
+						mrmodels.NewStringProperty("source_id", sourceID, false),
+					},
+				},
+				&models.CatalogModelImpl{
+					ID: &failedID,
+					Attributes: &models.CatalogModelAttributes{
+						Name: strPtr(failedModelName),
+					},
+					Properties: &[]mrmodels.Properties{
+						mrmodels.NewStringProperty("source_id", sourceID, false),
+					},
+				},
+			},
+			NextID: 2,
+		},
+	}
+
+	services := Services{
+		CatalogModelRepository:           trackingRepo,
+		CatalogArtifactRepository:        &MockCatalogArtifactRepository{},
+		CatalogModelArtifactRepository:   &MockCatalogModelArtifactRepository{},
+		CatalogMetricsArtifactRepository: &MockCatalogMetricsArtifactRepository{},
+		CatalogSourceRepository:          &MockCatalogSourceRepository{},
+		PropertyOptionsRepository:        &MockPropertyOptionsRepository{},
+	}
+
+	baseLoader := basecatalog.NewBaseLoader([]string{})
+	baseLoader.SetLeader(true)
+	loader := NewModelLoader(services, baseLoader)
+
+	cfg := &basecatalog.SourceConfig{
+		ModelCatalogs: []basecatalog.ModelSource{
+			{
+				CatalogSource: apimodels.CatalogSource{
+					Id:      sourceID,
+					Name:    "Test",
+					Enabled: new(bool),
+				},
+				Type: providerName,
+			},
+		},
+	}
+	*cfg.ModelCatalogs[0].Enabled = true
+	require.NoError(t, loader.updateSources("test-path", cfg))
+
+	ctx := context.Background()
+	require.NoError(t, loader.PerformLeaderOperations(ctx, mapset.NewSet(sourceID)))
+
+	// Allow time for async writes
+	time.Sleep(200 * time.Millisecond)
+
+	// The failed model (ID=2) should NOT have been deleted
+	deletedIDs := trackingRepo.DeletedIDs()
+	assert.NotContains(t, deletedIDs, failedID, "failed model should be preserved during partial sync, not deleted as orphan")
+}

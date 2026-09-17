@@ -45,11 +45,20 @@ const ModelCatalogCard: React.FC<ModelCatalogCardProps> = ({ model, source }) =>
   const accessLabelVariant = getHfAccessLabelVariant(model);
   const isGatedAccessDenied = accessLabelVariant === 'gated-denied';
 
+  const showHeaderLabels = isValidated || accessLabelVariant || source;
+
   return (
     <Card isFullHeight data-testid="model-catalog-card" key={`${model.name}/${model.source_id}`}>
       <CardHeader>
-        <CardTitle>
-          <Flex alignItems={{ default: 'alignItemsFlexStart' }} className="pf-v6-u-mb-md">
+        <Flex
+          alignItems={{ default: 'alignItemsFlexStart' }}
+          justifyContent={{ default: 'justifyContentSpaceBetween' }}
+          flexWrap={{ default: 'nowrap' }}
+          fullWidth={{ default: 'fullWidth' }}
+          gap={{ default: 'gapXs' }}
+          className="pf-v6-u-mb-md"
+        >
+          <FlexItem>
             {model.logo ? (
               <img src={model.logo} alt="model logo" style={{ height: '56px', width: '56px' }} />
             ) : (
@@ -60,7 +69,9 @@ const ModelCatalogCard: React.FC<ModelCatalogCardProps> = ({ model, source }) =>
                 screenreaderText="Brand image loading"
               />
             )}
-            <FlexItem align={{ default: 'alignRight' }}>
+          </FlexItem>
+          {showHeaderLabels && (
+            <FlexItem>
               {isValidated ? (
                 <Popover bodyContent={MODEL_CATALOG_POPOVER_MESSAGES.VALIDATED}>
                   <Label variant="outline" isClickable status="success" icon={<CheckCircleIcon />}>
@@ -73,7 +84,9 @@ const ModelCatalogCard: React.FC<ModelCatalogCardProps> = ({ model, source }) =>
                 source && <Label data-testid="model-catalog-source-label">{source.name}</Label>
               )}
             </FlexItem>
-          </Flex>
+          )}
+        </Flex>
+        <CardTitle>
           <Link to={catalogModelDetailsFromModel(model.name, source?.id)}>
             <Button
               data-testid="model-catalog-detail-link"

@@ -522,10 +522,15 @@ components:
                   type: integer
                   description: Number of models that would be excluded
                   example: 650
+                hasGatedModels:
+                  type: boolean
+                  description: Whether any evaluated model is a gated Hugging Face model, including models outside the current page.
+                  example: true
               required:
                 - totalModels
                 - includedModels
                 - excludedModels
+                - hasGatedModels
           required:
             - assetType
             - items

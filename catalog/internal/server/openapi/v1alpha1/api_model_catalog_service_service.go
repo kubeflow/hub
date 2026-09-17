@@ -715,8 +715,27 @@ func (m *ModelCatalogServiceAPIService) previewModelSource(ctx context.Context, 
 			TotalModels:    page.total,
 			IncludedModels: page.includedCount,
 			ExcludedModels: page.excludedCount,
+			HasGatedModels: hasGatedModels(previewResults),
 		},
 	}), nil
+}
+
+// hasGatedModels reports whether the complete preview result set contains a
+// gated Hugging Face model. It deliberately runs before filtering and
+// pagination so the summary remains accurate for every response page.
+func hasGatedModels(results []model.ModelPreviewResult) bool {
+	for _, result := range results {
+		if result.HfAccessType == nil {
+			continue
+		}
+
+		switch *result.HfAccessType {
+		case "gated_auto", "gated_manual":
+			return true
+		}
+	}
+
+	return false
 }
 
 func (m *ModelCatalogServiceAPIService) previewMCPSource(ctx context.Context, configBytes, catalogDataBytes []byte, pageSizeParam, nextPageTokenParam, filterStatus string) (ImplResponse, error) {
