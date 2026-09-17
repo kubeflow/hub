@@ -968,6 +968,11 @@ func AssertMCPRuntimeMetadataConstraints(obj model.MCPRuntimeMetadata) error {
 			return err
 		}
 	}
+	for _, el := range obj.Storage {
+		if err := AssertMCPStorageMountConstraints(el); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -1010,6 +1015,11 @@ func AssertMCPRuntimeMetadataRequired(obj model.MCPRuntimeMetadata) error {
 	}
 	if obj.Prerequisites != nil {
 		if err := AssertMCPPrerequisitesRequired(*obj.Prerequisites); err != nil {
+			return err
+		}
+	}
+	for _, el := range obj.Storage {
+		if err := AssertMCPStorageMountRequired(el); err != nil {
 			return err
 		}
 	}
@@ -1185,6 +1195,51 @@ func AssertMCPServiceAccountRequirementConstraints(obj model.MCPServiceAccountRe
 
 // AssertMCPServiceAccountRequirementRequired checks if the required fields are not zero-ed
 func AssertMCPServiceAccountRequirementRequired(obj model.MCPServiceAccountRequirement) error {
+	return nil
+}
+
+// AssertMCPStorageMountConstraints checks if the values respects the defined constraints
+func AssertMCPStorageMountConstraints(obj model.MCPStorageMount) error {
+	if err := AssertMCPStorageSourceConstraints(obj.Source); err != nil {
+		return err
+	}
+	return nil
+}
+
+// AssertMCPStorageMountRequired checks if the required fields are not zero-ed
+func AssertMCPStorageMountRequired(obj model.MCPStorageMount) error {
+	elements := map[string]interface{}{
+		"path":   obj.Path,
+		"source": obj.Source,
+	}
+	for name, el := range elements {
+		if isZero := IsZeroValue(el); isZero {
+			return &RequiredError{Field: name}
+		}
+	}
+
+	if err := AssertMCPStorageSourceRequired(obj.Source); err != nil {
+		return err
+	}
+	return nil
+}
+
+// AssertMCPStorageSourceConstraints checks if the values respects the defined constraints
+func AssertMCPStorageSourceConstraints(obj model.MCPStorageSource) error {
+	return nil
+}
+
+// AssertMCPStorageSourceRequired checks if the required fields are not zero-ed
+func AssertMCPStorageSourceRequired(obj model.MCPStorageSource) error {
+	elements := map[string]interface{}{
+		"type": obj.Type,
+	}
+	for name, el := range elements {
+		if isZero := IsZeroValue(el); isZero {
+			return &RequiredError{Field: name}
+		}
+	}
+
 	return nil
 }
 
