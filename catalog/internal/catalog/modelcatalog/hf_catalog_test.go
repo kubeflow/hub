@@ -218,7 +218,7 @@ func TestPopulateFromHFInfo(t *testing.T) {
 			// Create hfModel and populate it
 			hfm := &hfModel{}
 			ctx := context.Background()
-			hfm.populateFromHFInfo(ctx, provider, tt.hfInfo, tt.sourceId, tt.originalModelName)
+			hfm.populateFromHFInfo(ctx, provider, tt.hfInfo, tt.sourceId, tt.originalModelName, nil)
 
 			// Verify name
 			if hfm.Name != tt.expectedName {
@@ -415,7 +415,7 @@ func TestConvertHFModelToRecord(t *testing.T) {
 				sourceId: tt.sourceId,
 			}
 			ctx := context.Background()
-			record := provider.convertHFModelToRecord(ctx, tt.hfInfo, tt.originalModelName)
+			record := provider.convertHFModelToRecord(ctx, tt.hfInfo, tt.originalModelName, nil)
 			tt.verifyFunc(t, record)
 		})
 	}
@@ -627,7 +627,7 @@ func TestPopulateFromHFInfoWithCustomProperties(t *testing.T) {
 
 	hfm := &hfModel{}
 	ctx := context.Background()
-	hfm.populateFromHFInfo(ctx, provider, hfInfo, "test-source", "test/custom-props-model")
+	hfm.populateFromHFInfo(ctx, provider, hfInfo, "test-source", "test/custom-props-model", nil)
 
 	customProps := hfm.GetCustomProperties()
 	if customProps == nil {
@@ -1217,7 +1217,7 @@ func TestConvertHFModelToRecord_CreatesArtifactWithHFProtocol(t *testing.T) {
 			}
 
 			ctx := context.Background()
-			record := provider.convertHFModelToRecord(ctx, tt.hfInfo, "original-model-name")
+			record := provider.convertHFModelToRecord(ctx, tt.hfInfo, "original-model-name", nil)
 
 			// Check artifact count
 			assert.Len(t, record.Artifacts, tt.expectedArtifacts)
@@ -1264,7 +1264,7 @@ func TestConvertHFModelToRecord_ArtifactTimestamps(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	record := provider.convertHFModelToRecord(ctx, hfInfo, "test-org/test-model")
+	record := provider.convertHFModelToRecord(ctx, hfInfo, "test-org/test-model", nil)
 
 	require.Len(t, record.Artifacts, 1)
 	artifact := record.Artifacts[0]
@@ -2057,7 +2057,7 @@ func TestPopulateFromHFInfo_AccessTypeProperties(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			hfm := &hfModel{}
-			hfm.populateFromHFInfo(ctx, provider, tt.hfInfo, "test-source", tt.hfInfo.ID)
+			hfm.populateFromHFInfo(ctx, provider, tt.hfInfo, "test-source", tt.hfInfo.ID, nil)
 
 			customProps := hfm.GetCustomProperties()
 
@@ -2083,7 +2083,8 @@ func TestPopulateFromHFInfo_AccessTypeProperties(t *testing.T) {
 func TestCheckGatedAccess(t *testing.T) {
 	mux := http.NewServeMux()
 
-	// Simulate HF auth-check: 200 for granted, 401 for unauthenticated, 403 for denied.
+	// Simulate HF auth-check: 200 for granted, 401 for unauthenticated, 403 for denied,
+	// 429 for rate-limited, 503 for service unavailable.
 	mux.HandleFunc("/api/models/org/granted-model/auth-check", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
@@ -2093,28 +2094,65 @@ func TestCheckGatedAccess(t *testing.T) {
 	mux.HandleFunc("/api/models/org/unauthed-model/auth-check", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 	})
+	mux.HandleFunc("/api/models/org/rate-limited-model/auth-check", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusTooManyRequests)
+	})
+	mux.HandleFunc("/api/models/org/server-error-model/auth-check", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	})
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
 	t.Run("returns true when auth-check returns 200", func(t *testing.T) {
 		p := &hfModelProvider{client: &http.Client{}, baseURL: server.URL, apiKey: "hf_key"}
-		assert.True(t, p.checkGatedAccess(context.Background(), "org/granted-model"))
+		granted, err := p.checkGatedAccess(context.Background(), "org/granted-model")
+		assert.NoError(t, err)
+		assert.True(t, granted)
 	})
 
 	t.Run("returns false when auth-check returns 403", func(t *testing.T) {
 		p := &hfModelProvider{client: &http.Client{}, baseURL: server.URL, apiKey: "hf_key"}
-		assert.False(t, p.checkGatedAccess(context.Background(), "org/denied-model"))
+		granted, err := p.checkGatedAccess(context.Background(), "org/denied-model")
+		assert.NoError(t, err)
+		assert.False(t, granted)
 	})
 
 	t.Run("returns false when auth-check returns 401", func(t *testing.T) {
 		p := &hfModelProvider{client: &http.Client{}, baseURL: server.URL, apiKey: "hf_key"}
-		assert.False(t, p.checkGatedAccess(context.Background(), "org/unauthed-model"))
+		granted, err := p.checkGatedAccess(context.Background(), "org/unauthed-model")
+		assert.NoError(t, err)
+		assert.False(t, granted)
 	})
 
 	t.Run("returns false when no API key is configured", func(t *testing.T) {
 		p := &hfModelProvider{client: &http.Client{}, baseURL: server.URL, apiKey: ""}
-		assert.False(t, p.checkGatedAccess(context.Background(), "org/granted-model"))
+		granted, err := p.checkGatedAccess(context.Background(), "org/granted-model")
+		assert.NoError(t, err)
+		assert.False(t, granted)
+	})
+
+	t.Run("returns error on 429 rate limit", func(t *testing.T) {
+		p := &hfModelProvider{client: &http.Client{}, baseURL: server.URL, apiKey: "hf_key"}
+		granted, err := p.checkGatedAccess(context.Background(), "org/rate-limited-model")
+		assert.Error(t, err)
+		assert.False(t, granted)
+		assert.Contains(t, err.Error(), "429")
+	})
+
+	t.Run("returns error on 503 service unavailable", func(t *testing.T) {
+		p := &hfModelProvider{client: &http.Client{}, baseURL: server.URL, apiKey: "hf_key"}
+		granted, err := p.checkGatedAccess(context.Background(), "org/server-error-model")
+		assert.Error(t, err)
+		assert.False(t, granted)
+		assert.Contains(t, err.Error(), "503")
+	})
+
+	t.Run("returns error on network failure", func(t *testing.T) {
+		p := &hfModelProvider{client: &http.Client{}, baseURL: "http://127.0.0.1:1", apiKey: "hf_key"}
+		granted, err := p.checkGatedAccess(context.Background(), "org/any-model")
+		assert.Error(t, err)
+		assert.False(t, granted)
 	})
 }
 
@@ -2188,4 +2226,325 @@ func TestSetSourceCredentialStatus(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestShouldBlockGatedModel(t *testing.T) {
+	// Mock auth-check endpoint: 200 for granted models, 403 for denied,
+	// 429 for rate-limited, 503 for service unavailable.
+	grantedModels := map[string]bool{
+		"meta-llama/Llama-3-8B":        true,
+		"ibm-granite/granite-8b-code": true,
+	}
+	transientErrorModels := map[string]int{
+		"org/rate-limited-model":   http.StatusTooManyRequests,
+		"org/server-error-model":   http.StatusServiceUnavailable,
+	}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/auth-check") {
+			modelID := strings.TrimPrefix(r.URL.Path, "/api/models/")
+			modelID = strings.TrimSuffix(modelID, "/auth-check")
+			if grantedModels[modelID] {
+				w.WriteHeader(http.StatusOK)
+			} else if code, ok := transientErrorModels[modelID]; ok {
+				w.WriteHeader(code)
+			} else {
+				w.WriteHeader(http.StatusForbidden)
+			}
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	provider := &hfModelProvider{
+		sourceId: "test-source",
+		client:   &http.Client{},
+		baseURL:  server.URL,
+		apiKey:   "hf_test-key",
+	}
+
+	tests := []struct {
+		name        string
+		hfInfo      *hfModelInfo
+		shouldBlock bool
+		expectError bool
+		description string
+	}{
+		{
+			name: "public model should not be blocked",
+			hfInfo: &hfModelInfo{
+				ID:      "test-org/public-model",
+				Private: false,
+				Gated:   gatedString("false"),
+			},
+			shouldBlock: false,
+			description: "public models are always allowed",
+		},
+		{
+			name: "private model should not be blocked",
+			hfInfo: &hfModelInfo{
+				ID:      "test-org/private-model",
+				Private: true,
+				Gated:   gatedString("false"),
+			},
+			shouldBlock: false,
+			description: "private models are always allowed",
+		},
+		{
+			name: "gated_auto model with access granted should not be blocked",
+			hfInfo: &hfModelInfo{
+				ID:      "meta-llama/Llama-3-8B",
+				Private: false,
+				Gated:   gatedString("auto"),
+			},
+			shouldBlock: false,
+			description: "gated models with granted access are allowed",
+		},
+		{
+			name: "gated_manual model with access granted should not be blocked",
+			hfInfo: &hfModelInfo{
+				ID:      "ibm-granite/granite-8b-code",
+				Private: false,
+				Gated:   gatedString("manual"),
+			},
+			shouldBlock: false,
+			description: "gated models with granted access are allowed",
+		},
+		{
+			name: "gated_auto model without access should be blocked",
+			hfInfo: &hfModelInfo{
+				ID:      "org/gated-no-access-auto",
+				Private: false,
+				Gated:   gatedString("auto"),
+			},
+			shouldBlock: true,
+			description: "gated models without access are blocked",
+		},
+		{
+			name: "gated_manual model without access should be blocked",
+			hfInfo: &hfModelInfo{
+				ID:      "org/gated-no-access-manual",
+				Private: false,
+				Gated:   gatedString("manual"),
+			},
+			shouldBlock: true,
+			description: "gated models without access are blocked",
+		},
+		{
+			name: "gated boolean true without access should be blocked",
+			hfInfo: &hfModelInfo{
+				ID:      "org/gated-no-access-bool",
+				Private: false,
+				Gated:   gatedString("true"),
+			},
+			shouldBlock: true,
+			description: "gated models (legacy bool format) without access are blocked",
+		},
+		{
+			name: "gated model with 429 response should return error",
+			hfInfo: &hfModelInfo{
+				ID:      "org/rate-limited-model",
+				Private: false,
+				Gated:   gatedString("auto"),
+			},
+			expectError: true,
+			description: "rate-limited auth-check should return error, not block",
+		},
+		{
+			name: "gated model with 503 response should return error",
+			hfInfo: &hfModelInfo{
+				ID:      "org/server-error-model",
+				Private: false,
+				Gated:   gatedString("manual"),
+			},
+			expectError: true,
+			description: "server error auth-check should return error, not block",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, gatedAccess, err := provider.shouldBlockGatedModel(context.Background(), tt.hfInfo)
+			if tt.expectError {
+				assert.Error(t, err, "shouldBlockGatedModel should return error: %s", tt.description)
+			} else {
+				assert.NoError(t, err, "shouldBlockGatedModel should not return error: %s", tt.description)
+				assert.Equal(t, tt.shouldBlock, result,
+					"shouldBlockGatedModel returned unexpected result: %s", tt.description)
+
+				// Verify gatedAccess reflects the access check result
+				accessType := deriveHFAccessType(tt.hfInfo)
+				if strings.HasPrefix(accessType, "gated_") {
+					require.NotNil(t, gatedAccess, "gatedAccess should be non-nil for gated models")
+					assert.Equal(t, !tt.shouldBlock, *gatedAccess,
+						"gatedAccess should match inverse of shouldBlock for gated models")
+				} else {
+					assert.Nil(t, gatedAccess, "gatedAccess should be nil for non-gated models")
+				}
+			}
+		})
+	}
+}
+
+// TestGetModelsFromHF_BlocksGatedWithoutAccess verifies that gated models
+// without access are blocked from loading into the catalog.
+func TestGetModelsFromHF_BlocksGatedWithoutAccess(t *testing.T) {
+	mux := http.NewServeMux()
+
+	// Track which endpoints were called
+	callCount := struct {
+		modelInfo  int
+		authCheck  int
+		listModels int
+	}{}
+
+	// Mock endpoints
+	mux.HandleFunc("/api/models/", func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/auth-check") {
+			callCount.authCheck++
+			// Only grant access to the "granted" model
+			if strings.Contains(r.URL.Path, "granted") {
+				w.WriteHeader(http.StatusOK)
+			} else {
+				w.WriteHeader(http.StatusForbidden)
+			}
+			return
+		}
+
+		callCount.modelInfo++
+
+		// Return model info based on what was requested
+		var gated gatedString
+		if strings.Contains(r.URL.Path, "gated") {
+			gated = gatedString("auto")
+		} else {
+			gated = gatedString("false")
+		}
+
+		modelID := strings.TrimPrefix(r.URL.Path, "/api/models/")
+		modelInfo := hfModelInfo{
+			ID:      modelID,
+			Private: false,
+			Gated:   gated,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(modelInfo) //nolint:errcheck
+	})
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// Create provider with exact model patterns (no expansion needed)
+	source := &basecatalog.ModelSource{
+		CatalogSource: apimodels.CatalogSource{
+			Id:             "test-source",
+			IncludedModels: []string{
+				"org/public-model",
+				"org/gated-no-access",
+				"org/granted-with-access",
+			},
+		},
+	}
+
+	provider := &hfModelProvider{
+		sourceId:       "test-source",
+		client:         &http.Client{},
+		baseURL:        server.URL,
+		apiKey:         "hf_test-key",
+		includedModels: source.IncludedModels,
+		filter:         nil, // No filtering, all models should be considered
+	}
+
+	// Create a basic filter that allows all
+	provider.filter, _ = NewModelFilter(source.IncludedModels, nil)
+
+	ctx := context.Background()
+	records, err := provider.getModelsFromHF(ctx)
+
+	// Should not error
+	assert.NoError(t, err)
+
+	// Should only have 2 records (public + granted), gated without access should be blocked
+	assert.Equal(t, 2, len(records), "should have 2 models (public + granted), gated without access should be blocked")
+
+	// Verify the returned models are the expected ones
+	modelNames := make(map[string]bool)
+	for _, record := range records {
+		if record.Model != nil && record.Model.GetAttributes() != nil {
+			name := *record.Model.GetAttributes().Name
+			modelNames[name] = true
+		}
+	}
+
+	assert.True(t, modelNames["org/public-model"], "public model should be in results")
+	assert.True(t, modelNames["org/granted-with-access"], "granted model should be in results")
+	assert.False(t, modelNames["org/gated-no-access"], "gated model without access should NOT be in results")
+}
+
+// TestGetModelsFromHF_TransientGatedErrorPreservesRecords verifies that
+// transient auth-check failures (429, 5xx) result in a PartiallyAvailableError
+// with the affected model in FailedModels, rather than silently dropping it.
+func TestGetModelsFromHF_TransientGatedErrorPreservesRecords(t *testing.T) {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/api/models/", func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/auth-check") {
+			if strings.Contains(r.URL.Path, "rate-limited") {
+				w.WriteHeader(http.StatusTooManyRequests)
+			} else if strings.Contains(r.URL.Path, "server-error") {
+				w.WriteHeader(http.StatusServiceUnavailable)
+			} else {
+				w.WriteHeader(http.StatusOK)
+			}
+			return
+		}
+
+		modelID := strings.TrimPrefix(r.URL.Path, "/api/models/")
+		var gated gatedString
+		if strings.Contains(r.URL.Path, "public") {
+			gated = gatedString("false")
+		} else {
+			gated = gatedString("auto")
+		}
+		modelInfo := hfModelInfo{
+			ID:    modelID,
+			Gated: gated,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(modelInfo) //nolint:errcheck
+	})
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	includedModels := []string{
+		"org/public-model",
+		"org/rate-limited-gated",
+		"org/server-error-gated",
+	}
+
+	provider := &hfModelProvider{
+		sourceId:       "test-source",
+		client:         &http.Client{},
+		baseURL:        server.URL,
+		apiKey:         "hf_test-key",
+		includedModels: includedModels,
+	}
+	provider.filter, _ = NewModelFilter(includedModels, nil)
+
+	ctx := context.Background()
+	records, err := provider.getModelsFromHF(ctx)
+
+	// Should return a PartiallyAvailableError with the failed models
+	require.Error(t, err, "transient auth-check failures should produce an error")
+	var partialErr *PartiallyAvailableError
+	require.ErrorAs(t, err, &partialErr)
+	assert.ElementsMatch(t, []string{"org/rate-limited-gated", "org/server-error-gated"}, partialErr.FailedModels,
+		"both transiently failed models should be listed")
+
+	// The public model should still be in the results
+	require.Len(t, records, 1)
+	assert.Equal(t, "org/public-model", *records[0].Model.GetAttributes().Name)
 }

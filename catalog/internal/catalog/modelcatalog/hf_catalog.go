@@ -214,8 +214,11 @@ func classifyModelTypeFromTasks(tasks []string) ModelType {
 	return ModelTypeUnknown
 }
 
-// populateFromHFInfo populates the hfModel's CatalogModel fields from Hugging Face API data
-func (hfm *hfModel) populateFromHFInfo(ctx context.Context, provider *hfModelProvider, hfInfo *hfModelInfo, sourceId string, originalModelName string) {
+// populateFromHFInfo populates the hfModel's CatalogModel fields from Hugging Face API data.
+// gatedAccessGranted, when non-nil, is a pre-resolved result from a prior
+// checkGatedAccess call; populateFromHFInfo will use it directly for the
+// hf_gated_access_granted property instead of making a redundant API request.
+func (hfm *hfModel) populateFromHFInfo(ctx context.Context, provider *hfModelProvider, hfInfo *hfModelInfo, sourceId string, originalModelName string, gatedAccessGranted *bool) {
 	// Set model name
 	modelName := hfInfo.ID
 	if modelName == "" {
@@ -384,14 +387,30 @@ func (hfm *hfModel) populateFromHFInfo(ctx context.Context, provider *hfModelPro
 		},
 	}
 
-	// For gated models, determine if the token holder has been granted access
-	// by calling the HF auth-check endpoint (200 = granted, 401/403 = not).
+	// For gated models, record whether the token holder has been granted
+	// access. When the caller already resolved this (gatedAccessGranted !=
+	// nil) we reuse that result to avoid a redundant API call and keep the
+	// metadata consistent with the blocking decision. Otherwise fall back to
+	// a fresh checkGatedAccess call (transient failures omit the property so
+	// downstream consumers can distinguish "unknown" from "false").
 	if strings.HasPrefix(accessType, "gated_") {
-		gatedAccessGranted := strconv.FormatBool(provider.checkGatedAccess(ctx, hfInfo.ID))
-		customProps["hf_gated_access_granted"] = apimodels.MetadataValue{
-			MetadataStringValue: &apimodels.MetadataStringValue{
-				StringValue: gatedAccessGranted,
-			},
+		if gatedAccessGranted != nil {
+			customProps["hf_gated_access_granted"] = apimodels.MetadataValue{
+				MetadataStringValue: &apimodels.MetadataStringValue{
+					StringValue: strconv.FormatBool(*gatedAccessGranted),
+				},
+			}
+		} else {
+			granted, err := provider.checkGatedAccess(ctx, hfInfo.ID)
+			if err != nil {
+				glog.V(2).Infof("Gated access check failed for %s: %v (omitting hf_gated_access_granted)", hfInfo.ID, err)
+			} else {
+				customProps["hf_gated_access_granted"] = apimodels.MetadataValue{
+					MetadataStringValue: &apimodels.MetadataStringValue{
+						StringValue: strconv.FormatBool(granted),
+					},
+				}
+			}
 		}
 	}
 
@@ -574,7 +593,28 @@ func (p *hfModelProvider) getModelsFromHF(ctx context.Context) ([]ModelProviderR
 			continue
 		}
 
-		record := p.convertHFModelToRecord(ctx, modelInfo, modelName)
+		// Check if model is gated without access granted - block from loading.
+		// Transient failures (429, 5xx, network errors) are treated as failed
+		// models so existing catalog entries are preserved until the check succeeds.
+		// gatedAccess is forwarded to convertHFModelToRecord so the
+		// hf_gated_access_granted property uses the same result.
+		shouldBlock, gatedAccess, gatedErr := p.shouldBlockGatedModel(ctx, modelInfo)
+		if gatedErr != nil {
+			glog.Errorf("Failed to check gated access for %s: %v", modelName, gatedErr)
+			failedModels = append(failedModels, modelName)
+			continue
+		}
+		if shouldBlock {
+			accessType := deriveHFAccessType(modelInfo)
+			if p.apiKey == "" {
+				glog.Warningf("Blocking gated model %s (%s) from catalog: no API key configured. Set HF_API_KEY or HF_API_KEY_%s environment variable to enable access", modelName, accessType, envVarSuffix(p.sourceId))
+			} else {
+				glog.Warningf("Blocking gated model %s (%s) from catalog: access not granted. Please accept the license terms on https://huggingface.co/%s", modelName, accessType, modelName)
+			}
+			continue
+		}
+
+		record := p.convertHFModelToRecord(ctx, modelInfo, modelName, gatedAccess)
 
 		// Additional safety check: verify the final model name is not excluded
 		// (in case the model name changed during conversion, e.g., from hfInfo.ID)
@@ -656,13 +696,50 @@ func (p *hfModelProvider) fetchModelInfo(ctx context.Context, modelName string) 
 	return &modelInfo, nil
 }
 
+// shouldBlockGatedModel determines if a gated model should be blocked from
+// being loaded into the catalog. A gated model is blocked if:
+// - The model is gated (either gated_auto or gated_manual)
+// - AND the API key holder has not been granted access to it
+//
+// The returned gatedAccess pointer can be forwarded to populateFromHFInfo so
+// the hf_gated_access_granted property is set from the same API result,
+// avoiding a redundant request and a consistency window.
+func (p *hfModelProvider) shouldBlockGatedModel(ctx context.Context, modelInfo *hfModelInfo) (bool, *bool, error) {
+	if modelInfo == nil {
+		return false, nil, nil
+	}
+
+	accessType := deriveHFAccessType(modelInfo)
+
+	// Only block if model is gated
+	if !strings.HasPrefix(accessType, "gated_") {
+		glog.V(3).Infof("Model %s is not gated (access_type=%s), will not block", modelInfo.ID, accessType)
+		return false, nil, nil
+	}
+
+	// Check if access has been granted
+	hasAccess, err := p.checkGatedAccess(ctx, modelInfo.ID)
+	if err != nil {
+		return false, nil, fmt.Errorf("gated access check failed for %s: %w", modelInfo.ID, err)
+	}
+
+	glog.V(2).Infof("Model %s is gated (type=%s): hasAccess=%v, shouldBlock=%v", modelInfo.ID, accessType, hasAccess, !hasAccess)
+
+	// Block if gated but no access
+	return !hasAccess, &hasAccess, nil
+}
+
 // checkGatedAccess checks whether the configured API key has been granted
 // access to a gated model by calling the HF auth-check endpoint.
-// Returns true when access is granted (HTTP 200), false otherwise (401/403).
-// When no API key is configured, returns false immediately.
-func (p *hfModelProvider) checkGatedAccess(ctx context.Context, modelName string) bool {
+//
+// Returns (true, nil) when access is granted (HTTP 200), (false, nil) for
+// definitive auth rejections (401/403) or when no API key is configured, and
+// (false, error) for transient failures (429, 5xx, network errors) so callers
+// can distinguish a genuine denial from an inconclusive check.
+func (p *hfModelProvider) checkGatedAccess(ctx context.Context, modelName string) (bool, error) {
 	if p.apiKey == "" {
-		return false
+		glog.V(2).Infof("No API key configured; cannot check gated access for %s", modelName)
+		return false, nil
 	}
 
 	modelName = strings.Trim(modelName, "/")
@@ -670,8 +747,7 @@ func (p *hfModelProvider) checkGatedAccess(ctx context.Context, modelName string
 
 	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
 	if err != nil {
-		glog.Warningf("Failed to create auth-check request for %s: %v", modelName, err)
-		return false
+		return false, fmt.Errorf("failed to create auth-check request for %s: %w", modelName, err)
 	}
 
 	req.Header.Set("User-Agent", "model-registry-catalog")
@@ -679,14 +755,22 @@ func (p *hfModelProvider) checkGatedAccess(ctx context.Context, modelName string
 
 	resp, err := p.client.Do(req)
 	if err != nil {
-		glog.Warningf("Failed to check gated access for %s: %v", modelName, err)
-		return false
+		return false, fmt.Errorf("failed to check gated access for %s: %w", modelName, err)
 	}
 	defer resp.Body.Close()
 	// Drain the body so the connection can be reused.
 	_, _ = io.ReadAll(resp.Body)
 
-	return resp.StatusCode == http.StatusOK
+	switch {
+	case resp.StatusCode == http.StatusOK:
+		glog.V(2).Infof("Auth-check for %s returned status %d (access=true)", modelName, resp.StatusCode)
+		return true, nil
+	case resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden:
+		glog.V(2).Infof("Auth-check for %s returned status %d (access=false)", modelName, resp.StatusCode)
+		return false, nil
+	default:
+		return false, fmt.Errorf("auth-check for %s returned unexpected status %d", modelName, resp.StatusCode)
+	}
 }
 
 // fetchFileContent fetches the content of a file from Hugging Face repository
@@ -729,10 +813,14 @@ func (p *hfModelProvider) fetchFileContent(ctx context.Context, modelName string
 	return string(bodyBytes), nil
 }
 
-func (p *hfModelProvider) convertHFModelToRecord(ctx context.Context, hfInfo *hfModelInfo, originalModelName string) ModelProviderRecord {
+// convertHFModelToRecord builds a ModelProviderRecord from Hugging Face model
+// info. gatedAccessGranted, when non-nil, is forwarded to populateFromHFInfo
+// so the metadata property is set from the already-resolved access check
+// rather than making a second API call.
+func (p *hfModelProvider) convertHFModelToRecord(ctx context.Context, hfInfo *hfModelInfo, originalModelName string, gatedAccessGranted *bool) ModelProviderRecord {
 	// Create hfModel and populate it from HF API data
 	hfm := &hfModel{}
-	hfm.populateFromHFInfo(ctx, p, hfInfo, p.sourceId, originalModelName)
+	hfm.populateFromHFInfo(ctx, p, hfInfo, p.sourceId, originalModelName, gatedAccessGranted)
 
 	// Convert to database model
 	model := catalogmodels.CatalogModelImpl{}
@@ -1205,6 +1293,7 @@ func NewHFPreviewProvider(config *PreviewConfig) (*hfModelProvider, error) {
 		baseURL:      defaultHuggingFaceURL,
 		maxModels:    defaultMaxModels,
 		syncInterval: defaultSyncInterval,
+		sourceId:     "preview", // Mark this as preview mode for logging
 	}
 
 	// Reject custom URLs to prevent SSRF; the base URL is always the
@@ -1264,9 +1353,9 @@ type hfListModel struct {
 
 // hfPreviewModelResult holds enriched model info for preview responses.
 type hfPreviewModelResult struct {
-	Name                 string
-	AccessType           string // "public", "private", "gated_auto", "gated_manual"
-	GatedAccessGranted   *bool  // nil when unknown (e.g. wildcard-listed models)
+	Name               string
+	AccessType         string // "public", "private", "gated_auto", "gated_manual"
+	GatedAccessGranted *bool  // nil when unknown (e.g. wildcard-listed models)
 }
 
 // PatternType indicates how to handle an includedModels pattern.
@@ -1627,9 +1716,14 @@ func (p *hfModelProvider) FetchModelsForPreview(ctx context.Context, modelIdenti
 				}
 				// For gated models, check whether the token holder has been
 				// granted access via the HF auth-check endpoint.
+				// Transient errors are logged; GatedAccessGranted stays nil (unknown).
 				if authenticated && strings.HasPrefix(r.AccessType, "gated_") {
-					granted := p.checkGatedAccess(ctx, r.Name)
-					r.GatedAccessGranted = &granted
+					granted, err := p.checkGatedAccess(ctx, r.Name)
+					if err != nil {
+						glog.Warningf("Gated access check failed for preview model %s: %v", r.Name, err)
+					} else {
+						r.GatedAccessGranted = &granted
+					}
 				}
 				results = append(results, r)
 			}
@@ -1655,9 +1749,14 @@ func (p *hfModelProvider) FetchModelsForPreview(ctx context.Context, modelIdenti
 
 			// For gated models, check whether the token holder has been
 			// granted access via the HF auth-check endpoint.
+			// Transient errors are logged; GatedAccessGranted stays nil (unknown).
 			if authenticated && strings.HasPrefix(r.AccessType, "gated_") {
-				granted := p.checkGatedAccess(ctx, actualName)
-				r.GatedAccessGranted = &granted
+				granted, err := p.checkGatedAccess(ctx, actualName)
+				if err != nil {
+					glog.Warningf("Gated access check failed for preview model %s: %v", actualName, err)
+				} else {
+					r.GatedAccessGranted = &granted
+				}
 			}
 
 			results = append(results, r)

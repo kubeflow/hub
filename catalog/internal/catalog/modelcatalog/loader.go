@@ -468,6 +468,14 @@ func (l *ModelLoader) readProviderRecords(ctx context.Context) <-chan ModelProvi
 						activeCredOpts = r.SourceStatusOpts
 					}
 
+					// Extract model names from PartiallyAvailableError if present.
+					// These are actual model names (not error messages) that failed
+					// to load during this sync cycle.
+					var partialErr *PartiallyAvailableError
+					if errors.As(r.Error, &partialErr) && len(partialErr.FailedModels) > 0 {
+						failedModels = append(failedModels, partialErr.FailedModels...)
+					}
+
 					// Copy the list of model names, then clear it.
 					modelNameSet := mapset.NewSet(modelNames...)
 					modelNames = modelNames[:0]
@@ -477,6 +485,15 @@ func (l *ModelLoader) readProviderRecords(ctx context.Context) <-chan ModelProvi
 					// is a valid state and still runs cleanup.
 					completeFailure := modelNameSet.Cardinality() == 0 && len(failedModels) > 0
 					if !completeFailure {
+						// Preserve failed models so they are not deleted as orphans during
+						// partial sync. Failed models may recover on the next sync cycle;
+						// deleting them would lose previously-working data until the
+						// transient error clears.
+						for _, failedModel := range failedModels {
+							namespacedName := sourceID + ":" + failedModel
+							modelNameSet.Add(namespacedName)
+						}
+
 						l.state.TrackWrite()
 						count, err := l.removeOrphanedModelsFromSource(sourceID, modelNameSet)
 						l.state.WriteComplete()

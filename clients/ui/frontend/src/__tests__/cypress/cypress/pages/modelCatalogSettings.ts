@@ -440,6 +440,10 @@ class ManageSourcePage {
     return cy.contains('Source configuration changed. Refresh the preview.');
   }
 
+  findPreviewGatedAccessAlert() {
+    return cy.findByTestId('preview-gated-access-alert');
+  }
+
   findRefreshPreviewLink() {
     return cy.findByTestId('refresh-preview-link');
   }

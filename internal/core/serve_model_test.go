@@ -1082,7 +1082,7 @@ func TestServeModelRoundTrip(t *testing.T) {
 	})
 }
 
-func TestUpsertServeModel_HFModelValidation(t *testing.T) {
+func TestUpsertServeModel_HFModels(t *testing.T) {
 	_service, cleanup := SetupModelRegistryService(t)
 	defer cleanup()
 
@@ -1142,7 +1142,7 @@ func TestUpsertServeModel_HFModelValidation(t *testing.T) {
 		assert.Equal(t, "hf-public-serve-model", *result.Name)
 	})
 
-	t.Run("blocks deployment of gated HF model", func(t *testing.T) {
+	t.Run("allows deployment of gated HF model", func(t *testing.T) {
 		registeredModel := &openapi.RegisteredModel{
 			Name: "hf-gated-model",
 		}
@@ -1177,7 +1177,7 @@ func TestUpsertServeModel_HFModelValidation(t *testing.T) {
 		createdInfSvc, err := _service.UpsertInferenceService(inferenceService)
 		require.NoError(t, err)
 
-		// Try to create ServeModel - should fail
+		// Create ServeModel - should succeed
 		serveModel := &openapi.ServeModel{
 			Name:           new("hf-gated-serve-model"),
 			ModelVersionId: *createdVersion.Id,
@@ -1186,14 +1186,17 @@ func TestUpsertServeModel_HFModelValidation(t *testing.T) {
 
 		result, err := _service.UpsertServeModel(serveModel, createdInfSvc.Id)
 
-		// Should fail due to gated model
-		assert.Error(t, err)
-		assert.Nil(t, result)
-		assert.Contains(t, err.Error(), "cannot deploy gated HuggingFace model")
-		assert.Contains(t, err.Error(), "authentication not yet supported")
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.Equal(t, "hf-gated-serve-model", *result.Name)
+		assert.Equal(t, *createdVersion.Id, result.ModelVersionId)
+
+		retrieved, err := _service.GetServeModelById(*result.Id)
+		require.NoError(t, err)
+		assert.Equal(t, result, retrieved)
 	})
 
-	t.Run("blocks deployment of private HF model", func(t *testing.T) {
+	t.Run("allows deployment of private HF model", func(t *testing.T) {
 		registeredModel := &openapi.RegisteredModel{
 			Name: "hf-private-model",
 		}
@@ -1228,7 +1231,7 @@ func TestUpsertServeModel_HFModelValidation(t *testing.T) {
 		createdInfSvc, err := _service.UpsertInferenceService(inferenceService)
 		require.NoError(t, err)
 
-		// Try to create ServeModel - should fail
+		// Create ServeModel - should succeed
 		serveModel := &openapi.ServeModel{
 			Name:           new("hf-private-serve-model"),
 			ModelVersionId: *createdVersion.Id,
@@ -1237,11 +1240,14 @@ func TestUpsertServeModel_HFModelValidation(t *testing.T) {
 
 		result, err := _service.UpsertServeModel(serveModel, createdInfSvc.Id)
 
-		// Should fail due to private model
-		assert.Error(t, err)
-		assert.Nil(t, result)
-		assert.Contains(t, err.Error(), "cannot deploy private HuggingFace model")
-		assert.Contains(t, err.Error(), "authentication not yet supported")
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.Equal(t, "hf-private-serve-model", *result.Name)
+		assert.Equal(t, *createdVersion.Id, result.ModelVersionId)
+
+		retrieved, err := _service.GetServeModelById(*result.Id)
+		require.NoError(t, err)
+		assert.Equal(t, result, retrieved)
 	})
 
 	t.Run("allows deployment of non-HF model", func(t *testing.T) {
@@ -1320,9 +1326,9 @@ func TestGetServeModelsWithFilterQuery(t *testing.T) {
 
 	// Create serve models with distinct names
 	smDefs := []struct {
-		name   string
-		extID  string
-		state  openapi.ExecutionState
+		name  string
+		extID string
+		state openapi.ExecutionState
 	}{
 		{"serve-model-alpha", "ext-alpha-001", openapi.EXECUTIONSTATE_RUNNING},
 		{"serve-model-beta", "ext-beta-002", openapi.EXECUTIONSTATE_COMPLETE},

@@ -2658,3 +2658,32 @@ models:
 		})
 	}
 }
+
+func TestPreviewModelSourceGatedSummary(t *testing.T) {
+	originalPreview := catalog.PreviewSourceModels
+	t.Cleanup(func() { catalog.PreviewSourceModels = originalPreview })
+	service := newTestServiceWithSources(map[string]*model.CatalogModel{})
+	for _, accessType := range []string{"gated_auto", "gated_manual", "public", "private"} {
+		t.Run(accessType, func(t *testing.T) {
+			catalog.PreviewSourceModels = func(context.Context, *modelcatalog.PreviewConfig, []byte) ([]model.ModelPreviewResult, error) {
+				return []model.ModelPreviewResult{
+					{Name: "org/a-public", Included: true},
+					{Name: "org/z-model", Included: false, HfAccessType: &accessType},
+				}, nil
+			}
+			for _, filter := range []string{"all", "included", "excluded"} {
+				t.Run(filter, func(t *testing.T) {
+					config := writeTempYAML(t, "config", "type: hf\n")
+					resp, err := service.PreviewCatalogSource(context.Background(), config, "1", "", filter, nil)
+					require.NoError(t, err)
+					require.Equal(t, http.StatusOK, resp.Code)
+					body, ok := resp.Body.(model.CatalogSourcePreviewResponse)
+					require.True(t, ok)
+					require.Len(t, body.Items, 1)
+					assert.Equal(t, int32(2), body.Summary.TotalModels)
+					assert.Equal(t, accessType == "gated_auto" || accessType == "gated_manual", body.Summary.HasGatedModels)
+				})
+			}
+		})
+	}
+}
