@@ -600,6 +600,7 @@ func (b *ModelRegistryService) GetModelArtifacts(listOptions api.ListOptions, pa
 			OrderBy:       listOptions.OrderBy,
 			SortOrder:     listOptions.SortOrder,
 			NextPageToken: listOptions.NextPageToken,
+			FilterQuery:   listOptions.FilterQuery,
 		},
 		ParentResourceID: parentResourceIDPtr,
 	})

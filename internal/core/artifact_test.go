@@ -3218,20 +3218,10 @@ func TestArtifactFilterQuery(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, result)
 
-		// Verify that the experiment-associated artifact is present
-		found := false
-		for _, artifact := range result.Items {
-			if artifact.ExperimentId != nil && *artifact.ExperimentId == *createdExperiment1.Id {
-				assert.Equal(t, "model-exp1-run1", *artifact.Name, "Should find the experiment-associated model artifact")
-				found = true
-				break
-			}
-		}
-		assert.True(t, found, "Should find the model artifact from experiment1")
-
-		// Note: GetModelArtifacts may include artifacts with NULL experimentId when filtering by experimentId
-		// This is the current behavior and may be expected depending on the SQL filtering implementation
-		assert.GreaterOrEqual(t, len(result.Items), 1, "Should find at least 1 model artifact")
+		require.Len(t, result.Items, 1, "Should find only the model artifact from experiment1")
+		assert.Equal(t, "model-exp1-run1", *result.Items[0].Name)
+		require.NotNil(t, result.Items[0].ExperimentId)
+		assert.Equal(t, *createdExperiment1.Id, *result.Items[0].ExperimentId)
 	})
 
 	// Test GetExperimentRunArtifacts endpoint with filterQuery
@@ -3469,5 +3459,162 @@ func TestArtifactTypeMismatchOnUpdate(t *testing.T) {
 		assert.Nil(t, result)
 
 		assert.Contains(t, err.Error(), "is not a model artifact")
+	})
+}
+
+// TestGetModelArtifactsWithFilterQuery verifies that the filterQuery parameter
+// is correctly propagated and applied when listing ModelArtifacts.
+//
+// Regression test for: filterQuery silently ignored on GET /model_artifacts
+// Root cause was missing FilterQuery field propagation in GetModelArtifacts.
+func TestGetModelArtifactsWithFilterQuery(t *testing.T) {
+	_service, cleanup := SetupModelRegistryService(t)
+	defer cleanup()
+
+	rm, err := _service.UpsertRegisteredModel(&openapi.RegisteredModel{Name: "artifact-filter-test-rm"})
+	require.NoError(t, err)
+
+	mv, err := _service.UpsertModelVersion(&openapi.ModelVersion{
+		Name:              "v1",
+		RegisteredModelId: *rm.Id,
+	}, rm.Id)
+	require.NoError(t, err)
+
+	type artifactDef struct {
+		name   string
+		extID  string
+		format string
+	}
+	artifactDefs := []artifactDef{
+		{"fraud-model", "ext-fraud-001", "onnx"},
+		{"image-model", "ext-image-002", "tensorflow"},
+		{"nlp-model", "ext-nlp-003", "onnx"},
+		{"recommendation-weights", "ext-rec-004", "pytorch"},
+	}
+	for _, art := range artifactDefs {
+		_, err := _service.UpsertModelVersionArtifact(&openapi.Artifact{
+			ModelArtifact: &openapi.ModelArtifact{
+				Name:            new(art.name),
+				ExternalId:      new(art.extID),
+				Uri:             new("s3://bucket/" + art.name),
+				ModelFormatName: new(art.format),
+			},
+		}, *mv.Id)
+		require.NoError(t, err)
+	}
+
+	testCases := []struct {
+		name          string
+		filterQuery   string
+		expectedCount int
+		expectedNames []string
+	}{
+		{
+			name:          "Filter by exact name",
+			filterQuery:   "name = 'fraud-model'",
+			expectedCount: 1,
+			expectedNames: []string{"fraud-model"},
+		},
+		{
+			name:          "Filter by name pattern",
+			filterQuery:   "name LIKE '%-model'",
+			expectedCount: 3,
+			expectedNames: []string{"fraud-model", "image-model", "nlp-model"},
+		},
+		{
+			name:          "Filter by externalId",
+			filterQuery:   "externalId = 'ext-image-002'",
+			expectedCount: 1,
+			expectedNames: []string{"image-model"},
+		},
+		{
+			name:          "Filter by modelFormatName",
+			filterQuery:   "modelFormatName = 'onnx'",
+			expectedCount: 2,
+			expectedNames: []string{"fraud-model", "nlp-model"},
+		},
+		{
+			name:          "Complex filter with AND",
+			filterQuery:   "modelFormatName = 'onnx' AND name = 'nlp-model'",
+			expectedCount: 1,
+			expectedNames: []string{"nlp-model"},
+		},
+		{
+			name:          "Complex filter with OR",
+			filterQuery:   "modelFormatName = 'tensorflow' OR modelFormatName = 'pytorch'",
+			expectedCount: 2,
+			expectedNames: []string{"image-model", "recommendation-weights"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			pageSize := int32(20)
+			fq := tc.filterQuery
+			result, err := _service.GetModelArtifacts(api.ListOptions{
+				PageSize:    &pageSize,
+				FilterQuery: &fq,
+			}, nil)
+
+			require.NoError(t, err)
+			require.NotNil(t, result)
+
+			var returnedNames []string
+			for _, item := range result.Items {
+				returnedNames = append(returnedNames, *item.Name)
+			}
+
+			assert.Equal(t, tc.expectedCount, len(returnedNames),
+				"filterQuery %q: expected %d items, got %d (filter may be silently ignored)",
+				tc.filterQuery, tc.expectedCount, len(returnedNames))
+			assert.ElementsMatch(t, tc.expectedNames, returnedNames,
+				"filterQuery %q: unexpected items returned", tc.filterQuery)
+		})
+	}
+
+	t.Run("Invalid filter syntax returns error", func(t *testing.T) {
+		invalidFilter := "invalid <<<syntax"
+		result, err := _service.GetModelArtifacts(api.ListOptions{
+			FilterQuery: &invalidFilter,
+		}, nil)
+
+		assert.Error(t, err, "invalid filter syntax should return an error, not silently ignore the filter")
+		assert.Nil(t, result)
+	})
+
+	t.Run("Filter with no matches returns empty list", func(t *testing.T) {
+		fq := "modelFormatName = 'nonexistent-format'"
+		result, err := _service.GetModelArtifacts(api.ListOptions{
+			FilterQuery: &fq,
+		}, nil)
+
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.Equal(t, 0, len(result.Items), "filter with no matches should return empty items")
+		assert.Equal(t, int32(0), result.Size)
+	})
+
+	t.Run("Filter combined with pagination", func(t *testing.T) {
+		fq := "modelFormatName = 'onnx'"
+		pageSize := int32(1)
+
+		firstPage, err := _service.GetModelArtifacts(api.ListOptions{
+			PageSize:    &pageSize,
+			FilterQuery: &fq,
+		}, nil)
+		require.NoError(t, err)
+		assert.Equal(t, 1, len(firstPage.Items))
+		assert.NotEmpty(t, firstPage.NextPageToken,
+			"should have a next page token for 2 onnx model artifacts with pageSize=1")
+
+		secondPage, err := _service.GetModelArtifacts(api.ListOptions{
+			PageSize:      &pageSize,
+			FilterQuery:   &fq,
+			NextPageToken: &firstPage.NextPageToken,
+		}, nil)
+		require.NoError(t, err)
+		assert.Equal(t, 1, len(secondPage.Items))
+		assert.NotEqual(t, firstPage.Items[0].Id, secondPage.Items[0].Id,
+			"each page should return a different item")
 	})
 }

@@ -107,6 +107,7 @@ func (b *ModelRegistryService) GetServingEnvironments(listOptions api.ListOption
 			OrderBy:       listOptions.OrderBy,
 			SortOrder:     listOptions.SortOrder,
 			NextPageToken: listOptions.NextPageToken,
+			FilterQuery:   listOptions.FilterQuery,
 		},
 	})
 	if err != nil {
