@@ -53,7 +53,7 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({ preview, isSourceEnabled })
   const previewError = error;
   const showSourceDisabledWarning = !isSourceEnabled && !!summary && !previewError;
 
-  const showGatedAccessAlert = summary?.hasGatedModels === true;
+  const showGatedAccessAlert = summary?.hasGatedAccessDeniedModels === true;
 
   const onPreview = () => handlePreview();
   const onLoadMore = () => handleLoadMore();

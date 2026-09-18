@@ -3661,7 +3661,7 @@ components:
         - totalModels
         - includedModels
         - excludedModels
-        - hasGatedModels
+        - hasGatedAccessDeniedModels
       properties:
         totalModels:
           type: integer
@@ -3675,9 +3675,12 @@ components:
           type: integer
           description: Number of models that would be excluded
           example: 650
-        hasGatedModels:
+        hasGatedAccessDeniedModels:
           type: boolean
-          description: Whether any evaluated model is a gated Hugging Face model, including models outside the current page.
+          description: |-
+            Whether any evaluated model is a gated Hugging Face model without access
+            (`hfAccessType` gated_auto/gated_manual and `hfGatedAccessGranted` is false or unset),
+            including models outside the current page.
           example: true
     CatalogSourcePreviewAssetSummary:
       description: Summary counts for MCP server preview (`assetType=mcp_servers`).

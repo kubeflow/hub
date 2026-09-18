@@ -2681,9 +2681,26 @@ func TestPreviewModelSourceGatedSummary(t *testing.T) {
 					require.True(t, ok)
 					require.Len(t, body.Items, 1)
 					assert.Equal(t, int32(2), body.Summary.TotalModels)
-					assert.Equal(t, accessType == "gated_auto" || accessType == "gated_manual", body.Summary.HasGatedModels)
+					assert.Equal(t, accessType == "gated_auto" || accessType == "gated_manual", body.Summary.HasGatedAccessDeniedModels)
 				})
 			}
 		})
 	}
+
+	t.Run("gated with access granted", func(t *testing.T) {
+		granted := true
+		gatedAuto := "gated_auto"
+		catalog.PreviewSourceModels = func(context.Context, *modelcatalog.PreviewConfig, []byte) ([]model.ModelPreviewResult, error) {
+			return []model.ModelPreviewResult{
+				{Name: "org/gated-granted", Included: true, HfAccessType: &gatedAuto, HfGatedAccessGranted: &granted},
+			}, nil
+		}
+		config := writeTempYAML(t, "config", "type: hf\n")
+		resp, err := service.PreviewCatalogSource(context.Background(), config, "1", "", "included", nil)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.Code)
+		body, ok := resp.Body.(model.CatalogSourcePreviewResponse)
+		require.True(t, ok)
+		assert.False(t, body.Summary.HasGatedAccessDeniedModels)
+	})
 }

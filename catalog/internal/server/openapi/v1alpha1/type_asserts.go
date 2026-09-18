@@ -564,7 +564,7 @@ func AssertCatalogSourcePreviewResponseAllOfSummaryRequired(obj model.CatalogSou
 		"totalModels":    obj.TotalModels,
 		"includedModels": obj.IncludedModels,
 		"excludedModels": obj.ExcludedModels,
-		"hasGatedModels": obj.HasGatedModels,
+		"hasGatedAccessDeniedModels": obj.HasGatedAccessDeniedModels,
 	}
 	for name, el := range elements {
 		if isZero := IsZeroValue(el); isZero {

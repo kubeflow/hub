@@ -33,10 +33,9 @@ var _ = Describe("CreateCatalogSourcePreviewHandler", func() {
 					},
 				},
 			}
-			bodyBytes, _ := json.Marshal(requestBody)
 
 			expected := CatalogSourcePreviewEnvelope{Data: &data}
-			actual, rs, err := setupApiTest[CatalogSourcePreviewEnvelope](http.MethodPost, "/api/v1/settings/model_catalog/source_preview?namespace=kubeflow", bytes.NewReader(bodyBytes), kubernetesMockedStaticClientFactory, requestIdentity, "kubeflow")
+			actual, rs, err := setupApiTest[CatalogSourcePreviewEnvelope](http.MethodPost, "/api/v1/settings/model_catalog/source_preview?namespace=kubeflow", requestBody, kubernetesMockedStaticClientFactory, requestIdentity, "kubeflow")
 			Expect(err).NotTo(HaveOccurred())
 
 			By("should match the expected source preview")
@@ -45,11 +44,24 @@ var _ = Describe("CreateCatalogSourcePreviewHandler", func() {
 			Expect(actual.Data.PageSize).To(Equal(expected.Data.PageSize))
 			Expect(actual.Data.NextPageToken).To(Equal(expected.Data.NextPageToken))
 			Expect(actual.Data.Items).To(Equal(expected.Data.Items))
-			Expect(actual.Data.Summary.HasGatedModels).To(BeTrue())
+			Expect(actual.Data.Summary.HasGatedAccessDeniedModels).To(BeTrue())
 
-			By("creating a source preview without gated models in summary")
-			dataWithoutGated := mocks.CreateCatalogSourcePreviewMockWithoutGatedWithFilter("all", 20, "")
-			Expect(dataWithoutGated.Summary.HasGatedModels).To(BeFalse())
+			By("creating a source preview without gated access denied models in summary")
+			requestBodyWithoutGated := struct {
+				Data models.CatalogSourcePreviewRequest `json:"data"`
+			}{
+				Data: models.CatalogSourcePreviewRequest{
+					Id:   "hugging_face_public_source",
+					Type: "hf",
+					Properties: map[string]interface{}{
+						"allowedOrganization": "google-bert",
+					},
+				},
+			}
+			actualWithoutGated, rsWithoutGated, err := setupApiTest[CatalogSourcePreviewEnvelope](http.MethodPost, "/api/v1/settings/model_catalog/source_preview?namespace=kubeflow", requestBodyWithoutGated, kubernetesMockedStaticClientFactory, requestIdentity, "kubeflow")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(rsWithoutGated.StatusCode).To(Equal(http.StatusOK))
+			Expect(actualWithoutGated.Data.Summary.HasGatedAccessDeniedModels).To(BeFalse())
 		})
 
 		It("should return MCP server preview when assetType=mcp_servers", func() {

@@ -2732,10 +2732,12 @@ models:
 	}
 }
 
-func TestHasGatedModels(t *testing.T) {
+func TestHasGatedAccessDeniedModels(t *testing.T) {
 	gatedAuto := "gated_auto"
 	gatedManual := "gated_manual"
 	public := "public"
+	granted := true
+	denied := false
 
 	tests := []struct {
 		name    string
@@ -2749,25 +2751,40 @@ func TestHasGatedModels(t *testing.T) {
 			},
 		},
 		{
-			name: "gated model outside current page",
+			name: "gated without access outside current page",
 			results: []model.ModelPreviewResult{
 				{Name: "first-page-model", Included: true, HfAccessType: &public},
-				{Name: "later-page-model", Included: true, HfAccessType: &gatedAuto},
+				{Name: "later-page-model", Included: true, HfAccessType: &gatedAuto, HfGatedAccessGranted: &denied},
 			},
 			want: true,
 		},
 		{
-			name: "manually gated model",
+			name: "manually gated model without access",
 			results: []model.ModelPreviewResult{
-				{Name: "manual-gated-model", Included: true, HfAccessType: &gatedManual},
+				{Name: "manual-gated-model", Included: true, HfAccessType: &gatedManual, HfGatedAccessGranted: &denied},
 			},
 			want: true,
+		},
+		{
+			name: "gated with unset access treated as denied",
+			results: []model.ModelPreviewResult{
+				{Name: "gated-unset", Included: true, HfAccessType: &gatedAuto},
+			},
+			want: true,
+		},
+		{
+			name: "gated with access granted is not flagged",
+			results: []model.ModelPreviewResult{
+				{Name: "gated-granted", Included: true, HfAccessType: &gatedAuto, HfGatedAccessGranted: &granted},
+				{Name: "gated-manual-granted", Included: true, HfAccessType: &gatedManual, HfGatedAccessGranted: &granted},
+			},
+			want: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, hasGatedModels(tt.results))
+			assert.Equal(t, tt.want, hasGatedAccessDeniedModels(tt.results))
 		})
 	}
 }
@@ -2794,9 +2811,26 @@ func TestPreviewModelSourceGatedSummary(t *testing.T) {
 					require.True(t, ok)
 					require.Len(t, body.Items, 1)
 					assert.Equal(t, int32(2), body.Summary.TotalModels)
-					assert.Equal(t, accessType == "gated_auto" || accessType == "gated_manual", body.Summary.HasGatedModels)
+					assert.Equal(t, accessType == "gated_auto" || accessType == "gated_manual", body.Summary.HasGatedAccessDeniedModels)
 				})
 			}
 		})
 	}
+
+	t.Run("gated with access granted", func(t *testing.T) {
+		granted := true
+		gatedAuto := "gated_auto"
+		catalog.PreviewSourceModels = func(context.Context, *modelcatalog.PreviewConfig, []byte) ([]model.ModelPreviewResult, error) {
+			return []model.ModelPreviewResult{
+				{Name: "org/gated-granted", Included: true, HfAccessType: &gatedAuto, HfGatedAccessGranted: &granted},
+			}, nil
+		}
+		config := writeTempYAML(t, "config", "type: hf\n")
+		resp, err := service.PreviewCatalogSource(context.Background(), config, "1", "", "included", nil)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.Code)
+		body, ok := resp.Body.(model.CatalogSourcePreviewResponse)
+		require.True(t, ok)
+		assert.False(t, body.Summary.HasGatedAccessDeniedModels)
+	})
 }

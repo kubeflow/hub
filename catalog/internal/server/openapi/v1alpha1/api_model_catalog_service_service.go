@@ -712,29 +712,29 @@ func (m *ModelCatalogServiceAPIService) previewModelSource(ctx context.Context, 
 		NextPageToken: page.nextPageToken,
 		Items:         page.items,
 		Summary: model.CatalogSourcePreviewResponseAllOfSummary{
-			TotalModels:    page.total,
-			IncludedModels: page.includedCount,
-			ExcludedModels: page.excludedCount,
-			HasGatedModels: hasGatedModels(previewResults),
+			TotalModels:                page.total,
+			IncludedModels:             page.includedCount,
+			ExcludedModels:             page.excludedCount,
+			HasGatedAccessDeniedModels: hasGatedAccessDeniedModels(previewResults),
 		},
 	}), nil
 }
 
-// hasGatedModels reports whether the complete preview result set contains a
-// gated Hugging Face model. It deliberately runs before filtering and
+// hasGatedAccessDeniedModels reports whether the complete preview result set contains a
+// gated Hugging Face model with no access. It deliberately runs before filtering and
 // pagination so the summary remains accurate for every response page.
-func hasGatedModels(results []model.ModelPreviewResult) bool {
+func hasGatedAccessDeniedModels(results []model.ModelPreviewResult) bool {
 	for _, result := range results {
 		if result.HfAccessType == nil {
 			continue
 		}
-
 		switch *result.HfAccessType {
 		case "gated_auto", "gated_manual":
-			return true
+			if result.HfGatedAccessGranted == nil || !*result.HfGatedAccessGranted {
+				return true
+			}
 		}
 	}
-
 	return false
 }
 

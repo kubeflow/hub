@@ -1036,7 +1036,7 @@ describe('Manage Source Page', () => {
             totalModels: 3,
             includedModels: 2,
             excludedModels: 1,
-            hasGatedModels: true,
+            hasGatedAccessDeniedModels: true,
           },
           nextPageToken: '',
           pageSize: 20,
