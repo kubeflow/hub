@@ -1,13 +1,15 @@
 package api
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/kubeflow/hub/ui/bff/internal/constants"
+	helper "github.com/kubeflow/hub/ui/bff/internal/helpers"
 	"github.com/kubeflow/hub/ui/bff/internal/models"
-	rbacv1 "k8s.io/api/rbac/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	// Add other necessary imports like context, slog, helpers etc.
+	"github.com/kubeflow/hub/ui/bff/internal/repositories"
 )
 
 type CertificateListEnvelope Envelope[models.CertificateList, None]
@@ -15,186 +17,204 @@ type RoleBindingListEnvelope Envelope[models.RoleBindingList, None]
 type RoleBindingEnvelope Envelope[models.RoleBinding, None]
 
 const (
-	// Define constants for path parameters if not already defined elsewhere
 	RoleBindingNameParam = "roleBindingName"
 )
 
 // GetCertificatesHandler handles GET /api/v1/settings/certificates
-// STUB IMPLEMENTATION
+// STUB IMPLEMENTATION — pending definition of how certificates are stored.
 func (app *App) GetCertificatesHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// TODO: Implement actual logic: use K8s client to list Secrets and ConfigMaps in relevant namespaces
-	// For now, return dummy data
-	dummyCerts := CertificateListEnvelope{
+	// For now, return empty data rather than hardcoded fake data.
+	result := CertificateListEnvelope{
 		Metadata: nil,
-		Data: models.CertificateList{
-			Secrets: []models.CertificateItem{
-				{Name: "stub-secret-1", Keys: []string{"tls.crt", "tls.key"}},
-				{Name: "stub-secret-2", Keys: []string{"ca.crt"}},
-			},
-			ConfigMaps: []models.CertificateItem{
-				{Name: "stub-cm-1", Keys: []string{"ca-bundle.crt"}},
-			},
-		},
+		Data:     models.CertificateList{},
 	}
 
-	err := app.WriteJSON(w, http.StatusOK, dummyCerts, nil)
+	err := app.WriteJSON(w, http.StatusOK, result, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
 }
 
 // GetRoleBindingsHandler handles GET /api/v1/settings/role_bindings
-// STUB IMPLEMENTATION
+// Returns real RoleBindings from Kubernetes, filtered by app.kubernetes.io/part-of=model-registry.
 func (app *App) GetRoleBindingsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	// TODO: Implement actual logic: use K8s client to list RoleBindings (potentially filtered)
-	// For now, return dummy data
-	dummyBindings := RoleBindingListEnvelope{
-		Metadata: nil,
-		Data: models.RoleBindingList{
-			Items: []models.RoleBinding{
-				{ /* Dummy RoleBinding 1 */ ObjectMeta: metav1.ObjectMeta{Name: "stub-rb-1"}},
-				{ /* Dummy RoleBinding 2 */ ObjectMeta: metav1.ObjectMeta{Name: "stub-rb-2"}},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "model-registry-permissions",
-						Labels: map[string]string{
-							"app.kubernetes.io/name":      "model-registry",
-							"app":                         "model-registry",
-							"app.kubernetes.io/component": "model-registry",
-							"app.kubernetes.io/part-of":   "model-registry",
-						},
-					},
-					Subjects: []rbacv1.Subject{
-						{
-							Kind:     "User",
-							Name:     "admin-user",
-							APIGroup: "rbac.authorization.k8s.io",
-						},
-					},
-					RoleRef: rbacv1.RoleRef{
-						Kind:     "Role",
-						Name:     "registry-user-model-registry",
-						APIGroup: "rbac.authorization.k8s.io",
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "model-registry-dora-permissions",
-						Labels: map[string]string{
-							"app.kubernetes.io/name":      "model-registry-dora",
-							"app":                         "model-registry-dora",
-							"app.kubernetes.io/component": "model-registry",
-							"app.kubernetes.io/part-of":   "model-registry",
-						},
-					},
-					Subjects: []rbacv1.Subject{
-						{
-							Kind:     "User",
-							Name:     "dora-user",
-							APIGroup: "rbac.authorization.k8s.io",
-						},
-					},
-					RoleRef: rbacv1.RoleRef{
-						Kind:     "Role",
-						Name:     "registry-user-model-registry-dora",
-						APIGroup: "rbac.authorization.k8s.io",
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "model-registry-bella-permissions",
-						Labels: map[string]string{
-							"app.kubernetes.io/name":      "model-registry-bella",
-							"app":                         "model-registry-bella",
-							"app.kubernetes.io/component": "model-registry",
-							"app.kubernetes.io/part-of":   "model-registry",
-						},
-					},
-					Subjects: []rbacv1.Subject{
-						{
-							Kind:     "Group",
-							Name:     "bella-team",
-							APIGroup: "rbac.authorization.k8s.io",
-						},
-					},
-					RoleRef: rbacv1.RoleRef{
-						Kind:     "Role",
-						Name:     "registry-user-model-registry-bella",
-						APIGroup: "rbac.authorization.k8s.io",
-					},
-				},
-			},
-		},
+	ctx := r.Context()
+	ctxLogger := helper.GetContextLoggerFromReq(r)
+
+	namespace, ok := ctx.Value(constants.NamespaceHeaderParameterKey).(string)
+	if !ok || namespace == "" {
+		app.badRequestResponse(w, r, fmt.Errorf("missing namespace in context"))
+		return
 	}
 
-	err := app.WriteJSON(w, http.StatusOK, dummyBindings, nil)
+	client, err := app.kubernetesClientFactory.GetClient(ctx)
 	if err != nil {
+		ctxLogger.Error("failed to get kubernetes client", "error", err)
+		app.serverErrorResponse(w, r, errors.New("kubernetes client not available"))
+		return
+	}
+
+	bindingList, err := app.repositories.ModelRegistryRBAC.GetRoleBindings(ctx, client, namespace)
+	if err != nil {
+		ctxLogger.Error("failed to list role bindings", "namespace", namespace, "error", err)
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	result := RoleBindingListEnvelope{
+		Metadata: nil,
+		Data:     bindingList,
+	}
+
+	if err := app.WriteJSON(w, http.StatusOK, result, nil); err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
 }
 
 // CreateRoleBindingHandler handles POST /api/v1/settings/role_bindings
-// STUB IMPLEMENTATION
+// Creates a new Kubernetes RoleBinding for a model-registry.
 func (app *App) CreateRoleBindingHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	// TODO: Implement actual logic: parse payload, use K8s client to create RoleBinding
+	ctx := r.Context()
+	ctxLogger := helper.GetContextLoggerFromReq(r)
+
+	namespace, ok := ctx.Value(constants.NamespaceHeaderParameterKey).(string)
+	if !ok || namespace == "" {
+		app.badRequestResponse(w, r, fmt.Errorf("missing namespace in context"))
+		return
+	}
+
 	var input RoleBindingEnvelope
-	err := app.ReadJSON(w, r, &input)
-	if err != nil {
+	if err := app.ReadJSON(w, r, &input); err != nil {
 		app.badRequestResponse(w, r, err)
 		return
 	}
 
-	// For now, return the created object representation
-	dummyCreated := RoleBindingEnvelope{
-		Metadata: nil,
-		Data:     input.Data, // Return the input data for now
+	if input.Data.Name == "" {
+		app.badRequestResponse(w, r, fmt.Errorf("role binding name is required"))
+		return
 	}
 
-	err = app.WriteJSON(w, http.StatusCreated, dummyCreated, nil)
+	client, err := app.kubernetesClientFactory.GetClient(ctx)
 	if err != nil {
+		ctxLogger.Error("failed to get kubernetes client", "error", err)
+		app.serverErrorResponse(w, r, errors.New("kubernetes client not available"))
+		return
+	}
+
+	created, err := app.repositories.ModelRegistryRBAC.CreateRoleBinding(ctx, client, namespace, &input.Data)
+	if err != nil {
+		if errors.Is(err, repositories.ErrRoleBindingNameEmpty) {
+			app.badRequestResponse(w, r, err)
+			return
+		}
+		ctxLogger.Error("failed to create role binding", "namespace", namespace, "name", input.Data.Name, "error", err)
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	result := RoleBindingEnvelope{
+		Metadata: nil,
+		Data:     *created,
+	}
+
+	w.Header().Set("Location", r.URL.JoinPath(created.Name).String())
+	if err := app.WriteJSON(w, http.StatusCreated, result, nil); err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
 }
 
 // DeleteRoleBindingHandler handles DELETE /api/v1/settings/role_bindings/{roleBindingName}
-// STUB IMPLEMENTATION
+// Deletes a Kubernetes RoleBinding by name.
 func (app *App) DeleteRoleBindingHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	ctx := r.Context()
+	ctxLogger := helper.GetContextLoggerFromReq(r)
+
+	namespace, ok := ctx.Value(constants.NamespaceHeaderParameterKey).(string)
+	if !ok || namespace == "" {
+		app.badRequestResponse(w, r, fmt.Errorf("missing namespace in context"))
+		return
+	}
+
 	roleBindingName := ps.ByName(RoleBindingNameParam)
+	if roleBindingName == "" {
+		app.badRequestResponse(w, r, fmt.Errorf("role binding name is required"))
+		return
+	}
 
-	// TODO: Implement actual logic: use K8s client to delete RoleBinding
-	app.logger.Info("STUB: Deleting Role Binding", "name", roleBindingName)
+	client, err := app.kubernetesClientFactory.GetClient(ctx)
+	if err != nil {
+		ctxLogger.Error("failed to get kubernetes client", "error", err)
+		app.serverErrorResponse(w, r, errors.New("kubernetes client not available"))
+		return
+	}
 
-	w.WriteHeader(http.StatusNoContent) // Standard response for successful DELETE
+	err = app.repositories.ModelRegistryRBAC.DeleteRoleBinding(ctx, client, namespace, roleBindingName)
+	if err != nil {
+		if errors.Is(err, repositories.ErrRoleBindingNotFound) {
+			app.notFoundResponse(w, r)
+			return
+		}
+		ctxLogger.Error("failed to delete role binding", "namespace", namespace, "name", roleBindingName, "error", err)
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // PatchRoleBindingHandler handles PATCH /api/v1/settings/role_bindings/{roleBindingName}
-// STUB IMPLEMENTATION
+// Updates the subjects of an existing Kubernetes RoleBinding.
 func (app *App) PatchRoleBindingHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	roleBindingName := ps.ByName(RoleBindingNameParam)
+	ctx := r.Context()
+	ctxLogger := helper.GetContextLoggerFromReq(r)
 
-	// TODO: Implement actual logic: parse payload, use K8s client to update RoleBinding
+	namespace, ok := ctx.Value(constants.NamespaceHeaderParameterKey).(string)
+	if !ok || namespace == "" {
+		app.badRequestResponse(w, r, fmt.Errorf("missing namespace in context"))
+		return
+	}
+
+	roleBindingName := ps.ByName(RoleBindingNameParam)
+	if roleBindingName == "" {
+		app.badRequestResponse(w, r, fmt.Errorf("role binding name is required"))
+		return
+	}
+
 	var input RoleBindingEnvelope
-	err := app.ReadJSON(w, r, &input)
-	if err != nil {
+	if err := app.ReadJSON(w, r, &input); err != nil {
 		app.badRequestResponse(w, r, err)
 		return
 	}
 
-	// For stub implementation, set the name from the path parameter
-	if input.Data.Name == "" {
-		input.Data.Name = roleBindingName
-	}
-
-	app.logger.Info("STUB: Patching Role Binding", "name", roleBindingName)
-
-	// For now, return the patched object representation
-	patchedResponse := RoleBindingEnvelope{
-		Metadata: nil,
-		Data:     input.Data, // Return the input data for now
-	}
-
-	err = app.WriteJSON(w, http.StatusOK, patchedResponse, nil)
+	client, err := app.kubernetesClientFactory.GetClient(ctx)
 	if err != nil {
+		ctxLogger.Error("failed to get kubernetes client", "error", err)
+		app.serverErrorResponse(w, r, errors.New("kubernetes client not available"))
+		return
+	}
+
+	patched, err := app.repositories.ModelRegistryRBAC.PatchRoleBinding(ctx, client, namespace, roleBindingName, &input.Data)
+	if err != nil {
+		if errors.Is(err, repositories.ErrRoleBindingNotFound) {
+			app.notFoundResponse(w, r)
+			return
+		}
+		if errors.Is(err, repositories.ErrRoleBindingNameEmpty) {
+			app.badRequestResponse(w, r, err)
+			return
+		}
+		ctxLogger.Error("failed to patch role binding", "namespace", namespace, "name", roleBindingName, "error", err)
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	result := RoleBindingEnvelope{
+		Metadata: nil,
+		Data:     *patched,
+	}
+
+	if err := app.WriteJSON(w, http.StatusOK, result, nil); err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
 }
