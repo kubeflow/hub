@@ -228,7 +228,8 @@ func (s *ModelRegistryServiceAPIService) FindServingEnvironment(ctx context.Cont
 
 // GetEnvironmentInferenceServices - List All ServingEnvironment&#39;s InferenceServices
 func (s *ModelRegistryServiceAPIService) GetEnvironmentInferenceServices(ctx context.Context, servingenvironmentId string, filterQuery string, name string, externalID string, pageSize string, orderBy model.OrderByField, sortOrder model.SortOrder, nextPageToken string) (ImplResponse, error) {
-	listOpts, err := s.buildListOption(filterQuery, pageSize, orderBy, sortOrder, nextPageToken)
+	combinedFilterQuery := buildCombinedFilterQuery(filterQuery, name, externalID)
+	listOpts, err := s.buildListOption(combinedFilterQuery, pageSize, orderBy, sortOrder, nextPageToken)
 	if err != nil {
 		return ErrorResponse(api.ErrToStatus(err), err), err
 	}
@@ -259,7 +260,8 @@ func (s *ModelRegistryServiceAPIService) GetInferenceServiceModel(ctx context.Co
 
 // GetInferenceServiceServes - List All InferenceService&#39;s ServeModel actions
 func (s *ModelRegistryServiceAPIService) GetInferenceServiceServes(ctx context.Context, inferenceserviceId string, filterQuery string, name string, externalID string, pageSize string, orderBy model.OrderByField, sortOrder model.SortOrder, nextPageToken string) (ImplResponse, error) {
-	listOpts, err := s.buildListOption(filterQuery, pageSize, orderBy, sortOrder, nextPageToken)
+	combinedFilterQuery := buildCombinedFilterQuery(filterQuery, name, externalID)
+	listOpts, err := s.buildListOption(combinedFilterQuery, pageSize, orderBy, sortOrder, nextPageToken)
 	if err != nil {
 		return ErrorResponse(api.ErrToStatus(err), err), err
 	}
