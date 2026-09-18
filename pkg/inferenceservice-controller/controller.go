@@ -199,7 +199,12 @@ func (r *InferenceServiceController) Reconcile(ctx context.Context, req ctrl.Req
 			return ctrl.Result{}, fmt.Errorf("unable to find InferenceService with id %s in model registry: %w", mrIsvcId, err)
 		}
 
-		mrCurrentIvcUrl := mrIs.CustomProperties["url"].MetadataStringValue.GetStringValue()
+		var mrCurrentIvcUrl string
+		if mrIs.CustomProperties != nil {
+			if urlMeta, ok := mrIs.CustomProperties["url"]; ok && urlMeta.MetadataStringValue != nil {
+				mrCurrentIvcUrl = urlMeta.MetadataStringValue.GetStringValue()
+			}
+		}
 
 		urlAreDiff := r.checkURLDiff(isvc, mrCurrentIvcUrl)
 		if urlAreDiff {
