@@ -276,7 +276,7 @@ describe('PreviewPanel', () => {
         },
       },
     );
-    render(<PreviewPanel preview={preview} />);
+    render(<PreviewPanel preview={preview} isSourceEnabled />);
 
     expect(screen.getByTestId('preview-gated-access-alert')).toBeInTheDocument();
     expect(screen.queryByLabelText('Gated access warning')).not.toBeInTheDocument();
@@ -302,7 +302,7 @@ describe('PreviewPanel', () => {
         activeTab: CatalogSettingsPreviewTab.INCLUDED,
       },
     );
-    render(<PreviewPanel preview={preview} />);
+    render(<PreviewPanel preview={preview} isSourceEnabled />);
 
     expect(screen.getByTestId('preview-gated-access-alert')).toBeInTheDocument();
   });
@@ -353,7 +353,7 @@ describe('PreviewPanel', () => {
         },
       },
     );
-    render(<PreviewPanel preview={preview} />);
+    render(<PreviewPanel preview={preview} isSourceEnabled />);
 
     expect(screen.queryByTestId('preview-gated-access-alert')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Gated access warning')).not.toBeInTheDocument();

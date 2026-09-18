@@ -25,7 +25,7 @@ type CatalogSourcePreviewResponseAllOfSummary struct {
 	IncludedModels int32 `json:"includedModels"`
 	// Number of models that would be excluded
 	ExcludedModels int32 `json:"excludedModels"`
-	// Whether any evaluated model is a gated Hugging Face model, including models outside the current page.
+	// Whether any evaluated model is a gated Hugging Face model without access (`hfAccessType` gated_auto/gated_manual and `hfGatedAccessGranted` is false or unset), including models outside the current page.
 	HasGatedAccessDeniedModels bool `json:"hasGatedAccessDeniedModels"`
 }
 
