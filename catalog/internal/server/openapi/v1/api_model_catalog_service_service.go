@@ -239,6 +239,10 @@ func (m *ModelCatalogServiceAPIService) FindLabels(ctx context.Context, assetTyp
 }
 
 func (m *ModelCatalogServiceAPIService) FindModels(ctx context.Context, targetRPS int32, latencyProperty string, rpsProperty string, hardwareCountProperty string, hardwareTypeProperty string, sourceIDs []string, q string, sourceLabels []string, filterQuery string, pageSize string, orderBy model.OrderByField, sortOrder model.SortOrder, nextPageToken string) (ImplResponse, error) {
+	if err := modelOrderBy.validate(string(orderBy)); err != nil {
+		return ErrorResponse(http.StatusBadRequest, err), err
+	}
+
 	// Validate pageSize and nextPageToken up-front. The recommended path uses numeric
 	// offset tokens; the non-recommended path uses base64-encoded DB cursors
 	// validated inside parsePaginationParams.

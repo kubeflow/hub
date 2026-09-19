@@ -26,6 +26,10 @@ func NewAgentCatalogServiceAPIService(provider *agentcatalog.DBAgentCatalog, sou
 }
 
 func (s *AgentCatalogServiceAPIService) FindAgents(ctx context.Context, name string, q string, source []string, sourceLabel []string, filterQuery string, pageSize string, orderBy model.OrderByField, sortOrder model.SortOrder, nextPageToken string) (ImplResponse, error) {
+	if err := enumOrderBy.validate(string(orderBy)); err != nil {
+		return ErrorResponse(http.StatusBadRequest, err), err
+	}
+
 	pageSizeInt, err := parsePaginationParams(pageSize, nextPageToken)
 	if err != nil {
 		return ErrorResponse(http.StatusBadRequest, err), err
@@ -80,6 +84,10 @@ func (s *AgentCatalogServiceAPIService) FindAgentsFilterOptions(ctx context.Cont
 }
 
 func (s *AgentCatalogServiceAPIService) GetAgentArtifacts(ctx context.Context, id string, artifactType []model.AgentArtifactTypeQueryParam, pageSize string, orderBy model.OrderByField, sortOrder model.SortOrder, nextPageToken string) (ImplResponse, error) {
+	if err := caseInsensitiveOrderBy.validate(string(orderBy)); err != nil {
+		return ErrorResponse(http.StatusBadRequest, err), err
+	}
+
 	pageSizeInt, err := parsePaginationParams(pageSize, nextPageToken)
 	if err != nil {
 		return ErrorResponse(http.StatusBadRequest, err), err

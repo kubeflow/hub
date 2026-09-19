@@ -221,19 +221,12 @@ func TestFindModels(t *testing.T) {
 			mockModels: map[string]*model.CatalogModel{
 				"modelA": modelA,
 			},
-			q:              "",
-			pageSize:       "10",
-			orderBy:        "UNSUPPORTED_FIELD",
-			sortOrder:      model.SORTORDER_ASC,
-			expectedStatus: http.StatusOK, // Changed from http.StatusBadRequest to http.StatusOK -- in model registry we fallback to ID if the order by field is unsupported
-			expectedModelList: &model.CatalogModelList{
-				Items: []model.CatalogModel{
-					*modelA,
-				},
-				Size:          1,
-				PageSize:      10,
-				NextPageToken: "",
-			},
+			q:                 "",
+			pageSize:          "10",
+			orderBy:           "UNSUPPORTED_FIELD",
+			sortOrder:         model.SORTORDER_ASC,
+			expectedStatus:    http.StatusBadRequest, // KEP-0004: v1 rejects an unsupported orderBy instead of falling back to ID
+			expectedModelList: nil,
 		},
 		{
 			name:     "Unsupported sortOrder field",

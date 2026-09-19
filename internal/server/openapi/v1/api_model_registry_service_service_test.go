@@ -1,9 +1,13 @@
 package v1
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/kubeflow/hub/pkg/api"
+	model "github.com/kubeflow/hub/pkg/openapi"
 )
 
 func TestBuildCombinedFilterQuery(t *testing.T) {
@@ -84,5 +88,26 @@ func TestBuildCombinedFilterQuery(t *testing.T) {
 			result := buildCombinedFilterQuery(tc.filterQuery, tc.nameParam, tc.externalID)
 			assert.Equal(t, tc.expected, result)
 		})
+	}
+}
+
+func TestBuildListOptionOrderBy(t *testing.T) {
+	s := &ModelRegistryServiceAPIService{}
+
+	for _, field := range model.AllowedOrderByFieldEnumValues {
+		opts, err := s.buildListOption("", "", field, "", "")
+		assert.NoError(t, err, "orderBy %q should be accepted", field)
+		if assert.NotNil(t, opts.OrderBy) {
+			assert.Equal(t, string(field), *opts.OrderBy)
+		}
+	}
+
+	opts, err := s.buildListOption("", "", "", "", "")
+	assert.NoError(t, err)
+	assert.Nil(t, opts.OrderBy)
+
+	for _, bad := range []model.OrderByField{"BOGUS", "name", "id", "id; DROP TABLE x"} {
+		_, err := s.buildListOption("", "", bad, "", "")
+		assert.True(t, errors.Is(err, api.ErrBadRequest), "orderBy %q should be rejected with ErrBadRequest, got %v", bad, err)
 	}
 }
