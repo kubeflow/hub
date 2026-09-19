@@ -1988,3 +1988,85 @@ func TestCatalogModelRepository_GetTypeID(t *testing.T) {
 
 	assert.Equal(t, typeID, repo.GetTypeID())
 }
+
+// TestListDoublePropertyOrderingPagination walks every page of a listing
+// ordered by a double custom property whose values need the full float64
+// precision, and checks each model is returned exactly once and the walk
+// ends. The cursor used to round such values, which repeated or skipped the
+// row at the page boundary and, in descending order, never emptied the token.
+func TestListDoublePropertyOrderingPagination(t *testing.T) {
+	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, testDatastoreSpec())
+	defer cleanup()
+	defer testutils.CleanupPostgresTestData(t, sharedDB)
+
+	modelRepo := NewCatalogModelRepository(sharedDB, getCatalogModelTypeID(t, sharedDB))
+	artifactRepo := NewCatalogModelArtifactRepository(sharedDB, getCatalogModelArtifactTypeID(t, sharedDB))
+
+	sharedMean := (0.7 + 0.8 + 0.9) / 3 // 0.7999999999999999
+
+	tests := []struct {
+		name      string
+		values    []float64
+		sortOrder string
+		pageSize  int32
+	}{
+		{"full precision ascending", []float64{0.8523489932885906, 0.8523489932885907, 0.7345678901234567, 0.9123456789012345}, "ASC", 2},
+		{"full precision descending", []float64{0.8523489932885906, 0.8523489932885907, 0.7345678901234567, 0.9123456789012345}, "DESC", 2},
+		{"shared computed value ascending", []float64{sharedMean, sharedMean, sharedMean}, "ASC", 1},
+		{"shared computed value descending", []float64{sharedMean, sharedMean, sharedMean}, "DESC", 1},
+	}
+
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testutils.CleanupPostgresTestData(t, sharedDB)
+
+			seen := make(map[string]int, len(tt.values))
+			for j, v := range tt.values {
+				v := v
+				name := fmt.Sprintf("double-order-%d-%d", i, j)
+				saved, err := modelRepo.Save(&models.CatalogModelImpl{
+					Attributes: &models.CatalogModelAttributes{Name: new(name), ExternalID: new(name)},
+				})
+				require.NoError(t, err)
+
+				_, err = artifactRepo.Save(&models.CatalogModelArtifactImpl{
+					Attributes:       &models.CatalogModelArtifactAttributes{Name: new(name + "-artifact"), ExternalID: new(name + "-artifact")},
+					CustomProperties: &[]dbmodels.Properties{{Name: "accuracy", DoubleValue: &v}},
+				}, saved.GetID())
+				require.NoError(t, err)
+				seen[name] = 0
+			}
+
+			token := ""
+			for page := 0; ; page++ {
+				require.Less(t, page, len(tt.values)+1, "pagination did not end after %d pages", page)
+
+				listOptions := models.CatalogModelListOptions{
+					Pagination: dbmodels.Pagination{
+						PageSize:  new(tt.pageSize),
+						OrderBy:   new("artifacts.accuracy.double_value"),
+						SortOrder: new(tt.sortOrder),
+					},
+				}
+				if token != "" {
+					listOptions.NextPageToken = new(token)
+				}
+
+				result, err := modelRepo.List(listOptions)
+				require.NoError(t, err)
+				for _, item := range result.Items {
+					seen[*item.GetAttributes().Name]++
+				}
+
+				if result.NextPageToken == "" {
+					break
+				}
+				token = result.NextPageToken
+			}
+
+			for name, count := range seen {
+				assert.Equal(t, 1, count, "%s should be returned exactly once", name)
+			}
+		})
+	}
+}

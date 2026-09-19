@@ -179,7 +179,11 @@ func CreateNextPageToken(id int32, value any) string {
 		}
 	case *float64:
 		if tval != nil {
-			valueString = fmt.Sprintf("%.15f", *tval)
+			// Shortest representation that parses back to the same float64.
+			// A fixed number of decimals rounds values such as 0.8523489932885906,
+			// and a cursor that no longer equals the stored value repeats or
+			// skips rows at the page boundary.
+			valueString = strconv.FormatFloat(*tval, 'g', -1, 64)
 		}
 	case *int64:
 		if tval != nil {
