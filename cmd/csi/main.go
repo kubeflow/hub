@@ -54,7 +54,7 @@ func main() {
 
 	var allowedPrefixes []string
 	if prefixesStr, ok := os.LookupEnv(allowedArtifactURIPrefixesEnv); ok && prefixesStr != "" {
-		for _, p := range strings.Split(prefixesStr, ",") {
+		for p := range strings.SplitSeq(prefixesStr, ",") {
 			if trimmed := strings.TrimSpace(p); trimmed != "" {
 				allowedPrefixes = append(allowedPrefixes, trimmed)
 			}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"slices"
 	"strings"
 )
 
@@ -76,10 +77,8 @@ func isBlockedHost(host string) bool {
 	hostname = strings.TrimSuffix(hostname, ".")
 	hostname = strings.ToLower(hostname)
 
-	for _, blocked := range blockedHosts {
-		if hostname == blocked {
-			return true
-		}
+	if slices.Contains(blockedHosts, hostname) {
+		return true
 	}
 
 	if ip := net.ParseIP(hostname); ip != nil {

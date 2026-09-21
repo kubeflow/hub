@@ -154,7 +154,7 @@ func TestResolveJobsConcurrently_BoundedBySemaphore(t *testing.T) {
 	const jobCount = 6
 
 	var jobs []refJob
-	for i := 0; i < jobCount; i++ {
+	for i := range jobCount {
 		jobs = append(jobs, refJob{repo: SkillRepository{URL: fmt.Sprintf("repo-%d", i)}, ref: "v1"})
 	}
 
@@ -199,7 +199,7 @@ func TestResolveJobsConcurrently_BoundedByWorkerPool(t *testing.T) {
 	const jobCount = 6
 
 	var jobs []refJob
-	for i := 0; i < jobCount; i++ {
+	for i := range jobCount {
 		jobs = append(jobs, refJob{repo: SkillRepository{URL: fmt.Sprintf("repo-%d", i)}, ref: "v1"})
 	}
 
@@ -303,10 +303,8 @@ func TestRunSyncExclusive_SerializesBlockingCallsOnSameSource(t *testing.T) {
 	var maxConcurrent, current int
 
 	var wg sync.WaitGroup
-	for i := 0; i < 5; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range 5 {
+		wg.Go(func() {
 			l.runSyncExclusive("s", true, func() {
 				mu.Lock()
 				current++
@@ -319,7 +317,7 @@ func TestRunSyncExclusive_SerializesBlockingCallsOnSameSource(t *testing.T) {
 				current--
 				mu.Unlock()
 			})
-		}()
+		})
 	}
 	wg.Wait()
 	assert.Equal(t, 1, maxConcurrent, "blocking syncs of one source never overlap")
@@ -368,7 +366,7 @@ func TestRunPeriodicSync_FiresRepeatedlyUntilCancelled(t *testing.T) {
 	runPeriodicSync(ctx, 20*time.Millisecond, &wg, func() { ticks <- struct{}{} })
 
 	// Wait for at least 3 ticks deterministically, with a per-tick timeout.
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		select {
 		case <-ticks:
 		case <-time.After(2 * time.Second):
