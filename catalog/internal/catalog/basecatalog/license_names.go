@@ -112,6 +112,7 @@ var spdxToHumanReadableMap = map[string]string{
 	"bsd-inferno-nettverk":                 "BSD-Inferno-Nettverk",
 	"bsd-mark-modifications":               "BSD Mark Modifications License",
 	"bsd-protection":                       "BSD Protection License",
+	"bsd-source-alt-gpl":                   "BSD Source Code Attribution - GPL alternative",
 	"bsd-source-beginning-file":            "BSD Source Code Attribution - beginning of file variant",
 	"bsd-source-code":                      "BSD Source Code Attribution",
 	"bsd-source-code-no-disclaimer":        "BSD Source Code Attribution - no disclaimer",
