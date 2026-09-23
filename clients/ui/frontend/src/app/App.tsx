@@ -23,6 +23,7 @@ import ToastNotifications from '~/app/standalone/ToastNotifications';
 import AppNavSidebar from '~/app/standalone/AppNavSidebar';
 import AppRoutes from '~/app/AppRoutes';
 import { AppContext } from '~/app/context/AppContext';
+import { CustomThemeProvider } from '~/app/context/ThemeContext';
 import { ModelRegistrySelectorContextProvider } from '~/app/context/ModelRegistrySelectorContext';
 import { TransferJobNotificationsProvider } from '~/app/context/TransferJobNotificationsContext';
 
@@ -95,32 +96,34 @@ const App: React.FC = () => {
       <Spinner />
     </Bullseye>
   ) : (
-    <AppContext.Provider value={contextValue}>
-      <TransferJobNotificationsProvider>
-        <Page
-          mainContainerId="primary-app-container"
-          masthead={
-            isStandalone ? (
-              <NavBar
-                username={username}
-                onLogout={() => {
-                  logout().then(() => window.location.reload());
-                }}
-              />
-            ) : (
-              ''
-            )
-          }
-          isManagedSidebar={isStandalone}
-          sidebar={isStandalone ? <AppNavSidebar /> : sidebar}
-        >
-          <ModelRegistrySelectorContextProvider>
-            <AppRoutes />
-          </ModelRegistrySelectorContextProvider>
-          <ToastNotifications />
-        </Page>
-      </TransferJobNotificationsProvider>
-    </AppContext.Provider>
+    <CustomThemeProvider>
+      <AppContext.Provider value={contextValue}>
+        <TransferJobNotificationsProvider>
+          <Page
+            mainContainerId="primary-app-container"
+            masthead={
+              isStandalone ? (
+                <NavBar
+                  username={username}
+                  onLogout={() => {
+                    logout().then(() => window.location.reload());
+                  }}
+                />
+              ) : (
+                ''
+              )
+            }
+            isManagedSidebar={isStandalone}
+            sidebar={isStandalone ? <AppNavSidebar /> : sidebar}
+          >
+            <ModelRegistrySelectorContextProvider>
+              <AppRoutes />
+            </ModelRegistrySelectorContextProvider>
+            <ToastNotifications />
+          </Page>
+        </TransferJobNotificationsProvider>
+      </AppContext.Provider>
+    </CustomThemeProvider>
   );
 };
 
