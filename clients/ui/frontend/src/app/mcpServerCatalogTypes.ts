@@ -107,6 +107,24 @@ export type McpRuntimeMetadata = {
   capabilities?: McpRuntimeMetadataCapabilities;
   mcpPath?: string;
   prerequisites?: McpPrerequisites;
+  storage?: McpStorageMount[];
+};
+
+export type McpStoragePermissions = 'ReadOnly' | 'ReadWrite';
+
+export type McpStorageSourceType = 'EmptyDir' | 'ConfigMap' | 'Secret';
+
+export type McpStorageMount = {
+  path: string;
+  permissions?: McpStoragePermissions;
+  source: McpStorageSource;
+};
+
+export type McpStorageSource = {
+  type: McpStorageSourceType;
+  emptyDir?: Record<string, unknown>;
+  configMap?: Record<string, unknown>;
+  secret?: Record<string, unknown>;
 };
 
 export type McpToolParameter = {

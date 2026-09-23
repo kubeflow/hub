@@ -3247,6 +3247,53 @@ components:
           example: /mcp
         prerequisites:
           $ref: "#/components/schemas/McpPrerequisites"
+        storage:
+          type: array
+          description: |-
+            Storage mounts applied to the generated MCPServer's spec.config.storage.
+            EmptyDir mounts provide writable scratch space while the container
+            root filesystem stays read-only.
+          items:
+            $ref: "#/components/schemas/McpStorageMount"
+    McpStorageMount:
+      type: object
+      required:
+        - path
+        - source
+      properties:
+        path:
+          type: string
+          description: Absolute mount path inside the container.
+          example: /tmp
+        permissions:
+          type: string
+          enum: [ReadOnly, ReadWrite]
+          description: Mount permissions. Defaults to ReadOnly when unset.
+          example: ReadWrite
+        source:
+          $ref: "#/components/schemas/McpStorageSource"
+    McpStorageSource:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum: [EmptyDir, ConfigMap, Secret]
+          description: Volume source type for the mount.
+          example: EmptyDir
+        emptyDir:
+          type: object
+          additionalProperties: true
+          description: EmptyDir volume source; use {} for defaults.
+        configMap:
+          type: object
+          additionalProperties: true
+          description: ConfigMap volume source.
+        secret:
+          type: object
+          additionalProperties: true
+          description: Secret volume source.
     McpServiceAccountRequirement:
       type: object
       properties:

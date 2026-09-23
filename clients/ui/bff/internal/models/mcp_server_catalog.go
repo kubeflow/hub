@@ -1,9 +1,6 @@
 package models
 
-import (
-	"github.com/kubeflow/hub/pkg/openapi"
-	corev1 "k8s.io/api/core/v1"
-)
+import "github.com/kubeflow/hub/pkg/openapi"
 
 type McpDeploymentMode string
 
@@ -135,18 +132,35 @@ type McpRuntimeMetadata struct {
 	Storage                      []McpStorageMount                  `json:"storage,omitempty"`
 }
 
-// McpStorageMount matches an MCPServer spec.config.storage entry.
+type McpStoragePermissions string
+
+const (
+	McpStoragePermissionsReadOnly  McpStoragePermissions = "ReadOnly"
+	McpStoragePermissionsReadWrite McpStoragePermissions = "ReadWrite"
+)
+
+type McpStorageSourceType string
+
+const (
+	McpStorageSourceTypeEmptyDir  McpStorageSourceType = "EmptyDir"
+	McpStorageSourceTypeConfigMap McpStorageSourceType = "ConfigMap"
+	McpStorageSourceTypeSecret    McpStorageSourceType = "Secret"
+)
+
+// McpStorageMount describes a catalog storage mount for an MCPServer.
 type McpStorageMount struct {
-	Path        string           `json:"path"`
-	Permissions string           `json:"permissions,omitempty"`
-	Source      McpStorageSource `json:"source"`
+	Path        string                 `json:"path"`
+	Permissions *McpStoragePermissions `json:"permissions,omitempty"`
+	Source      McpStorageSource       `json:"source"`
 }
 
+// McpStorageSource preserves free-form catalog volume options. Pointers retain
+// explicit empty objects (such as emptyDir: {}) while omitting absent options.
 type McpStorageSource struct {
-	Type      string                        `json:"type"`
-	EmptyDir  *corev1.EmptyDirVolumeSource  `json:"emptyDir,omitempty"`
-	ConfigMap *corev1.ConfigMapVolumeSource `json:"configMap,omitempty"`
-	Secret    *corev1.SecretVolumeSource    `json:"secret,omitempty"`
+	Type      McpStorageSourceType    `json:"type"`
+	EmptyDir  *map[string]interface{} `json:"emptyDir,omitempty"`
+	ConfigMap *map[string]interface{} `json:"configMap,omitempty"`
+	Secret    *map[string]interface{} `json:"secret,omitempty"`
 }
 
 type McpToolParameter struct {

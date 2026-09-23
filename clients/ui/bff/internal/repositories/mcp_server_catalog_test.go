@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"encoding/json"
 	"errors"
 	"net/url"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"github.com/kubeflow/hub/ui/bff/internal/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetAllMcpServers_Success(t *testing.T) {
@@ -123,6 +125,35 @@ func TestGetMcpServer_Success(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.Equal(t, "1", result.ID)
 	assert.Equal(t, "Test MCP Server", result.Name)
+	mockClient.AssertExpectations(t)
+}
+
+func TestGetMcpServer_PreservesStorage(t *testing.T) {
+	mockClient := &mocks.MockHTTPClient{}
+	responseJSON := `{
+		"id": "1",
+		"name": "Test MCP Server",
+		"toolCount": 0,
+		"runtimeMetadata": {
+			"storage": [
+				{"path": "/tmp", "source": {"type": "EmptyDir", "emptyDir": {}}},
+				{"path": "/cache", "permissions": "ReadWrite", "source": {
+					"type": "EmptyDir",
+					"emptyDir": {"sizeLimit": "1.5Gi", "futureOption": {"enabled": true}}
+				}}
+			]
+		}
+	}`
+	mockClient.On("GET", "/mcp_servers/server-1").Return([]byte(responseJSON), nil)
+
+	repo := McpServerCatalog{}
+	result, err := repo.GetMcpServer(mockClient, "server-1", url.Values{})
+	require.NoError(t, err)
+
+	// The BFF must preserve catalog volume options when returning them to clients.
+	data, err := json.Marshal(result)
+	require.NoError(t, err)
+	assert.JSONEq(t, responseJSON, string(data))
 	mockClient.AssertExpectations(t)
 }
 
