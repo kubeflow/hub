@@ -5,10 +5,10 @@ metadata:
   name: my-s3-credentials
   namespace: default
 stringData:
-  AWS_ACCESS_KEY_ID: minioadmin
-  AWS_SECRET_ACCESS_KEY: minioadmin
+  AWS_ACCESS_KEY_ID: seaweedfsadmin
+  AWS_SECRET_ACCESS_KEY: seaweedfsadmin
   AWS_DEFAULT_REGION: us-east-1
-  AWS_S3_ENDPOINT: http://minio.minio.svc.cluster.local:9000
+  AWS_S3_ENDPOINT: http://seaweedfs.seaweedfs.svc.cluster.local:9000
   AWS_S3_BUCKET: default
 ---
 apiVersion: v1
@@ -93,7 +93,7 @@ spec:
             - name: HTTPS_PROXY
               value: ""
             - name: NO_PROXY
-              value: "minio.minio.svc.cluster.local,*.svc.cluster.local"
+              value: "seaweedfs.seaweedfs.svc.cluster.local,*.svc.cluster.local"
             # ---- Source ----------
             - name: MODEL_SYNC_SOURCE_TYPE
               value: "s3"

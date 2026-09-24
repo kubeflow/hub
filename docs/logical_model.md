@@ -274,7 +274,7 @@ curl --silent -X 'GET' \
           "string_value": "mybucket"
         },
         "AWS_S3_ENDPOINT": {
-          "string_value": "https://minio-..."
+          "string_value": "https://seaweedfs-..."
         }
       },
       "description": "used for demo purposes",
@@ -328,7 +328,7 @@ model = registry.register_model(
     storage_key="aws-connection-mybucket",
     storage_path="v1.nb20231222141832",
     metadata={
-        "AWS_S3_ENDPOINT": "https://minio-...",
+        "AWS_S3_ENDPOINT": "https://seaweedfs-...",
         "AWS_S3_BUCKET": "mybucket",
         "AWS_DEFAULT_REGION": "us-east-1",
     }

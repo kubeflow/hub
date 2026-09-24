@@ -29,14 +29,14 @@ deploy-latest-mr:
 	@curl -sf http://localhost:8080/api/model_registry/v1/registered_models > /dev/null 2>&1 || \
 		(echo "ERROR: model-registry not reachable on localhost:8080 after 30s"; exit 1)
 
-.PHONY: deploy-test-minio
-deploy-test-minio:
-	cd ../../ && ./scripts/deploy_minio_on_kind.sh
-	kubectl port-forward -n minio svc/minio 9000:9000 > /dev/null 2>&1 & echo $$! >> .port-forwards.pid
-	@echo "Waiting for minio port-forward (9000)..."
-	@for i in $$(seq 1 30); do curl -sf http://localhost:9000/minio/health/live > /dev/null 2>&1 && break || sleep 1; done
-	@curl -sf http://localhost:9000/minio/health/live > /dev/null 2>&1 || \
-		(echo "ERROR: minio not reachable on localhost:9000 after 30s"; exit 1)
+.PHONY: deploy-test-seaweedfs
+deploy-test-seaweedfs:
+	cd ../../ && ./scripts/deploy_seaweedfs_on_kind.sh
+	kubectl port-forward -n seaweedfs svc/seaweedfs 9000:9000 > /dev/null 2>&1 & echo $$! >> .port-forwards.pid
+	@echo "Waiting for SeaweedFS port-forward (9000)..."
+	@for i in $$(seq 1 30); do curl -sf http://localhost:9000/readyz > /dev/null 2>&1 && break || sleep 1; done
+	@curl -sf http://localhost:9000/readyz > /dev/null 2>&1 || \
+		(echo "ERROR: SeaweedFS not reachable on localhost:9000 after 30s"; exit 1)
 
 .PHONY: deploy-local-registry
 deploy-local-registry:
@@ -48,28 +48,28 @@ deploy-local-registry:
 		(echo "ERROR: local registry not reachable on localhost:5001 after 30s"; exit 1)
 
 .PHONY: test-e2e
-test-e2e: deploy-latest-mr deploy-local-registry deploy-test-minio
+test-e2e: deploy-latest-mr deploy-local-registry deploy-test-seaweedfs
 	@echo "Starting test-e2e"
 	-$(MAKE) test-e2e-run; STATUS=$$?
 	$(MAKE) test-e2e-cleanup
 	@exit $$STATUS
 
 .PHONY: test-fuzz
-test-fuzz: deploy-latest-mr deploy-local-registry deploy-test-minio
+test-fuzz: deploy-latest-mr deploy-local-registry deploy-test-seaweedfs
 	@echo "Cleaning database before fuzz tests..."
 	cd ../../ && ./scripts/cleanup.sh
 	poetry install --all-extras
 	@echo "Starting stateless fuzz tests with parallel execution"; \
-	set -a; . ../../scripts/manifests/minio/.env; set +a; \
+	set -a; . ../../scripts/manifests/seaweedfs/.env; set +a; \
 	poetry run pytest tests/fuzz_api/model_registry/test_mr_stateless.py tests/fuzz_api/model_catalog/test_catalog_stateless.py --fuzz -n auto -v --hypothesis-show-statistics; \
 	STATELESS=$$?; \
 	echo "Cleaning database before stateful fuzz tests..."; \
 	cd ../../ && ./scripts/cleanup.sh && cd clients/python; \
 	echo "Running stateful fuzz tests sequentially"; \
-	set -a; . ../../scripts/manifests/minio/.env; set +a; \
+	set -a; . ../../scripts/manifests/seaweedfs/.env; set +a; \
 	poetry run pytest tests/fuzz_api/model_registry/test_mr_stateful.py tests/fuzz_api/model_catalog/test_catalog_stateful.py --fuzz -v --hypothesis-show-statistics; \
 	STATEFUL=$$?; \
-	rm -f ../../scripts/manifests/minio/.env; \
+	rm -f ../../scripts/manifests/seaweedfs/.env; \
 	$(MAKE) test-e2e-cleanup; \
 	if [ $$STATELESS -ne 0 ] || [ $$STATEFUL -ne 0 ]; then \
 		echo "Fuzz tests failed (stateless=$$STATELESS, stateful=$$STATEFUL)"; exit 1; \
@@ -80,9 +80,9 @@ test-e2e-run:
 	@echo "Ensuring all extras are installed..."
 	poetry install --all-extras
 	@echo "Running tests..."
-	@set -a; . ../../scripts/manifests/minio/.env; set +a; \
+	@set -a; . ../../scripts/manifests/seaweedfs/.env; set +a; \
 	poetry run pytest --e2e -s -rA --html=report.html --self-contained-html
-	@rm -f ../../scripts/manifests/minio/.env
+	@rm -f ../../scripts/manifests/seaweedfs/.env
 
 .PHONY: test-e2e-cleanup
 test-e2e-cleanup:
@@ -94,10 +94,10 @@ test-e2e-cleanup:
 		rm -f .port-forwards.pid; \
 	fi
 
-.PHONY: undeploy-minio
-undeploy-minio:
-	@echo "Undeploy Minio..."
-	cd ../../ && ./scripts/undeploy_minio.sh
+.PHONY: undeploy-seaweedfs
+undeploy-seaweedfs:
+	@echo "Undeploy SeaweedFS..."
+	cd ../../ && ./scripts/undeploy_seaweedfs.sh
 
 .PHONY: undeploy-local-kind-registry
 undeploy-local-kind-registry:

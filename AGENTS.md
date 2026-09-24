@@ -160,7 +160,7 @@ make test                         # Run unit tests (pytest)
 make lint                         # Run ruff + mypy
 ```
 
-**E2E tests** (fully automated — creates a KinD cluster, builds and deploys the server image, Minio, OCI registry, runs tests, then cleans up):
+**E2E tests** (fully automated — creates a KinD cluster, builds and deploys the server image, SeaweedFS, OCI registry, runs tests, then cleans up):
 
 ```bash
 cd clients/python
@@ -172,7 +172,7 @@ If you need to manage the environment manually:
 ```bash
 cd clients/python
 make deploy-latest-mr             # Build image, create KinD cluster, deploy MR, start port-forward
-make deploy-test-minio            # Deploy Minio for storage tests
+make deploy-test-seaweedfs        # Deploy SeaweedFS for storage tests
 make deploy-local-registry        # Deploy local OCI registry
 make test-e2e-run                 # Run E2E tests only (infra must already be running)
 make test-e2e-cleanup             # Cleanup DB and stop port-forwards

@@ -21,11 +21,10 @@ deploy-latest-mr:
 # TODO RHOAIENG-30453 align consistency ./scripts/deploy_on_kind.sh uses IMG with :tag, Vs, Makefile(s) and ci/GHA we use IMG without trailing :tag
 	kubectl port-forward -n kubeflow services/model-registry-service 8080:8080 & echo $$! >> .port-forwards.pid
 
-.PHONY: deploy-test-minio
-deploy-test-minio:
-	cd ../../ && ./scripts/deploy_minio_on_kind.sh
-	kubectl port-forward -n minio svc/minio 9000:9000 & echo $$! >> .port-forwards.pid
-	kubectl port-forward -n minio svc/minio 9001:9001 & echo $$! >> .port-forwards.pid
+.PHONY: deploy-test-seaweedfs
+deploy-test-seaweedfs:
+	cd ../../ && ./scripts/deploy_seaweedfs_on_kind.sh
+	kubectl port-forward -n seaweedfs svc/seaweedfs 9000:9000 & echo $$! >> .port-forwards.pid
 
 .PHONY: deploy-local-registry
 deploy-local-registry:
@@ -46,7 +45,7 @@ test-with-cov:
 	poetry run pytest --cov=job --cov-report=term-missing tests/
 
 .PHONY: test-e2e
-test-e2e: deploy-latest-mr deploy-local-registry deploy-test-minio dev-load-image
+test-e2e: deploy-latest-mr deploy-local-registry deploy-test-seaweedfs dev-load-image
 	@echo "Starting test-e2e"
 	@set -e; \
 	$(MAKE) test-e2e-run || TEST_STATUS=$$?; \
@@ -73,7 +72,7 @@ test-e2e-cleanup:
 	fi
 
 .PHONY: test-integration
-test-integration: deploy-latest-mr deploy-local-registry deploy-test-minio
+test-integration: deploy-latest-mr deploy-local-registry deploy-test-seaweedfs
 	@echo "Starting test-integration"
 	@set -e; \
 	$(MAKE) test-integration-run || TEST_STATUS=$$?; \

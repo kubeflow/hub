@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: seaweedfs-secret
+type: Opaque
+stringData:
+  AWS_ACCESS_KEY_ID: seaweedfsadmin
+  AWS_SECRET_ACCESS_KEY: seaweedfsadmin
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: seaweedfs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: seaweedfs
+  template:
+    metadata:
+      labels:
+        app: seaweedfs
+    spec:
+      containers:
+        - name: seaweedfs
+          image: chrislusf/seaweedfs:4.47
+          args:
+            - mini
+            - -dir=/data
+            - -s3.port=9000
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: seaweedfs-secret
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: seaweedfs-secret
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: S3_BUCKET
+              value: default
+          ports:
+            - containerPort: 9000
+              name: s3
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: s3
+            periodSeconds: 5
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: seaweedfs
+spec:
+  selector:
+    app: seaweedfs
+  ports:
+    - port: 9000
+      targetPort: s3
+      protocol: TCP
+      name: s3

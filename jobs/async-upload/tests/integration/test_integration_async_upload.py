@@ -350,29 +350,29 @@ def validate_termination_message(
     return result
 
 
-def upload_to_minio(file_path: str, bucket: str, key: str) -> None:
-    """Upload file to MinIO using boto3."""
+def upload_to_seaweedfs(file_path: str, bucket: str, key: str) -> None:
+    """Upload a test file to SeaweedFS using boto3."""
     import boto3
     from botocore.exceptions import ClientError
 
-    # MinIO credentials (hardcoded for this test)
-    access_key = "minioadmin"
-    secret_key = "minioadmin"
+    # Credentials match the local SeaweedFS test deployment.
+    access_key = "seaweedfsadmin"
+    secret_key = "seaweedfsadmin"
 
-    # Create S3 client configured for MinIO
+    # Create an S3 client for the local SeaweedFS port-forward.
     s3_client = boto3.client(
         "s3",
         endpoint_url="http://localhost:9000",
         aws_access_key_id=access_key,
         aws_secret_access_key=secret_key,
-        region_name="us-east-1",  # MinIO doesn't care about region but boto3 requires it
+        region_name="us-east-1",
     )
 
     try:
         # Upload the file
         s3_client.upload_file(file_path, bucket, key)
     except ClientError as e:
-        raise Exception(f"Failed to upload to MinIO: {e}")
+        raise Exception(f"Failed to upload to SeaweedFS: {e}")
 
 
 def _setup_s3(tmp_path):
@@ -389,10 +389,10 @@ def _setup_s3(tmp_path):
     with open(model_filepath, "wb") as f:
         f.write(response.content)
 
-    print("Uploading to MinIO...")
+    print("Uploading to SeaweedFS...")
     bucket = "default"
     key = "my-model/mnist-8.onnx"
-    upload_to_minio(str(model_filepath), bucket, key)
+    upload_to_seaweedfs(str(model_filepath), bucket, key)
 
 
 def _create_configmap_data(intent_type: str, model_name: str) -> dict[str, str]:

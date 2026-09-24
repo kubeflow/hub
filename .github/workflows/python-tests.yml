@@ -165,17 +165,17 @@ jobs:
         env:
           IMG: "${{ env.IMG_REGISTRY }}/${{ env.IMG_ORG }}/${{ env.IMG_REPO }}:${{ steps.tags.outputs.tag }}"
         run: ./scripts/deploy_on_kind.sh
-      - name: Deploy Minio using manifests
+      - name: Deploy SeaweedFS using manifests
         run: |
-          ./scripts/deploy_minio_on_kind.sh
-          cat ./scripts/manifests/minio/.env >> $GITHUB_ENV
+          ./scripts/deploy_seaweedfs_on_kind.sh
+          cat ./scripts/manifests/seaweedfs/.env >> $GITHUB_ENV
       - name: Deploy OCI Registry using manifests
         run: ./scripts/deploy_local_kind_registry.sh
       - name: Nox test end-to-end
         working-directory: clients/python
         run: |
           kubectl port-forward -n kubeflow service/model-registry-service 8080:8080 &
-          kubectl port-forward -n minio svc/minio 9000:9000 &
+          kubectl port-forward -n seaweedfs svc/seaweedfs 9000:9000 &
           kubectl port-forward service/distribution-registry-test-service -n local-oci-registry-ns 5001:5001 &
           sleep 2
           nox --python=${{ matrix.python }} --session=e2e -- --cov-report=xml
@@ -192,7 +192,7 @@ jobs:
         working-directory: clients/python
         run: |
           kubectl port-forward -n kubeflow service/model-registry-service 8080:8080 > /dev/null 2>&1 &
-          kubectl port-forward -n minio svc/minio 9000:9000 > /dev/null 2>&1 &
+          kubectl port-forward -n seaweedfs svc/seaweedfs 9000:9000 > /dev/null 2>&1 &
           kubectl port-forward service/distribution-registry-test-service -n local-oci-registry-ns 5001:5001 > /dev/null 2>&1 &
           sleep 2
           nox --python=${{ matrix.python }} --session=fuzz

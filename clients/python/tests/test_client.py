@@ -1041,7 +1041,7 @@ async def test_register_model_with_s3_data_connection(client: ModelRegistry):
     data_connection_name = "aws-connection-my-data-connection"
     s3_bucket = "my-bucket"
     s3_path = "my-path"
-    s3_endpoint = "https://minio-api.acme.org"
+    s3_endpoint = "https://seaweedfs-api.acme.org"
     s3_region = "us-east-1"
 
     # Create the S3 URI using the utility function
