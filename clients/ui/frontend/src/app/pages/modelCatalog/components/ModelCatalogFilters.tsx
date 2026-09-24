@@ -120,7 +120,7 @@ const ModelCatalogFilters: React.FC = () => {
             <Divider className="pf-v6-u-my-sm" />
             <SidebarSliderFilter
               filterKey={ModelCatalogNumberFilterKey.IMAGE_SIZE}
-              label="Container size"
+              label="Container image size"
               suffix="GB"
               fallbackMin={4}
               fallbackMax={500}

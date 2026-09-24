@@ -630,7 +630,7 @@ export const MODEL_CATALOG_FILTER_CATEGORY_NAMES: Record<ModelCatalogFilterKey, 
   [ModelCatalogNumberFilterKey.MAX_RPS]: 'Max RPS',
   [ModelCatalogNumberFilterKey.COLD_START_LOAD_TIME]: 'Cold start load time',
   [ModelCatalogNumberFilterKey.MIN_VRAM]: 'Minimum vRAM',
-  [ModelCatalogNumberFilterKey.IMAGE_SIZE]: 'Container size',
+  [ModelCatalogNumberFilterKey.IMAGE_SIZE]: 'Container image size',
   // Latency field names - all use "Latency" as category name
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   ...(Object.fromEntries(ALL_LATENCY_FILTER_KEYS.map((field) => [field, 'Latency'])) as Record<
@@ -644,7 +644,7 @@ export const MODEL_CATALOG_FILTER_CHIP_PREFIXES = {
   MAX_RPS: 'Max RPS:',
   COLD_START_LOAD_TIME: 'Cold start load time: ≤',
   MIN_VRAM: 'Minimum vRAM: ≤',
-  IMAGE_SIZE: 'Container size: ≤',
+  IMAGE_SIZE: 'Container image size: ≤',
   LATENCY_METRIC: 'Metric:',
   LATENCY_PERCENTILE: 'Percentile:',
   LATENCY_THRESHOLD: 'Under',
