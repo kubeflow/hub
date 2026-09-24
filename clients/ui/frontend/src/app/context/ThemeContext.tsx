@@ -28,11 +28,16 @@ export const CustomThemeProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return 'system';
   });
 
-  const [systemPrefersDark, setSystemPrefersDark] = React.useState<boolean>(
-    () => window.matchMedia('(prefers-color-scheme: dark)').matches,
+  const [systemPrefersDark, setSystemPrefersDark] = React.useState<boolean>(() =>
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      ? window.matchMedia('(prefers-color-scheme: dark)').matches
+      : false,
   );
 
   React.useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return undefined;
+    }
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = (e: MediaQueryListEvent) => {
       setSystemPrefersDark(e.matches);
