@@ -8,6 +8,7 @@ import {
   useModularArchContext,
 } from 'mod-arch-core';
 import { useThemeContext } from 'mod-arch-kubeflow';
+import { CustomThemeProvider } from '~/app/context/ThemeContext';
 import NavBar from '~/app/standalone/NavBar';
 
 // Mock the utilities
@@ -78,7 +79,11 @@ describe('NavBar mandatory namespace functionality', () => {
       initializationError: undefined,
     } as ReturnType<typeof useNamespaceSelector>);
 
-    render(<NavBar onLogout={jest.fn()} />);
+    render(
+      <CustomThemeProvider>
+        <NavBar onLogout={jest.fn()} />
+      </CustomThemeProvider>,
+    );
 
     const namespaceButton = await screen.findByText(mandatoryNamespace);
     expect(namespaceButton).toBeInTheDocument();
@@ -108,7 +113,11 @@ describe('NavBar mandatory namespace functionality', () => {
       initializationError: undefined,
     } as ReturnType<typeof useNamespaceSelector>);
 
-    render(<NavBar onLogout={jest.fn()} />);
+    render(
+      <CustomThemeProvider>
+        <NavBar onLogout={jest.fn()} />
+      </CustomThemeProvider>,
+    );
 
     // Check that the namespace selector is present and enabled
     const namespaceButton = screen.getByText('namespace-1');
@@ -117,5 +126,16 @@ describe('NavBar mandatory namespace functionality', () => {
     // The MenuToggle button should be enabled (not disabled)
     const menuToggle = namespaceButton.closest('button');
     expect(menuToggle).not.toBeDisabled();
+  });
+
+  it('should render theme toggle button', () => {
+    render(
+      <CustomThemeProvider>
+        <NavBar onLogout={jest.fn()} />
+      </CustomThemeProvider>,
+    );
+
+    const themeToggle = screen.getByRole('button', { name: /toggle dark mode/i });
+    expect(themeToggle).toBeInTheDocument();
   });
 });
