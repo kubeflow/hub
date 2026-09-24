@@ -1,10 +1,20 @@
 package api
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"log/slog"
 	"net/http"
+	"net/http/httptest"
 
+	"github.com/julienschmidt/httprouter"
+	"github.com/kubeflow/hub/ui/bff/internal/constants"
+	"github.com/kubeflow/hub/ui/bff/internal/integrations/httpclient"
 	"github.com/kubeflow/hub/ui/bff/internal/integrations/kubernetes"
+	"github.com/kubeflow/hub/ui/bff/internal/mocks"
 	"github.com/kubeflow/hub/ui/bff/internal/models"
+	"github.com/kubeflow/hub/ui/bff/internal/repositories"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -267,6 +277,56 @@ var _ = Describe("TestMcpCatalogSettings", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(rs.StatusCode).To(Equal(http.StatusForbidden))
 		})
+
+		It("PATCH clears status once when YAML changes", func() {
+			mcpHandlerUpdateAndAssertStatus(
+				"mcp_handler_yaml_changed",
+				true,
+				models.McpCatalogSourceConfigPayload{Yaml: mcpHandlerStringPtr("servers:\n  - name: changed")},
+				1,
+				http.StatusOK,
+			)
+		})
+
+		It("PATCH does not clear status when YAML is unchanged", func() {
+			mcpHandlerUpdateAndAssertStatus(
+				"mcp_handler_yaml_unchanged",
+				true,
+				models.McpCatalogSourceConfigPayload{Yaml: mcpHandlerStringPtr("servers: []")},
+				0,
+				http.StatusOK,
+			)
+		})
+
+		It("PATCH clears status when enabling a disabled source", func() {
+			mcpHandlerUpdateAndAssertStatus(
+				"mcp_handler_enabled_false_to_true",
+				false,
+				models.McpCatalogSourceConfigPayload{Enabled: mcpHandlerBoolPtr(true)},
+				1,
+				http.StatusOK,
+			)
+		})
+
+		It("PATCH does not clear status when disabling an enabled source", func() {
+			mcpHandlerUpdateAndAssertStatus(
+				"mcp_handler_enabled_true_to_false",
+				true,
+				models.McpCatalogSourceConfigPayload{Enabled: mcpHandlerBoolPtr(false)},
+				0,
+				http.StatusOK,
+			)
+		})
+
+		It("PATCH does not clear status when the update fails", func() {
+			mcpHandlerUpdateAndAssertStatus(
+				"mcp_handler_update_failure",
+				true,
+				models.McpCatalogSourceConfigPayload{Type: "unsupported"},
+				0,
+				http.StatusForbidden,
+			)
+		})
 	})
 
 	Context("deleting an MCP source config", func() {
@@ -336,4 +396,66 @@ func mcpHandlerBoolPtr(b bool) *bool {
 
 func mcpHandlerStringPtr(s string) *string {
 	return &s
+}
+
+func mcpHandlerUpdateAndAssertStatus(
+	sourceID string,
+	initialEnabled bool,
+	update models.McpCatalogSourceConfigPayload,
+	expectedDeleteCount int,
+	expectedStatus int,
+) {
+	ctx := context.Background()
+	serverCalls := 0
+	var unexpectedRequest string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		expectedPath := "/sources/" + sourceID + "/status"
+		if expectedDeleteCount == 0 || r.Method != http.MethodDelete || r.URL.Path != expectedPath {
+			unexpectedRequest = r.Method + " " + r.URL.Path
+			http.Error(w, "unexpected downstream request", http.StatusInternalServerError)
+			return
+		}
+
+		serverCalls++
+		if serverCalls > 1 {
+			http.Error(w, "duplicate downstream request", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	modelRegistryClient, err := mocks.NewModelRegistryClient(nil)
+	Expect(err).NotTo(HaveOccurred())
+	modelCatalogClient, err := mocks.NewModelCatalogClientMock(nil)
+	Expect(err).NotTo(HaveOccurred())
+	app := App{
+		repositories:            repositories.NewRepositories(modelRegistryClient, modelCatalogClient),
+		kubernetesClientFactory: kubernetesMockedStaticClientFactory,
+		logger:                  slog.Default(),
+	}
+	k8sClient, err := kubernetesMockedStaticClientFactory.GetClient(ctx)
+	Expect(err).NotTo(HaveOccurred())
+	_, err = app.repositories.McpCatalogSettingsRepository.CreateMcpCatalogSourceConfig(ctx, k8sClient, "kubeflow", models.McpCatalogSourceConfigPayload{
+		Id:      sourceID,
+		Name:    "Display name for " + sourceID,
+		Type:    "yaml",
+		Enabled: mcpHandlerBoolPtr(initialEnabled),
+		Yaml:    mcpHandlerStringPtr("servers: []"),
+	})
+	Expect(err).NotTo(HaveOccurred())
+
+	statusClient, err := httpclient.NewHTTPClient(slog.Default(), server.URL, nil, false, nil)
+	Expect(err).NotTo(HaveOccurred())
+	requestBody, err := json.Marshal(McpCatalogSourcePayloadEnvelope{Data: &update})
+	Expect(err).NotTo(HaveOccurred())
+	request := httptest.NewRequest(http.MethodPatch, "/", bytes.NewReader(requestBody))
+	request = request.WithContext(context.WithValue(context.WithValue(ctx, constants.NamespaceHeaderParameterKey, "kubeflow"), constants.ModelCatalogStatusHttpClientKey, statusClient))
+	response := httptest.NewRecorder()
+
+	app.UpdateMcpCatalogSourceConfigHandler(response, request, httprouter.Params{{Key: CatalogSourceId, Value: sourceID}})
+
+	Expect(response.Code).To(Equal(expectedStatus))
+	Expect(unexpectedRequest).To(BeEmpty())
+	Expect(serverCalls).To(Equal(expectedDeleteCount))
 }

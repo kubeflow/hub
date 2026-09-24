@@ -39,3 +39,8 @@ func (m *MockHTTPClient) PATCH(url string, body io.Reader) ([]byte, error) {
 	args := m.Called(url, body)
 	return args.Get(0).([]byte), args.Error(1)
 }
+
+func (m *MockHTTPClient) DELETE(url string) error {
+	args := m.Called(url)
+	return args.Error(0)
+}
