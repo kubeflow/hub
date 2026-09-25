@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/kubeflow/hub/pkg/openapi-v1"
+	openapiv1 "github.com/kubeflow/hub/pkg/openapi-v1"
 	"github.com/kubeflow/hub/ui/bff/internal/integrations/kubernetes"
 	"github.com/kubeflow/hub/ui/bff/internal/mocks"
 	. "github.com/onsi/ginkgo/v2"
@@ -50,7 +50,7 @@ var _ = Describe("TestGetModelVersionHandler", func() {
 			requestIdentity := kubernetes.RequestIdentity{
 				UserID: "user@example.com",
 			}
-			body := ModelVersionEnvelope{Data: openapi.NewModelVersion("Model One", "1")}
+			body := ModelVersionEnvelope{Data: openapiv1.NewModelVersion("Model One", "1")}
 			actual, rs, err := setupApiTest[ModelVersionEnvelope](http.MethodPost, "/api/v1/model_registry/model-registry/model_versions?namespace=kubeflow", body, kubernetesMockedStaticClientFactory, requestIdentity, "kubeflow")
 			Expect(err).NotTo(HaveOccurred())
 
@@ -65,8 +65,8 @@ var _ = Describe("TestGetModelVersionHandler", func() {
 			data := mocks.GetModelVersionMocks()[0]
 			expected := ModelVersionEnvelope{Data: &data}
 
-			reqData := openapi.ModelVersionUpdate{
-				Description: openapi.PtrString("New description"),
+			reqData := openapiv1.ModelVersionUpdate{
+				Description: openapiv1.PtrString("New description"),
 			}
 			body := ModelVersionUpdateEnvelope{Data: &reqData}
 			requestIdentity := kubernetes.RequestIdentity{
@@ -106,9 +106,9 @@ var _ = Describe("TestGetModelVersionHandler", func() {
 			requestIdentity := kubernetes.RequestIdentity{
 				UserID: "user@example.com",
 			}
-			artifact := openapi.ModelArtifact{
-				Name:         openapi.PtrString("Artifact One"),
-				ArtifactType: openapi.PtrString("ARTIFACT_TYPE_ONE"),
+			artifact := openapiv1.ModelArtifact{
+				Name:         openapiv1.PtrString("Artifact One"),
+				ArtifactType: openapiv1.PtrString("ARTIFACT_TYPE_ONE"),
 			}
 			body := ModelArtifactEnvelope{Data: &artifact}
 			actual, rs, err := setupApiTest[ModelArtifactEnvelope](http.MethodPost, "/api/v1/model_registry/model-registry/model_versions/1/artifacts?namespace=kubeflow", body, kubernetesMockedStaticClientFactory, requestIdentity, "kubeflow")
@@ -135,9 +135,9 @@ var _ = Describe("TestGetModelVersionHandler", func() {
 			Expect(rs.StatusCode).To(Equal(http.StatusForbidden))
 
 			// Test: POST /model_versions/1/artifacts
-			artifact := openapi.ModelArtifact{
-				Name:         openapi.PtrString("Artifact One"),
-				ArtifactType: openapi.PtrString("ARTIFACT_TYPE_ONE"),
+			artifact := openapiv1.ModelArtifact{
+				Name:         openapiv1.PtrString("Artifact One"),
+				ArtifactType: openapiv1.PtrString("ARTIFACT_TYPE_ONE"),
 			}
 			body := ModelArtifactEnvelope{Data: &artifact}
 			_, rs, err = setupApiTest[ModelArtifactEnvelope](http.MethodPost, "/api/v1/model_registry/model-registry/model_versions/1/artifacts?namespace=kubeflow", body, kubernetesMockedStaticClientFactory, wrongRequestIdentity, "kubeflow")
@@ -154,8 +154,8 @@ var _ = Describe("TestGetModelVersionHandler", func() {
 			Expect(rs.StatusCode).To(Equal(http.StatusForbidden))
 
 			// Test: PATCH /model_versions/1
-			reqData := openapi.ModelVersionUpdate{
-				Description: openapi.PtrString("New description"),
+			reqData := openapiv1.ModelVersionUpdate{
+				Description: openapiv1.PtrString("New description"),
 			}
 			body1 := ModelVersionUpdateEnvelope{Data: &reqData}
 			_, rs, err = setupApiTest[ModelVersionEnvelope](http.MethodPatch, "/api/v1/model_registry/model-registry/model_versions/1?namespace=kubeflow", body1, kubernetesMockedStaticClientFactory, wrongRequestIdentity, "kubeflow")
@@ -165,7 +165,7 @@ var _ = Describe("TestGetModelVersionHandler", func() {
 			Expect(rs.StatusCode).To(Equal(http.StatusForbidden))
 
 			// Test: POST /model_versions
-			body2 := ModelVersionEnvelope{Data: openapi.NewModelVersion("Model One", "1")}
+			body2 := ModelVersionEnvelope{Data: openapiv1.NewModelVersion("Model One", "1")}
 			_, rs, err = setupApiTest[ModelVersionEnvelope](http.MethodPost, "/api/v1/model_registry/model-registry/model_versions?namespace=kubeflow", body2, kubernetesMockedStaticClientFactory, wrongRequestIdentity, "kubeflow")
 			Expect(err).NotTo(HaveOccurred())
 			By("should return a 403 Forbidden response")

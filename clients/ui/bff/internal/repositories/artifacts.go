@@ -8,28 +8,28 @@ import (
 
 	"github.com/kubeflow/hub/ui/bff/internal/integrations/httpclient"
 
-	"github.com/kubeflow/hub/pkg/openapi-v1"
+	openapiv1 "github.com/kubeflow/hub/pkg/openapi-v1"
 )
 
 const artifactPath = "/artifacts"
 
 type ArtifactInterface interface {
-	GetAllArtifacts(client httpclient.HTTPClientInterface, pageValues url.Values) (*openapi.ArtifactList, error)
-	GetArtifact(client httpclient.HTTPClientInterface, id string) (*openapi.Artifact, error)
-	CreateArtifact(client httpclient.HTTPClientInterface, jsonData []byte) (*openapi.Artifact, error)
+	GetAllArtifacts(client httpclient.HTTPClientInterface, pageValues url.Values) (*openapiv1.ArtifactList, error)
+	GetArtifact(client httpclient.HTTPClientInterface, id string) (*openapiv1.Artifact, error)
+	CreateArtifact(client httpclient.HTTPClientInterface, jsonData []byte) (*openapiv1.Artifact, error)
 }
 
 type Artifact struct {
 	ArtifactInterface
 }
 
-func (a Artifact) GetAllArtifacts(client httpclient.HTTPClientInterface, pageValues url.Values) (*openapi.ArtifactList, error) {
+func (a Artifact) GetAllArtifacts(client httpclient.HTTPClientInterface, pageValues url.Values) (*openapiv1.ArtifactList, error) {
 	responseData, err := client.GET(UrlWithPageParams(artifactPath, pageValues))
 	if err != nil {
 		return nil, fmt.Errorf("error fetching artifacts: %w", err)
 	}
 
-	var artifacts openapi.ArtifactList
+	var artifacts openapiv1.ArtifactList
 	if err := json.Unmarshal(responseData, &artifacts); err != nil {
 		return nil, fmt.Errorf("error decoding response data: %w", err)
 	}
@@ -37,7 +37,7 @@ func (a Artifact) GetAllArtifacts(client httpclient.HTTPClientInterface, pageVal
 	return &artifacts, nil
 }
 
-func (a Artifact) GetArtifact(client httpclient.HTTPClientInterface, id string) (*openapi.Artifact, error) {
+func (a Artifact) GetArtifact(client httpclient.HTTPClientInterface, id string) (*openapiv1.Artifact, error) {
 	path, err := url.JoinPath(artifactPath, id)
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func (a Artifact) GetArtifact(client httpclient.HTTPClientInterface, id string) 
 		return nil, fmt.Errorf("error fetching artifacts: %w", err)
 	}
 
-	var artifact openapi.Artifact
+	var artifact openapiv1.Artifact
 	if err := json.Unmarshal(responseData, &artifact); err != nil {
 		return nil, fmt.Errorf("error decoding response data: %w", err)
 	}
@@ -56,14 +56,14 @@ func (a Artifact) GetArtifact(client httpclient.HTTPClientInterface, id string) 
 	return &artifact, nil
 }
 
-func (a Artifact) CreateArtifact(client httpclient.HTTPClientInterface, jsonData []byte) (*openapi.Artifact, error) {
+func (a Artifact) CreateArtifact(client httpclient.HTTPClientInterface, jsonData []byte) (*openapiv1.Artifact, error) {
 	responseData, err := client.POST(artifactPath, bytes.NewBuffer(jsonData))
 
 	if err != nil {
 		return nil, fmt.Errorf("error creating artifact: %w", err)
 	}
 
-	var artifact openapi.Artifact
+	var artifact openapiv1.Artifact
 	if err := json.Unmarshal(responseData, &artifact); err != nil {
 		return nil, fmt.Errorf("error decoding response data: %w", err)
 	}

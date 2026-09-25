@@ -9,11 +9,11 @@ import (
 	"github.com/kubeflow/hub/ui/bff/internal/integrations/httpclient"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/kubeflow/hub/pkg/openapi-v1"
+	openapiv1 "github.com/kubeflow/hub/pkg/openapi-v1"
 	"github.com/kubeflow/hub/ui/bff/internal/constants"
 )
 
-type ModelArtifactUpdateEnvelope Envelope[*openapi.ModelArtifactUpdate, None]
+type ModelArtifactUpdateEnvelope Envelope[*openapiv1.ModelArtifactUpdate, None]
 
 func (app *App) UpdateModelArtifactHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	client, ok := r.Context().Value(constants.ModelRegistryHttpClientKey).(httpclient.HTTPClientInterface)

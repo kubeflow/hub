@@ -7,18 +7,18 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/kubeflow/hub/pkg/openapi-v1"
+	openapiv1 "github.com/kubeflow/hub/pkg/openapi-v1"
 	"github.com/kubeflow/hub/ui/bff/internal/constants"
 	"github.com/kubeflow/hub/ui/bff/internal/integrations/httpclient"
 	"github.com/kubeflow/hub/ui/bff/internal/validation"
 )
 
-type ModelVersionEnvelope Envelope[*openapi.ModelVersion, None]
-type ModelVersionListEnvelope Envelope[*openapi.ModelVersionList, None]
-type ModelVersionUpdateEnvelope Envelope[*openapi.ModelVersionUpdate, None]
+type ModelVersionEnvelope Envelope[*openapiv1.ModelVersion, None]
+type ModelVersionListEnvelope Envelope[*openapiv1.ModelVersionList, None]
+type ModelVersionUpdateEnvelope Envelope[*openapiv1.ModelVersionUpdate, None]
 
-type ModelArtifactListEnvelope Envelope[*openapi.ModelArtifactList, None]
-type ModelArtifactEnvelope Envelope[*openapi.ModelArtifact, None]
+type ModelArtifactListEnvelope Envelope[*openapiv1.ModelArtifactList, None]
+type ModelArtifactEnvelope Envelope[*openapiv1.ModelArtifact, None]
 
 func (app *App) GetAllModelVersionHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	client, ok := r.Context().Value(constants.ModelRegistryHttpClientKey).(httpclient.HTTPClientInterface)
