@@ -61,8 +61,7 @@ const initIntercepts = ({
             : Array.from({ length: modelsPerCategory }, (_, i) =>
                 mockCatalogModel({
                   name: `${label.toLowerCase()}-model-${i + 1}`,
-                  // eslint-disable-next-line camelcase
-                  source_id: source.id,
+                  sourceId: source.id,
                 }),
               ),
         }),
@@ -91,8 +90,7 @@ const initIntercepts = ({
             : Array.from({ length: modelsPerCategory }, (_, i) =>
                 mockCatalogModel({
                   name: `custom-model-${i + 1}`,
-                  // eslint-disable-next-line camelcase
-                  source_id: sources.find((s) => s.labels.length === 0)?.id || 'custom-source',
+                  sourceId: sources.find((s) => s.labels.length === 0)?.id || 'custom-source',
                 }),
               ),
         }),

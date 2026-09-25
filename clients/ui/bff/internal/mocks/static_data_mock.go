@@ -10,13 +10,14 @@ import (
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/google/uuid"
 	"github.com/kubeflow/hub/pkg/openapi"
+	openapiv1 "github.com/kubeflow/hub/pkg/openapi-v1"
 	"github.com/kubeflow/hub/ui/bff/internal/constants"
 	"github.com/kubeflow/hub/ui/bff/internal/models"
 )
 
-func GetRegisteredModelMocks() []openapi.RegisteredModel {
-	model1 := openapi.RegisteredModel{
-		CustomProperties:         newCustomProperties(),
+func GetRegisteredModelMocks() []openapiv1.RegisteredModel {
+	model1 := openapiv1.RegisteredModel{
+		CustomProperties:         newCustomPropertiesV1(),
 		Name:                     "Model One",
 		Description:              stringToPointer("This model does things and stuff"),
 		ExternalId:               stringToPointer("934589798"),
@@ -24,11 +25,11 @@ func GetRegisteredModelMocks() []openapi.RegisteredModel {
 		CreateTimeSinceEpoch:     stringToPointer("1725282249921"),
 		LastUpdateTimeSinceEpoch: stringToPointer("1725282249921"),
 		Owner:                    stringToPointer("Sherlock Holmes"),
-		State:                    stateToPointer(openapi.REGISTEREDMODELSTATE_LIVE),
+		State:                    stateToPointer(openapiv1.REGISTEREDMODELSTATE_LIVE),
 	}
 
-	model2 := openapi.RegisteredModel{
-		CustomProperties:         newCustomProperties(),
+	model2 := openapiv1.RegisteredModel{
+		CustomProperties:         newCustomPropertiesV1(),
 		Name:                     "Model Two",
 		Description:              stringToPointer("This model does things and stuff"),
 		ExternalId:               stringToPointer("345235987"),
@@ -36,11 +37,11 @@ func GetRegisteredModelMocks() []openapi.RegisteredModel {
 		CreateTimeSinceEpoch:     stringToPointer("1725282249921"),
 		LastUpdateTimeSinceEpoch: stringToPointer("1725282249921"),
 		Owner:                    stringToPointer("John Watson"),
-		State:                    stateToPointer(openapi.REGISTEREDMODELSTATE_LIVE),
+		State:                    stateToPointer(openapiv1.REGISTEREDMODELSTATE_LIVE),
 	}
 
-	model3 := openapi.RegisteredModel{
-		CustomProperties:         newCustomProperties(),
+	model3 := openapiv1.RegisteredModel{
+		CustomProperties:         newCustomPropertiesV1(),
 		Name:                     "Model Three",
 		Description:              stringToPointer("This model does things and stuff"),
 		ExternalId:               stringToPointer("345235989"),
@@ -48,16 +49,16 @@ func GetRegisteredModelMocks() []openapi.RegisteredModel {
 		CreateTimeSinceEpoch:     stringToPointer("1725282249933"),
 		LastUpdateTimeSinceEpoch: stringToPointer("1725282249933"),
 		Owner:                    stringToPointer("M. Oriarty"),
-		State:                    stateToPointer(openapi.REGISTEREDMODELSTATE_ARCHIVED),
+		State:                    stateToPointer(openapiv1.REGISTEREDMODELSTATE_ARCHIVED),
 	}
 
-	return []openapi.RegisteredModel{model1, model2, model3}
+	return []openapiv1.RegisteredModel{model1, model2, model3}
 }
 
-func GetRegisteredModelListMock() openapi.RegisteredModelList {
+func GetRegisteredModelListMock() openapiv1.RegisteredModelList {
 	models := GetRegisteredModelMocks()
 
-	return openapi.RegisteredModelList{
+	return openapiv1.RegisteredModelList{
 		NextPageToken: "abcdefgh",
 		PageSize:      2,
 		Size:          int32(len(models)),
@@ -65,9 +66,9 @@ func GetRegisteredModelListMock() openapi.RegisteredModelList {
 	}
 }
 
-func GetModelVersionMocks() []openapi.ModelVersion {
-	modelVersion1 := openapi.ModelVersion{
-		CustomProperties:         newCustomProperties(),
+func GetModelVersionMocks() []openapiv1.ModelVersion {
+	modelVersion1 := openapiv1.ModelVersion{
+		CustomProperties:         newCustomPropertiesV1(),
 		Name:                     "Version One",
 		Description:              stringToPointer("This version improves stuff and things"),
 		ExternalId:               stringToPointer("934589798"),
@@ -76,11 +77,11 @@ func GetModelVersionMocks() []openapi.ModelVersion {
 		LastUpdateTimeSinceEpoch: stringToPointer("1725282249921"),
 		RegisteredModelId:        "1",
 		Author:                   stringToPointer("Sherlock Holmes"),
-		State:                    stateToPointer(openapi.MODELVERSIONSTATE_LIVE),
+		State:                    stateToPointer(openapiv1.MODELVERSIONSTATE_LIVE),
 	}
 
-	modelVersion2 := openapi.ModelVersion{
-		CustomProperties:         newCustomProperties(),
+	modelVersion2 := openapiv1.ModelVersion{
+		CustomProperties:         newCustomPropertiesV1(),
 		Name:                     "Version Two",
 		Description:              stringToPointer("This version improves stuff and things better"),
 		ExternalId:               stringToPointer("934589798"),
@@ -89,11 +90,11 @@ func GetModelVersionMocks() []openapi.ModelVersion {
 		LastUpdateTimeSinceEpoch: stringToPointer("1725282259922"),
 		RegisteredModelId:        "1",
 		Author:                   stringToPointer("Sherlock Holmes"),
-		State:                    stateToPointer(openapi.MODELVERSIONSTATE_LIVE),
+		State:                    stateToPointer(openapiv1.MODELVERSIONSTATE_LIVE),
 	}
 
-	modelVersion3 := openapi.ModelVersion{
-		CustomProperties:         newCustomProperties(),
+	modelVersion3 := openapiv1.ModelVersion{
+		CustomProperties:         newCustomPropertiesV1(),
 		Name:                     "Version Three",
 		Description:              stringToPointer("This version improves stuff and things"),
 		ExternalId:               stringToPointer("934589799"),
@@ -102,11 +103,11 @@ func GetModelVersionMocks() []openapi.ModelVersion {
 		LastUpdateTimeSinceEpoch: stringToPointer("1725282249921"),
 		RegisteredModelId:        "2",
 		Author:                   stringToPointer("Sherlock Holmes"),
-		State:                    stateToPointer(openapi.MODELVERSIONSTATE_LIVE),
+		State:                    stateToPointer(openapiv1.MODELVERSIONSTATE_LIVE),
 	}
 
-	modelVersion4 := openapi.ModelVersion{
-		CustomProperties:         newCustomProperties(),
+	modelVersion4 := openapiv1.ModelVersion{
+		CustomProperties:         newCustomPropertiesV1(),
 		Name:                     "Version Four",
 		Description:              stringToPointer("This version didn't improve stuff and things"),
 		ExternalId:               stringToPointer("934589791"),
@@ -115,16 +116,16 @@ func GetModelVersionMocks() []openapi.ModelVersion {
 		LastUpdateTimeSinceEpoch: stringToPointer("1725282249921"),
 		RegisteredModelId:        "3",
 		Author:                   stringToPointer("Sherlock Holmes"),
-		State:                    stateToPointer(openapi.MODELVERSIONSTATE_ARCHIVED),
+		State:                    stateToPointer(openapiv1.MODELVERSIONSTATE_ARCHIVED),
 	}
 
-	return []openapi.ModelVersion{modelVersion1, modelVersion2, modelVersion3, modelVersion4}
+	return []openapiv1.ModelVersion{modelVersion1, modelVersion2, modelVersion3, modelVersion4}
 }
 
-func GetModelVersionListMock() openapi.ModelVersionList {
+func GetModelVersionListMock() openapiv1.ModelVersionList {
 	versions := GetModelVersionMocks()
 
-	return openapi.ModelVersionList{
+	return openapiv1.ModelVersionList{
 		NextPageToken: "abcdefgh",
 		PageSize:      2,
 		Items:         versions,
@@ -132,14 +133,14 @@ func GetModelVersionListMock() openapi.ModelVersionList {
 	}
 }
 
-func GetModelArtifactMocks() []openapi.ModelArtifact {
-	artifact1 := openapi.ModelArtifact{
+func GetModelArtifactMocks() []openapiv1.ModelArtifact {
+	artifact1 := openapiv1.ModelArtifact{
 		ArtifactType:             stringToPointer("TYPE_ONE"),
-		CustomProperties:         newCustomProperties(),
+		CustomProperties:         newCustomPropertiesV1(),
 		Description:              stringToPointer("This artifact can do more than you would expect"),
 		ExternalId:               stringToPointer("1000001"),
 		Uri:                      stringToPointer("oci://quay.io/my-org/my-model:v1.0.0"),
-		State:                    stateToPointer(openapi.ARTIFACTSTATE_LIVE),
+		State:                    stateToPointer(openapiv1.ARTIFACTSTATE_LIVE),
 		Name:                     stringToPointer("Artifact One"),
 		Id:                       stringToPointer("1"),
 		CreateTimeSinceEpoch:     stringToPointer("1725282249921"),
@@ -154,13 +155,13 @@ func GetModelArtifactMocks() []openapi.ModelArtifact {
 		ModelSourceName:          stringToPointer("transfer-job-001"),
 	}
 
-	artifact2 := openapi.ModelArtifact{
+	artifact2 := openapiv1.ModelArtifact{
 		ArtifactType:             stringToPointer("TYPE_TWO"),
-		CustomProperties:         newCustomProperties(),
+		CustomProperties:         newCustomPropertiesV1(),
 		Description:              stringToPointer("This artifact can do more than you would expect, but less than you would hope"),
 		ExternalId:               stringToPointer("1000002"),
 		Uri:                      stringToPointer("http://localhost/artifacts/2"),
-		State:                    stateToPointer(openapi.ARTIFACTSTATE_PENDING),
+		State:                    stateToPointer(openapiv1.ARTIFACTSTATE_PENDING),
 		Name:                     stringToPointer("Artifact Two"),
 		Id:                       stringToPointer("2"),
 		CreateTimeSinceEpoch:     stringToPointer("1725282249921"),
@@ -172,11 +173,11 @@ func GetModelArtifactMocks() []openapi.ModelArtifact {
 		ServiceAccountName:       stringToPointer("service-2"),
 	}
 
-	return []openapi.ModelArtifact{artifact1, artifact2}
+	return []openapiv1.ModelArtifact{artifact1, artifact2}
 }
 
-func GetModelArtifactListMock() openapi.ModelArtifactList {
-	return openapi.ModelArtifactList{
+func GetModelArtifactListMock() openapiv1.ModelArtifactList {
+	return openapiv1.ModelArtifactList{
 		NextPageToken: "abcdefgh",
 		PageSize:      2,
 		Items:         GetModelArtifactMocks(),
@@ -184,45 +185,41 @@ func GetModelArtifactListMock() openapi.ModelArtifactList {
 	}
 }
 
+// customPropertiesFixture is the shared source of mock custom properties so the
+// v1alpha3 and v1 typed fixtures below can't drift apart.
+var customPropertiesFixture = map[string]string{
+	"tensorflow":   "",
+	"pytorch":      "",
+	"mll":          "",
+	"rnn":          "",
+	"AWS_KEY":      "asdf89asdf098asdfa",
+	"AWS_PASSWORD": "*AadfeDs34adf",
+}
+
 func newCustomProperties() map[string]openapi.MetadataValue {
-	return map[string]openapi.MetadataValue{
-		"tensorflow": {
+	result := make(map[string]openapi.MetadataValue, len(customPropertiesFixture))
+	for k, v := range customPropertiesFixture {
+		result[k] = openapi.MetadataValue{
 			MetadataStringValue: &openapi.MetadataStringValue{
-				StringValue:  "",
+				StringValue:  v,
 				MetadataType: "MetadataStringValue",
 			},
-		},
-		"pytorch": {
-			MetadataStringValue: &openapi.MetadataStringValue{
-				StringValue:  "",
-				MetadataType: "MetadataStringValue",
-			},
-		},
-		"mll": {
-			MetadataStringValue: &openapi.MetadataStringValue{
-				StringValue:  "",
-				MetadataType: "MetadataStringValue",
-			},
-		},
-		"rnn": {
-			MetadataStringValue: &openapi.MetadataStringValue{
-				StringValue:  "",
-				MetadataType: "MetadataStringValue",
-			},
-		},
-		"AWS_KEY": {
-			MetadataStringValue: &openapi.MetadataStringValue{
-				StringValue:  "asdf89asdf098asdfa",
-				MetadataType: "MetadataStringValue",
-			},
-		},
-		"AWS_PASSWORD": {
-			MetadataStringValue: &openapi.MetadataStringValue{
-				StringValue:  "*AadfeDs34adf",
-				MetadataType: "MetadataStringValue",
-			},
-		},
+		}
 	}
+	return result
+}
+
+func newCustomPropertiesV1() map[string]openapiv1.MetadataValue {
+	result := make(map[string]openapiv1.MetadataValue, len(customPropertiesFixture))
+	for k, v := range customPropertiesFixture {
+		result[k] = openapiv1.MetadataValue{
+			MetadataStringValue: &openapiv1.MetadataStringValue{
+				StringValue:  v,
+				MetadataType: "MetadataStringValue",
+			},
+		}
+	}
+	return result
 }
 
 func catalogCustomProperties() *map[string]openapi.MetadataValue {
@@ -366,14 +363,14 @@ func NewMockSessionContextNoParent() context.Context {
 	return NewMockSessionContext(context.TODO())
 }
 
-func GenerateMockArtifactList() openapi.ArtifactList {
-	var artifacts []openapi.Artifact
+func GenerateMockArtifactList() openapiv1.ArtifactList {
+	var artifacts []openapiv1.Artifact
 	for i := 0; i < 2; i++ {
 		artifact := GenerateMockArtifact()
 		artifacts = append(artifacts, artifact)
 	}
 
-	return openapi.ArtifactList{
+	return openapiv1.ArtifactList{
 		NextPageToken: gofakeit.UUID(),
 		PageSize:      int32(gofakeit.Number(1, 20)),
 		Size:          int32(len(artifacts)),
@@ -381,10 +378,10 @@ func GenerateMockArtifactList() openapi.ArtifactList {
 	}
 }
 
-func GenerateMockArtifact() openapi.Artifact {
+func GenerateMockArtifact() openapiv1.Artifact {
 	modelArtifact := GenerateMockModelArtifact()
 
-	mockData := openapi.Artifact{
+	mockData := openapiv1.Artifact{
 		ModelArtifact: &modelArtifact,
 	}
 	return mockData
@@ -771,7 +768,7 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
   url = {https://arxiv.org/abs/0000.00000},
 }
   ` + "```" + ` -->`),
-		SourceId:                 stringToPointer("sample-source"),
+		SourceID:                 stringToPointer("sample-source"),
 		LibraryName:              stringToPointer("transformers"),
 		CreateTimeSinceEpoch:     stringToPointer("1693526400000"),
 		LastUpdateTimeSinceEpoch: stringToPointer("1704067200000"),
@@ -785,7 +782,7 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 		License:     stringToPointer("Apache 2.0"),
 		Maturity:    stringToPointer("Generally Available"),
 		Language:    []string{"en"},
-		SourceId:    stringToPointer("sample-source"),
+		SourceID:    stringToPointer("sample-source"),
 		CustomProperties: withModelSizeData(
 			catalogCustomPropertiesWithVariant(graniteVariantGroupId, "INT4"),
 			"8B", "12GB",
@@ -801,7 +798,7 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 		License:     stringToPointer("MIT"),
 		Maturity:    stringToPointer("Generally Available"),
 		Language:    []string{"en"},
-		SourceId:    stringToPointer("sample-source"),
+		SourceID:    stringToPointer("sample-source"),
 		CustomProperties: withModelSizeData(
 			catalogCustomPropertiesWithVariant(graniteVariantGroupId, "INT8"),
 			"8B", "16GB",
@@ -817,7 +814,7 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 		License:     stringToPointer("Apache 2.0"),
 		Maturity:    stringToPointer("Generally Available"),
 		Language:    []string{"en"},
-		SourceId:    stringToPointer("sample-source"),
+		SourceID:    stringToPointer("sample-source"),
 		CustomProperties: withModelSizeData(
 			catalogCustomPropertiesWithVariant(graniteVariantGroupId, "BF16"),
 			"8B", "24GB",
@@ -842,7 +839,7 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 		License:          stringToPointer("apache-2.0"),
 		Maturity:         stringToPointer("Generally Available"),
 		Language:         []string{"en"},
-		SourceId:         stringToPointer("hugging_face_source"),
+		SourceID:         stringToPointer("hugging_face_source"),
 		LibraryName:      stringToPointer("transformers"),
 		Readme:           stringToPointer("# Public HF model\n\nFull readme for a public Hugging Face repository."),
 		CustomProperties: hfAccessCustomProperties("public"),
@@ -854,7 +851,7 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 		Provider:         stringToPointer("Meta"),
 		Tasks:            []string{"text-to-text"},
 		Language:         []string{"en"},
-		SourceId:         stringToPointer("hugging_face_source"),
+		SourceID:         stringToPointer("hugging_face_source"),
 		License:          stringToPointer("llama3.1"),
 		Readme:           stringToPointer("# Llama 3.1 8B Instruct FP8\n\nPrototype FP8 variant."),
 		CustomProperties: hfAccessCustomProperties("private"),
@@ -867,7 +864,7 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 		Tasks:            []string{"text-to-text"},
 		Language:         []string{"en"},
 		License:          stringToPointer("llama3.1"),
-		SourceId:         stringToPointer("hugging_face_source"),
+		SourceID:         stringToPointer("hugging_face_source"),
 		Readme:           stringToPointer("# Llama 3.1 8B Instruct INT4\n\nMeta's latest generation..."),
 		CustomProperties: hfAccessCustomProperties("gated_auto", "true"),
 	}
@@ -878,7 +875,7 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 		Provider:         stringToPointer("Meta"),
 		Tasks:            []string{},
 		License:          stringToPointer("unknown"),
-		SourceId:         stringToPointer("hugging_face_source"),
+		SourceID:         stringToPointer("hugging_face_source"),
 		Readme:           stringToPointer(""),
 		CustomProperties: hfAccessCustomProperties("gated_auto", "false"),
 	}
@@ -889,7 +886,7 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 		Provider:         stringToPointer("hf-mock"),
 		Tasks:            []string{"text-generation"},
 		License:          stringToPointer("custom"),
-		SourceId:         stringToPointer("hugging_face_source"),
+		SourceID:         stringToPointer("hugging_face_source"),
 		Readme:           stringToPointer("# Gated manual model\n\nFull metadata when manual gate access is granted."),
 		CustomProperties: hfAccessCustomProperties("gated_manual", "true"),
 	}
@@ -900,7 +897,7 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 		Provider:         stringToPointer("hf-mock"),
 		Tasks:            []string{},
 		License:          stringToPointer("unknown"),
-		SourceId:         stringToPointer("hugging_face_source"),
+		SourceID:         stringToPointer("hugging_face_source"),
 		Readme:           stringToPointer(""),
 		CustomProperties: hfAccessCustomProperties("gated_manual", "false"),
 	}
@@ -913,7 +910,7 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 		License:     stringToPointer("Apache 2.0"),
 		Maturity:    stringToPointer("Generally Available"),
 		Language:    []string{"en"},
-		SourceId:    stringToPointer("adminModel2"),
+		SourceID:    stringToPointer("adminModel2"),
 	}
 
 	otherModel2 := models.CatalogModel{
@@ -924,7 +921,7 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 		License:     stringToPointer("Apache 2.0"),
 		Maturity:    stringToPointer("Generally Available"),
 		Language:    []string{"en"},
-		SourceId:    stringToPointer("adminModel1"),
+		SourceID:    stringToPointer("adminModel1"),
 	}
 
 	noPerformanceModel := models.CatalogModel{
@@ -934,7 +931,7 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 		Tasks:       []string{"text-generation"},
 		License:     stringToPointer("Apache 2.0"),
 		Language:    []string{"en"},
-		SourceId:    stringToPointer("no-perf-source"),
+		SourceID:    stringToPointer("no-perf-source"),
 	}
 
 	// added this to test the load more models button
@@ -950,7 +947,7 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 			Maturity:                 stringToPointer("Technology preview"),
 			Language:                 []string{"ar", "cs", "de", "en", "es", "fr", "it", "ja", "ko", "nl", "pt", "zh"},
 			Logo:                     stringToPointer("data:image/svg+xml;base64,PHN2ZyBpZD0iTGF5ZXJfMSIgZGF0YS1uYW1lPSJMYXllciAxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIgMTQ1Ij48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6I2UwMDt9PC9zdHlsZT48L2RlZnM+PHRpdGxlPlJlZEhhdC1Mb2dvLUhhdC1Db2xvcjwvdGl0bGU+PHBhdGggZD0iTTE1Ny43Nyw2Mi42MWExNCwxNCwwLDAsMSwuMzEsMy40MmMwLDE0Ljg4LTE4LjEsMTcuNDYtMzAuNjEsMTcuNDZDNzguODMsODMuNDksNDIuNTMsNTMuMjYsNDIuNTMsNDRhNi40Myw2LjQzLDAsMCwxLC4yMi0xLjk0bC0zLjY2LDkuMDZhMTguNDUsMTguNDUsMCwwLDAtMS41MSw3LjMzYzAsMTguMTEsNDEsNDUuNDgsODcuNzQsNDUuNDgsMjAuNjksMCwzNi40My03Ljc2LDM2LjQzLTIxLjc3LDAtMS4wOCwwLTEuOTQtMS43My0xMC4xM1oiLz48cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0xMjcuNDcsODMuNDljMTIuNTEsMCwzMC42MS0yLjU4LDMwLjYxLTE3LjQ2YTE0LDE0LDAsMCwwLS4zMS0zLjQybC03LjQ1LTMyLjM2Yy0xLjcyLTcuMTItMy4yMy0xMC4zNS0xNS43My0xNi42QzEyNC44OSw4LjY5LDEwMy43Ni41LDk3LjUxLjUsOTEuNjkuNSw5MCw4LDgzLjA2LDhjLTYuNjgsMC0xMS42NC01LjYtMTcuODktNS42LTYsMC05LjkxLDQuMDktMTIuOTMsMTIuNSwwLDAtOC40MSwyMy43Mi05LjQ5LDI3LjE2QTYuNDMsNi40MywwLDAsMCw0Mi41Myw0NGMwLDkuMjIsMzYuMywzOS40NSw4NC45NCwzOS40NU0xNjAsNzIuMDdjMS43Myw4LjE5LDEuNzMsOS4wNSwxLjczLDEwLjEzLDAsMTQtMTUuNzQsMjEuNzctMzYuNDMsMjEuNzdDNzguNTQsMTA0LDM3LjU4LDc2LjYsMzcuNTgsNTguNDlhMTguNDUsMTguNDUsMCwwLDEsMS41MS03LjMzQzIyLjI3LDUyLC41LDU1LC41LDc0LjIyYzAsMzEuNDgsNzQuNTksNzAuMjgsMTMzLjY1LDcwLjI4LDQ1LjI4LDAsNTYuNy0yMC40OCw1Ni43LTM2LjY1LDAtMTIuNzItMTEtMjcuMTYtMzAuODMtMzUuNzgiLz48L3N2Zz4="),
-			SourceId:                 stringToPointer("sample-source"),
+			SourceID:                 stringToPointer("sample-source"),
 			LibraryName:              stringToPointer("transformers"),
 			CreateTimeSinceEpoch:     stringToPointer("1693526400000"),
 			LastUpdateTimeSinceEpoch: stringToPointer("1704067200000"),

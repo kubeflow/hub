@@ -21,7 +21,7 @@ const buildServer = (id: string, sourceId: string): McpServer => ({
   description: `Description ${id}`,
   deploymentMode: 'local',
   securityIndicators: {},
-  source_id: sourceId, // eslint-disable-line camelcase
+  sourceId,
   toolCount: 0,
 });
 
