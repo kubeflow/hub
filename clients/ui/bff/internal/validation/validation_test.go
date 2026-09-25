@@ -3,19 +3,19 @@ package validation
 import (
 	"testing"
 
-	"github.com/kubeflow/hub/pkg/openapi-v1"
+	openapiv1 "github.com/kubeflow/hub/pkg/openapi-v1"
 )
 
 func TestValidateRegisteredModel(t *testing.T) {
-	specs := []testSpec[openapi.RegisteredModel]{
+	specs := []testSpec[openapiv1.RegisteredModel]{
 		{
 			name:    "Empty name",
-			input:   openapi.RegisteredModel{Name: ""},
+			input:   openapiv1.RegisteredModel{Name: ""},
 			wantErr: true,
 		},
 		{
 			name:    "Valid name",
-			input:   openapi.RegisteredModel{Name: "ValidName"},
+			input:   openapiv1.RegisteredModel{Name: "ValidName"},
 			wantErr: false,
 		},
 	}
@@ -24,15 +24,15 @@ func TestValidateRegisteredModel(t *testing.T) {
 }
 
 func TestValidateModelVersion(t *testing.T) {
-	specs := []testSpec[openapi.ModelVersion]{
+	specs := []testSpec[openapiv1.ModelVersion]{
 		{
 			name:    "Empty name",
-			input:   openapi.ModelVersion{Name: ""},
+			input:   openapiv1.ModelVersion{Name: ""},
 			wantErr: true,
 		},
 		{
 			name:    "Valid name",
-			input:   openapi.ModelVersion{Name: "ValidName"},
+			input:   openapiv1.ModelVersion{Name: "ValidName"},
 			wantErr: false,
 		},
 	}
@@ -41,15 +41,15 @@ func TestValidateModelVersion(t *testing.T) {
 }
 
 func TestValidateModel(t *testing.T) {
-	specs := []testSpec[openapi.ModelArtifact]{
+	specs := []testSpec[openapiv1.ModelArtifact]{
 		{
 			name:    "Empty name",
-			input:   openapi.ModelArtifact{Name: openapi.PtrString("")},
+			input:   openapiv1.ModelArtifact{Name: openapiv1.PtrString("")},
 			wantErr: true,
 		},
 		{
 			name:    "Valid name",
-			input:   openapi.ModelArtifact{Name: openapi.PtrString("ValidName")},
+			input:   openapiv1.ModelArtifact{Name: openapiv1.PtrString("ValidName")},
 			wantErr: false,
 		},
 	}

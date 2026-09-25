@@ -9,12 +9,12 @@ import (
 	"github.com/kubeflow/hub/ui/bff/internal/integrations/httpclient"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/kubeflow/hub/pkg/openapi-v1"
+	openapiv1 "github.com/kubeflow/hub/pkg/openapi-v1"
 	"github.com/kubeflow/hub/ui/bff/internal/constants"
 )
 
-type ArtifactListEnvelope Envelope[*openapi.ArtifactList, None]
-type ArtifactEnvelope Envelope[*openapi.Artifact, None]
+type ArtifactListEnvelope Envelope[*openapiv1.ArtifactList, None]
+type ArtifactEnvelope Envelope[*openapiv1.Artifact, None]
 
 func (app *App) CreateArtifactHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	client, ok := r.Context().Value(constants.ModelRegistryHttpClientKey).(httpclient.HTTPClientInterface)

@@ -7,15 +7,15 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/kubeflow/hub/pkg/openapi-v1"
+	openapiv1 "github.com/kubeflow/hub/pkg/openapi-v1"
 	"github.com/kubeflow/hub/ui/bff/internal/constants"
 	"github.com/kubeflow/hub/ui/bff/internal/integrations/httpclient"
 	"github.com/kubeflow/hub/ui/bff/internal/validation"
 )
 
-type RegisteredModelEnvelope Envelope[*openapi.RegisteredModel, None]
-type RegisteredModelListEnvelope Envelope[*openapi.RegisteredModelList, None]
-type RegisteredModelUpdateEnvelope Envelope[*openapi.RegisteredModelUpdate, None]
+type RegisteredModelEnvelope Envelope[*openapiv1.RegisteredModel, None]
+type RegisteredModelListEnvelope Envelope[*openapiv1.RegisteredModelList, None]
+type RegisteredModelUpdateEnvelope Envelope[*openapiv1.RegisteredModelUpdate, None]
 
 func (app *App) GetAllRegisteredModelsHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	client, ok := r.Context().Value(constants.ModelRegistryHttpClientKey).(httpclient.HTTPClientInterface)

@@ -3,10 +3,10 @@ package validation
 import (
 	"errors"
 
-	"github.com/kubeflow/hub/pkg/openapi-v1"
+	openapiv1 "github.com/kubeflow/hub/pkg/openapi-v1"
 )
 
-func ValidateRegisteredModel(input openapi.RegisteredModel) error {
+func ValidateRegisteredModel(input openapiv1.RegisteredModel) error {
 	if input.Name == "" {
 		return errors.New("name cannot be empty")
 	}
@@ -14,7 +14,7 @@ func ValidateRegisteredModel(input openapi.RegisteredModel) error {
 	return nil
 }
 
-func ValidateModelVersion(input openapi.ModelVersion) error {
+func ValidateModelVersion(input openapiv1.ModelVersion) error {
 	if input.Name == "" {
 		return errors.New("name cannot be empty")
 	}
@@ -22,7 +22,7 @@ func ValidateModelVersion(input openapi.ModelVersion) error {
 	return nil
 }
 
-func ValidateModelArtifact(input openapi.ModelArtifact) error {
+func ValidateModelArtifact(input openapiv1.ModelArtifact) error {
 	if input.GetName() == "" {
 		return errors.New("name cannot be empty")
 	}
