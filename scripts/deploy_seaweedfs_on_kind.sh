@@ -1,23 +1,22 @@
 #!/usr/bin/env bash
 
-set -e
+set -euo pipefail
 
-DIR="$(dirname "$0")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SEAWEEDFS_NAMESPACE="seaweedfs"
-
-source "${DIR}/utils.sh"
+rm -f "$SCRIPT_DIR/manifests/seaweedfs/.env"
 
 # modularity to allow re-use this script against a remote k8s cluster
-if [[ -n "$LOCAL" ]]; then
+if [[ -n "${LOCAL:-}" ]]; then
     CLUSTER_NAME="${CLUSTER_NAME:-kind}"
     echo 'Creating local Kind cluster and loading image'
-    if [[ $(kind get clusters || false) =~ $CLUSTER_NAME ]]; then
+    if kind get clusters | grep -Fxq "$CLUSTER_NAME"; then
         echo 'Cluster already exists, skipping creation'
         kubectl config use-context "kind-$CLUSTER_NAME"
     else
         kind create cluster -n "$CLUSTER_NAME"
     fi
-    if [[ -n "$IMG" ]]; then
+    if [[ -n "${IMG:-}" ]]; then
         kind load docker-image -n "$CLUSTER_NAME" "$IMG"
         echo 'Image loaded into kind cluster - use this command to port forward the mr service:'
         # echo "kubectl port-forward -n $MR_NAMESPACE service/model-registry-service 8080:8080 &"
@@ -25,18 +24,17 @@ if [[ -n "$LOCAL" ]]; then
 fi
 
 echo 'Deploying SeaweedFS S3 storage to Kind cluster'
-if [[ $(kubectl get namespaces || false) =~ $SEAWEEDFS_NAMESPACE ]]; then
+if kubectl get namespace "$SEAWEEDFS_NAMESPACE" >/dev/null 2>&1; then
     echo 'Namespace already exists, skipping creation'
 else
     kubectl create namespace "$SEAWEEDFS_NAMESPACE"
 fi
 
-kubectl apply -f $DIR/manifests/seaweedfs/deployment.yaml -n $SEAWEEDFS_NAMESPACE
-if ! kubectl wait --for=condition=available deployment/seaweedfs -n $SEAWEEDFS_NAMESPACE --timeout=3m ; then
+kubectl apply -f "$SCRIPT_DIR/manifests/seaweedfs/deployment.yaml" -n "$SEAWEEDFS_NAMESPACE"
+if ! kubectl rollout status deployment/seaweedfs -n "$SEAWEEDFS_NAMESPACE" --timeout=3m; then
      echo "SeaweedFS deployment took more than 3 minutes."
-     kubectl events -A
-     kubectl describe deployment/seaweedfs -n $SEAWEEDFS_NAMESPACE
-     kubectl logs deployment/seaweedfs -n $SEAWEEDFS_NAMESPACE
+     kubectl describe deployment/seaweedfs -n "$SEAWEEDFS_NAMESPACE"
+     kubectl logs deployment/seaweedfs -n "$SEAWEEDFS_NAMESPACE" --tail=100 || true
      exit 1
 fi
 
@@ -48,7 +46,7 @@ if [[ -z "$KF_MR_TEST_ACCESS_KEY_ID" || -z "$KF_MR_TEST_SECRET_ACCESS_KEY" ]]; t
     exit 1
 fi
 
-cat <<EOF > $DIR/manifests/seaweedfs/.env
+cat > "$SCRIPT_DIR/manifests/seaweedfs/.env" <<EOF
 KF_MR_TEST_S3_ENDPOINT=http://localhost:8333
 KF_MR_TEST_BUCKET_NAME=default
 KF_MR_TEST_ACCESS_KEY_ID=$KF_MR_TEST_ACCESS_KEY_ID
