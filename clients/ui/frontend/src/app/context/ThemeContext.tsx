@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-export type ThemeMode = 'light' | 'dark' | 'system';
+export type ThemeMode = 'light' | 'dark';
 
 interface ThemeContextType {
   themeMode: ThemeMode;
@@ -11,46 +11,32 @@ interface ThemeContextType {
 
 const STORAGE_KEY = 'kubeflow_theme_mode';
 
+const defaultThemeContext: ThemeContextType = {
+  themeMode: 'light',
+  effectiveTheme: 'light',
+  setThemeMode: () => undefined,
+  toggleTheme: () => undefined,
+};
+
 const ThemeContext = React.createContext<ThemeContextType | undefined>(undefined);
 
 export const CustomThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [themeMode, setThemeModeState] = React.useState<ThemeMode>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved === 'light') {
+    if (typeof window === 'undefined') {
       return 'light';
     }
-    if (saved === 'dark') {
-      return 'dark';
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved === 'dark' || saved === 'light') {
+        return saved;
+      }
+    } catch {
+      // Ignore localStorage errors in sandboxed environments
     }
-    if (saved === 'system') {
-      return 'system';
-    }
-    return 'system';
+    return 'light';
   });
 
-  const [systemPrefersDark, setSystemPrefersDark] = React.useState<boolean>(() =>
-    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-      ? window.matchMedia('(prefers-color-scheme: dark)').matches
-      : false,
-  );
-
-  React.useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-      return undefined;
-    }
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e: MediaQueryListEvent) => {
-      setSystemPrefersDark(e.matches);
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => {
-      mediaQuery.removeEventListener('change', handleChange);
-    };
-  }, []);
-
-  const effectiveTheme: 'light' | 'dark' =
-    themeMode === 'system' ? (systemPrefersDark ? 'dark' : 'light') : themeMode;
+  const effectiveTheme: 'light' | 'dark' = themeMode;
 
   React.useEffect(() => {
     const root = document.documentElement;
@@ -65,7 +51,11 @@ export const CustomThemeProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const setThemeMode = React.useCallback((mode: ThemeMode) => {
     setThemeModeState(mode);
-    localStorage.setItem(STORAGE_KEY, mode);
+    try {
+      localStorage.setItem(STORAGE_KEY, mode);
+    } catch {
+      // Ignore localStorage errors
+    }
   }, []);
 
   const toggleTheme = React.useCallback(() => {
@@ -83,8 +73,5 @@ export const CustomThemeProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
 export const useCustomTheme = (): ThemeContextType => {
   const context = React.useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useCustomTheme must be used within a CustomThemeProvider');
-  }
-  return context;
+  return context || defaultThemeContext;
 };
