@@ -384,7 +384,7 @@ describe('Model Catalog Performance Filters API Behavior', () => {
     });
   });
 
-  describe('Min vRAM and Container size filter API behavior', () => {
+  describe('Min vRAM and Container image size filter API behavior', () => {
     it('should include min_vram_gb in filterQuery when vRAM filter is applied', () => {
       visitWithPerformanceToggle(true);
 
@@ -402,12 +402,12 @@ describe('Model Catalog Performance Filters API Behavior', () => {
       });
     });
 
-    it('should include modelcar_image_size in filterQuery when container size filter is applied', () => {
+    it('should include modelcar_image_size in filterQuery when container image size filter is applied', () => {
       visitWithPerformanceToggle(true);
 
-      cy.findByTestId('container-size-filter').scrollIntoView();
-      cy.findByTestId('container-size-filter').click();
-      cy.findByTestId('container-size-apply-filter').should('be.visible').click();
+      cy.findByTestId('container-image-size-filter').scrollIntoView();
+      cy.findByTestId('container-image-size-filter').click();
+      cy.findByTestId('container-image-size-apply-filter').should('be.visible').click();
 
       cy.intercept('GET', '**/model_catalog/models*').as('getModelsWithContainerSizeFilter');
 
@@ -442,9 +442,9 @@ describe('Model Catalog Performance Filters API Behavior', () => {
     it('should still include modelcar_image_size after toggle is turned OFF (basic filter)', () => {
       visitWithPerformanceToggle(true);
 
-      cy.findByTestId('container-size-filter').scrollIntoView();
-      cy.findByTestId('container-size-filter').click();
-      cy.findByTestId('container-size-apply-filter').should('be.visible').click();
+      cy.findByTestId('container-image-size-filter').scrollIntoView();
+      cy.findByTestId('container-image-size-filter').click();
+      cy.findByTestId('container-image-size-apply-filter').should('be.visible').click();
 
       modelCatalog.togglePerformanceView();
       modelCatalog.findLoadingState().should('not.exist');

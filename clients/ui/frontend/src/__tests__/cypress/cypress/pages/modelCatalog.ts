@@ -448,7 +448,7 @@ class ModelCatalog {
   }
 
   findContainerSizeFilter() {
-    return cy.findByTestId('container-size-filter');
+    return cy.findByTestId('container-image-size-filter');
   }
 
   // Cold start latency filter helpers
