@@ -2,6 +2,12 @@ import { APIState, useAPIState } from 'mod-arch-core';
 import React from 'react';
 import { getAgentFilterOptionList, getAgent, getAgentList } from '~/app/api/agentsCatalog/service';
 import {
+  getSkill,
+  getSkillFilterOptionList,
+  getSkillList,
+  getSkillMarketplace,
+} from '~/app/api/skillCatalog/service';
+import {
   getMcpServerFilterOptionList,
   getMcpServer,
   getMcpServerList,
@@ -40,6 +46,10 @@ const useModelCatalogAPIState = (
       getAgentList: getAgentList(path, queryParameters),
       getAgentFilterOptionList: getAgentFilterOptionList(path, queryParameters),
       getAgent: getAgent(path, queryParameters),
+      getSkillList: getSkillList(path, queryParameters),
+      getSkillFilterOptionList: getSkillFilterOptionList(path, queryParameters),
+      getSkill: getSkill(path, queryParameters),
+      getSkillMarketplace: getSkillMarketplace(path, queryParameters),
     }),
     [queryParameters],
   );
