@@ -357,7 +357,7 @@ customProperties:
     double_value: 405.19
 ```
 
-##### VRAM and Container Size Metrics
+##### VRAM and Container Image Size Metrics
 
 The catalog supports specialized performance metrics for model deployment planning:
 
