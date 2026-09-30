@@ -25,7 +25,7 @@ spec:
         fsGroup: 999
       containers:
       - name: db-container
-        image: public.ecr.aws/docker/library/mysql:8.3
+        image: container-registry.oracle.com/mysql/community-server:8.3
         args:
         - --datadir
         - /var/lib/mysql/datadir
