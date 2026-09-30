@@ -37,6 +37,12 @@ dev-load-image:
 	docker buildx build --load -t $(JOB_IMG) .
 	kind load docker-image $(JOB_IMG) -n $(CLUSTER_NAME)
 
+.PHONY: seed-local-busybox
+seed-local-busybox:
+	@if [ -n "$${BUSYBOX_IMAGE_ARCHIVE:-}" ]; then \
+		bash ../../scripts/seed_local_busybox.sh "$$BUSYBOX_IMAGE_ARCHIVE"; \
+	fi
+
 .PHONY: test
 test:
 	poetry run pytest -s -x -rA
@@ -57,7 +63,7 @@ test-e2e: deploy-latest-mr deploy-local-registry deploy-test-seaweedfs dev-load-
 	fi
 
 .PHONY: test-e2e-run
-test-e2e-run:
+test-e2e-run: seed-local-busybox
 	@echo "Ensuring all extras are installed..."
 	poetry install --all-extras --with integration
 	@echo "Running e2e tests..."
@@ -84,7 +90,7 @@ test-integration: deploy-latest-mr deploy-local-registry deploy-test-seaweedfs
 	fi
 
 .PHONY: test-integration-run
-test-integration-run:
+test-integration-run: seed-local-busybox
 	@echo "Ensuring all extras are installed..."
 	poetry install --all-extras
 	@echo "Running integration tests..."

@@ -32,6 +32,7 @@ env:
   IMG_VERSION: cicd
   MYSQL_IMAGE: public.ecr.aws/docker/library/mysql:8.3
   REGISTRY_IMAGE: public.ecr.aws/docker/library/registry:2
+  BUSYBOX_IMAGE: public.ecr.aws/docker/library/busybox:latest
   PUSH_IMAGE: false
 
 jobs:
@@ -71,7 +72,16 @@ jobs:
           image: ${{ env.REGISTRY_IMAGE }}
           name: registry
           cluster-name: mr-e2e
+      - name: Cache BusyBox image archive
+        id: busybox
+        uses: ./.github/actions/cache-kind-image
+        with:
+          image: ${{ env.BUSYBOX_IMAGE }}
+          name: busybox
       - name: Run integration tests
+        env:
+          BUSYBOX_IMAGE_ARCHIVE: ${{ steps.busybox.outputs.archive-path }}
+          MODEL_SYNC_DESTINATION_OCI_BASE_IMAGE: distribution-registry-test-service.local-oci-registry-ns.svc.cluster.local:5001/busybox:latest
         run: |
           make test-integration
   job-test:
@@ -104,7 +114,16 @@ jobs:
           image: ${{ env.REGISTRY_IMAGE }}
           name: registry
           cluster-name: mr-e2e
+      - name: Cache BusyBox image archive
+        id: busybox
+        uses: ./.github/actions/cache-kind-image
+        with:
+          image: ${{ env.BUSYBOX_IMAGE }}
+          name: busybox
       - name: Execute Sample Job E2E test
+        env:
+          BUSYBOX_IMAGE_ARCHIVE: ${{ steps.busybox.outputs.archive-path }}
+          MODEL_SYNC_DESTINATION_OCI_BASE_IMAGE: distribution-registry-test-service.local-oci-registry-ns.svc.cluster.local:5001/busybox:latest
         run: |
           make test-e2e
   check-autogen:
