@@ -31,7 +31,6 @@ import {
   ModelType,
   ModelCatalogTask,
   MATCH_ALL_FILTER_KEYS,
-  HUGGING_FACE_BASE_URL,
 } from '~/concepts/modelCatalog/const';
 import { ModelRegistryCustomProperties, ModelRegistryMetadataType } from '~/app/types';
 import {
@@ -154,7 +153,7 @@ export const hasPerformanceArtifacts = (artifacts: CatalogArtifacts[]): boolean 
       artifact.metricsType === MetricsType.performanceMetrics,
   );
 
-export type HfAccessLabelVariant = 'private' | 'gated' | 'gated-denied';
+export type HfAccessLabelVariant = 'private' | 'gated';
 
 export const isGatedAccessType = (accessType: string): boolean => accessType.startsWith('gated');
 
@@ -167,29 +166,6 @@ export const isHfGatedAccessDeniedFromFields = (
   }
 
   return gatedAccessGranted !== true;
-};
-
-export const getHfGatedAccessGranted = (model: CatalogModel): boolean => {
-  if (!model.customProperties) {
-    return false;
-  }
-
-  const gatedAccessKey = CatalogModelCustomPropertyKey.HF_GATED_ACCESS_GRANTED;
-  if (!(gatedAccessKey in model.customProperties)) {
-    return false;
-  }
-
-  const prop = model.customProperties[gatedAccessKey];
-
-  if (prop.metadataType === ModelRegistryMetadataType.BOOL) {
-    return prop.bool_value === true;
-  }
-
-  if (prop.metadataType === ModelRegistryMetadataType.STRING) {
-    return prop.string_value === 'true';
-  }
-
-  return false;
 };
 
 export const getHfAccessType = (model: CatalogModel): string | null => {
@@ -213,29 +189,12 @@ export const getHfAccessLabelVariant = (model: CatalogModel): HfAccessLabelVaria
     return 'private';
   }
 
-  if (isHfGatedAccessDeniedFromFields(accessType, getHfGatedAccessGranted(model))) {
-    return 'gated-denied';
-  }
-
   if (isGatedAccessType(accessType)) {
     return 'gated';
   }
 
   return null;
 };
-
-export const isHfGatedAccessDenied = (model: CatalogModel): boolean => {
-  const accessType = getHfAccessType(model);
-  if (!accessType) {
-    return false;
-  }
-
-  return isHfGatedAccessDeniedFromFields(accessType, getHfGatedAccessGranted(model));
-};
-
-// TODO: this needs to be updated with the customProperties of the model, where we will have the HF link
-export const getHuggingFaceModelUrl = (model: CatalogModel): string =>
-  `${HUGGING_FACE_BASE_URL}/${model.name}`;
 
 // Utility function to check if a model is validated
 export const isModelValidated = (model: CatalogModel): boolean => {
