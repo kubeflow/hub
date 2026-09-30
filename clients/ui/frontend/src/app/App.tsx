@@ -23,7 +23,7 @@ import ToastNotifications from '~/app/standalone/ToastNotifications';
 import AppNavSidebar from '~/app/standalone/AppNavSidebar';
 import AppRoutes from '~/app/AppRoutes';
 import { AppContext } from '~/app/context/AppContext';
-import { CustomThemeProvider } from '~/app/context/ThemeContext';
+import { ColorModeProvider } from '~/app/context/ThemeContext';
 import { ModelRegistrySelectorContextProvider } from '~/app/context/ModelRegistrySelectorContext';
 import { TransferJobNotificationsProvider } from '~/app/context/TransferJobNotificationsContext';
 
@@ -96,7 +96,7 @@ const App: React.FC = () => {
       <Spinner />
     </Bullseye>
   ) : (
-    <CustomThemeProvider>
+    <ColorModeProvider isStandalone={isStandalone}>
       <AppContext.Provider value={contextValue}>
         <TransferJobNotificationsProvider>
           <Page
@@ -123,7 +123,7 @@ const App: React.FC = () => {
           </Page>
         </TransferJobNotificationsProvider>
       </AppContext.Provider>
-    </CustomThemeProvider>
+    </ColorModeProvider>
   );
 };
 

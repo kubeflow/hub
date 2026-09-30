@@ -22,7 +22,7 @@ import {
 import { BarsIcon, MoonIcon, SunIcon } from '@patternfly/react-icons';
 import { useThemeContext } from 'mod-arch-kubeflow';
 import { images as sharedImages } from 'mod-arch-shared';
-import { useCustomTheme } from '~/app/context/ThemeContext';
+import { useColorMode } from '~/app/context/ThemeContext';
 import GlobalNamespaceSelector from './GlobalNamespaceSelector';
 
 interface NavBarProps {
@@ -32,7 +32,7 @@ interface NavBarProps {
 
 const NavBar: React.FC<NavBarProps> = ({ username, onLogout }) => {
   const { isMUITheme } = useThemeContext();
-  const { effectiveTheme, toggleTheme } = useCustomTheme();
+  const { colorMode, toggleColorMode } = useColorMode();
 
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
 
@@ -81,14 +81,14 @@ const NavBar: React.FC<NavBarProps> = ({ username, onLogout }) => {
                   variant="plain"
                   aria-label="Toggle dark mode"
                   id="theme-toggle-button"
-                  onClick={toggleTheme}
-                  title={effectiveTheme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-                  style={{ fontSize: '1.1rem', marginRight: '8px' }}
+                  className="theme-toggle-button"
+                  onClick={toggleColorMode}
+                  title={colorMode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
                 >
-                  {effectiveTheme === 'dark' ? (
-                    <SunIcon style={{ color: '#f59e0b' }} />
+                  {colorMode === 'dark' ? (
+                    <SunIcon className="theme-toggle-icon--dark" />
                   ) : (
-                    <MoonIcon style={{ color: '#64748b' }} />
+                    <MoonIcon className="theme-toggle-icon--light" />
                   )}
                 </Button>
               </ToolbarItem>

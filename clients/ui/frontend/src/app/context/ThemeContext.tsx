@@ -1,27 +1,27 @@
 import * as React from 'react';
 
-export type ThemeMode = 'light' | 'dark';
+export type ColorMode = 'light' | 'dark';
 
-interface ThemeContextType {
-  themeMode: ThemeMode;
-  effectiveTheme: 'light' | 'dark';
-  setThemeMode: (mode: ThemeMode) => void;
-  toggleTheme: () => void;
+export interface ColorModeContextType {
+  colorMode: ColorMode;
+  setColorMode: (mode: ColorMode) => void;
+  toggleColorMode: () => void;
 }
 
-const STORAGE_KEY = 'kubeflow_theme_mode';
+export const STORAGE_KEY = 'kubeflow_theme_mode';
 
-const defaultThemeContext: ThemeContextType = {
-  themeMode: 'light',
-  effectiveTheme: 'light',
-  setThemeMode: () => undefined,
-  toggleTheme: () => undefined,
-};
+const ColorModeContext = React.createContext<ColorModeContextType | undefined>(undefined);
 
-const ThemeContext = React.createContext<ThemeContextType | undefined>(undefined);
+export interface ColorModeProviderProps {
+  children: React.ReactNode;
+  isStandalone?: boolean;
+}
 
-export const CustomThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [themeMode, setThemeModeState] = React.useState<ThemeMode>(() => {
+export const ColorModeProvider: React.FC<ColorModeProviderProps> = ({
+  children,
+  isStandalone = true,
+}) => {
+  const [colorMode, setColorModeState] = React.useState<ColorMode>(() => {
     if (typeof window === 'undefined') {
       return 'light';
     }
@@ -33,45 +33,63 @@ export const CustomThemeProvider: React.FC<{ children: React.ReactNode }> = ({ c
     } catch {
       // Ignore localStorage errors in sandboxed environments
     }
+    if (
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches
+    ) {
+      return 'dark';
+    }
     return 'light';
   });
 
-  const effectiveTheme: 'light' | 'dark' = themeMode;
-
   React.useEffect(() => {
+    if (!isStandalone) {
+      return;
+    }
     const root = document.documentElement;
-    if (effectiveTheme === 'dark') {
-      root.classList.add('dark-theme');
-      root.classList.add('pf-v6-theme-dark');
+    if (colorMode === 'dark') {
+      root.classList.add('dark-theme', 'pf-v6-theme-dark');
     } else {
-      root.classList.remove('dark-theme');
-      root.classList.remove('pf-v6-theme-dark');
+      root.classList.remove('dark-theme', 'pf-v6-theme-dark');
     }
-  }, [effectiveTheme]);
+  }, [colorMode, isStandalone]);
 
-  const setThemeMode = React.useCallback((mode: ThemeMode) => {
-    setThemeModeState(mode);
-    try {
-      localStorage.setItem(STORAGE_KEY, mode);
-    } catch {
-      // Ignore localStorage errors
-    }
-  }, []);
-
-  const toggleTheme = React.useCallback(() => {
-    const nextMode = effectiveTheme === 'light' ? 'dark' : 'light';
-    setThemeMode(nextMode);
-  }, [effectiveTheme, setThemeMode]);
-
-  const contextValue = React.useMemo(
-    () => ({ themeMode, effectiveTheme, setThemeMode, toggleTheme }),
-    [themeMode, effectiveTheme, setThemeMode, toggleTheme],
+  const setColorMode = React.useCallback(
+    (mode: ColorMode) => {
+      setColorModeState(mode);
+      if (isStandalone) {
+        try {
+          localStorage.setItem(STORAGE_KEY, mode);
+        } catch {
+          // Ignore localStorage errors
+        }
+      }
+    },
+    [isStandalone],
   );
 
-  return <ThemeContext.Provider value={contextValue}>{children}</ThemeContext.Provider>;
+  const toggleColorMode = React.useCallback(() => {
+    setColorMode(colorMode === 'light' ? 'dark' : 'light');
+  }, [colorMode, setColorMode]);
+
+  const contextValue = React.useMemo(
+    () => ({ colorMode, setColorMode, toggleColorMode }),
+    [colorMode, setColorMode, toggleColorMode],
+  );
+
+  return <ColorModeContext.Provider value={contextValue}>{children}</ColorModeContext.Provider>;
 };
 
-export const useCustomTheme = (): ThemeContextType => {
-  const context = React.useContext(ThemeContext);
-  return context || defaultThemeContext;
+export const useColorMode = (): ColorModeContextType => {
+  const context = React.useContext(ColorModeContext);
+  if (!context) {
+    throw new Error('useColorMode must be used within a ColorModeProvider');
+  }
+  return context;
 };
+
+// Aliases for backwards compatibility
+export const CustomThemeProvider = ColorModeProvider;
+export const useCustomTheme = useColorMode;
+export type ThemeMode = ColorMode;
+export type ThemeContextType = ColorModeContextType;
