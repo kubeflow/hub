@@ -19,6 +19,7 @@ env:
   IMG_REGISTRY: ghcr.io
   IMG_ORG: kubeflow
   IMG_REPO: hub/server
+  MYSQL_IMAGE: public.ecr.aws/docker/library/mysql:8.3
   PUSH_IMAGE: false
   BRANCH: ${{ github.base_ref }}
 jobs:
@@ -42,6 +43,12 @@ jobs:
         uses: helm/kind-action@06c1ae10762d3b9c1644e7fe69596ae519e015a2 # v1.15.0
         with:
           node_image: "kindest/node:v1.33.7"
+      - name: Cache and load MySQL image
+        uses: ./.github/actions/cache-kind-image
+        with:
+          image: ${{ env.MYSQL_IMAGE }}
+          name: mysql
+          cluster-name: chart-testing
       - name: Load Local Registry Test Image
         env:
           IMG: "${{ env.IMG_REGISTRY }}/${{ env.IMG_ORG }}/${{ env.IMG_REPO }}:${{ steps.tags.outputs.tag }}"

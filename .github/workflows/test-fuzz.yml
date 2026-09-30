@@ -14,6 +14,8 @@ env:
   IMG_REGISTRY: ghcr.io
   IMG_ORG: kubeflow
   IMG_REPO: hub/server
+  MYSQL_IMAGE: public.ecr.aws/docker/library/mysql:8.3
+  REGISTRY_IMAGE: public.ecr.aws/docker/library/registry:2
   IMG_VERSION: latest
   PUSH_IMAGE: false
 
@@ -71,6 +73,19 @@ jobs:
           node_image: kindest/node:${{ matrix.kubernetes-version }}
           cluster_name: py-fuzz-${{ matrix.kubernetes-version }}
           kubectl_version: ${{ matrix.kubernetes-version }}
+      - name: Cache and load MySQL image
+        if: matrix.manifest-db == 'db'
+        uses: ./.github/actions/cache-kind-image
+        with:
+          image: ${{ env.MYSQL_IMAGE }}
+          name: mysql
+          cluster-name: py-fuzz-${{ matrix.kubernetes-version }}
+      - name: Cache and load OCI registry image
+        uses: ./.github/actions/cache-kind-image
+        with:
+          image: ${{ env.REGISTRY_IMAGE }}
+          name: registry
+          cluster-name: py-fuzz-${{ matrix.kubernetes-version }}
 
       - name: Generate Tag
         shell: bash

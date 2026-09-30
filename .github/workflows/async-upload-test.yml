@@ -30,6 +30,8 @@ env:
   IMG_ORG: kubeflow
   IMG_REPO: hub/server
   IMG_VERSION: cicd
+  MYSQL_IMAGE: public.ecr.aws/docker/library/mysql:8.3
+  REGISTRY_IMAGE: public.ecr.aws/docker/library/registry:2
   PUSH_IMAGE: false
 
 jobs:
@@ -53,6 +55,22 @@ jobs:
       - name: Run tests
         run: |
           make test
+      - name: Start Kind Cluster
+        uses: helm/kind-action@06c1ae10762d3b9c1644e7fe69596ae519e015a2 # v1.15.0
+        with:
+          cluster_name: mr-e2e
+      - name: Cache and load MySQL image
+        uses: ./.github/actions/cache-kind-image
+        with:
+          image: ${{ env.MYSQL_IMAGE }}
+          name: mysql
+          cluster-name: mr-e2e
+      - name: Cache and load OCI registry image
+        uses: ./.github/actions/cache-kind-image
+        with:
+          image: ${{ env.REGISTRY_IMAGE }}
+          name: registry
+          cluster-name: mr-e2e
       - name: Run integration tests
         run: |
           make test-integration
@@ -70,6 +88,22 @@ jobs:
       - name: Install Poetry
         run: |
           pipx install poetry
+      - name: Start Kind Cluster
+        uses: helm/kind-action@06c1ae10762d3b9c1644e7fe69596ae519e015a2 # v1.15.0
+        with:
+          cluster_name: mr-e2e
+      - name: Cache and load MySQL image
+        uses: ./.github/actions/cache-kind-image
+        with:
+          image: ${{ env.MYSQL_IMAGE }}
+          name: mysql
+          cluster-name: mr-e2e
+      - name: Cache and load OCI registry image
+        uses: ./.github/actions/cache-kind-image
+        with:
+          image: ${{ env.REGISTRY_IMAGE }}
+          name: registry
+          cluster-name: mr-e2e
       - name: Execute Sample Job E2E test
         run: |
           make test-e2e

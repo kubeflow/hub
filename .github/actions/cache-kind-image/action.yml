@@ -1,0 +1,43 @@
+name: Cache Kind image
+description: Cache a Docker image archive and optionally load it into Kind
+inputs:
+  image:
+    description: Full image reference to pull and cache
+    required: true
+  name:
+    description: Short name used for the archive file
+    required: true
+  cluster-name:
+    description: Kind cluster to load the image into; omit when preparing an artifact
+    required: false
+    default: ""
+outputs:
+  archive-path:
+    description: Path to the cached Docker image archive
+    value: ${{ steps.image-key.outputs.archive-path }}
+runs:
+  using: composite
+  steps:
+    - name: Calculate image cache key
+      id: image-key
+      shell: bash
+      env:
+        IMAGE: ${{ inputs.image }}
+        ARCHIVE_NAME: ${{ inputs.name }}
+      run: |
+        digest="$(printf '%s' "$IMAGE" | sha256sum | cut -d ' ' -f 1)"
+        printf 'digest=%s\n' "$digest" >> "$GITHUB_OUTPUT"
+        printf 'archive-path=%s/%s-image.tar\n' \
+          "$RUNNER_TEMP" "$ARCHIVE_NAME" >> "$GITHUB_OUTPUT"
+    - name: Restore or save image archive
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
+      with:
+        path: ${{ runner.temp }}/${{ inputs.name }}-image.tar
+        key: kind-image-${{ steps.image-key.outputs.digest }}-${{ runner.os }}-${{ runner.arch }}-v1
+    - name: Prepare image archive
+      shell: bash
+      env:
+        IMAGE: ${{ inputs.image }}
+        ARCHIVE: ${{ runner.temp }}/${{ inputs.name }}-image.tar
+        CLUSTER_NAME: ${{ inputs.cluster-name }}
+      run: bash "$GITHUB_WORKSPACE/scripts/cache_kind_image.sh" "$IMAGE" "$ARCHIVE" "$CLUSTER_NAME"
