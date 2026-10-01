@@ -575,7 +575,7 @@ export const createHfAccessCardModel = ({
 
   return mockCatalogModel({
     name,
-    source_id: 'hugging_face_source',
+    sourceId: 'hugging_face_source',
     provider: 'Meta',
     description: isGatedDenied ? '' : description,
     tasks: isGatedDenied ? [] : ['text-to-text'],
@@ -632,7 +632,7 @@ export const createGatedDeniedDetailsModel = (): CatalogModel =>
     provider: 'Meta',
     description: '',
     readme: '',
-    source_id: GATED_DENIED_DETAILS_SOURCE_ID,
+    sourceId: GATED_DENIED_DETAILS_SOURCE_ID,
     customProperties: buildHfAccessCustomProperties('gated_auto', 'false'),
   });
 
