@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/kubeflow/hub/internal/platform/datastore"
 	platformmw "github.com/kubeflow/hub/internal/platform/server/middleware"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -524,6 +526,59 @@ func TestServerReconnect_PropagatesError(t *testing.T) {
 	err := s.Reconnect(context.Background(), &fakeRepoSet{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "reconnect boom")
+}
+
+// reconnectableRoutePlugin models the real catalog plugins: RegisterRoutes
+// mounts a handler that captures the plugin's current RepoSet by value (the
+// way NewDBCatalog/NewDBMCPCatalog capture repositories), and Reconnect only
+// updates the plugin's own field. If the server did not rebuild and remount
+// routes after Reconnect, the handler would keep serving the pre-recovery
+// RepoSet forever.
+type reconnectableRoutePlugin struct {
+	mockPlugin
+	repoSet datastore.RepoSet
+}
+
+func (p *reconnectableRoutePlugin) RegisterRoutes(router chi.Router) error {
+	repoSet := p.repoSet // captured by value at mount time, like the real providers
+	router.Get("/api/reconnect_catalog/v1/type-id", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = fmt.Fprintf(w, `{"type_id":%d}`, repoSet.TypeMap()["TypeA"])
+	})
+	return nil
+}
+
+func (p *reconnectableRoutePlugin) Reconnect(_ context.Context, cfg Config) error {
+	p.repoSet = cfg.RepoSet
+	return nil
+}
+
+func TestServerReconnect_RemountsRoutesWithRefreshedRepoSet(t *testing.T) {
+	Reset()
+	defer Reset()
+
+	oldRepoSet := &fakeRepoSet{typeMap: map[string]int32{"TypeA": 1}}
+	newRepoSet := &fakeRepoSet{typeMap: map[string]int32{"TypeA": 99}}
+
+	rc := &reconnectableRoutePlugin{mockPlugin: mockPlugin{name: "rc", version: "v1"}, repoSet: oldRepoSet}
+	Register(rc)
+
+	s := NewServer(ServerConfig{RepoSet: oldRepoSet})
+	require.NoError(t, s.Init(context.Background()))
+
+	handler, err := s.MountRoutes()
+	require.NoError(t, err)
+
+	body := getJSON(t, handler, "/api/reconnect_catalog/v1/type-id")
+	assert.Equal(t, float64(1), body["type_id"], "route should serve the pre-recovery type ID before Reconnect")
+
+	require.NoError(t, s.Reconnect(context.Background(), newRepoSet))
+
+	// The handler returned by MountRoutes must observe the rebuilt router —
+	// not just the plugin's internal field — because callers (catalog.go)
+	// mount this handler once into http.Server and never fetch it again.
+	body = getJSON(t, handler, "/api/reconnect_catalog/v1/type-id")
+	assert.Equal(t, float64(99), body["type_id"], "route must serve the refreshed type ID after Reconnect, not a stale captured repo")
 }
 
 // Test helpers

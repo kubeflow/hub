@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -18,6 +19,22 @@ import (
 	"github.com/kubeflow/hub/internal/platform/datastore"
 	platformmw "github.com/kubeflow/hub/internal/platform/server/middleware"
 )
+
+// swappableHandler is an http.Handler whose underlying handler can be
+// atomically replaced. Reconnect rebuilds the router from refreshed plugin
+// services and swaps it in here, so in-flight requests finish against the
+// handler they started with while new requests observe the refreshed one.
+type swappableHandler struct {
+	h atomic.Pointer[http.Handler]
+}
+
+func (s *swappableHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	(*s.h.Load()).ServeHTTP(w, r)
+}
+
+func (s *swappableHandler) Store(h http.Handler) {
+	s.h.Store(&h)
+}
 
 // ServerConfig holds the dependencies needed to create a plugin Server.
 type ServerConfig struct {
@@ -45,7 +62,7 @@ type Server struct {
 	cfg             ServerConfig
 	mu              sync.RWMutex
 	plugins         []CatalogPlugin
-	router          chi.Router
+	handler         *swappableHandler
 	readinessChecks []readinessCheck
 	lastReady       map[string]bool
 }
@@ -59,6 +76,7 @@ func NewServer(cfg ServerConfig) *Server {
 		cfg:       cfg,
 		plugins:   make([]CatalogPlugin, 0),
 		lastReady: make(map[string]bool),
+		handler:   &swappableHandler{},
 	}
 }
 
@@ -103,20 +121,35 @@ func (s *Server) Init(ctx context.Context) error {
 	return nil
 }
 
-// MountRoutes creates the HTTP router with all plugin routes and server endpoints.
-// Returns an error if any plugin fails to register its routes.
-func (s *Server) MountRoutes() (chi.Router, error) {
+// MountRoutes builds the HTTP router with all plugin routes and server
+// endpoints, then returns a stable handler backed by it. The returned
+// handler stays valid across calls to Reconnect, which rebuilds the router
+// from refreshed plugin services and swaps it in underneath.
+func (s *Server) MountRoutes() (http.Handler, error) {
+	router, err := s.buildRouter()
+	if err != nil {
+		return nil, err
+	}
+	s.handler.Store(router)
+	return s.handler, nil
+}
+
+// buildRouter constructs a fresh router from the plugins' current routes and
+// services. Called once by MountRoutes and again by Reconnect after plugin
+// services have been refreshed with a new RepoSet, so the router — and every
+// provider it mounts — observes the refreshed repositories.
+func (s *Server) buildRouter() (chi.Router, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	s.router = chi.NewRouter()
-	s.router.Use(middleware.Logger)
-	s.router.Use(platformmw.CORSMiddleware(s.cfg.CORSAllowedOrigins))
+	router := chi.NewRouter()
+	router.Use(middleware.Logger)
+	router.Use(platformmw.CORSMiddleware(s.cfg.CORSAllowedOrigins))
 
 	if s.cfg.AlphaSunsetDate != nil {
 		paths := alphaDeprecatedPaths(s.plugins)
 		if len(paths) > 0 {
-			s.router.Use(platformmw.DeprecationMiddleware(platformmw.DeprecationConfig{
+			router.Use(platformmw.DeprecationMiddleware(platformmw.DeprecationConfig{
 				SunsetDate: *s.cfg.AlphaSunsetDate,
 				Paths:      paths,
 			}))
@@ -128,15 +161,15 @@ func (s *Server) MountRoutes() (chi.Router, error) {
 
 	for _, p := range s.plugins {
 		s.cfg.Logger.Info("mounting plugin routes", "plugin", p.Name())
-		if err := p.RegisterRoutes(s.router); err != nil {
+		if err := p.RegisterRoutes(router); err != nil {
 			return nil, fmt.Errorf("plugin %s failed to register routes: %w", p.Name(), err)
 		}
 	}
 
-	s.router.Get("/healthz", s.healthHandler)
-	s.router.Get("/readyz", s.readyHandler)
+	router.Get("/healthz", s.healthHandler)
+	router.Get("/readyz", s.readyHandler)
 
-	return s.router, nil
+	return router, nil
 }
 
 // Start starts all plugins' background operations.
@@ -196,10 +229,12 @@ func (s *Server) NotifyLeader(ctx context.Context) {
 	wg.Wait()
 }
 
-// Reconnect updates the server's RepoSet and notifies all Reconnectable plugins
-// to refresh their cached repository references and type IDs. This must be
-// called after RunMigrations recreates the database schema from scratch (e.g.,
-// after emptyDir data loss).
+// Reconnect updates the server's RepoSet, notifies all Reconnectable plugins
+// to refresh their cached repository references and type IDs, then rebuilds
+// and atomically swaps in the HTTP router so every mounted provider is
+// reconstructed from the refreshed services. This must be called after
+// RunMigrations recreates the database schema from scratch (e.g., after
+// emptyDir data loss).
 func (s *Server) Reconnect(ctx context.Context, repoSet datastore.RepoSet) error {
 	s.mu.Lock()
 	s.cfg.RepoSet = repoSet
@@ -225,7 +260,22 @@ func (s *Server) Reconnect(ctx context.Context, repoSet datastore.RepoSet) error
 			errs = append(errs, fmt.Errorf("plugin %s reconnect failed: %w", p.Name(), err))
 		}
 	}
-	return errors.Join(errs...)
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+
+	// Rebuild the router so every mounted provider is reconstructed from the
+	// plugins' refreshed services, then atomically swap it in. Providers
+	// built during the original MountRoutes captured their repositories by
+	// value; without this, they would keep querying through the pre-recovery
+	// RepoSet and its now-stale type IDs even though the plugins themselves
+	// were reconnected above.
+	router, err := s.buildRouter()
+	if err != nil {
+		return fmt.Errorf("remounting routes after reconnect: %w", err)
+	}
+	s.handler.Store(router)
+	return nil
 }
 
 // Plugins returns the list of initialized plugins.

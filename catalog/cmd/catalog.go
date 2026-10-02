@@ -205,7 +205,7 @@ func runCatalogServer(cmd *cobra.Command, _ []string) (result error) {
 		return startupError("error initializing plugins", err)
 	}
 
-	router, err := pluginServer.MountRoutes()
+	handler, err := pluginServer.MountRoutes()
 	if err != nil {
 		return fmt.Errorf("error mounting routes: %w", err)
 	}
@@ -248,7 +248,7 @@ func runCatalogServer(cmd *cobra.Command, _ []string) (result error) {
 
 	server := &http.Server{
 		Addr:    catalogCfg.ListenAddress,
-		Handler: middleware.ValidationMiddleware(router),
+		Handler: middleware.ValidationMiddleware(handler),
 	}
 
 	g.Go(func() error {
