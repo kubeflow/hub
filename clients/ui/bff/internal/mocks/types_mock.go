@@ -6,17 +6,17 @@ import (
 	"strconv"
 
 	"github.com/brianvoe/gofakeit/v7"
-	"github.com/kubeflow/hub/pkg/openapi"
+	openapiv1 "github.com/kubeflow/hub/pkg/openapi-v1"
 )
 
-func GenerateMockRegisteredModelList() openapi.RegisteredModelList {
-	var models []openapi.RegisteredModel
+func GenerateMockRegisteredModelList() openapiv1.RegisteredModelList {
+	var models []openapiv1.RegisteredModel
 	for i := 0; i < 2; i++ {
 		model := GenerateMockRegisteredModel()
 		models = append(models, model)
 	}
 
-	return openapi.RegisteredModelList{
+	return openapiv1.RegisteredModelList{
 		NextPageToken: gofakeit.UUID(),
 		PageSize:      int32(gofakeit.Number(1, 20)),
 		Size:          int32(len(models)),
@@ -24,11 +24,11 @@ func GenerateMockRegisteredModelList() openapi.RegisteredModelList {
 	}
 }
 
-func GenerateMockRegisteredModel() openapi.RegisteredModel {
-	model := openapi.RegisteredModel{
-		CustomProperties: map[string]openapi.MetadataValue{
+func GenerateMockRegisteredModel() openapiv1.RegisteredModel {
+	model := openapiv1.RegisteredModel{
+		CustomProperties: map[string]openapiv1.MetadataValue{
 			"example_key": {
-				MetadataStringValue: &openapi.MetadataStringValue{
+				MetadataStringValue: &openapiv1.MetadataStringValue{
 					StringValue:  gofakeit.Sentence(3),
 					MetadataType: "string",
 				},
@@ -41,16 +41,16 @@ func GenerateMockRegisteredModel() openapi.RegisteredModel {
 		CreateTimeSinceEpoch:     randomEpochTime(),
 		LastUpdateTimeSinceEpoch: randomEpochTime(),
 		Owner:                    stringToPointer(gofakeit.Name()),
-		State:                    stateToPointer(openapi.RegisteredModelState(gofakeit.RandomString([]string{string(openapi.REGISTEREDMODELSTATE_LIVE), string(openapi.REGISTEREDMODELSTATE_ARCHIVED)}))),
+		State:                    stateToPointer(openapiv1.RegisteredModelState(gofakeit.RandomString([]string{string(openapiv1.REGISTEREDMODELSTATE_LIVE), string(openapiv1.REGISTEREDMODELSTATE_ARCHIVED)}))),
 	}
 	return model
 }
 
-func GenerateMockModelVersion() openapi.ModelVersion {
-	model := openapi.ModelVersion{
-		CustomProperties: map[string]openapi.MetadataValue{
+func GenerateMockModelVersion() openapiv1.ModelVersion {
+	model := openapiv1.ModelVersion{
+		CustomProperties: map[string]openapiv1.MetadataValue{
 			"example_key": {
-				MetadataStringValue: &openapi.MetadataStringValue{
+				MetadataStringValue: &openapiv1.MetadataStringValue{
 					StringValue:  gofakeit.Sentence(3),
 					MetadataType: "string",
 				},
@@ -63,20 +63,20 @@ func GenerateMockModelVersion() openapi.ModelVersion {
 		CreateTimeSinceEpoch:     randomEpochTime(),
 		LastUpdateTimeSinceEpoch: randomEpochTime(),
 		Author:                   stringToPointer(gofakeit.Name()),
-		State:                    stateToPointer(openapi.ModelVersionState(gofakeit.RandomString([]string{string(openapi.MODELVERSIONSTATE_LIVE), string(openapi.MODELVERSIONSTATE_ARCHIVED)}))),
+		State:                    stateToPointer(openapiv1.ModelVersionState(gofakeit.RandomString([]string{string(openapiv1.MODELVERSIONSTATE_LIVE), string(openapiv1.MODELVERSIONSTATE_ARCHIVED)}))),
 	}
 	return model
 }
 
-func GenerateMockModelVersionList() openapi.ModelVersionList {
-	var versions []openapi.ModelVersion
+func GenerateMockModelVersionList() openapiv1.ModelVersionList {
+	var versions []openapiv1.ModelVersion
 
 	for i := 0; i < 2; i++ {
 		version := GenerateMockModelVersion()
 		versions = append(versions, version)
 	}
 
-	return openapi.ModelVersionList{
+	return openapiv1.ModelVersionList{
 		NextPageToken: gofakeit.UUID(),
 		PageSize:      int32(gofakeit.Number(1, 20)),
 		Size:          int32(len(versions)),
@@ -84,12 +84,12 @@ func GenerateMockModelVersionList() openapi.ModelVersionList {
 	}
 }
 
-func GenerateMockModelArtifact() openapi.ModelArtifact {
-	artifact := openapi.ModelArtifact{
+func GenerateMockModelArtifact() openapiv1.ModelArtifact {
+	artifact := openapiv1.ModelArtifact{
 		ArtifactType: stringToPointer("model-artifact"),
-		CustomProperties: map[string]openapi.MetadataValue{
+		CustomProperties: map[string]openapiv1.MetadataValue{
 			"example_key": {
-				MetadataStringValue: &openapi.MetadataStringValue{
+				MetadataStringValue: &openapiv1.MetadataStringValue{
 					StringValue:  gofakeit.Sentence(3),
 					MetadataType: "string",
 				},
@@ -112,15 +112,15 @@ func GenerateMockModelArtifact() openapi.ModelArtifact {
 	return artifact
 }
 
-func GenerateMockModelArtifactList() openapi.ModelArtifactList {
-	var artifacts []openapi.ModelArtifact
+func GenerateMockModelArtifactList() openapiv1.ModelArtifactList {
+	var artifacts []openapiv1.ModelArtifact
 
 	for i := 0; i < 2; i++ {
 		artifact := GenerateMockModelArtifact()
 		artifacts = append(artifacts, artifact)
 	}
 
-	return openapi.ModelArtifactList{
+	return openapiv1.ModelArtifactList{
 		NextPageToken: gofakeit.UUID(),
 		PageSize:      int32(gofakeit.Number(1, 20)),
 		Size:          int32(len(artifacts)),
@@ -143,15 +143,15 @@ func randomEpochTime() *string {
 	return stringToPointer(fmt.Sprintf("%d", gofakeit.Date().UnixMilli()))
 }
 
-func randomArtifactState() *openapi.ArtifactState {
-	return stateToPointer(openapi.ArtifactState(gofakeit.RandomString([]string{
-		string(openapi.ARTIFACTSTATE_LIVE),
-		string(openapi.ARTIFACTSTATE_DELETED),
-		string(openapi.ARTIFACTSTATE_ABANDONED),
-		string(openapi.ARTIFACTSTATE_MARKED_FOR_DELETION),
-		string(openapi.ARTIFACTSTATE_PENDING),
-		string(openapi.ARTIFACTSTATE_REFERENCE),
-		string(openapi.ARTIFACTSTATE_UNKNOWN),
+func randomArtifactState() *openapiv1.ArtifactState {
+	return stateToPointer(openapiv1.ArtifactState(gofakeit.RandomString([]string{
+		string(openapiv1.ARTIFACTSTATE_LIVE),
+		string(openapiv1.ARTIFACTSTATE_DELETED),
+		string(openapiv1.ARTIFACTSTATE_ABANDONED),
+		string(openapiv1.ARTIFACTSTATE_MARKED_FOR_DELETION),
+		string(openapiv1.ARTIFACTSTATE_PENDING),
+		string(openapiv1.ARTIFACTSTATE_REFERENCE),
+		string(openapiv1.ARTIFACTSTATE_UNKNOWN),
 	})))
 }
 

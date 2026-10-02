@@ -115,7 +115,7 @@ export const createMockModelsForLabel = (
 
       return mockCatalogModel({
         name,
-        source_id: source.id,
+        sourceId: source.id,
         customProperties,
         ...(isValidated && {
           validatedTasks: [ValidatedConfiguration.TOOL_CALLING],
@@ -186,7 +186,7 @@ export const interceptAllModels = (modelsPerCategory: number, useValidatedModel:
       const name = isValidated ? 'validated-model' : `all-models-model-${i + 1}`;
       return mockCatalogModel({
         name,
-        source_id: 'sample-source',
+        sourceId: 'sample-source',
         customProperties,
         ...(isValidated && {
           validatedTasks: [ValidatedConfiguration.TOOL_CALLING],
@@ -575,7 +575,7 @@ export const createHfAccessCardModel = ({
 
   return mockCatalogModel({
     name,
-    source_id: 'hugging_face_source',
+    sourceId: 'hugging_face_source',
     provider: 'Meta',
     description: isGatedDenied ? '' : description,
     tasks: isGatedDenied ? [] : ['text-to-text'],
@@ -632,7 +632,7 @@ export const createGatedDeniedDetailsModel = (): CatalogModel =>
     provider: 'Meta',
     description: '',
     readme: '',
-    source_id: GATED_DENIED_DETAILS_SOURCE_ID,
+    sourceId: GATED_DENIED_DETAILS_SOURCE_ID,
     customProperties: buildHfAccessCustomProperties('gated_auto', 'false'),
   });
 

@@ -227,7 +227,7 @@ describe('validatedModelUtils', () => {
     const createMockModel = (name: string): CatalogModel =>
       ({
         name,
-        source_id: 'test-source',
+        sourceId: 'test-source',
       }) as CatalogModel;
 
     it('should return empty array when given empty array', () => {

@@ -46,7 +46,7 @@ type AgentEnvVar struct {
 type Agent struct {
 	ID                       string                            `json:"id"`
 	Name                     string                            `json:"name"`
-	SourceID                 *string                           `json:"source_id,omitempty"`
+	SourceID                 *string                           `json:"sourceId,omitempty"`
 	DisplayName              *string                           `json:"displayName,omitempty"`
 	Description              *string                           `json:"description,omitempty"`
 	Readme                   *string                           `json:"readme,omitempty"`
