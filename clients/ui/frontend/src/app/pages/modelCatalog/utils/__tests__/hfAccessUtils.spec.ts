@@ -1,20 +1,10 @@
-/* eslint-disable camelcase */
-import { render } from '@testing-library/react';
-import { CatalogModel } from '~/app/modelCatalogTypes';
-import { CatalogModelCustomPropertyKey, HfAccessType } from '~/concepts/modelCatalog/const';
-import { ModelRegistryMetadataType } from '~/app/types';
+import type { CatalogModel } from '~/app/modelCatalogTypes';
+import { HfAccessType } from '~/concepts/modelCatalog/const';
 import {
   getHfAccessLabelVariant,
   getHfAccessType,
-  getHfGatedAccessGranted,
-  getHuggingFaceModelUrl,
-  isHfGatedAccessDenied,
   isHfGatedAccessDeniedFromFields,
 } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
-import {
-  getGatedAccessRequiredDescriptionText,
-  renderGatedAccessRequiredDescription,
-} from '~/app/pages/modelCatalog/utils/gatedAccessRequiredUtils';
 import { isPreviewModelGatedAccessDenied } from '~/app/pages/modelCatalogSettings/utils/modelCatalogSettingsUtils';
 import { createHfAccessCatalogModel } from '~/__tests__/utils/createHfAccessModel';
 
@@ -23,13 +13,11 @@ describe('HF access utilities', () => {
     const model: CatalogModel = { name: 'org/model' };
     expect(getHfAccessType(model)).toBeNull();
     expect(getHfAccessLabelVariant(model)).toBeNull();
-    expect(isHfGatedAccessDenied(model)).toBe(false);
   });
 
   it('returns private for private HF models', () => {
     const model = createHfAccessCatalogModel({ hfAccessType: HfAccessType.PRIVATE });
     expect(getHfAccessLabelVariant(model)).toBe('private');
-    expect(isHfGatedAccessDenied(model)).toBe(false);
   });
 
   it('returns gated for gated models with access granted', () => {
@@ -44,62 +32,27 @@ describe('HF access utilities', () => {
 
     expect(getHfAccessLabelVariant(autoGranted)).toBe('gated');
     expect(getHfAccessLabelVariant(manualGranted)).toBe('gated');
-    expect(isHfGatedAccessDenied(autoGranted)).toBe(false);
   });
 
-  it('returns gated-denied for gated models without access', () => {
-    const autoDenied = createHfAccessCatalogModel({
+  it('returns gated for gated models regardless of access grant metadata', () => {
+    const autoWithoutGrant = createHfAccessCatalogModel({
       hfAccessType: HfAccessType.GATED_AUTO,
       hfGatedAccessGranted: 'false',
     });
-    const manualDenied = createHfAccessCatalogModel({
+    const manualWithoutGrant = createHfAccessCatalogModel({
       hfAccessType: HfAccessType.GATED_MANUAL,
       hfGatedAccessGranted: 'false',
     });
+    const missingGrant = createHfAccessCatalogModel({ hfAccessType: HfAccessType.GATED_AUTO });
 
-    expect(getHfAccessLabelVariant(autoDenied)).toBe('gated-denied');
-    expect(getHfAccessLabelVariant(manualDenied)).toBe('gated-denied');
-    expect(isHfGatedAccessDenied(autoDenied)).toBe(true);
-    expect(isHfGatedAccessDenied(manualDenied)).toBe(true);
-  });
-
-  it('returns gated-denied when hf_gated_access_granted is missing on gated models', () => {
-    const model = createHfAccessCatalogModel({ hfAccessType: HfAccessType.GATED_AUTO });
-
-    expect(getHfGatedAccessGranted(model)).toBe(false);
-    expect(getHfAccessLabelVariant(model)).toBe('gated-denied');
-    expect(isHfGatedAccessDenied(model)).toBe(true);
-  });
-
-  it('reads hf_gated_access_granted from boolean metadata', () => {
-    const model: CatalogModel = {
-      name: 'org/model',
-      customProperties: {
-        [CatalogModelCustomPropertyKey.HF_ACCESS_TYPE]: {
-          string_value: HfAccessType.GATED_AUTO,
-          metadataType: ModelRegistryMetadataType.STRING,
-        },
-        [CatalogModelCustomPropertyKey.HF_GATED_ACCESS_GRANTED]: {
-          bool_value: true,
-          metadataType: ModelRegistryMetadataType.BOOL,
-        },
-      },
-    };
-
-    expect(getHfGatedAccessGranted(model)).toBe(true);
-    expect(getHfAccessLabelVariant(model)).toBe('gated');
+    expect(getHfAccessLabelVariant(autoWithoutGrant)).toBe('gated');
+    expect(getHfAccessLabelVariant(manualWithoutGrant)).toBe('gated');
+    expect(getHfAccessLabelVariant(missingGrant)).toBe('gated');
   });
 
   it('returns null for public HF models', () => {
     const model = createHfAccessCatalogModel({ hfAccessType: HfAccessType.PUBLIC });
     expect(getHfAccessLabelVariant(model)).toBeNull();
-  });
-
-  it('builds the Hugging Face model URL from the model name', () => {
-    const model: CatalogModel = { name: 'meta-llama/Llama-3.1-8B-Instruct-INT8' };
-    expect(getHuggingFaceModelUrl(model)).toBe(
-      'https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct-INT8',
-    );
   });
 });
 
@@ -116,23 +69,6 @@ describe('isHfGatedAccessDeniedFromFields', () => {
   it('returns false for non-gated access types', () => {
     expect(isHfGatedAccessDeniedFromFields('public', false)).toBe(false);
     expect(isHfGatedAccessDeniedFromFields(undefined, false)).toBe(false);
-  });
-});
-
-describe('gated access required description', () => {
-  it('formats generic and personalized descriptions from shared copy', () => {
-    expect(getGatedAccessRequiredDescriptionText()).toBe(
-      'This model is gated on Hugging Face. Request access on Hugging Face. After access is granted on Hugging Face, it might take a few hours for this model to show as available in the catalog.',
-    );
-    expect(getGatedAccessRequiredDescriptionText('johndoe')).toBe(
-      'This model is gated on Hugging Face. Log in to the Hugging Face account johndoe and request access. After access is granted on Hugging Face, it might take a few hours for this model to show as available in the catalog.',
-    );
-  });
-
-  it('renders personalized description with bold username', () => {
-    const { container } = render(renderGatedAccessRequiredDescription('alice'));
-    expect(container.textContent).toContain('Log in to the Hugging Face account');
-    expect(container.querySelector('strong')?.textContent).toBe('alice');
   });
 });
 
