@@ -1,0 +1,2 @@
+-- The repoint performed by the up migration is not reversible: the original
+-- (duplicate) type_id values are not recorded anywhere.

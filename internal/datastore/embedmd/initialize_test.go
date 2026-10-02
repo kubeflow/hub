@@ -2,6 +2,7 @@ package embedmd
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"sync"
 	"testing"
@@ -12,6 +13,7 @@ import (
 	"github.com/kubeflow/hub/internal/platform/datastore"
 	platformdb "github.com/kubeflow/hub/internal/platform/db"
 	"github.com/kubeflow/hub/internal/platform/db/postgres"
+	"github.com/kubeflow/hub/internal/platform/db/repository"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -66,6 +68,56 @@ func TestInitializePostgres(t *testing.T) {
 		require.Equal(t, 1, count)
 		require.NoError(t, conn.Raw(`SELECT COUNT(*) FROM "TypeProperty" p JOIN "Type" t ON p.type_id = t.id WHERE t.name = 'test.NewArtifact' AND p.name = 'uri'`).Scan(&count).Error)
 		require.Equal(t, 1, count)
+	})
+
+	t.Run("mixed_version_initialization", func(t *testing.T) {
+		reset(t)
+		// Migrations must exist before type registration can run; a legacy
+		// pod would have run them too, just without ever taking the
+		// initialization advisory lock around type registration afterward.
+		require.NoError(t, postgres.MigrateContext(t.Context(), conn))
+
+		repo := repository.NewTypeRepository(conn)
+		kind := int32(1)
+
+		// Race TypeRepository.Save (the current, fixed code) against a
+		// plain, unconditional insert that emulates a pod still running the
+		// previous image -- one that never acquires the initialization
+		// advisory lock and has no conflict handling, exactly like Save
+		// before this fix. Repeated across many distinct names to make
+		// actually interleaving the two lookup-then-insert windows likely;
+		// on a pre-fix Save this reliably produces duplicate Type rows
+		// within a handful of iterations.
+		for i := range 50 {
+			typeName := fmt.Sprintf("test.RaceType%d", i)
+
+			var wg sync.WaitGroup
+			var saveErr, legacyErr error
+			start := make(chan struct{})
+
+			wg.Go(func() {
+				<-start
+				_, saveErr = repo.Save(&models.TypeImpl{
+					Attributes: &models.TypeAttributes{Name: &typeName, TypeKind: &kind},
+				})
+			})
+			wg.Go(func() {
+				<-start
+				legacyErr = conn.Exec(`INSERT INTO "Type" (name, type_kind) VALUES (?, 1)`, typeName).Error
+			})
+			close(start)
+			wg.Wait()
+
+			require.NoError(t, saveErr, "Save must never fail, whether it wins or loses the race")
+			if legacyErr != nil {
+				assert.Contains(t, legacyErr.Error(), "duplicate key value violates unique constraint",
+					"a losing legacy insert must fail cleanly on the UNIQUE(name) constraint, not silently create a second row")
+			}
+
+			var count int
+			require.NoError(t, conn.Raw(`SELECT COUNT(*) FROM "Type" WHERE name = ?`, typeName).Scan(&count).Error)
+			require.Equal(t, 1, count, "exactly one Type row must exist for %s regardless of which writer won", typeName)
+		}
 	})
 
 	t.Run("lock_deadline", func(t *testing.T) {

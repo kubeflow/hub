@@ -7,6 +7,7 @@ import (
 	"github.com/kubeflow/hub/internal/platform/db/entity"
 	"github.com/kubeflow/hub/internal/platform/db/schema"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type TypeRepositoryImpl struct {
@@ -74,8 +75,27 @@ func (r *TypeRepositoryImpl) Save(t entity.Type) (entity.Type, error) {
 			ExternalID:  attr.ExternalID,
 		}
 
-		if err := r.db.Create(&st).Error; err != nil {
+		// Tolerate a concurrent initializer inserting the same name first
+		// (e.g. a legacy pod that doesn't take the initialization advisory
+		// lock, or any MySQL deployment, which never takes it). The UNIQUE
+		// constraint on name means at most one insert can win; ON CONFLICT
+		// DO NOTHING lets the loser fall through to a re-select below
+		// instead of erroring.
+		if err := r.db.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "name"}},
+			DoNothing: true,
+		}).Create(&st).Error; err != nil {
 			return t, err
+		}
+		if st.ID == 0 {
+			// Our insert was skipped because a concurrent writer won; fetch
+			// the authoritative row it created.
+			if err := r.db.Where("name = ?", *attr.Name).First(&st).Error; err != nil {
+				return t, err
+			}
+			if st.TypeKind != *attr.TypeKind {
+				return t, fmt.Errorf("invalid type: kind is %d, cannot change to kind %d", st.TypeKind, *attr.TypeKind)
+			}
 		}
 	} else {
 		return t, err

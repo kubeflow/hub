@@ -1,0 +1,1 @@
+-- The row dedup performed by the up migration is not reversible.

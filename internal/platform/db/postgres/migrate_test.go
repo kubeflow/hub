@@ -179,6 +179,66 @@ func TestMigrations(t *testing.T) {
 	assert.Greater(t, count, int64(0))
 }
 
+// TestTypeNameUniqueMigrationDedupesExistingRows verifies migration 000026
+// (uq_type_name) collapses pre-existing duplicate Type rows -- the state a
+// database could be in after the TypeRepository.Save race this fix closes --
+// before adding the UNIQUE(name) constraint, and repoints a real Artifact
+// row that referenced the duplicate being removed.
+func TestTypeNameUniqueMigrationDedupesExistingRows(t *testing.T) {
+	cleanupTestData(t, sharedDB)
+
+	migrator, err := postgres.NewPostgresMigrator(sharedDB)
+	require.NoError(t, err)
+
+	// Bring the shared database to a known state (fully migrated), then step
+	// back exactly one migration -- 000026_type_name_unique -- so the
+	// UNIQUE(name) constraint does not yet exist and duplicate rows can be
+	// inserted directly. Stepping relative to "fully migrated" rather than
+	// to an absolute version keeps this independent of how many migrations
+	// precede it and of whatever state other tests in this file left behind.
+	require.NoError(t, migrator.Migrate())
+	downOne := -1
+	require.NoError(t, migrator.Down(&downOne))
+
+	// Two duplicate Type rows for the same name, as the pre-fix race could
+	// produce: the lower id is the one later migrations/the application
+	// expect to survive.
+	require.NoError(t, sharedDB.Exec(
+		`INSERT INTO "Type" (name, type_kind) VALUES ('test.DedupType', 1)`).Error)
+	var survivorID int64
+	require.NoError(t, sharedDB.Raw(
+		`SELECT id FROM "Type" WHERE name = 'test.DedupType'`).Scan(&survivorID).Error)
+	require.NoError(t, sharedDB.Exec(
+		`INSERT INTO "Type" (name, type_kind) VALUES ('test.DedupType', 1)`).Error)
+	var dupID int64
+	require.NoError(t, sharedDB.Raw(
+		`SELECT id FROM "Type" WHERE name = 'test.DedupType' AND id != ?`, survivorID).Scan(&dupID).Error)
+
+	// A real Artifact row referencing the duplicate must be repointed to the
+	// survivor rather than left dangling once the duplicate is removed.
+	require.NoError(t, sharedDB.Exec(
+		`INSERT INTO "Artifact" (type_id, name, uri) VALUES (?, 'test-artifact', 'file:///dedup-test')`, dupID).Error)
+
+	// Apply 000026.
+	require.NoError(t, migrator.Up(nil))
+
+	var count int64
+	require.NoError(t, sharedDB.Raw(`SELECT COUNT(*) FROM "Type" WHERE name = 'test.DedupType'`).Scan(&count).Error)
+	assert.Equal(t, int64(1), count, "duplicate Type rows must be collapsed to one survivor")
+
+	var remainingID int64
+	require.NoError(t, sharedDB.Raw(`SELECT id FROM "Type" WHERE name = 'test.DedupType'`).Scan(&remainingID).Error)
+	assert.Equal(t, survivorID, remainingID, "the lowest id must be the surviving row")
+
+	var artifactTypeID int64
+	require.NoError(t, sharedDB.Raw(`SELECT type_id FROM "Artifact" WHERE name = 'test-artifact'`).Scan(&artifactTypeID).Error)
+	assert.Equal(t, survivorID, artifactTypeID, "the Artifact row must be repointed to the surviving Type")
+
+	// The constraint itself must now reject a fresh duplicate.
+	err = sharedDB.Exec(`INSERT INTO "Type" (name, type_kind) VALUES ('test.DedupType', 1)`).Error
+	assert.Error(t, err)
+}
+
 func TestDownMigrations(t *testing.T) {
 	cleanupTestData(t, sharedDB)
 
