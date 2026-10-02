@@ -1,13 +1,14 @@
 package embedmd
 
 import (
+	"context"
 	"fmt"
 	"maps"
 	"reflect"
 
 	"github.com/golang/glog"
-	"github.com/kubeflow/hub/internal/platform/datastore"
 	"github.com/kubeflow/hub/internal/db/service"
+	"github.com/kubeflow/hub/internal/platform/datastore"
 	"gorm.io/gorm"
 )
 
@@ -30,7 +31,14 @@ type repoSetImpl struct {
 }
 
 func newRepoSet(db *gorm.DB, spec *datastore.Spec) (datastore.RepoSet, error) {
-	typeRepository := service.NewTypeRepository(db)
+	return newRepoSetContext(db.Statement.Context, db, spec)
+}
+
+func newRepoSetContext(ctx context.Context, db *gorm.DB, spec *datastore.Spec) (datastore.RepoSet, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	typeRepository := service.NewTypeRepository(db.WithContext(ctx))
 
 	glog.Infof("Getting types...")
 

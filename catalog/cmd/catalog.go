@@ -16,8 +16,7 @@ import (
 	"github.com/kubeflow/hub/catalog/internal/leader"
 	"github.com/kubeflow/hub/catalog/internal/plugin"
 	"github.com/kubeflow/hub/internal/datastore/embedmd"
-	"github.com/kubeflow/hub/internal/platform/datastore"
-	"github.com/kubeflow/hub/internal/platform/db"
+	"github.com/kubeflow/hub/internal/platform/db/postgres"
 	"github.com/kubeflow/hub/internal/platform/server/middleware"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
@@ -46,9 +45,23 @@ const (
 	defaultLeaderLockDuration = 60 * time.Second
 	defaultLeaderHeartbeat    = 15 * time.Second
 
-	envLeaderLockDuration = "CATALOG_LEADER_LOCK_DURATION"
-	envLeaderHeartbeat    = "CATALOG_LEADER_HEARTBEAT"
+	envLeaderLockDuration        = "CATALOG_LEADER_LOCK_DURATION"
+	envLeaderHeartbeat           = "CATALOG_LEADER_HEARTBEAT"
+	envInitializationTimeout     = "CATALOG_INITIALIZATION_TIMEOUT"
+	defaultInitializationTimeout = 5 * time.Minute
 )
+
+func getInitializationTimeout() (time.Duration, error) {
+	value := os.Getenv(envInitializationTimeout)
+	if value == "" {
+		return defaultInitializationTimeout, nil
+	}
+	duration, err := time.ParseDuration(value)
+	if err != nil || duration <= 0 {
+		return 0, fmt.Errorf("invalid %s %q: must be a positive duration", envInitializationTimeout, value)
+	}
+	return duration, nil
+}
 
 // parseDurationEnv parses a duration from an environment variable,
 // falling back to a default value if unset or invalid.
@@ -100,10 +113,25 @@ func init() {
 			"If empty (default), no deprecation headers are added to v1alpha1 responses. Can also be set via CATALOG_ALPHA_SUNSET_DATE environment variable.")
 }
 
-func runCatalogServer(cmd *cobra.Command, _ []string) error {
+func runCatalogServer(cmd *cobra.Command, _ []string) (result error) {
+	signalCtx, stopSignals := signal.NotifyContext(cmd.Context(), syscall.SIGTERM, syscall.SIGINT)
+	defer stopSignals()
+	ctx, cancel := context.WithCancelCause(signalCtx)
+	defer cancel(nil)
+	initializationTimeout, err := getInitializationTimeout()
+	if err != nil {
+		return err
+	}
+	// Normalize externally canceled startup before cleanup joins its errors.
+	startupError := func(message string, err error) error {
+		if signalCtx.Err() != nil {
+			return nil
+		}
+		return fmt.Errorf("%s: %w", message, err)
+	}
 	if !cmd.Flags().Changed("cors-allowed-origins") {
 		if envVal := os.Getenv("CATALOG_CORS_ALLOWED_ORIGINS"); envVal != "" {
-			for _, origin := range strings.Split(envVal, ",") {
+			for origin := range strings.SplitSeq(envVal, ",") {
 				if o := strings.TrimSpace(origin); o != "" {
 					catalogCfg.CORSAllowedOrigins = append(catalogCfg.CORSAllowedOrigins, o)
 				}
@@ -126,78 +154,36 @@ func runCatalogServer(cmd *cobra.Command, _ []string) error {
 		glog.Infof("Alpha API (v1alpha1) deprecation headers enabled; sunset date: %s", catalogCfg.AlphaSunsetDate)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Database setup
-	err := db.Init(
-		"postgres", // We only support postgres right now
-		"",         // Empty DSN, see https://www.postgresql.org/docs/current/libpq-envars.html
-		nil,        // Default TLS config
-	)
-	if err != nil {
-		return fmt.Errorf("error creating datastore: %w", err)
-	}
-	gormDB, err := db.GetConnector().Connect()
-	if err != nil {
-		return fmt.Errorf("error connecting to database: %w", err)
-	}
-
-	ds, err := datastore.NewConnector("embedmd", &embedmd.EmbedMDConfig{
-		DB:                gormDB,
-		WaitForMigrations: true,
-	})
-	if err != nil {
-		return fmt.Errorf("error creating datastore: %w", err)
-	}
-
-	// Leader election setup
-	lockDuration, heartbeat := getLeaderElectionConfig()
-	glog.Infof("Leader election configured: lock duration=%v, heartbeat=%v", lockDuration, heartbeat)
-
-	elector, err := leader.NewLeaderElector(gormDB, ctx, leaderLockName, lockDuration, heartbeat)
-	if err != nil {
-		return fmt.Errorf("error creating leader elector: %w", err)
-	}
 	spec, err := service.DatastoreSpec()
 	if err != nil {
 		return fmt.Errorf("error building datastore spec: %w", err)
 	}
-
-	var pluginServer *plugin.Server
-	pluginReady := make(chan struct{})
-	elector.OnBecomeLeader(func(leaderCtx context.Context) {
-		if err := ds.RunMigrations(spec); err != nil {
-			glog.Errorf("unable to run migrations: %v — canceling to trigger restart", err)
-			cancel()
-			return
-		}
-		select {
-		case <-pluginReady:
-		case <-leaderCtx.Done():
-			return
-		}
-		newRepoSet, err := ds.Reconnect(spec)
-		if err != nil {
-			glog.Errorf("unable to reconnect after migrations: %v — canceling to trigger restart", err)
-			cancel()
-			return
-		}
-		if err := pluginServer.Reconnect(leaderCtx, newRepoSet); err != nil {
-			glog.Errorf("unable to reconnect plugins: %v — canceling to trigger restart", err)
-			cancel()
-			return
-		}
-		pluginServer.NotifyLeader(leaderCtx)
-	})
-
-	repoSet, err := ds.Connect(spec)
+	// Each pod initializes the database independently of ingestion leadership.
+	initCtx, initCancel := context.WithTimeout(ctx, initializationTimeout)
+	defer initCancel()
+	gormDB, err := postgres.NewPostgresDBConnector("", nil).ConnectContext(initCtx)
 	if err != nil {
-		return fmt.Errorf("error initializing datastore: %v", err)
+		return startupError("error connecting to database", err)
 	}
 
+	sqlDB, err := gormDB.DB()
+	if err != nil {
+		return fmt.Errorf("error getting database pool: %w", err)
+	}
+	defer func() { result = errors.Join(result, sqlDB.Close()) }()
+	ds, err := embedmd.NewEmbedMDService(&embedmd.EmbedMDConfig{DB: gormDB})
+	if err != nil {
+		return fmt.Errorf("error creating datastore: %w", err)
+	}
+
+	repoSet, err := ds.Initialize(initCtx, spec)
+	if err != nil {
+		return startupError("error initializing datastore", err)
+	}
+	initCancel()
+
 	// Plugin server setup
-	pluginServer = plugin.NewServer(plugin.ServerConfig{
+	pluginServer := plugin.NewServer(plugin.ServerConfig{
 		DB:                     gormDB,
 		ConfigPaths:            catalogCfg.ConfigPath,
 		PerformanceMetricsPath: catalogCfg.PerformanceMetricsPath,
@@ -206,10 +192,17 @@ func runCatalogServer(cmd *cobra.Command, _ []string) error {
 		AlphaSunsetDate:        alphaSunsetDate,
 	})
 
-	pluginServer.AddReadinessCheck("leader_election", elector.Healthy)
-
+	// Stop every successfully initialized plugin, including on startup errors.
+	defer func() {
+		cancel(nil)
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer shutdownCancel()
+		if err := pluginServer.Stop(shutdownCtx); err != nil {
+			result = errors.Join(result, fmt.Errorf("plugin shutdown error: %w", err))
+		}
+	}()
 	if err := pluginServer.Init(ctx); err != nil {
-		return fmt.Errorf("error initializing plugins: %w", err)
+		return startupError("error initializing plugins", err)
 	}
 
 	router, err := pluginServer.MountRoutes()
@@ -218,26 +211,45 @@ func runCatalogServer(cmd *cobra.Command, _ []string) error {
 	}
 
 	if err := pluginServer.Start(ctx); err != nil {
-		return fmt.Errorf("error starting plugins: %w", err)
+		return startupError("error starting plugins", err)
 	}
 
-	close(pluginReady)
-
-	// Signal handling
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
-	go func() {
-		sig := <-sigCh
-		glog.Infof("Received signal %v, initiating graceful shutdown", sig)
-		cancel()
+	// Election starts only after plugins are fully constructed and started.
+	// Its context also observes HTTP failures, so g.Wait cannot strand election.
+	g, gctx := errgroup.WithContext(ctx)
+	lockDuration, heartbeat := getLeaderElectionConfig()
+	glog.Infof("Leader election configured: lock duration=%v, heartbeat=%v", lockDuration, heartbeat)
+	elector, err := leader.NewLeaderElector(gormDB, gctx, leaderLockName, lockDuration, heartbeat, initializationTimeout)
+	if err != nil {
+		return startupError("error creating leader elector", err)
+	}
+	defer func() {
+		cancel(nil)
+		_ = elector.Wait() // Reported by the errgroup below.
 	}()
+	pluginServer.AddReadinessCheck("leader_election", elector.Healthy)
+	elector.OnBecomeLeader(func(leaderCtx context.Context) {
+		recoveryCtx, recoveryCancel := context.WithTimeout(leaderCtx, initializationTimeout)
+		defer recoveryCancel()
+		newRepoSet, err := ds.Initialize(recoveryCtx, spec)
+		if err == nil {
+			err = pluginServer.Reconnect(recoveryCtx, newRepoSet)
+		}
+		if err != nil {
+			if leaderCtx.Err() == nil {
+				glog.Errorf("unable to initialize leader datastore: %v — canceling to trigger restart", err)
+				cancel(fmt.Errorf("leader datastore initialization failed: %w", err))
+			}
+			return
+		}
+		recoveryCancel()
+		pluginServer.NotifyLeader(leaderCtx)
+	})
 
 	server := &http.Server{
 		Addr:    catalogCfg.ListenAddress,
 		Handler: middleware.ValidationMiddleware(router),
 	}
-
-	g, gctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
 		glog.Infof("Catalog API server listening on %s", catalogCfg.ListenAddress)
@@ -265,16 +277,11 @@ func runCatalogServer(cmd *cobra.Command, _ []string) error {
 		return nil
 	})
 
-	errs := []error{}
 	if err := g.Wait(); err != nil && !errors.Is(err, context.Canceled) {
-		errs = append(errs, err)
+		result = err
 	}
-
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer shutdownCancel()
-	if err := pluginServer.Stop(shutdownCtx); err != nil {
-		errs = append(errs, fmt.Errorf("plugin shutdown error: %w", err))
+	if cause := context.Cause(ctx); cause != nil && cause != context.Canceled {
+		result = errors.Join(result, cause)
 	}
-
-	return errors.Join(errs...)
+	return result
 }

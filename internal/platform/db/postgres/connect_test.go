@@ -9,6 +9,8 @@ import (
 	"encoding/pem"
 	"fmt"
 	"math/big"
+	"net"
+	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
@@ -19,6 +21,47 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestPostgresConnectContext(t *testing.T) {
+	t.Run("connection_handshake_deadline", func(t *testing.T) {
+		listener, err := net.Listen("tcp", "127.0.0.1:0")
+		require.NoError(t, err)
+		done := make(chan struct{})
+		finish := make(chan struct{})
+		defer func() {
+			close(finish)
+			assert.NoError(t, listener.Close())
+			<-done
+		}()
+		go func() {
+			defer close(done)
+			connection, err := listener.Accept()
+			if err == nil {
+				defer func() { _ = connection.Close() }()
+				<-finish
+			}
+		}()
+		ctx, cancel := context.WithTimeout(t.Context(), 150*time.Millisecond)
+		defer cancel()
+		connector := postgres.NewPostgresDBConnector("postgres://postgres:test@"+listener.Addr().String()+"/test?sslmode=disable", nil)
+		started := time.Now()
+		_, err = connector.ConnectContext(ctx)
+		require.ErrorIs(t, err, context.DeadlineExceeded)
+		require.Less(t, time.Since(started), time.Second)
+	})
+	t.Run("retry_deadline", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(t.Context(), 150*time.Millisecond)
+		defer cancel()
+		parsed, err := url.Parse(postgresContainer.MustConnectionString(t.Context()))
+		require.NoError(t, err)
+		parsed.User = url.UserPassword("postgres", "incorrect")
+		connector := postgres.NewPostgresDBConnector(parsed.String(), nil)
+		started := time.Now()
+		_, err = connector.ConnectContext(ctx)
+		require.ErrorIs(t, err, context.DeadlineExceeded)
+		require.Less(t, time.Since(started), time.Second)
+	})
+}
 
 func TestPostgresDBConnector_Connect_Insecure(t *testing.T) {
 	ctx := context.Background()

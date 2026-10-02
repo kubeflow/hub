@@ -8,8 +8,8 @@ import (
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/kubeflow/hub/catalog/internal/testhelpers"
 	"github.com/kubeflow/hub/catalog/internal/leader"
+	"github.com/kubeflow/hub/catalog/internal/testhelpers"
 	"github.com/kubeflow/hub/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -479,8 +479,8 @@ func TestCrashedPodStaleLockReclaim(t *testing.T) {
 
 	// Bootstrap the schema by creating and immediately canceling a throwaway elector.
 	bootstrapCtx, bootstrapCancel := context.WithCancel(ctx)
-	bootstrapCancel()
 	bootstrap, err := leader.NewLeaderElector(gormDB, bootstrapCtx, lockName, lockDuration, heartbeat)
+	bootstrapCancel()
 	require.NoError(t, err)
 	_ = bootstrap.Wait()
 
@@ -502,7 +502,7 @@ func TestCrashedPodStaleLockReclaim(t *testing.T) {
 		<-ctx.Done()
 	})
 
-	// dbReachable is set after TryCreateTable in constructor
+	// dbReachable is set after schema setup in the constructor.
 	assert.True(t, elector.Healthy(), "pod should be healthy immediately after construction")
 
 	// pglock takes over stale lock within leaseDuration (two-phase CAS)

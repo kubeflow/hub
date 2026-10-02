@@ -1,16 +1,20 @@
 package postgres
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/stdlib"
 	platformdb "github.com/kubeflow/hub/internal/platform/db"
 	"github.com/kubeflow/hub/internal/platform/db/types"
 	_tls "github.com/kubeflow/hub/internal/platform/tls"
+	"golang.org/x/sync/semaphore"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -31,7 +35,7 @@ type PostgresDBConnector struct {
 	DSN          string
 	TLSConfig    *_tls.TLSConfig
 	db           *gorm.DB
-	connectMutex sync.Mutex
+	connectMutex *semaphore.Weighted
 	maxRetries   int
 }
 
@@ -40,9 +44,10 @@ func NewPostgresDBConnector(
 	tlsConfig *_tls.TLSConfig,
 ) *PostgresDBConnector {
 	return &PostgresDBConnector{
-		DSN:        dsn,
-		TLSConfig:  tlsConfig,
-		maxRetries: postgresMaxRetriesDefault,
+		DSN:          dsn,
+		TLSConfig:    tlsConfig,
+		maxRetries:   postgresMaxRetriesDefault,
+		connectMutex: semaphore.NewWeighted(1),
 	}
 }
 
@@ -53,16 +58,26 @@ func (c *PostgresDBConnector) WithMaxRetries(maxRetries int) *PostgresDBConnecto
 }
 
 func (c *PostgresDBConnector) Connect() (*gorm.DB, error) {
+	return c.ConnectContext(context.Background())
+}
+
+// ConnectContext bounds connection attempts and retry delays by ctx. The
+// returned database handle remains usable after ctx is canceled.
+func (c *PostgresDBConnector) ConnectContext(ctx context.Context) (*gorm.DB, error) {
 	// Use mutex to ensure only one connection attempt at a time
-	c.connectMutex.Lock()
-	defer c.connectMutex.Unlock()
+	if err := c.connectMutex.Acquire(ctx, 1); err != nil {
+		return nil, err
+	}
+	defer c.connectMutex.Release(1)
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 
 	// If we already have a working connection, return it
 	if c.db != nil {
 		return c.db, nil
 	}
 
-	var db *gorm.DB
 	var err error
 
 	dsn := c.DSN
@@ -72,30 +87,42 @@ func (c *PostgresDBConnector) Connect() (*gorm.DB, error) {
 			return nil, fmt.Errorf("failed to build DSN with TLS: %w", err)
 		}
 	}
+	config, err := pgx.ParseConfig(dsn)
+	if err != nil {
+		return nil, fmt.Errorf("invalid PostgreSQL connection configuration: %w", err)
+	}
 
 	for i := range c.maxRetries {
-		glog.V(2).Infof("Attempting to connect with DSN: %q (attempt %d/%d)", dsn, i+1, c.maxRetries)
-		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
-			Logger:         logger.Default.LogMode(logger.Silent),
-			TranslateError: true,
-		})
+		glog.V(2).Infof("Attempting to connect to PostgreSQL (attempt %d/%d)", i+1, c.maxRetries)
+		sqlDB := stdlib.OpenDB(*config)
+		err = sqlDB.PingContext(ctx)
 		if err == nil {
-			break
+			var connectedDB *gorm.DB
+			connectedDB, err = gorm.Open(postgres.New(postgres.Config{Conn: sqlDB}), &gorm.Config{
+				Logger:               logger.Default.LogMode(logger.Silent),
+				TranslateError:       true,
+				DisableAutomaticPing: true,
+			})
+			if err == nil {
+				c.db = connectedDB
+				glog.Info("Successfully connected to PostgreSQL database")
+				return c.db, nil
+			}
 		}
-
+		err = errors.Join(err, sqlDB.Close())
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
 		glog.Warningf("Retrying connection to PostgreSQL (attempt %d/%d): %v", i+1, c.maxRetries, err)
-
-		time.Sleep(time.Duration(i+1) * time.Second)
+		if i+1 < c.maxRetries {
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(time.Duration(i+1) * time.Second):
+			}
+		}
 	}
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to PostgreSQL: %w", err)
-	}
-	glog.Info("Successfully connected to PostgreSQL database")
-
-	c.db = db
-
-	return db, nil
+	return nil, fmt.Errorf("failed to connect to PostgreSQL: %w", err)
 }
 
 func (c *PostgresDBConnector) DB() *gorm.DB {

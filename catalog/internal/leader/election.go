@@ -12,6 +12,7 @@ import (
 	"cirello.io/pglock"
 	"github.com/golang/glog"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/kubeflow/hub/internal/platform/db/postgres"
 	"gorm.io/gorm"
 )
 
@@ -20,7 +21,7 @@ const defaultUnhealthyThreshold int32 = 3
 // isFatalError reports whether err indicates a lost pglock schema (SQLSTATE 42P01,
 // "undefined table/sequence"). When resetFunc is available, the run loop attempts
 // in-process recovery; otherwise the process exits so Kubernetes can restart it
-// and recreate the schema via TryCreateTable.
+// and recreate the lock schema.
 func isFatalError(err error) bool {
 	var pgErr *pgconn.PgError
 	return errors.As(err, &pgErr) && pgErr.Code == "42P01"
@@ -141,6 +142,7 @@ type LeaderElector struct {
 //   - lockName: Unique identifier for the distributed lock
 //   - lockDuration: How long the lock is held before expiring
 //   - heartbeatFreq: How often to renew the lock while leader
+//   - initializationTimeout: Optional bound on schema setup and recovery (default five minutes)
 //
 // Returns a configured LeaderElector, or an error if client creation fails.
 // Use OnBecomeLeader to register callbacks that will be invoked when leadership is acquired.
@@ -150,7 +152,18 @@ func NewLeaderElector(
 	lockName string,
 	lockDuration time.Duration,
 	heartbeatFreq time.Duration,
+	initializationTimeout ...time.Duration,
 ) (*LeaderElector, error) {
+	schemaTimeout := 5 * time.Minute
+	if len(initializationTimeout) > 1 {
+		return nil, errors.New("at most one initialization timeout may be provided")
+	}
+	if len(initializationTimeout) == 1 {
+		schemaTimeout = initializationTimeout[0]
+	}
+	if schemaTimeout <= 0 {
+		return nil, errors.New("initialization timeout must be positive")
+	}
 	if gormDB.Name() != "postgres" {
 		return nil, errors.New("not a postgres database handle")
 	}
@@ -169,7 +182,7 @@ func NewLeaderElector(
 		return nil, fmt.Errorf("failed to create pglock client: %w", err)
 	}
 
-	err = client.TryCreateTable()
+	err = ensureSchema(ctx, gormDB, schemaTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -191,13 +204,13 @@ func NewLeaderElector(
 			if err != nil {
 				return nil, fmt.Errorf("failed to recreate pglock client: %w", err)
 			}
-			if err := c.TryCreateTable(); err != nil {
+			if err := ensureSchema(ctx, gormDB, schemaTimeout); err != nil {
 				return nil, fmt.Errorf("failed to recreate pglock schema: %w", err)
 			}
 			return &pglockAdapter{client: c}, nil
 		},
 	}
-	// TryCreateTable succeeded — DB is reachable. Setting this before the
+	// Schema setup succeeded — DB is reachable. Setting this before the
 	// election loop starts lets the readiness probe pass while AcquireContext
 	// blocks waiting for an existing leader to release the lock.
 	e.dbReachable.Store(true)
@@ -205,6 +218,25 @@ func NewLeaderElector(
 	go e.run()
 
 	return e, nil
+}
+
+// ensureSchema creates pglock's default table and sequence using cancelable
+// queries. pglock.TryCreateTable uses background contexts, so it cannot bound
+// startup or recovery. Keep these definitions aligned with pglock's schema.
+func ensureSchema(ctx context.Context, db *gorm.DB, timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	return postgres.WithInitializationLock(ctx, db, func() error {
+		return db.WithContext(ctx).Exec(`
+CREATE TABLE IF NOT EXISTS locks (
+ name CHARACTER VARYING(255) PRIMARY KEY,
+ record_version_number BIGINT,
+ data BYTEA,
+ owner CHARACTER VARYING(255)
+);
+CREATE SEQUENCE IF NOT EXISTS locks_rvn CYCLE OWNED BY locks.record_version_number;
+`).Error
+	})
 }
 
 // startCallback launches a callback in a goroutine with panic recovery and proper cleanup.

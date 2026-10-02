@@ -1,10 +1,36 @@
 package cmd
 
 import (
-	"os"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
+
+func TestInitializationTimeout(t *testing.T) {
+	for _, tc := range []struct {
+		value   string
+		want    time.Duration
+		invalid bool
+	}{
+		{value: "", want: 5 * time.Minute},
+		{value: "30s", want: 30 * time.Second},
+		{value: "invalid", invalid: true},
+		{value: "0", invalid: true},
+		{value: "-1s", invalid: true},
+	} {
+		t.Run(tc.value, func(t *testing.T) {
+			t.Setenv("CATALOG_INITIALIZATION_TIMEOUT", tc.value)
+			duration, err := getInitializationTimeout()
+			if tc.invalid {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.want, duration)
+			}
+		})
+	}
+}
 
 func TestGetLeaderElectionConfig(t *testing.T) {
 	tests := []struct {
@@ -74,19 +100,8 @@ func TestGetLeaderElectionConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Clear environment
-			os.Unsetenv(envLeaderLockDuration)
-			os.Unsetenv(envLeaderHeartbeat)
-
-			// Set test environment
-			if tt.lockDurationEnv != "" {
-				os.Setenv(envLeaderLockDuration, tt.lockDurationEnv)
-				defer os.Unsetenv(envLeaderLockDuration)
-			}
-			if tt.heartbeatEnv != "" {
-				os.Setenv(envLeaderHeartbeat, tt.heartbeatEnv)
-				defer os.Unsetenv(envLeaderHeartbeat)
-			}
+			t.Setenv(envLeaderLockDuration, tt.lockDurationEnv)
+			t.Setenv(envLeaderHeartbeat, tt.heartbeatEnv)
 
 			// Get configuration
 			lockDuration, heartbeat := getLeaderElectionConfig()

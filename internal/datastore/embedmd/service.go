@@ -1,16 +1,15 @@
 package embedmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"maps"
 	"net/url"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/go-sql-driver/mysql"
-	"github.com/golang/glog"
 	"github.com/kubeflow/hub/internal/db/models"
 	"github.com/kubeflow/hub/internal/db/service"
 	"github.com/kubeflow/hub/internal/platform/datastore"
@@ -46,10 +45,6 @@ type EmbedMDConfig struct {
 	// DB is an already connected database instance that, if provided, will
 	// be used instead of making a new connection.
 	DB *gorm.DB
-
-	// WaitForMigrations instructs Connect to wait for the migrations to
-	// run instead of running them itself.
-	WaitForMigrations bool
 }
 
 func (c *EmbedMDConfig) Validate() error {
@@ -102,8 +97,7 @@ func (c *EmbedMDConfig) Validate() error {
 }
 
 type EmbedMDService struct {
-	dbConnector       db.Connector
-	waitForMigrations bool
+	dbConnector db.Connector
 }
 
 func NewEmbedMDService(cfg *EmbedMDConfig) (*EmbedMDService, error) {
@@ -122,31 +116,12 @@ func NewEmbedMDService(cfg *EmbedMDConfig) (*EmbedMDService, error) {
 	}
 
 	return &EmbedMDService{
-		dbConnector:       dbConnector,
-		waitForMigrations: cfg.WaitForMigrations,
+		dbConnector: dbConnector,
 	}, nil
 }
 
 func (s *EmbedMDService) Connect(spec *datastore.Spec) (datastore.RepoSet, error) {
-	glog.Infof("Connecting to EmbedMD service...")
-
-	connectedDB, err := s.dbConnector.Connect()
-	if err != nil {
-		return nil, err
-	}
-
-	glog.Infof("Connected to EmbedMD service")
-
-	if s.waitForMigrations {
-		return s.migrationWait(connectedDB, spec)
-	}
-
-	err = s.RunMigrations(spec)
-	if err != nil {
-		return nil, err
-	}
-
-	return newRepoSet(connectedDB, spec)
+	return s.Initialize(context.Background(), spec)
 }
 
 func (s *EmbedMDService) RunMigrations(spec *datastore.Spec) error {
@@ -155,41 +130,7 @@ func (s *EmbedMDService) RunMigrations(spec *datastore.Spec) error {
 		return err
 	}
 
-	migrator, err := db.NewDBMigrator(connectedDB)
-	if err != nil {
-		return err
-	}
-
-	glog.Infof("Running migrations...")
-	err = migrator.Migrate()
-	if err != nil {
-		return err
-	}
-	glog.Infof("Migrations completed")
-
-	glog.Infof("Syncing types...")
-	err = s.syncTypes(connectedDB, spec)
-	if err != nil {
-		return err
-	}
-	glog.Infof("Syncing types completed")
-
-	return nil
-}
-
-func (s *EmbedMDService) migrationWait(connectedDB *gorm.DB, spec *datastore.Spec) (datastore.RepoSet, error) {
-	// This may run forever. But in practice, k8s should kill the pod after
-	// failing the ready check.
-	for {
-		rs, err := newRepoSet(connectedDB, spec)
-		var mtErr ErrMissingType
-		if errors.As(err, &mtErr) {
-			glog.Warningf("Unable to get types: %v", err)
-			time.Sleep(time.Second)
-			continue
-		}
-		return rs, err
-	}
+	return s.runMigrations(context.Background(), connectedDB, spec)
 }
 
 func (s EmbedMDService) Type() string {

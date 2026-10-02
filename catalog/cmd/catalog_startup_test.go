@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -158,8 +160,7 @@ func TestCatalogStartupRollingUpgrade(t *testing.T) {
 	}
 }
 
-// Run startup in a separate process because migrationWait currently ignores
-// cancellation, and startup installs its signal handler only after Connect.
+// Run startup in a separate process to isolate signals and plugin registration.
 func TestCatalogStartupHelper(t *testing.T) {
 	if os.Getenv(catalogStartupHelperEnv) != "1" {
 		return
@@ -167,21 +168,50 @@ func TestCatalogStartupHelper(t *testing.T) {
 	plugin.Register(&startupLeadershipObserver{})
 	catalogCfg.ListenAddress = os.Getenv("TEST_CATALOG_LISTEN")
 	catalogCfg.ConfigPath = []string{os.Getenv("TEST_CATALOG_SOURCES")}
-	require.NoError(t, runCatalogServer(CatalogCmd, nil))
+	CatalogCmd.SetContext(t.Context())
+	err := runCatalogServer(CatalogCmd, nil)
+	if os.Getenv("TEST_CATALOG_EXPECT_DEADLINE") == "1" {
+		require.ErrorIs(t, err, context.DeadlineExceeded)
+	} else if expected := os.Getenv("TEST_CATALOG_EXPECT_ERROR"); expected != "" {
+		require.ErrorContains(t, err, expected)
+	} else {
+		require.NoError(t, err)
+	}
 }
 
 type startupLeadershipObserver struct {
 	leader atomic.Bool
 }
 
-func (*startupLeadershipObserver) Name() string                              { return "startup-test" }
-func (*startupLeadershipObserver) Version() string                           { return "v1" }
-func (*startupLeadershipObserver) Description() string                       { return "Startup test leadership observer" }
-func (*startupLeadershipObserver) Init(context.Context, plugin.Config) error { return nil }
-func (*startupLeadershipObserver) Start(context.Context) error               { return nil }
-func (*startupLeadershipObserver) Stop(context.Context) error                { return nil }
-func (*startupLeadershipObserver) Healthy() bool                             { return true }
-func (*startupLeadershipObserver) Migrations() []plugin.Migration            { return nil }
+func (*startupLeadershipObserver) Name() string        { return "startup-test" }
+func (*startupLeadershipObserver) Version() string     { return "v1" }
+func (*startupLeadershipObserver) Description() string { return "Startup test leadership observer" }
+func (*startupLeadershipObserver) Init(ctx context.Context, _ plugin.Config) error {
+	if os.Getenv("TEST_CATALOG_BLOCK_INIT") == "1" {
+		if path := os.Getenv("TEST_CATALOG_INIT_STARTED"); path != "" {
+			if err := os.WriteFile(path, nil, 0600); err != nil {
+				return err
+			}
+		}
+		<-ctx.Done()
+		return errors.New("startup test init failure after cancel")
+	}
+	return nil
+}
+func (*startupLeadershipObserver) Start(context.Context) error { return nil }
+func (*startupLeadershipObserver) Stop(context.Context) error {
+	if path := os.Getenv("TEST_CATALOG_STOPPED"); path != "" {
+		if err := os.WriteFile(path, nil, 0600); err != nil {
+			return err
+		}
+	}
+	if os.Getenv("TEST_CATALOG_STOP_CANCELED") == "1" {
+		return context.Canceled
+	}
+	return nil
+}
+func (*startupLeadershipObserver) Healthy() bool                  { return true }
+func (*startupLeadershipObserver) Migrations() []plugin.Migration { return nil }
 
 func (p *startupLeadershipObserver) OnBecomeLeader(ctx context.Context) error {
 	p.leader.Store(true)
@@ -190,7 +220,17 @@ func (p *startupLeadershipObserver) OnBecomeLeader(ctx context.Context) error {
 	return ctx.Err()
 }
 
+func (*startupLeadershipObserver) Reconnect(context.Context, plugin.Config) error {
+	if os.Getenv("TEST_CATALOG_FAIL_RECONNECT") == "1" {
+		return fmt.Errorf("startup test reconnect failure: %w", context.Canceled)
+	}
+	return nil
+}
+
 func (p *startupLeadershipObserver) RegisterRoutes(router chi.Router) error {
+	if os.Getenv("TEST_CATALOG_FAIL_ROUTES") == "1" {
+		return errors.New("startup test route failure")
+	}
 	router.Get("/test/leader", func(w http.ResponseWriter, _ *http.Request) {
 		if p.leader.Load() {
 			w.WriteHeader(http.StatusOK)
@@ -202,11 +242,12 @@ func (p *startupLeadershipObserver) RegisterRoutes(router chi.Router) error {
 }
 
 type catalogStartupChild struct {
-	done chan struct{}
-	err  error // Read only after done closes.
+	done    chan struct{}
+	err     error // Read only after done closes.
+	process *os.Process
 }
 
-func startCatalogStartupChild(t *testing.T, dsn string) (*catalogStartupChild, string) {
+func startCatalogStartupChild(t *testing.T, dsn string, extraEnv ...string) (*catalogStartupChild, string) {
 	t.Helper()
 	parsed, err := url.Parse(dsn)
 	require.NoError(t, err)
@@ -241,10 +282,11 @@ func startCatalogStartupChild(t *testing.T, dsn string) (*catalogStartupChild, s
 		"PGDATABASE="+strings.TrimPrefix(parsed.Path, "/"), "PGSSLMODE=disable",
 		envLeaderLockDuration+"=5s", envLeaderHeartbeat+"=1s",
 	)
+	command.Env = append(command.Env, extraEnv...)
 	command.Stdout = output
 	command.Stderr = output
 	require.NoError(t, command.Start())
-	child := &catalogStartupChild{done: make(chan struct{})}
+	child := &catalogStartupChild{done: make(chan struct{}), process: command.Process}
 	go func() {
 		child.err = command.Wait()
 		close(child.done)
