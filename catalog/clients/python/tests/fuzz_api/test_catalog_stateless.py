@@ -7,7 +7,7 @@ from hypothesis import settings
 schema = schemathesis.pytest.from_fixture("generated_schema")
 
 
-@pytest.mark.parametrize("generated_schema", ["catalog.yaml"], indirect=True)
+@pytest.mark.parametrize("generated_schema", ["catalog-v1.yaml"], indirect=True)
 @schema.parametrize()
 @settings(
     deadline=None,
