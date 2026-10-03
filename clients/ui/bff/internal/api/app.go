@@ -362,7 +362,7 @@ func (app *App) Routes() http.Handler {
 		apiRouter.GET(McpCatalogSettingsSourceConfigListPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.GetAllMcpCatalogSourceConfigsHandler)))
 		apiRouter.POST(McpCatalogSettingsSourceConfigListPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.CreateMcpCatalogSourceConfigHandler)))
 		apiRouter.GET(McpCatalogSettingsSourceConfigPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.GetMcpCatalogSourceConfigHandler)))
-		apiRouter.PATCH(McpCatalogSettingsSourceConfigPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.UpdateMcpCatalogSourceConfigHandler)))
+		apiRouter.PATCH(McpCatalogSettingsSourceConfigPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.AttachModelCatalogStatusRESTClient(app.UpdateMcpCatalogSourceConfigHandler))))
 		apiRouter.DELETE(McpCatalogSettingsSourceConfigPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.DeleteMcpCatalogSourceConfigHandler)))
 	}
 
