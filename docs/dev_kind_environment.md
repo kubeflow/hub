@@ -119,17 +119,21 @@ The BFF connects to this on `--dev-mode-catalog-port=8082`. See [deploy_catalog_
 |--------|-------|
 | Internal endpoint | `http://seaweedfs.seaweedfs.svc.cluster.local:8333` |
 | Bucket | `default` |
-| Credentials | `seaweedadmin` / `seaweedadmin` |
+| Credentials | `seaweedadmin` / `seaweedadmin` (test only) |
 | K8s Secret | `seaweedfs-secret` (namespace: `seaweedfs`) |
 
-Upload test data:
+To upload test data with the AWS CLI, forward port 9002 in a separate terminal (port 9000 is used by the frontend):
 
 ```bash
-kubectl run seaweedfs-upload --rm -i --restart=Never -n seaweedfs \
-  --image=amazon/aws-cli --command -- sh -c '
-AWS_ACCESS_KEY_ID=seaweedadmin AWS_SECRET_ACCESS_KEY=seaweedadmin \
-  aws --endpoint-url http://seaweedfs:8333 s3 cp - s3://default/models/sample-model/model.txt
-'
+kubectl port-forward -n seaweedfs svc/seaweedfs 9002:8333
+```
+
+Then upload from another terminal:
+
+```bash
+echo "sample model content" | \
+  AWS_ACCESS_KEY_ID=seaweedadmin AWS_SECRET_ACCESS_KEY=seaweedadmin \
+  aws --endpoint-url http://localhost:9002 s3 cp - s3://default/models/sample-model/model.txt
 ```
 
 ### OCI Model Transfer Jobs
@@ -178,7 +182,7 @@ FRONTEND_PORT=9001 BFF_PORT=4001 ./scripts/dev_teardown.sh
 | `ImagePullBackOff` on async-upload job | Verify the correct image is configured for your environment (upstream/midstream/downstream each have their own) |
 | "namespace does not have access to this model registry" | Apply the RBAC ClusterRoleBinding (see above). The BFF's SAR uses `User` only, not groups. |
 | SeaweedFS service unavailable | Verify the SeaweedFS deployment in the `seaweedfs` namespace. |
-| SeaweedFS bucket missing after pod restart | SeaweedFS has no PV. Re-run: `./scripts/deploy_seaweedfs_on_kind.sh` |
+| SeaweedFS bucket missing after pod restart | SeaweedFS has no PV in this test setup. Check the pod logs, then re-run: `./scripts/deploy_seaweedfs_on_kind.sh` |
 | `envtest` port lock error in Go tests | `rm -f ~/Library/Caches/kubebuilder-envtest/port-*` |
 | Transfer job S3 download fails with EBUSY | Use directory prefix as source key, not full file path |
 | Transfer job OCI push "invalid reference" | Use OCI ref format `quay.io/org/repo:tag`, not web URL |

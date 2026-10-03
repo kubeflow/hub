@@ -34,8 +34,8 @@ deploy-test-seaweedfs:
 	cd ../../ && ./scripts/deploy_seaweedfs_on_kind.sh
 	kubectl port-forward -n seaweedfs svc/seaweedfs 8333:8333 > /dev/null 2>&1 & echo $$! >> .port-forwards.pid
 	@echo "Waiting for SeaweedFS S3 port-forward (8333)..."
-	@for i in $$(seq 1 30); do curl -sf http://localhost:8333/healthz > /dev/null 2>&1 && break || sleep 1; done
-	@curl -sf http://localhost:8333/healthz > /dev/null 2>&1 || \
+	@for i in $$(seq 1 30); do curl -sf http://localhost:8333/status > /dev/null 2>&1 && break || sleep 1; done
+	@curl -sf http://localhost:8333/status > /dev/null 2>&1 || \
 		(echo "ERROR: SeaweedFS S3 not reachable on localhost:8333 after 30s"; exit 1)
 
 .PHONY: deploy-local-registry

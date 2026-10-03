@@ -22,7 +22,7 @@ The integration tests require the following additional dependencies:
 
 ### Main Dependencies (added to `[tool.poetry.dependencies]`)
 
-- **`requests`**: For HTTP calls (downloading models, uploading to SeaweedFS)
+- **`requests`**: For HTTP calls (downloading models for upload to SeaweedFS)
 - **`pyyaml`**: For YAML processing (kustomization files)
 
 ### Integration Test Dependencies (added to `[tool.poetry.group.integration.dependencies]`)
