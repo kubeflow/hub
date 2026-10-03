@@ -16,6 +16,7 @@ import (
 	. "github.com/onsi/gomega"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -295,6 +296,22 @@ func (f *fakeKubernetesClient) PatchConfigMapOwnerReference(ctx context.Context,
 
 func (f *fakeKubernetesClient) CanListJobsClusterWide(ctx context.Context, identity *k8s.RequestIdentity) (bool, error) {
 	return true, nil
+}
+
+func (f *fakeKubernetesClient) ListModelRegistryRoleBindings(ctx context.Context, namespace string) ([]rbacv1.RoleBinding, error) {
+	return nil, nil
+}
+
+func (f *fakeKubernetesClient) CreateModelRegistryRoleBinding(ctx context.Context, namespace string, rb *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error) {
+	return nil, nil
+}
+
+func (f *fakeKubernetesClient) PatchModelRegistryRoleBinding(ctx context.Context, namespace, name string, rb *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error) {
+	return nil, nil
+}
+
+func (f *fakeKubernetesClient) DeleteModelRegistryRoleBinding(ctx context.Context, namespace, name string) error {
+	return nil
 }
 
 func TestGetAllModelTransferJobs_PodWaitingFailuresOverrideStatusToFailed(t *testing.T) {
