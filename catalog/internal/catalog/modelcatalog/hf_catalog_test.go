@@ -54,10 +54,8 @@ func TestPopulateFromHFInfo(t *testing.T) {
 					Architectures: []string{"GPT2LMHeadModel"},
 					ModelType:     "gpt2",
 				},
-				CardData: &hfCard{
-					Data: map[string]any{
-						"description": "A test model description",
-					},
+				CardData: map[string]any{
+					"description": "A test model description",
 				},
 			},
 			sourceId:          "test-source-id",
@@ -125,10 +123,8 @@ func TestPopulateFromHFInfo(t *testing.T) {
 			name: "model with description in cardData",
 			hfInfo: &hfModelInfo{
 				ID: "test/desc-model",
-				CardData: &hfCard{
-					Data: map[string]any{
-						"description": "This is a test description",
-					},
+				CardData: map[string]any{
+					"description": "This is a test description",
 				},
 			},
 			sourceId:          "source-6",
@@ -339,10 +335,8 @@ func TestConvertHFModelToRecord(t *testing.T) {
 				Tags:        []string{"license:mit"},
 				LibraryName: "transformers",
 				Task:        "text-generation",
-				CardData: &hfCard{
-					Data: map[string]any{
-						"description": "A complete test model",
-					},
+				CardData: map[string]any{
+					"description": "A complete test model",
 				},
 			},
 			originalModelName: "test-org/complete-model",
@@ -2547,4 +2541,105 @@ func TestGetModelsFromHF_TransientGatedErrorPreservesRecords(t *testing.T) {
 	// The public model should still be in the results
 	require.Len(t, records, 1)
 	assert.Equal(t, "org/public-model", *records[0].Model.GetAttributes().Name)
+}
+
+func TestHFCardDataPopulation_FromLiveAPIShape(t *testing.T) {
+	ctx := context.Background()
+	provider := &hfModelProvider{
+		baseURL:  defaultHuggingFaceURL,
+		sourceId: "src-1",
+	}
+
+	tests := []struct {
+		name                string
+		payload             string
+		expectedDesc        *string
+		expectedLanguage    []string
+		expectedLicenseLink *string
+	}{
+		{
+			name: "list language with description and license_link",
+			payload: `{
+				"id": "meta-llama/Llama-3.1-8B-Instruct",
+				"author": "meta-llama",
+				"cardData": {
+					"language": ["en", "de"],
+					"description": "Llama 3.1 instructions tuned model",
+					"license_link": "https://huggingface.co/meta-llama/LICENSE"
+				}
+			}`,
+			expectedDesc:        new("Llama 3.1 instructions tuned model"),
+			expectedLanguage:    []string{"en", "de"},
+			expectedLicenseLink: new("https://huggingface.co/meta-llama/LICENSE"),
+		},
+		{
+			name: "single string language with alternative license link field",
+			payload: `{
+				"id": "google-bert/bert-base-uncased",
+				"author": "google-bert",
+				"cardData": {
+					"language": "en",
+					"description": "Pretrained BERT model",
+					"license_url": "https://www.apache.org/licenses/LICENSE-2.0"
+				}
+			}`,
+			expectedDesc:        new("Pretrained BERT model"),
+			expectedLanguage:    []string{"en"},
+			expectedLicenseLink: new("https://www.apache.org/licenses/LICENSE-2.0"),
+		},
+		{
+			name: "nested data backward compatibility",
+			payload: `{
+				"id": "test-org/test-model",
+				"author": "test-org",
+				"cardData": {
+					"data": {
+						"language": ["es"],
+						"description": "Nested description",
+						"license": "https://example.com/license"
+					}
+				}
+			}`,
+			expectedDesc:        new("Nested description"),
+			expectedLanguage:    []string{"es"},
+			expectedLicenseLink: new("https://example.com/license"),
+		},
+		{
+			name: "no cardData",
+			payload: `{
+				"id": "test-org/minimal-model",
+				"author": "test-org"
+			}`,
+			expectedDesc:        nil,
+			expectedLanguage:    nil,
+			expectedLicenseLink: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var info hfModelInfo
+			err := json.Unmarshal([]byte(tt.payload), &info)
+			require.NoError(t, err)
+
+			hfm := &hfModel{}
+			hfm.populateFromHFInfo(ctx, provider, &info, "src-1", info.ID, nil)
+
+			if tt.expectedDesc == nil {
+				assert.Nil(t, hfm.Description)
+			} else {
+				require.NotNil(t, hfm.Description)
+				assert.Equal(t, *tt.expectedDesc, *hfm.Description)
+			}
+
+			assert.Equal(t, tt.expectedLanguage, hfm.Language)
+
+			if tt.expectedLicenseLink == nil {
+				assert.Nil(t, hfm.LicenseLink)
+			} else {
+				require.NotNil(t, hfm.LicenseLink)
+				assert.Equal(t, *tt.expectedLicenseLink, *hfm.LicenseLink)
+			}
+		})
+	}
 }
