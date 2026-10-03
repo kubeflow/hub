@@ -35,7 +35,7 @@ func TestParseModelVersion(t *testing.T) {
 			name:            "model and version",
 			storageUri:      "model-registry://iris/v1",
 			expectedModel:   "iris",
-			expectedVersion: stringPtr("v1"),
+			expectedVersion: new("v1"),
 			expectError:     false,
 		},
 		{
@@ -49,7 +49,7 @@ func TestParseModelVersion(t *testing.T) {
 			name:            "embedded host with model and version",
 			storageUri:      "model-registry://localhost:8080/iris/v1",
 			expectedModel:   "iris",
-			expectedVersion: stringPtr("v1"),
+			expectedVersion: new("v1"),
 			expectError:     false,
 		},
 		{
@@ -63,14 +63,14 @@ func TestParseModelVersion(t *testing.T) {
 			name:            "namespace query param model and version",
 			storageUri:      "model-registry://iris/v1?namespace=profile-alpha",
 			expectedModel:   "iris",
-			expectedVersion: stringPtr("v1"),
+			expectedVersion: new("v1"),
 			expectError:     false,
 		},
 		{
 			name:            "namespace query param with embedded host",
 			storageUri:      "model-registry://localhost:8080/iris/v1?namespace=profile-alpha",
 			expectedModel:   "iris",
-			expectedVersion: stringPtr("v1"),
+			expectedVersion: new("v1"),
 			expectError:     false,
 		},
 		{
@@ -184,8 +184,4 @@ func TestExtractProtocol(t *testing.T) {
 			}
 		})
 	}
-}
-
-func stringPtr(s string) *string {
-	return &s
 }

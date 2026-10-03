@@ -1069,7 +1069,7 @@ func (p *hfModelProvider) refreshCredentialStatus(ctx context.Context) {
 	if p.apiKey == "" {
 		var authed *bool
 		if p.hasOriginalKey {
-			authed = boolPtr(false)
+			authed = new(false)
 		}
 		p.credOpts = []basecatalog.SourceStatusOption{
 			basecatalog.WithCredentials(p.hasOriginalKey, authed, ""),
@@ -1082,7 +1082,7 @@ func (p *hfModelProvider) refreshCredentialStatus(ctx context.Context) {
 		if errors.Is(err, errHFAuthFailed) {
 			glog.Warningf("Credential re-validation rejected for source %s: %v", p.sourceId, err)
 			p.credOpts = []basecatalog.SourceStatusOption{
-				basecatalog.WithCredentials(p.hasOriginalKey, boolPtr(false), ""),
+				basecatalog.WithCredentials(p.hasOriginalKey, new(false), ""),
 			}
 		} else {
 			glog.Warningf("Credential re-validation transient error for source %s (keeping previous status): %v", p.sourceId, err)
@@ -1091,7 +1091,7 @@ func (p *hfModelProvider) refreshCredentialStatus(ctx context.Context) {
 	}
 
 	p.credOpts = []basecatalog.SourceStatusOption{
-		basecatalog.WithCredentials(p.hasOriginalKey, boolPtr(true), username),
+		basecatalog.WithCredentials(p.hasOriginalKey, new(true), username),
 	}
 }
 
@@ -1237,7 +1237,7 @@ func newHFModelProvider(ctx context.Context, source *basecatalog.ModelSource, re
 			if err != nil {
 				glog.Errorf("Hugging Face catalog credential validation failed: %v", err)
 				// Record credential status on source before returning error
-				setSourceCredentialStatus(source, true, boolPtr(false), "")
+				setSourceCredentialStatus(source, true, new(false), "")
 				return nil, fmt.Errorf("failed to validate Hugging Face catalog credentials: %w", err)
 			}
 			authSuccess = true
@@ -1252,7 +1252,7 @@ func newHFModelProvider(ctx context.Context, source *basecatalog.ModelSource, re
 		// malformed or failed. Derives from the error path, not from
 		// username, because validateCredentials returns ("", nil) when
 		// whoami is 200 but the body won't decode.
-		authed = boolPtr(authSuccess)
+		authed = new(authSuccess)
 	}
 	setSourceCredentialStatus(source, p.hasOriginalKey, authed, hfUsername)
 	p.credOpts = []basecatalog.SourceStatusOption{basecatalog.WithCredentials(p.hasOriginalKey, authed, hfUsername)}
@@ -1807,6 +1807,3 @@ func setSourceCredentialStatus(source *basecatalog.ModelSource, hasApiKey bool, 
 		source.SetHfUsernameNil()
 	}
 }
-
-// boolPtr returns a pointer to v.
-func boolPtr(v bool) *bool { return &v }

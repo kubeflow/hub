@@ -226,7 +226,7 @@ func convertDbMCPServerToOpenapiInternal(dbServer models.MCPServer, tools []open
 		}
 	}
 	if serverJsonStr := pa.GetString("serverJson"); serverJsonStr != "" {
-		var serverJson map[string]interface{}
+		var serverJson map[string]any
 		if err := json.Unmarshal([]byte(serverJsonStr), &serverJson); err == nil {
 			openapiServer.ServerJson = serverJson
 		}
