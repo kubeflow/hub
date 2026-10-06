@@ -1,6 +1,7 @@
 import logging
 import mimetypes
 import os
+from pathlib import Path, PureWindowsPath
 import shutil
 import tarfile
 from typing import Union
@@ -143,6 +144,16 @@ def download_from_http(uri: str, dest_dir: str) -> str:
     return dest_dir
 
 
+def _validate_zip_member_path(member: zipfile.ZipInfo, dest_dir: Path) -> None:
+    """Reject unsafe names and targets, including paths through existing symlinks."""
+    name = PureWindowsPath(member.filename)
+    if name.drive or name.root or ".." in name.parts:
+        raise ValueError(f"Unsafe ZIP member path: {member.filename!r}")
+    target = (dest_dir / member.filename).resolve()
+    if not target.is_relative_to(dest_dir):
+        raise ValueError(f"ZIP member escapes destination: {member.filename!r}")
+
+
 def unpack_archive_file(file_path: PathType, mimetype: str, dest_dir: PathType) -> str:
     """
     adapted from kserve:
@@ -151,12 +162,22 @@ def unpack_archive_file(file_path: PathType, mimetype: str, dest_dir: PathType) 
     logger.info("Unpacking archive: %s", file_path)
     try:
         if mimetype == "application/x-tar":
-            archive = tarfile.open(file_path, "r", encoding="utf-8")
+            if not hasattr(tarfile, "data_filter"):
+                raise tarfile.ExtractError("TAR extraction requires the data filter")
+            with tarfile.open(file_path, "r", encoding="utf-8") as archive:
+                archive.extractall(os.fsdecode(dest_dir), filter="data")
         else:
-            archive = zipfile.ZipFile(file_path, "r")
-        with archive:
-            archive.extractall(dest_dir)
-    except (tarfile.TarError, zipfile.BadZipfile) as e:
+            with zipfile.ZipFile(file_path, "r") as archive:
+                destination = Path(os.fsdecode(dest_dir)).resolve()
+                members = archive.infolist()
+                # Reject unsafe archives before extracting any entries.
+                for member in members:
+                    _validate_zip_member_path(member, destination)
+                for member in members:
+                    # Recheck against the filesystem state immediately before writing.
+                    _validate_zip_member_path(member, destination)
+                    archive.extract(member, destination)
+    except (tarfile.TarError, zipfile.BadZipfile, ValueError) as e:
         raise RuntimeError("Failed to unpack archive file") from e
     os.remove(file_path)
     return dest_dir
