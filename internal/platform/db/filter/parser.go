@@ -289,7 +289,9 @@ func convertSingleValue(val *SingleValue) any {
 }
 
 func unquoteStringValue(str string) string {
-	result := strings.Trim(str, `"'`)
+	// The lexer only emits String tokens wrapped in a matching pair of quotes,
+	// so strip just that pair and keep quotes that are part of the value.
+	result := str[1 : len(str)-1]
 	result = strings.ReplaceAll(result, `\"`, `"`)
 	result = strings.ReplaceAll(result, `\'`, `'`)
 	result = strings.ReplaceAll(result, `\\`, `\`)

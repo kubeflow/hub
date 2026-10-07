@@ -439,3 +439,29 @@ func TestParseEmptyInput(t *testing.T) {
 		})
 	}
 }
+
+func TestParseStringLiteralKeepsInnerQuotes(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{name: "double-quoted value ending with single quote", input: `name = "5'"`, expected: `5'`},
+		{name: "double-quoted value with quoted word at the end", input: `description = "Trained on 'ImageNet'"`, expected: `Trained on 'ImageNet'`},
+		{name: "single-quoted value with quoted word at the end", input: `description = 'He said "hi"'`, expected: `He said "hi"`},
+		{name: "escaped quote", input: `name = 'it\'s'`, expected: `it's`},
+		{name: "empty string", input: `name = ""`, expected: ``},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expr, err := Parse(tt.input)
+			if err != nil {
+				t.Fatalf("Parse() error = %v", err)
+			}
+			if expr.Value != tt.expected {
+				t.Errorf("Parse() value = %q, want %q", expr.Value, tt.expected)
+			}
+		})
+	}
+}
