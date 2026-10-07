@@ -340,3 +340,24 @@ def test_get_files_from_path_multiple_files(get_temp_dir_with_models):
     for abs, filename in files:
         assert abs == os.path.join(path, filename)
         assert filename == os.path.relpath(abs, path)
+
+
+
+def test_upload_to_s3_uses_forward_slashes_in_keys(tmp_path):
+    (tmp_path / "sub").mkdir()
+    (tmp_path / "config.json").write_text("{}")
+    (tmp_path / "sub" / "weights.safetensors").write_text("")
+
+    class FakeS3:
+        def __init__(self):
+            self.keys = []
+
+        def upload_file(self, Filename, Bucket, Key, Config=None):  # noqa: N803
+            self.keys.append(Key)
+
+    s3 = FakeS3()
+    utils._upload_to_s3(
+        str(tmp_path), "bucket", s3, "models/v1/", endpoint_url="http://minio:9000", region="us-east-1"
+    )
+
+    assert sorted(s3.keys) == ["models/v1/config.json", "models/v1/sub/weights.safetensors"]
