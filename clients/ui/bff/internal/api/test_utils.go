@@ -24,6 +24,13 @@ import (
 // the raw response together with its (already read) body. Use it directly for non-JSON
 // responses (e.g. binary payloads); setupApiTest wraps it for JSON envelope responses.
 func serveApiTest(method string, url string, body interface{}, k8Factory kubernetes.KubernetesClientFactory, requestIdentity kubernetes.RequestIdentity, namespace string) (*http.Response, []byte, error) {
+	return serveApiTestWithConfig(method, url, body, k8Factory, requestIdentity, namespace, nil)
+}
+
+// serveApiTestWithConfig is serveApiTest with a hook to adjust the App config before
+// the request is served. Use it for behaviour that only differs by configuration —
+// dev mode namespace resolution, for instance. Pass nil for the default config.
+func serveApiTestWithConfig(method string, url string, body interface{}, k8Factory kubernetes.KubernetesClientFactory, requestIdentity kubernetes.RequestIdentity, namespace string, configure func(*config.EnvConfig)) (*http.Response, []byte, error) {
 	mockMRClient, err := mocks.NewModelRegistryClient(nil)
 	if err != nil {
 		return nil, nil, err
@@ -37,10 +44,16 @@ func serveApiTest(method string, url string, body interface{}, k8Factory kuberne
 
 	cfg := config.EnvConfig{
 		AuthMethod: config.AuthMethodInternal,
+		// The skill catalog settings handlers write admin-supplied git tokens into
+		// this Secret; without a name they would fail before reaching the repository.
+		SkillCatalogGitCredentialsSecret: "skill-catalog-git-credentials",
 	}
 	//if token is set, use token auth
 	if requestIdentity.Token != "" {
 		cfg.AuthMethod = config.AuthMethodUser
+	}
+	if configure != nil {
+		configure(&cfg)
 	}
 	testApp := App{
 		repositories:            repositories.NewRepositories(mockMRClient, mockModelCatalogClient),
@@ -98,7 +111,12 @@ func serveApiTest(method string, url string, body interface{}, k8Factory kuberne
 }
 
 func setupApiTest[T any](method string, url string, body interface{}, k8Factory kubernetes.KubernetesClientFactory, requestIdentity kubernetes.RequestIdentity, namespace string) (T, *http.Response, error) {
-	rs, respBody, err := serveApiTest(method, url, body, k8Factory, requestIdentity, namespace)
+	return setupApiTestWithConfig[T](method, url, body, k8Factory, requestIdentity, namespace, nil)
+}
+
+// setupApiTestWithConfig is setupApiTest over serveApiTestWithConfig.
+func setupApiTestWithConfig[T any](method string, url string, body interface{}, k8Factory kubernetes.KubernetesClientFactory, requestIdentity kubernetes.RequestIdentity, namespace string, configure func(*config.EnvConfig)) (T, *http.Response, error) {
+	rs, respBody, err := serveApiTestWithConfig(method, url, body, k8Factory, requestIdentity, namespace, configure)
 	if err != nil {
 		return *new(T), nil, err
 	}
