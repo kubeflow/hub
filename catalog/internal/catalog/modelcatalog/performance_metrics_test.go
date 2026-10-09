@@ -966,16 +966,14 @@ func TestDetailedEvaluationRecord(t *testing.T) {
 		t.Fatalf("CreatedAt = %v, want 1747112286087", record.CreatedAt)
 	}
 
-	artifact := createEvaluationArtifact(record, 100)
+	artifact := createEvaluationArtifact(record, 1, 100)
 	if artifact.Attributes == nil {
 		t.Fatal("Attributes should not be nil")
 	}
 	if artifact.Attributes.MetricsType != models.MetricsTypeEvaluation {
 		t.Errorf("MetricsType = %q, want %q", artifact.Attributes.MetricsType, models.MetricsTypeEvaluation)
 	}
-	if artifact.Attributes.ExternalID == nil || *artifact.Attributes.ExternalID != record.ID {
-		t.Errorf("ExternalID = %v, want %q", artifact.Attributes.ExternalID, record.ID)
-	}
+	assert.Equal(t, "catalog-metrics:v1:1:evaluation-metrics:d42242c45069a85f74afa0877c78b0b201fd2223a238c38c06520586e3e5eeee", *artifact.Attributes.ExternalID)
 
 	properties := make(map[string]any)
 	for _, property := range *artifact.CustomProperties {
@@ -987,6 +985,7 @@ func TestDetailedEvaluationRecord(t *testing.T) {
 		}
 	}
 	for name, expected := range map[string]any{
+		"id":            "evaluation-result-1",
 		"model_id":      modelID,
 		"run_id":        "evaluation-run-1",
 		"evaluation":    "General language understanding",
@@ -1002,6 +1001,24 @@ func TestDetailedEvaluationRecord(t *testing.T) {
 	}
 	if _, found := properties["created_at"]; found {
 		t.Error("created_at should be represented by CreateTimeSinceEpoch, not a custom property")
+	}
+}
+
+func TestPerformanceArtifactConfigIDCorrelation(t *testing.T) {
+	for _, idField := range []string{"", `"id":"",`, `"id":123,`} {
+		t.Run(idField, func(t *testing.T) {
+			var record performanceRecord
+			require.NoError(t, json.Unmarshal([]byte(`{`+idField+`"config_id":"config-only","requests_per_second":10}`), &record))
+			artifact := createPerformanceArtifact(record, 1, 100, nil, nil)
+			properties := map[string]string{}
+			for _, property := range *artifact.CustomProperties {
+				if property.StringValue != nil {
+					properties[property.Name] = *property.StringValue
+				}
+			}
+			assert.Equal(t, "config-only", properties["id"])
+			assert.Equal(t, "config-only", properties["config_id"])
+		})
 	}
 }
 
@@ -2045,7 +2062,7 @@ func TestSecurityEvaluationRecordUnmarshalJSON_CoreFieldsInCustomProperties(t *t
 }
 
 func TestCreateSecurityArtifact(t *testing.T) {
-	t.Run("artifact name uses security- prefix with record ID", func(t *testing.T) {
+	t.Run("artifact name is scoped to the catalog model and metrics type", func(t *testing.T) {
 		secRecord := securityEvaluationRecord{
 			ID:      "sec-eval-abc123",
 			ModelID: "test-model",
@@ -2060,12 +2077,10 @@ func TestCreateSecurityArtifact(t *testing.T) {
 		if artifact.Attributes == nil {
 			t.Fatal("Attributes should not be nil")
 		}
-		if artifact.Attributes.Name == nil || *artifact.Attributes.Name != "security-sec-eval-abc123" {
-			t.Errorf("Name = %v, want security-sec-eval-abc123", artifact.Attributes.Name)
-		}
+		assert.Equal(t, "catalog-metrics:v1:1:security-metrics:caf342983861a986457b9a8bd6188d2ac2df2a60a04b6e44098e73de898d9129", *artifact.Attributes.Name)
 	})
 
-	t.Run("external ID is the record ID", func(t *testing.T) {
+	t.Run("external ID is scoped and producer ID is preserved", func(t *testing.T) {
 		secRecord := securityEvaluationRecord{
 			ID:               "sec-eval-xyz789",
 			CustomProperties: map[string]any{"id": "sec-eval-xyz789"},
@@ -2073,9 +2088,10 @@ func TestCreateSecurityArtifact(t *testing.T) {
 
 		artifact := createSecurityArtifact(secRecord, 1, 100, nil, nil)
 
-		if artifact.Attributes.ExternalID == nil || *artifact.Attributes.ExternalID != "sec-eval-xyz789" {
-			t.Errorf("ExternalID = %v, want sec-eval-xyz789", artifact.Attributes.ExternalID)
-		}
+		assert.Equal(t, "catalog-metrics:v1:1:security-metrics:e87ae8ab4a508b9229f4a587a2797e4fd19f6b9cc4482a49a3d653a995c11ff5", *artifact.Attributes.ExternalID)
+		require.Len(t, *artifact.CustomProperties, 1)
+		assert.Equal(t, "id", (*artifact.CustomProperties)[0].Name)
+		assert.Equal(t, "sec-eval-xyz789", *(*artifact.CustomProperties)[0].StringValue)
 	})
 
 	t.Run("metrics type is security-metrics", func(t *testing.T) {
@@ -2242,47 +2258,4 @@ func writeTempNDJSON(t *testing.T, lines []string) string {
 	}
 	f.Close()
 	return f.Name()
-}
-
-func TestSecurityDuplicateIDDeduplication(t *testing.T) {
-	t.Run("duplicate IDs in NDJSON file produce only one artifact on first sync", func(t *testing.T) {
-		// Two records sharing the same id — only the first should be inserted.
-		records := []securityEvaluationRecord{
-			{ID: "dup-id", ModelID: "m1", CustomProperties: map[string]any{"id": "dup-id", "result": json.Number("0.1")}},
-			{ID: "dup-id", ModelID: "m1", CustomProperties: map[string]any{"id": "dup-id", "result": json.Number("0.9")}},
-			{ID: "unique-id", ModelID: "m1", CustomProperties: map[string]any{"id": "unique-id", "result": json.Number("0.5")}},
-		}
-
-		// Simulate the deduplication logic from processModelArtifactsBatch with an empty existingArtifactsMap.
-		existingArtifactsMap := map[string]bool{}
-		artifactsToInsert := []*models.CatalogMetricsArtifactImpl{}
-		seenSecurityIDs := make(map[string]bool, len(records))
-		for _, secRecord := range records {
-			if seenSecurityIDs[secRecord.ID] {
-				continue
-			}
-			seenSecurityIDs[secRecord.ID] = true
-			if !existingArtifactsMap[secRecord.ID] {
-				artifact := createSecurityArtifact(secRecord, 1, 100, nil, nil)
-				artifactsToInsert = append(artifactsToInsert, artifact)
-			}
-		}
-
-		if len(artifactsToInsert) != 2 {
-			t.Errorf("expected 2 artifacts (dup-id deduplicated, unique-id kept), got %d", len(artifactsToInsert))
-		}
-
-		ids := map[string]int{}
-		for _, a := range artifactsToInsert {
-			if a.Attributes != nil && a.Attributes.ExternalID != nil {
-				ids[*a.Attributes.ExternalID]++
-			}
-		}
-		if ids["dup-id"] != 1 {
-			t.Errorf("expected dup-id to appear exactly once, got %d", ids["dup-id"])
-		}
-		if ids["unique-id"] != 1 {
-			t.Errorf("expected unique-id to appear exactly once, got %d", ids["unique-id"])
-		}
-	})
 }
