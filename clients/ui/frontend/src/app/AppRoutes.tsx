@@ -8,11 +8,14 @@ import ModelRegistryRoutes from './pages/modelRegistry/ModelRegistryRoutes';
 import ModelCatalogRoutes from './pages/modelCatalog/ModelCatalogRoutes';
 import McpCatalogRoutes from './pages/mcpCatalog/McpCatalogRoutes';
 import AgentsCatalogRoutes from './pages/agentsCatalog/AgentsCatalogRoutes';
+import SkillCatalogRoutes from './pages/skillCatalog/SkillCatalogRoutes';
 import ModelCatalogSettingsRoutes from './pages/modelCatalogSettings/ModelCatalogSettingsRoutes';
 import McpCatalogSettingsRoutes from './pages/mcpCatalogSettings/McpCatalogSettingsRoutes';
+import SkillCatalogSettingsRoutes from './pages/skillCatalogSettings/SkillCatalogSettingsRoutes';
 import { modelCatalogUrl } from './routes/modelCatalog/catalogModel';
 import { mcpCatalogUrl } from './routes/mcpCatalog/mcpCatalog';
 import { agentsCatalogUrl } from './routes/agentsCatalog/agentsCatalog';
+import { skillCatalogUrl, SKILL_CATALOG_TITLE } from './routes/skillCatalog/skillCatalog';
 import {
   catalogSettingsUrl,
   CATALOG_SETTINGS_PAGE_TITLE,
@@ -21,6 +24,10 @@ import {
   mcpCatalogSettingsUrl,
   MCP_CATALOG_SETTINGS_PAGE_TITLE,
 } from './routes/mcpCatalogSettings/mcpCatalogSettings';
+import {
+  skillCatalogSettingsUrl,
+  SKILL_CATALOG_SETTINGS_PAGE_TITLE,
+} from './routes/skillCatalogSettings/skillCatalogSettings';
 import { modelRegistryUrl } from './pages/modelRegistry/screens/routeUtils';
 import { MODEL_CATALOG_TITLE } from './pages/modelCatalog/const';
 import { MCP_CATALOG_TITLE } from './pages/mcpCatalog/const';
@@ -45,6 +52,10 @@ export const useAdminSettings = (): NavDataItem[] => {
     settingsChildren.push({
       label: MCP_CATALOG_SETTINGS_PAGE_TITLE,
       path: mcpCatalogSettingsUrl(),
+    });
+    settingsChildren.push({
+      label: SKILL_CATALOG_SETTINGS_PAGE_TITLE,
+      path: skillCatalogSettingsUrl(),
     });
   }
 
@@ -74,6 +85,7 @@ export const useNavData = (): NavDataItem[] => {
       { label: MODEL_CATALOG_TITLE, path: modelCatalogUrl() },
       { label: MCP_CATALOG_TITLE, path: mcpCatalogUrl() },
       { label: AGENTS_CATALOG_TITLE, path: agentsCatalogUrl() },
+      { label: SKILL_CATALOG_TITLE, path: skillCatalogUrl() },
     );
   }
 
@@ -96,8 +108,10 @@ const AppRoutes: React.FC = () => {
           <Route path={`${modelCatalogUrl()}/*`} element={<ModelCatalogRoutes />} />
           <Route path={`${mcpCatalogUrl()}/*`} element={<McpCatalogRoutes />} />
           <Route path={`${agentsCatalogUrl()}/*`} element={<AgentsCatalogRoutes />} />
+          <Route path={`${skillCatalogUrl()}/*`} element={<SkillCatalogRoutes />} />
           <Route path={`${catalogSettingsUrl()}/*`} element={<ModelCatalogSettingsRoutes />} />
           <Route path={`${mcpCatalogSettingsUrl()}/*`} element={<McpCatalogSettingsRoutes />} />
+          <Route path={`${skillCatalogSettingsUrl()}/*`} element={<SkillCatalogSettingsRoutes />} />
         </>
       )}
       <Route path="*" element={<NotFound />} />
