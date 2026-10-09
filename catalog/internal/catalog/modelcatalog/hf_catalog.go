@@ -121,22 +121,22 @@ type hfModelProvider struct {
 
 // hfModelInfo represents the structure of Hugging Face API model information
 type hfModelInfo struct {
-	ID          string      `json:"id"`
-	Author      string      `json:"author,omitempty"`
-	Sha         string      `json:"sha,omitempty"`
-	CreatedAt   string      `json:"createdAt,omitempty"`
-	UpdatedAt   string      `json:"lastModified,omitempty"`
-	Private     bool        `json:"private,omitempty"`
-	Gated       gatedString `json:"gated,omitempty"`
-	Downloads   int         `json:"downloads,omitempty"`
-	Tags        []string    `json:"tags,omitempty"`
-	PipelineTag string      `json:"pipeline_tag,omitempty"`
-	LibraryName string      `json:"library_name,omitempty"`
-	ModelID     string      `json:"modelId,omitempty"`
-	Task        string      `json:"task,omitempty"`
-	Siblings    []hfFile    `json:"siblings,omitempty"`
-	Config      *hfConfig   `json:"config,omitempty"`
-	CardData    *hfCard     `json:"cardData,omitempty"`
+	ID          string         `json:"id"`
+	Author      string         `json:"author,omitempty"`
+	Sha         string         `json:"sha,omitempty"`
+	CreatedAt   string         `json:"createdAt,omitempty"`
+	UpdatedAt   string         `json:"lastModified,omitempty"`
+	Private     bool           `json:"private,omitempty"`
+	Gated       gatedString    `json:"gated,omitempty"`
+	Downloads   int            `json:"downloads,omitempty"`
+	Tags        []string       `json:"tags,omitempty"`
+	PipelineTag string         `json:"pipeline_tag,omitempty"`
+	LibraryName string         `json:"library_name,omitempty"`
+	ModelID     string         `json:"modelId,omitempty"`
+	Task        string         `json:"task,omitempty"`
+	Siblings    []hfFile       `json:"siblings,omitempty"`
+	Config      *hfConfig      `json:"config,omitempty"`
+	CardData    map[string]any `json:"cardData,omitempty"`
 }
 
 type hfFile struct {
@@ -146,10 +146,6 @@ type hfFile struct {
 type hfConfig struct {
 	Architectures []string `json:"architectures,omitempty"`
 	ModelType     string   `json:"model_type,omitempty"`
-}
-
-type hfCard struct {
-	Data map[string]any `json:"data,omitempty"`
 }
 
 //go:embed assets/catalog_logo.svg
@@ -294,14 +290,20 @@ func (hfm *hfModel) populateFromHFInfo(ctx context.Context, provider *hfModelPro
 	}
 
 	// Extract description from cardData if available
-	if hfInfo.CardData != nil && hfInfo.CardData.Data != nil {
+	if hfInfo.CardData != nil {
+		cardMap := hfInfo.CardData
+		if nested, ok := cardMap["data"].(map[string]any); ok && nested != nil {
+			cardMap = nested
+		}
+
 		// Extract description from cardData if available
-		if desc, ok := hfInfo.CardData.Data["description"].(string); ok && desc != "" {
+		if desc, ok := cardMap["description"].(string); ok && desc != "" {
 			hfm.Description = &desc
 		}
 
 		// Extract language from cardData if available
-		if langData, ok := hfInfo.CardData.Data["language"].([]any); ok && len(langData) > 0 {
+		// Handles both slice of any (e.g. ["en", "de"]) and plain string (e.g. "en")
+		if langData, ok := cardMap["language"].([]any); ok && len(langData) > 0 {
 			languages := make([]string, 0, len(langData))
 			for _, lang := range langData {
 				if langStr, ok := lang.(string); ok && langStr != "" {
@@ -311,6 +313,10 @@ func (hfm *hfModel) populateFromHFInfo(ctx context.Context, provider *hfModelPro
 			if len(languages) > 0 {
 				hfm.Language = languages
 			}
+		} else if langDataStr, ok := cardMap["language"].([]string); ok && len(langDataStr) > 0 {
+			hfm.Language = langDataStr
+		} else if langStr, ok := cardMap["language"].(string); ok && strings.TrimSpace(langStr) != "" {
+			hfm.Language = []string{strings.TrimSpace(langStr)}
 		}
 
 		// Extract license link from cardData if available
@@ -318,7 +324,7 @@ func (hfm *hfModel) populateFromHFInfo(ctx context.Context, provider *hfModelPro
 		if hfm.LicenseLink == nil {
 			licenseLinkFields := []string{"license_link", "licenseLink", "license_url", "licenseUrl", "license"}
 			for _, field := range licenseLinkFields {
-				if link, ok := hfInfo.CardData.Data[field].(string); ok && link != "" {
+				if link, ok := cardMap[field].(string); ok && link != "" {
 					if strings.HasPrefix(link, "http://") || strings.HasPrefix(link, "https://") {
 						hfm.LicenseLink = &link
 						break
@@ -326,7 +332,6 @@ func (hfm *hfModel) populateFromHFInfo(ctx context.Context, provider *hfModelPro
 				}
 			}
 		}
-
 	}
 
 	// Set provider from author
