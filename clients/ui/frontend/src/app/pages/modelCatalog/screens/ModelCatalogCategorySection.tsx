@@ -66,10 +66,10 @@ const ModelCatalogCategorySection: React.FC<CategorySectionProps> = ({
       renderCard={(model) => (
         <ModelCatalogCard
           model={model}
-          source={getSourceFromSourceId(model.source_id || '', catalogSources)}
+          source={getSourceFromSourceId(model.sourceId || '', catalogSources)}
         />
       )}
-      getItemKey={(model) => `${model.name}/${model.source_id}`}
+      getItemKey={(model) => `${model.name}/${model.sourceId}`}
       loadingScreenReaderText={`Loading ${label} models`}
       testIds={{
         title: `title ${label}`,

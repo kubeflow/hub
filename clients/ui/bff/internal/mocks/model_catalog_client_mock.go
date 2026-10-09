@@ -33,7 +33,7 @@ func (m *ModelCatalogClientMock) GetAllCatalogModelsAcrossSources(client httpcli
 
 	if sourceId != "" {
 		for _, model := range allModels {
-			if model.SourceId != nil && *model.SourceId == sourceId {
+			if model.SourceID != nil && *model.SourceID == sourceId {
 				filteredModels = append(filteredModels, model)
 			}
 		}
@@ -62,9 +62,9 @@ func (m *ModelCatalogClientMock) GetAllCatalogModelsAcrossSources(client httpcli
 		}
 
 		for _, model := range allModels {
-			if model.SourceId != nil {
+			if model.SourceID != nil {
 				for _, sid := range matchingSourceIds {
-					if *model.SourceId == sid {
+					if *model.SourceID == sid {
 						filteredModels = append(filteredModels, model)
 						break
 					}
@@ -170,7 +170,7 @@ func (m *ModelCatalogClientMock) GetCatalogSourceModel(client httpclient.HTTPCli
 	decodedModelName = strings.TrimPrefix(decodedModelName, "/")
 
 	for _, model := range allModels {
-		if model.SourceId != nil && *model.SourceId == sourceId && model.Name == decodedModelName {
+		if model.SourceID != nil && *model.SourceID == sourceId && model.Name == decodedModelName {
 			return &model, nil
 		}
 	}

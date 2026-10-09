@@ -2691,7 +2691,7 @@ components:
         name:
           type: string
           description: Agent identifier. Must be unique within a source.
-        source_id:
+        sourceId:
           type: string
           description: Catalog source that provides this entity.
         displayName:
@@ -3528,7 +3528,7 @@ components:
         name:
           type: string
           description: Human-readable MCP server name
-        source_id:
+        sourceId:
           type: string
           description: ID of the catalog source this server belongs to
         description:
