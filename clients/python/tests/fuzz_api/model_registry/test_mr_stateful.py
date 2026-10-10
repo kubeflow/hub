@@ -7,7 +7,7 @@ from hypothesis.errors import Unsatisfiable
 
 @pytest.mark.fuzz
 class TestRestAPIStateful:
-    @pytest.mark.parametrize("generated_schema", ["model-registry.yaml"], indirect=True)
+    @pytest.mark.parametrize("generated_schema", ["model-registry-v1.yaml"], indirect=True)
     def test_mr_api_stateful(self, state_machine):
         """Launches stateful tests against the Model Registry API endpoints defined in its openAPI yaml spec file"""
         try:

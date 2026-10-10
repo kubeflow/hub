@@ -18,40 +18,32 @@ from tests.constants import DEFAULT_API_TIMEOUT, REGISTRY_URL
 logger = logging.getLogger(__name__)
 
 SINGLETON_GET_PATHS = {
-    "/api/model_registry/v1alpha3/registered_model",
-    "/api/model_registry/v1alpha3/model_version",
-    "/api/model_registry/v1alpha3/experiment",
-    "/api/model_registry/v1alpha3/experiment_run",
-    "/api/model_registry/v1alpha3/inference_service",
-    "/api/model_registry/v1alpha3/serving_environment",
-    "/api/model_registry/v1alpha3/artifact",
-    "/api/model_registry/v1alpha3/model_artifact",
+    "/api/model_registry/v1/registered_model",
+    "/api/model_registry/v1/model_version",
+    "/api/model_registry/v1/inference_service",
+    "/api/model_registry/v1/serving_environment",
+    "/api/model_registry/v1/artifact",
+    "/api/model_registry/v1/model_artifact",
 }
 
 
 _PATH_PROPERTIES: dict[str, set[str]] = {
-    "/api/model_registry/v1alpha3/artifacts": {"artifactType", "customProperties", "description", "digest", "externalId", "modelFormatName", "modelFormatVersion", "modelSourceClass", "modelSourceGroup", "modelSourceId", "modelSourceKind", "modelSourceName", "name", "parameterType", "profile", "schema", "serviceAccountName", "source", "sourceType", "state", "step", "storageKey", "storagePath", "timestamp", "uri", "value"},
-    "/api/model_registry/v1alpha3/artifacts/{id}": {"artifactType", "customProperties", "description", "digest", "externalId", "modelFormatName", "modelFormatVersion", "modelSourceClass", "modelSourceGroup", "modelSourceId", "modelSourceKind", "modelSourceName", "parameterType", "profile", "schema", "serviceAccountName", "source", "sourceType", "state", "step", "storageKey", "storagePath", "timestamp", "uri", "value"},
-    "/api/model_registry/v1alpha3/experiment_runs": {"customProperties", "description", "endTimeSinceEpoch", "experimentId", "externalId", "name", "owner", "startTimeSinceEpoch", "state", "status"},
-    "/api/model_registry/v1alpha3/experiment_runs/{experimentrunId}": {"customProperties", "description", "endTimeSinceEpoch", "externalId", "owner", "state", "status"},
-    "/api/model_registry/v1alpha3/experiment_runs/{experimentrunId}/artifacts": {"artifactType", "customProperties", "description", "digest", "experimentId", "experimentRunId", "externalId", "modelFormatName", "modelFormatVersion", "modelSourceClass", "modelSourceGroup", "modelSourceId", "modelSourceKind", "modelSourceName", "name", "parameterType", "profile", "schema", "serviceAccountName", "source", "sourceType", "state", "step", "storageKey", "storagePath", "timestamp", "uri", "value"},
-    "/api/model_registry/v1alpha3/experiments": {"customProperties", "description", "externalId", "name", "owner", "state"},
-    "/api/model_registry/v1alpha3/experiments/{experimentId}": {"customProperties", "description", "externalId", "owner", "state"},
-    "/api/model_registry/v1alpha3/experiments/{experimentId}/experiment_runs": {"customProperties", "description", "endTimeSinceEpoch", "experimentId", "externalId", "name", "owner", "startTimeSinceEpoch", "state", "status"},
-    "/api/model_registry/v1alpha3/inference_services": {"customProperties", "description", "desiredState", "externalId", "modelVersionId", "name", "registeredModelId", "runtime", "servingEnvironmentId"},
-    "/api/model_registry/v1alpha3/inference_services/{inferenceserviceId}": {"customProperties", "description", "desiredState", "externalId", "modelVersionId", "runtime"},
-    "/api/model_registry/v1alpha3/inference_services/{inferenceserviceId}/serves": {"customProperties", "description", "externalId", "lastKnownState", "modelVersionId", "name"},
-    "/api/model_registry/v1alpha3/model_artifacts": {"artifactType", "customProperties", "description", "externalId", "modelFormatName", "modelFormatVersion", "modelSourceClass", "modelSourceGroup", "modelSourceId", "modelSourceKind", "modelSourceName", "name", "serviceAccountName", "state", "storageKey", "storagePath", "uri"},
-    "/api/model_registry/v1alpha3/model_artifacts/{modelartifactId}": {"artifactType", "customProperties", "description", "externalId", "modelFormatName", "modelFormatVersion", "modelSourceClass", "modelSourceGroup", "modelSourceId", "modelSourceKind", "modelSourceName", "serviceAccountName", "state", "storageKey", "storagePath", "uri"},
-    "/api/model_registry/v1alpha3/model_versions": {"author", "customProperties", "description", "externalId", "name", "registeredModelId", "state"},
-    "/api/model_registry/v1alpha3/model_versions/{modelversionId}": {"author", "customProperties", "description", "externalId", "state"},
-    "/api/model_registry/v1alpha3/model_versions/{modelversionId}/artifacts": {"artifactType", "customProperties", "description", "digest", "experimentId", "experimentRunId", "externalId", "modelFormatName", "modelFormatVersion", "modelSourceClass", "modelSourceGroup", "modelSourceId", "modelSourceKind", "modelSourceName", "name", "parameterType", "profile", "schema", "serviceAccountName", "source", "sourceType", "state", "step", "storageKey", "storagePath", "timestamp", "uri", "value"},
-    "/api/model_registry/v1alpha3/registered_models": {"customProperties", "description", "externalId", "language", "libraryName", "license", "licenseLink", "logo", "maturity", "name", "owner", "provider", "readme", "state", "tasks"},
-    "/api/model_registry/v1alpha3/registered_models/{registeredmodelId}": {"customProperties", "description", "externalId", "language", "libraryName", "license", "licenseLink", "logo", "maturity", "owner", "provider", "readme", "state", "tasks"},
-    "/api/model_registry/v1alpha3/registered_models/{registeredmodelId}/versions": {"author", "customProperties", "description", "externalId", "name", "registeredModelId", "state"},
-    "/api/model_registry/v1alpha3/serving_environments": {"customProperties", "description", "externalId", "name"},
-    "/api/model_registry/v1alpha3/serving_environments/{servingenvironmentId}": {"customProperties", "description", "externalId"},
-    "/api/model_registry/v1alpha3/serving_environments/{servingenvironmentId}/inference_services": {"customProperties", "description", "desiredState", "externalId", "modelVersionId", "name", "registeredModelId", "runtime", "servingEnvironmentId"},
+    "/api/model_registry/v1/artifacts": {"artifactType", "customProperties", "description", "digest", "externalId", "modelFormatName", "modelFormatVersion", "modelSourceClass", "modelSourceGroup", "modelSourceId", "modelSourceKind", "modelSourceName", "name", "parameterType", "profile", "schema", "serviceAccountName", "source", "sourceType", "state", "step", "storageKey", "storagePath", "timestamp", "uri", "value"},
+    "/api/model_registry/v1/artifacts/{id}": {"artifactType", "customProperties", "description", "digest", "externalId", "modelFormatName", "modelFormatVersion", "modelSourceClass", "modelSourceGroup", "modelSourceId", "modelSourceKind", "modelSourceName", "parameterType", "profile", "schema", "serviceAccountName", "source", "sourceType", "state", "step", "storageKey", "storagePath", "timestamp", "uri", "value"},
+    "/api/model_registry/v1/inference_services": {"customProperties", "description", "desiredState", "externalId", "modelVersionId", "name", "registeredModelId", "runtime", "servingEnvironmentId"},
+    "/api/model_registry/v1/inference_services/{inference_service_id}": {"customProperties", "description", "desiredState", "externalId", "modelVersionId", "runtime"},
+    "/api/model_registry/v1/inference_services/{inference_service_id}/serves": {"customProperties", "description", "externalId", "lastKnownState", "modelVersionId", "name"},
+    "/api/model_registry/v1/model_artifacts": {"artifactType", "customProperties", "description", "externalId", "modelFormatName", "modelFormatVersion", "modelSourceClass", "modelSourceGroup", "modelSourceId", "modelSourceKind", "modelSourceName", "name", "serviceAccountName", "state", "storageKey", "storagePath", "uri"},
+    "/api/model_registry/v1/model_artifacts/{modelartifactId}": {"artifactType", "customProperties", "description", "externalId", "modelFormatName", "modelFormatVersion", "modelSourceClass", "modelSourceGroup", "modelSourceId", "modelSourceKind", "modelSourceName", "serviceAccountName", "state", "storageKey", "storagePath", "uri"},
+    "/api/model_registry/v1/model_versions": {"author", "customProperties", "description", "externalId", "name", "registeredModelId", "state"},
+    "/api/model_registry/v1/model_versions/{model_version_id}": {"author", "customProperties", "description", "externalId", "state"},
+    "/api/model_registry/v1/model_versions/{model_version_id}/artifacts": {"artifactType", "customProperties", "description", "digest", "experimentId", "experimentRunId", "externalId", "modelFormatName", "modelFormatVersion", "modelSourceClass", "modelSourceGroup", "modelSourceId", "modelSourceKind", "modelSourceName", "name", "parameterType", "profile", "schema", "serviceAccountName", "source", "sourceType", "state", "step", "storageKey", "storagePath", "timestamp", "uri", "value"},
+    "/api/model_registry/v1/registered_models": {"customProperties", "description", "externalId", "language", "libraryName", "license", "licenseLink", "logo", "maturity", "name", "owner", "provider", "readme", "state", "tasks"},
+    "/api/model_registry/v1/registered_models/{registered_model_id}": {"customProperties", "description", "externalId", "language", "libraryName", "license", "licenseLink", "logo", "maturity", "owner", "provider", "readme", "state", "tasks"},
+    "/api/model_registry/v1/registered_models/{registered_model_id}/versions": {"author", "customProperties", "description", "externalId", "name", "registeredModelId", "state"},
+    "/api/model_registry/v1/serving_environments": {"customProperties", "description", "externalId", "name"},
+    "/api/model_registry/v1/serving_environments/{serving_environment_id}": {"customProperties", "description", "externalId"},
+    "/api/model_registry/v1/serving_environments/{serving_environment_id}/inference_services": {"customProperties", "description", "desiredState", "externalId", "modelVersionId", "name", "registeredModelId", "runtime", "servingEnvironmentId"},
 }
 
 _ALL_BODY_PROPERTIES = set().union(*_PATH_PROPERTIES.values())
@@ -211,8 +203,8 @@ def _fix_body_id(case: Case) -> None:
         del case.body["id"]
 
 
-_ID_PATH_PARAMS = {"id", "registeredmodelId", "modelversionId", "experimentId", "experimentrunId",
-                   "inferenceserviceId", "servingenvironmentId", "servemodelId"}
+_ID_PATH_PARAMS = {"id", "registered_model_id", "model_version_id",
+                   "inference_service_id", "serving_environment_id", "servemodelId"}
 
 
 def _fix_path_param_ids(case: Case) -> None:
@@ -241,10 +233,9 @@ def _is_valid_id(val: Any) -> bool:
 
 
 _GENERIC_ARTIFACT_PATHS = {
-    "/api/model_registry/v1alpha3/artifacts",
-    "/api/model_registry/v1alpha3/artifacts/{id}",
-    "/api/model_registry/v1alpha3/model_versions/{modelversionId}/artifacts",
-    "/api/model_registry/v1alpha3/experiment_runs/{experimentrunId}/artifacts",
+    "/api/model_registry/v1/artifacts",
+    "/api/model_registry/v1/artifacts/{id}",
+    "/api/model_registry/v1/model_versions/{model_version_id}/artifacts",
 }
 
 
@@ -352,7 +343,7 @@ def _strip_filter_unsafe(s: str) -> str:
 def generated_schema(request: pytest.FixtureRequest, pytestconfig: pytest.Config,
                      verify_ssl: bool) -> OpenApiSchema:
     """Generate schema for the API based on the schema_file parameter"""
-    schema_file = getattr(request, "param", "model-registry.yaml")
+    schema_file = getattr(request, "param", "model-registry-v1.yaml")
     os.environ["API_HOST"] = REGISTRY_URL
 
     # Read and modify schemathesis.toml if verify_ssl is False
@@ -439,7 +430,7 @@ def cleanup_artifacts(request: pytest.FixtureRequest, auth_headers: dict, verify
     yield register
 
     for artifact_id in created_ids:
-        del_url = f"{REGISTRY_URL}/api/model_registry/v1alpha3/artifacts/{artifact_id}"
+        del_url = f"{REGISTRY_URL}/api/model_registry/v1/artifacts/{artifact_id}"
         try:
             requests.delete(del_url, headers=auth_headers, timeout=DEFAULT_API_TIMEOUT, verify=verify_ssl)
         except Exception as e:
@@ -452,7 +443,7 @@ def artifact_resource(verify_ssl: bool):
 
     @contextlib.contextmanager
     def _artifact_resource(auth_headers: dict, payload: dict) -> Generator[str, None, None]:
-        create_endpoint = f"{REGISTRY_URL}/api/model_registry/v1alpha3/artifacts"
+        create_endpoint = f"{REGISTRY_URL}/api/model_registry/v1/artifacts"
         resp = requests.post(create_endpoint, headers=auth_headers, json=payload, timeout=DEFAULT_API_TIMEOUT,
                              verify=verify_ssl)
         resp.raise_for_status()
@@ -460,11 +451,10 @@ def artifact_resource(verify_ssl: bool):
         try:
             yield artifact_id
         finally:
-            del_url = f"{REGISTRY_URL}/api/model_registry/v1alpha3/artifacts/{artifact_id}"
+            del_url = f"{REGISTRY_URL}/api/model_registry/v1/artifacts/{artifact_id}"
             try:
                 requests.delete(del_url, headers=auth_headers, timeout=DEFAULT_API_TIMEOUT, verify=verify_ssl)
             except Exception as e:
                 print(f"Failed to delete artifact {artifact_id}: {e}")
 
     return _artifact_resource
-

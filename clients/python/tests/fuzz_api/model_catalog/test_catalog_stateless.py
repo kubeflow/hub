@@ -6,7 +6,7 @@ from tests.fuzz_api.model_registry.test_mr_stateless import call_and_validate_wi
 
 schema = schemathesis.pytest.from_fixture("generated_schema")
 
-@pytest.mark.parametrize("generated_schema", ["catalog.yaml"], indirect=True)
+@pytest.mark.parametrize("generated_schema", ["catalog-v1.yaml"], indirect=True)
 @schema.parametrize()
 @settings(
     deadline=None,
