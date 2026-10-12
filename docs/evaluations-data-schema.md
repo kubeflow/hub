@@ -71,6 +71,36 @@ Producers may append optional scalar properties. Suggested optional properties
 include `provider_id`, `benchmark_url`, `higher_is_better`, and
 `execution_context`. New required properties need a coordinated contract change.
 
+## Catalog artifact identity
+
+The producer's `id` identifies the benchmark result and is served unchanged as
+`customProperties.id`. The same result may be ingested for separate catalog
+models, such as the same model listed in two sources.
+Performance records that use the supported `config_id` fallback also expose that
+resolved producer ID in `customProperties.id`, retaining `config_id` as well.
+
+For evaluation, performance, and security records, the catalog generates both
+the artifact `name` and `externalId` using
+`catalog-metrics:v1:<modelID>:<metricsType>:<sha256(producerID)>`. The digest is
+the full lowercase hexadecimal SHA-256 hash of the original ID's UTF-8 bytes.
+These identities distinguish catalog models and metrics types, fit the database
+key length, and preserve case-sensitive producer IDs. Accuracy aggregates retain
+their existing `accuracy-metrics-model-<modelID>` identity.
+
+Consumers should correlate producer data using `customProperties.id`; filters
+on `externalId` use the scoped value returned by the API. Deleting and recreating
+a catalog model can change its artifact identities because its database ID can
+change.
+
+This changes the returned `name` and `externalId` values for record-based metrics,
+without changing the API schema or producer record format. Existing artifacts
+retain their legacy values until the normal model reload deletes and recreates
+them. During that transition, ingestion recognizes legacy records only for their
+owning catalog model and metrics type. No database migration or reset is needed.
+If a legacy producer ID was deliberately chosen to equal a new scoped identity,
+ingestion reports the database conflict rather than silently dropping the new
+result. A normal model reload replaces the legacy identity before retrying.
+
 ## Producer migration
 
 For current Model Validation records:

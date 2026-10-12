@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"maps"
@@ -215,6 +216,8 @@ func (pr *performanceRecord) UnmarshalJSON(data []byte) error {
 	if pr.ID == "" {
 		if configID, ok := raw["config_id"].(string); ok && configID != "" {
 			pr.ID = configID
+			// Expose the resolved producer ID even for config-only records.
+			raw["id"] = configID
 		}
 	}
 	if modelID, ok := raw["model_id"].(string); ok {
@@ -536,12 +539,43 @@ func processModelArtifactsBatch(dirPath string, modelID int32, modelName string,
 		return 0, fmt.Errorf("failed to load existing artifacts for model: %v", err)
 	}
 
-	// Build in-memory map for O(1) lookups: external_id -> artifact
-	existingArtifactsMap := make(map[string]bool, existingArtifactsList.Size)
+	// Include the metrics type so a legacy raw ID never suppresses another kind.
+	type artifactKey struct {
+		metricsType dbmodels.MetricsType
+		externalID  string
+	}
+	existingArtifactsMap := make(map[artifactKey]bool, existingArtifactsList.Size)
+	legacyArtifactsMap := make(map[artifactKey]bool)
 	for _, artifact := range existingArtifactsList.Items {
-		if artifact.GetAttributes() != nil && artifact.GetAttributes().ExternalID != nil {
-			existingArtifactsMap[*artifact.GetAttributes().ExternalID] = true
+		if attrs := artifact.GetAttributes(); attrs != nil && attrs.ExternalID != nil {
+			key := artifactKey{attrs.MetricsType, *attrs.ExternalID}
+			// Scoped records use the same name and external ID. Legacy record
+			// names have a kind prefix, unlike their raw external IDs. Never
+			// mistake a scoped identity for a different record's producer ID.
+			if attrs.Name == nil || *attrs.Name != *attrs.ExternalID {
+				legacyArtifactsMap[key] = true
+			} else {
+				existingArtifactsMap[key] = true
+			}
 		}
+	}
+
+	// The same identity is used for within-file deduplication and DB lookups.
+	// Legacy rows are recognized only within this model and metrics type until
+	// the normal model reload replaces them with scoped identities.
+	seenIDs := make(map[string]bool, totalRecords)
+	shouldInsert := func(metricsType dbmodels.MetricsType, producerID string) bool {
+		externalID := metricsArtifactIdentity(modelID, metricsType, producerID)
+		if seenIDs[externalID] {
+			glog.Warningf("Duplicate %s artifact ID %s in file, skipping", metricsType, producerID)
+			return false
+		}
+		seenIDs[externalID] = true
+		if existingArtifactsMap[artifactKey{metricsType, externalID}] || legacyArtifactsMap[artifactKey{metricsType, producerID}] {
+			glog.V(2).Infof("%s artifact %s already exists, skipping", metricsType, producerID)
+			return false
+		}
+		return true
 	}
 
 	// Check which artifacts need to be created using the in-memory map
@@ -550,7 +584,7 @@ func processModelArtifactsBatch(dirPath string, modelID int32, modelName string,
 	// Check evaluation artifacts
 	if len(evaluationRecords) > 0 {
 		externalID := fmt.Sprintf("accuracy-metrics-model-%d", modelID)
-		if !existingArtifactsMap[externalID] {
+		if !existingArtifactsMap[artifactKey{dbmodels.MetricsTypeAccuracy, externalID}] {
 			artifact := createAccuracyMetricsArtifact(evaluationRecords, modelID, metricsArtifactTypeID, overallAccuracy, nil, nil)
 			artifactsToInsert = append(artifactsToInsert, artifact)
 		} else {
@@ -561,48 +595,30 @@ func processModelArtifactsBatch(dirPath string, modelID int32, modelName string,
 	// Preserve complete evaluation rows as individual artifacts for the
 	// Evaluation Insights table and run history. The aggregate accuracy artifact
 	// above remains unchanged for existing consumers.
-	seenEvaluationIDs := make(map[string]bool, len(evaluationRecords))
 	for _, evalRecord := range evaluationRecords {
 		if err := evalRecord.validateDetailedEvaluation(modelName); err != nil {
 			glog.Warningf("Evaluation record %q is not eligible for detailed serving: %v", evalRecord.ID, err)
 			continue
 		}
-		if seenEvaluationIDs[evalRecord.ID] {
-			glog.Warningf("Duplicate evaluation artifact ID %s in file, skipping", evalRecord.ID)
-			continue
-		}
-		seenEvaluationIDs[evalRecord.ID] = true
-		if !existingArtifactsMap[evalRecord.ID] {
-			artifact := createEvaluationArtifact(evalRecord, metricsArtifactTypeID)
+		if shouldInsert(dbmodels.MetricsTypeEvaluation, evalRecord.ID) {
+			artifact := createEvaluationArtifact(evalRecord, modelID, metricsArtifactTypeID)
 			artifactsToInsert = append(artifactsToInsert, artifact)
-		} else {
-			glog.V(2).Infof("Evaluation artifact %s already exists, skipping", evalRecord.ID)
 		}
 	}
 
 	// Check performance artifacts
 	for _, perfRecord := range performanceRecords {
-		if !existingArtifactsMap[perfRecord.ID] {
+		if shouldInsert(dbmodels.MetricsTypePerformance, perfRecord.ID) {
 			artifact := createPerformanceArtifact(perfRecord, modelID, metricsArtifactTypeID, nil, nil)
 			artifactsToInsert = append(artifactsToInsert, artifact)
-		} else {
-			glog.V(2).Infof("Performance artifact %s already exists, skipping", perfRecord.ID)
 		}
 	}
 
-	// Check security evaluation artifacts; deduplicate within the file before the DB check
-	seenSecurityIDs := make(map[string]bool, len(securityRecords))
+	// Check security evaluation artifacts
 	for _, secRecord := range securityRecords {
-		if seenSecurityIDs[secRecord.ID] {
-			glog.Warningf("Duplicate security artifact ID %s in file, skipping", secRecord.ID)
-			continue
-		}
-		seenSecurityIDs[secRecord.ID] = true
-		if !existingArtifactsMap[secRecord.ID] {
+		if shouldInsert(dbmodels.MetricsTypeSecurityMetrics, secRecord.ID) {
 			artifact := createSecurityArtifact(secRecord, modelID, metricsArtifactTypeID, nil, nil)
 			artifactsToInsert = append(artifactsToInsert, artifact)
-		} else {
-			glog.V(2).Infof("Security artifact %s already exists, skipping", secRecord.ID)
 		}
 	}
 
@@ -776,11 +792,18 @@ func createAccuracyMetricsArtifact(evalRecords []evaluationRecord, modelID int32
 	return metricsArtifact
 }
 
+// metricsArtifactIdentity scopes a producer result to its catalog model and
+// metrics type. Hashing the original UTF-8 bytes bounds the database key length
+// and preserves distinctions that case-insensitive database collations lose.
+func metricsArtifactIdentity(modelID int32, metricsType dbmodels.MetricsType, producerID string) string {
+	return fmt.Sprintf("catalog-metrics:v1:%d:%s:%x", modelID, metricsType, sha256.Sum256([]byte(producerID)))
+}
+
 // createEvaluationArtifact creates one evaluation-metrics artifact per complete
 // evaluations.ndjson record so callers can filter, paginate, and order run
 // history without losing record-level metadata.
-func createEvaluationArtifact(evalRecord evaluationRecord, typeID int32) *dbmodels.CatalogMetricsArtifactImpl {
-	artifactName := fmt.Sprintf("evaluation-%s", evalRecord.ID)
+func createEvaluationArtifact(evalRecord evaluationRecord, modelID int32, typeID int32) *dbmodels.CatalogMetricsArtifactImpl {
+	identity := metricsArtifactIdentity(modelID, dbmodels.MetricsTypeEvaluation, evalRecord.ID)
 	properties := []models.Properties{}
 	customProperties := make([]models.Properties, 0, len(evalRecord.CustomProperties))
 
@@ -822,8 +845,8 @@ func createEvaluationArtifact(evalRecord evaluationRecord, typeID int32) *dbmode
 	return &dbmodels.CatalogMetricsArtifactImpl{
 		TypeID: &typeID,
 		Attributes: &dbmodels.CatalogMetricsArtifactAttributes{
-			Name:                     &artifactName,
-			ExternalID:               &evalRecord.ID,
+			Name:                     &identity,
+			ExternalID:               &identity,
 			CreateTimeSinceEpoch:     evalRecord.CreatedAt,
 			LastUpdateTimeSinceEpoch: evalRecord.UpdatedAt,
 			MetricsType:              dbmodels.MetricsTypeEvaluation,
@@ -835,8 +858,7 @@ func createEvaluationArtifact(evalRecord evaluationRecord, typeID int32) *dbmode
 
 // createPerformanceArtifact creates a metrics artifact from performance record
 func createPerformanceArtifact(perfRecord performanceRecord, modelID int32, typeID int32, existingID *int32, existingCreateTime *int64) *dbmodels.CatalogMetricsArtifactImpl {
-	// Create artifact name (must be unique per artifact)
-	artifactName := fmt.Sprintf("performance-%s", perfRecord.ID)
+	artifactName := metricsArtifactIdentity(modelID, dbmodels.MetricsTypePerformance, perfRecord.ID)
 
 	// Use existing create time if provided, otherwise extract from custom properties
 	createTime := existingCreateTime
@@ -918,7 +940,7 @@ func createPerformanceArtifact(perfRecord performanceRecord, modelID int32, type
 		TypeID: &typeID,
 		Attributes: &dbmodels.CatalogMetricsArtifactAttributes{
 			Name:                     &artifactName,
-			ExternalID:               &perfRecord.ID,
+			ExternalID:               &artifactName,
 			CreateTimeSinceEpoch:     createTime,
 			LastUpdateTimeSinceEpoch: updateTime,
 			MetricsType:              dbmodels.MetricsTypePerformance,
@@ -965,7 +987,7 @@ func parseSecurityEvaluationFile(filePath string) ([]securityEvaluationRecord, e
 
 // createSecurityArtifact creates a metrics artifact from a security evaluation record
 func createSecurityArtifact(secRecord securityEvaluationRecord, modelID int32, typeID int32, existingID *int32, existingCreateTime *int64) *dbmodels.CatalogMetricsArtifactImpl {
-	artifactName := fmt.Sprintf("security-%s", secRecord.ID)
+	artifactName := metricsArtifactIdentity(modelID, dbmodels.MetricsTypeSecurityMetrics, secRecord.ID)
 
 	createTime := existingCreateTime
 	var updateTime *int64
@@ -1038,7 +1060,7 @@ func createSecurityArtifact(secRecord securityEvaluationRecord, modelID int32, t
 		TypeID: &typeID,
 		Attributes: &dbmodels.CatalogMetricsArtifactAttributes{
 			Name:                     &artifactName,
-			ExternalID:               &secRecord.ID,
+			ExternalID:               &artifactName,
 			CreateTimeSinceEpoch:     createTime,
 			LastUpdateTimeSinceEpoch: updateTime,
 			MetricsType:              dbmodels.MetricsTypeSecurityMetrics,
