@@ -3,7 +3,7 @@ module github.com/kubeflow/hub
 go 1.26.0
 
 require (
-	cirello.io/pglock v1.17.0
+	cirello.io/pglock v1.18.0
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/alecthomas/participle/v2 v2.1.4
 	github.com/deckarep/golang-set/v2 v2.9.0
