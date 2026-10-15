@@ -326,6 +326,78 @@ func setupMock(mockK8sClient kubernetes.Interface, ctx context.Context) error {
 		return err
 	}
 
+	err = createModelRegistryRoleBindings(mockK8sClient, ctx, "kubeflow")
+	if err != nil {
+		return fmt.Errorf("failed to create model-registry role bindings in kubeflow: %w", err)
+	}
+
+	err = createModelRegistryRoleBindings(mockK8sClient, ctx, "bella-namespace")
+	if err != nil {
+		return fmt.Errorf("failed to create model-registry role bindings in bella-namespace: %w", err)
+	}
+
+	return nil
+}
+
+// createModelRegistryRoleBindings creates sample RoleBindings labelled with
+// app.kubernetes.io/part-of=model-registry so that ListModelRegistryRoleBindings tests
+// have real data to assert against.
+func createModelRegistryRoleBindings(k8sClient kubernetes.Interface, ctx context.Context, namespace string) error {
+	bindings := []rbacv1.RoleBinding{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "model-registry-user-binding",
+				Namespace: namespace,
+				Labels: map[string]string{
+					"app.kubernetes.io/part-of":   "model-registry",
+					"app.kubernetes.io/component": "model-registry",
+					"app.kubernetes.io/name":      "model-registry",
+				},
+			},
+			Subjects: []rbacv1.Subject{
+				{
+					Kind:     "User",
+					Name:     "test-user@example.com",
+					APIGroup: "rbac.authorization.k8s.io",
+				},
+			},
+			RoleRef: rbacv1.RoleRef{
+				Kind:     "Role",
+				Name:     "registry-user-model-registry",
+				APIGroup: "rbac.authorization.k8s.io",
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "model-registry-admin-binding",
+				Namespace: namespace,
+				Labels: map[string]string{
+					"app.kubernetes.io/part-of":   "model-registry",
+					"app.kubernetes.io/component": "model-registry",
+					"app.kubernetes.io/name":      "model-registry",
+				},
+			},
+			Subjects: []rbacv1.Subject{
+				{
+					Kind:     "Group",
+					Name:     "model-registry-admins",
+					APIGroup: "rbac.authorization.k8s.io",
+				},
+			},
+			RoleRef: rbacv1.RoleRef{
+				Kind:     "Role",
+				Name:     "registry-admin-model-registry",
+				APIGroup: "rbac.authorization.k8s.io",
+			},
+		},
+	}
+
+	for i := range bindings {
+		_, err := k8sClient.RbacV1().RoleBindings(namespace).Create(ctx, &bindings[i], metav1.CreateOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to create role binding %q: %w", bindings[i].Name, err)
+		}
+	}
 	return nil
 }
 
