@@ -25,6 +25,12 @@ export type {
   UseCatalogSourcePreviewCoreResult,
 } from './hooks/useCatalogSourcePreviewCore';
 export { useCatalogSourcesWithPolling } from './hooks/useCatalogSourcesWithPolling';
+export {
+  useCatalogSourceSyncTracker,
+  SYNC_PENDING_POLL_INTERVAL,
+  SYNC_PENDING_TIMEOUT,
+} from './hooks/useCatalogSourceSyncTracker';
+export type { CatalogSourceSyncTracker } from './hooks/useCatalogSourceSyncTracker';
 export { useSourceConfigById } from './hooks/useSourceConfigById';
 export { useSourceConfigs } from './hooks/useSourceConfigs';
 export { generateSourceIdFromName } from './utils/generateSourceIdFromName';
