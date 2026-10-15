@@ -186,6 +186,14 @@ func (f *fakeKubernetesClient) UpdateMcpCatalogSourceConfig(ctx context.Context,
 	return nil
 }
 
+func (f *fakeKubernetesClient) GetAllSkillCatalogSourceConfigs(ctx context.Context, namespace string) (corev1.ConfigMap, corev1.ConfigMap, error) {
+	return corev1.ConfigMap{}, corev1.ConfigMap{}, nil
+}
+
+func (f *fakeKubernetesClient) UpdateSkillCatalogSourceConfig(ctx context.Context, namespace string, configMap *corev1.ConfigMap) error {
+	return nil
+}
+
 func (f *fakeKubernetesClient) CreateSecret(ctx context.Context, namespace string, secret *corev1.Secret) (*corev1.Secret, error) {
 	created := secret.DeepCopy()
 	if created.Name == "" {
@@ -203,6 +211,10 @@ func (f *fakeKubernetesClient) PatchSecret(ctx context.Context, namespace string
 }
 
 func (f *fakeKubernetesClient) DeleteSecret(ctx context.Context, namespace string, secretName string) error {
+	return nil
+}
+
+func (f *fakeKubernetesClient) RemoveSecretKey(ctx context.Context, namespace string, secretName string, key string) error {
 	return nil
 }
 
