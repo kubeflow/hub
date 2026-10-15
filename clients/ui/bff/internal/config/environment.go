@@ -81,9 +81,22 @@ type EnvConfig struct {
 	DeploymentMode           DeploymentMode
 	DevModeModelRegistryPort int
 	DevModeCatalogPort       int
-	StaticAssetsDir          string
-	LogLevel                 slog.Level
-	AllowedOrigins           []string
+	DevModeCatalogNamespace  string
+	// SkillCatalogGitCredentialsSecret is the single Secret mounted into the catalog
+	// pod at /etc/skill-catalog/git-credentials. Each skill source's git token is
+	// stored under a key named after the source id, and that key name is what the
+	// source's credentialRef points at — the catalog service resolves credentialRef
+	// as a filename in that mount, not as a Secret name.
+	SkillCatalogGitCredentialsSecret string
+	// SkillCatalogMarketplaceURL overrides the marketplace.json URL shown in the skill
+	// install instructions. Leave empty for the default, which is the catalog service's
+	// in-cluster address — reachable by agents running in the cluster, which is the
+	// primary consumer. Set it to an externally reachable URL when the catalog has been
+	// put behind a Route or Ingress, so the command also works from outside the cluster.
+	SkillCatalogMarketplaceURL string
+	StaticAssetsDir            string
+	LogLevel                   slog.Level
+	AllowedOrigins             []string
 	// BundlePaths is a list of filesystem paths to PEM-encoded CA bundle files.
 	// If provided, the application will attempt to load these files and add the
 	// certificates to the HTTP client's Root CAs for outbound TLS connections.

@@ -13,6 +13,11 @@ const (
 	ModelCatalogAPIPath     = "/api/model_catalog/v1alpha1"
 	McpCatalogAPIPath       = "/api/mcp_catalog/v1alpha1"
 	AgentCatalogAPIPath     = "/api/agent_catalog/v1alpha1"
+	// Skills are served only at v1: the catalog service dropped the skill v1alpha1
+	// routes. v1 also renames fields to camelCase (source_id -> sourceId), which
+	// models.Skill's tags must match.
+	SkillCatalogAPIPath  = "/api/skill_catalog/v1"
+	CatalogTypeGitSkills = "git-skills-plugin"
 )
 
 type ModelCatalogRepository struct {
