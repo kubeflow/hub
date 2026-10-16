@@ -361,3 +361,25 @@ def test_upload_to_s3_uses_forward_slashes_in_keys(tmp_path):
     )
 
     assert sorted(s3.keys) == ["models/v1/config.json", "models/v1/sub/weights.safetensors"]
+
+
+def test_upload_to_s3_uses_endpoint_and_region_from_params(monkeypatch, tmp_path):
+    for var in ("AWS_S3_BUCKET", "AWS_S3_ENDPOINT", "AWS_DEFAULT_REGION"):
+        monkeypatch.delenv(var, raising=False)
+    (tmp_path / "model.bin").write_text("")
+
+    class FakeS3:
+        def __init__(self):
+            self.keys = []
+
+        def upload_file(self, Filename, Bucket, Key, Config=None):  # noqa: N803
+            self.keys.append(Key)
+
+    s3 = FakeS3()
+    params = utils.S3Params(
+        bucket_name="bucket", s3_prefix="models/v1", endpoint_url="http://minio:9000", region="eu-west-1"
+    )
+    uri = utils.upload_to_s3(params, str(tmp_path), s3_client=s3, transfer_config=object())
+
+    assert uri == "s3://bucket/models/v1?endpoint=http://minio:9000&defaultRegion=eu-west-1"
+    assert s3.keys == ["models/v1/model.bin"]

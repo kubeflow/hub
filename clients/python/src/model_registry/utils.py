@@ -771,5 +771,7 @@ def upload_to_s3(
         bucket=s3_auth.bucket_name,
         s3=s3,
         path_prefix=s3_auth.s3_prefix,
+        endpoint_url=s3_auth.endpoint_url,
+        region=s3_auth.region,
         transfer_config=transfer_config,
     )
