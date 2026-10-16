@@ -1984,6 +1984,34 @@ func TestResolveSavedHFAPIKey(t *testing.T) {
 	})
 }
 
+func TestParseSyncInterval(t *testing.T) {
+	tests := []struct {
+		name  string
+		props map[string]any
+		want  time.Duration
+	}{
+		{"nil properties", nil, defaultSyncInterval},
+		{"unset", map[string]any{}, defaultSyncInterval},
+		{"empty string", map[string]any{syncIntervalKey: ""}, defaultSyncInterval},
+		{"non-string value", map[string]any{syncIntervalKey: 10}, defaultSyncInterval},
+		{"unparseable", map[string]any{syncIntervalKey: "soon"}, defaultSyncInterval},
+		{"zero", map[string]any{syncIntervalKey: "0s"}, defaultSyncInterval},
+		{"bare zero", map[string]any{syncIntervalKey: "0"}, defaultSyncInterval},
+		{"negative", map[string]any{syncIntervalKey: "-1m"}, defaultSyncInterval},
+		{"seconds", map[string]any{syncIntervalKey: "10s"}, 10 * time.Second},
+		{"hours", map[string]any{syncIntervalKey: "6h"}, 6 * time.Hour},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := parseSyncInterval(tt.props)
+			assert.Equal(t, tt.want, got)
+			// Whatever is configured, the result must be usable by time.NewTicker,
+			// which panics on a non-positive interval.
+			assert.NotPanics(t, func() { time.NewTicker(got).Stop() })
+		})
+	}
+}
+
 func TestDeriveHFAccessType(t *testing.T) {
 	tests := []struct {
 		name     string

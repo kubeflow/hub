@@ -1192,6 +1192,29 @@ func resolveHFAPIKey(sourceID, propertyEnvVar string) string {
 	return os.Getenv(defaultAPIKeyEnvVar)
 }
 
+// parseSyncInterval reads the optional syncInterval property (a duration
+// string such as "1s", "10s", "1m" or "24h") and returns the interval for
+// periodic syncing. It falls back to defaultSyncInterval when the property is
+// unset, cannot be parsed, or is not positive, since time.NewTicker panics on
+// a non-positive interval. For testing, a shorter interval can be used to
+// speed up tests.
+func parseSyncInterval(props map[string]any) time.Duration {
+	syncInterval, ok := props[syncIntervalKey].(string)
+	if !ok || syncInterval == "" {
+		return defaultSyncInterval
+	}
+	parsed, err := time.ParseDuration(syncInterval)
+	if err != nil {
+		glog.Warningf("Invalid syncInterval duration string %q, using default: %v", syncInterval, err)
+		return defaultSyncInterval
+	}
+	if parsed <= 0 {
+		glog.Warningf("syncInterval %q must be positive, using default: %v", syncInterval, defaultSyncInterval)
+		return defaultSyncInterval
+	}
+	return parsed
+}
+
 func newHFModelProvider(ctx context.Context, source *basecatalog.ModelSource, reldir string) (<-chan ModelProviderRecord, error) {
 	p := &hfModelProvider{}
 	p.client = &http.Client{Timeout: 30 * time.Second}
@@ -1228,17 +1251,7 @@ func newHFModelProvider(ctx context.Context, source *basecatalog.ModelSource, re
 	allowedOrg, _ := source.Properties[allowedOrgKey].(string)
 	restrictToOrg(allowedOrg, &source.IncludedModels, &source.ExcludedModels)
 
-	// Parse sync interval (optional, defaults to 24 hours)
-	// This can be configured as a duration string (e.g., "1s", "10s", "1m", "24h").
-	// For testing, a shorter interval can be used to speed up tests.
-	p.syncInterval = defaultSyncInterval
-	if syncInterval, ok := source.Properties[syncIntervalKey].(string); ok && syncInterval != "" {
-		if parsed, err := time.ParseDuration(syncInterval); err == nil {
-			p.syncInterval = parsed
-		} else {
-			glog.Warningf("Invalid syncInterval duration string %q, using default: %v", syncInterval, err)
-		}
-	}
+	p.syncInterval = parseSyncInterval(source.Properties)
 
 	// Record whether a key was originally resolved, before prefix validation
 	// may clear p.apiKey. Used by refreshCredentialStatus so hasApiKey stays
