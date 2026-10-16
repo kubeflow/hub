@@ -746,7 +746,7 @@ func buildK8sJob(jobName, jobID string, payload models.ModelTransferJob,
 		envVars = append(envVars, corev1.EnvVar{Name: "MODEL_SYNC_MODEL_ID", Value: payload.RegisteredModelId})
 	}
 
-	if payload.Destination.Type == models.ModelTransferJobDestinationTypeOCI && payload.Destination.Registry == "quay.io" {
+	if payload.Destination.Type == models.ModelTransferJobDestinationTypeOCI {
 		envVars = append(envVars, corev1.EnvVar{Name: "MODEL_SYNC_DESTINATION_OCI_BASE_IMAGE", Value: "quay.io/quay/busybox:latest"})
 	}
 
