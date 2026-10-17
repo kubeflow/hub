@@ -29,6 +29,7 @@ def minimal_update_artifact_env_source_dest_vars():
         "oci_registry": "quay.io",
         "oci_username": "oci_username_env",
         "oci_password": "oci_password_env",
+        "oci_base_image": "registry.example.com/library/busybox:1.0",
     }
 
     # Source variables - using the correct format from existing tests

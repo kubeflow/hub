@@ -43,6 +43,7 @@ def destination_oci_env_vars(monkeypatch):
         "oci_registry": "quay.io",
         "oci_username": "oci_username_env",
         "oci_password": "oci_password_env",
+        "oci_base_image": "mirror.example.com/library/busybox:1.0",
     }
 
     # Set up test environment variables
@@ -178,6 +179,7 @@ def test_s3_file_to_oci_env_config(
     assert config.destination.uri == destination_oci_env_vars["oci_uri"]
     assert config.destination.username == destination_oci_env_vars["oci_username"]
     assert config.destination.password == destination_oci_env_vars["oci_password"]
+    assert config.destination.base_image == destination_oci_env_vars["oci_base_image"]
 
 
 def test_env_based_s3_to_oci_config(
@@ -199,6 +201,7 @@ def test_env_based_s3_to_oci_config(
     assert config.destination.uri == destination_oci_env_vars["oci_uri"]
     assert config.destination.username == destination_oci_env_vars["oci_username"]
     assert config.destination.password == destination_oci_env_vars["oci_password"]
+    assert config.destination.base_image == destination_oci_env_vars["oci_base_image"]
 
     assert config.model.intent.artifact_id == update_artifact_intent_env_vars["model_artifact_id"]
     assert config.registry.server_address == update_artifact_intent_env_vars["registry_server_address"]
@@ -237,6 +240,7 @@ def test_params_based_config():
 
     assert isinstance(config.source, OCIStorageConfig)
     assert config.source.uri == "quay.io/example/params"
+    assert config.source.base_image == "public.ecr.aws/docker/library/busybox:latest"
     assert isinstance(config.destination, S3StorageConfig)
     assert config.destination.access_key_id == "destination_key_params"
     assert config.destination.secret_access_key == "destination_secret_params"
@@ -281,6 +285,47 @@ def test_params_will_override_env_config(
     assert config.source.secret_access_key == override_vars["aws_secret_access_key"]
     assert config.source.region == override_vars["aws_region"]
     assert config.source.bucket == override_vars["aws_bucket"]
+
+
+def test_oci_destination_defaults_when_base_image_is_omitted(
+    monkeypatch, source_s3_env_vars, destination_oci_env_vars, update_artifact_intent_env_vars
+):
+    monkeypatch.delenv("MODEL_SYNC_DESTINATION_OCI_BASE_IMAGE")
+
+    config = get_config([])
+
+    assert config.destination.base_image == "public.ecr.aws/docker/library/busybox:latest"
+    assert config.destination.base_image_source == "job-default"
+
+
+@pytest.mark.parametrize("base_image", ["", "  ", "busybox:latest", "library/busybox:latest"])
+def test_oci_destination_requires_registry_qualified_base_image(
+    monkeypatch, source_s3_env_vars, destination_oci_env_vars, update_artifact_intent_env_vars, base_image
+):
+    monkeypatch.setenv("MODEL_SYNC_DESTINATION_OCI_BASE_IMAGE", base_image)
+
+    with pytest.raises(ValueError, match="MODEL_SYNC_DESTINATION_OCI_BASE_IMAGE"):
+        get_config([])
+
+
+@pytest.mark.parametrize("base_image", [
+    "mirror.example.com/library/busybox:1.0",
+    "registry.example.com:5000/library/busybox@sha256:" + "a" * 64,
+])
+def test_oci_destination_accepts_explicit_base_image(
+    source_s3_env_vars, destination_oci_env_vars, update_artifact_intent_env_vars, base_image
+):
+    config = get_config(["--destination-oci-base-image", base_image])
+    assert config.destination.base_image == base_image
+    assert config.destination.base_image_source == "explicit"
+
+
+@pytest.mark.parametrize("source", ["bff-default", "deployment-config"])
+def test_oci_destination_accepts_bff_source(
+    monkeypatch, source_s3_env_vars, destination_oci_env_vars, update_artifact_intent_env_vars, source
+):
+    monkeypatch.setenv("MODEL_SYNC_DESTINATION_OCI_BASE_IMAGE_SOURCE", source)
+    assert get_config([]).destination.base_image_source == source
 
 
 def test_uri_file_to_oci_env_config(uri_credentials_folder, destination_oci_env_vars, update_artifact_intent_env_vars):
@@ -489,6 +534,7 @@ def test_oci_credentials_file_loading(
     monkeypatch.setenv("MODEL_SYNC_DESTINATION_TYPE", "oci")
     monkeypatch.setenv("MODEL_SYNC_DESTINATION_OCI_URI", f"{expected['registry']}/dest/model")
     monkeypatch.setenv("MODEL_SYNC_DESTINATION_OCI_REGISTRY", expected["registry"])
+    monkeypatch.setenv("MODEL_SYNC_DESTINATION_OCI_BASE_IMAGE", "registry.example.com/library/busybox:1.0")
 
     monkeypatch.setenv("MODEL_SYNC_REGISTRY_SERVER_ADDRESS", "https://registry.example.com")
 
@@ -534,5 +580,3 @@ def test_registry_custom_ca_missing_file_falls_back_to_system_defaults(
     ])
 
     assert config.registry.custom_ca is None
-
-

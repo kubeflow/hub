@@ -10,6 +10,37 @@ from .models import AsyncUploadConfig, DestinationConfig, OCIStorageConfig, S3St
 logger = logging.getLogger(__name__)
 
 
+def _base_image_backend(config: OCIStorageConfig, pull_args: list[str], push_args: list[str]):
+    backend = utils._get_skopeo_backend(pull_args=pull_args, push_args=push_args)
+    original_pull = backend.pull
+
+    def pull(base_image, destination, **kwargs):
+        display_image = base_image
+        if "://" in base_image or "@" in base_image.partition("/")[0]:
+            display_image = "<redacted invalid image reference>"
+        logger.info("Pulling OCI base image %s (source: %s)", display_image, config.base_image_source)
+        if config.base_image_source in ("job-default", "bff-default"):
+            logger.info("No base-image override supplied; using the %s image", config.base_image_source)
+        try:
+            return original_pull(base_image, destination, **kwargs)
+        except Exception as error:
+            hint = "Check the image reference, registry connectivity, DNS, authentication, and CA configuration."
+            if config.base_image_source in ("job-default", "bff-default"):
+                hint += (
+                    " No base-image override was supplied to this configuration path."
+                    " For disconnected or restricted-egress environments, configure a reachable image"
+                    " through images-oci-base-image in model-registry-ui-config or"
+                    " MODEL_SYNC_DESTINATION_OCI_BASE_IMAGE in the Job."
+                )
+            raise RuntimeError(
+                f"Failed to pull OCI base image {display_image} (source: {config.base_image_source}). "
+                f"{hint} Underlying error: {error}"
+            ) from error
+
+    backend.pull = pull
+    return backend
+
+
 def _validate_credentials_path(path: str) -> str:
     """Validate that a credentials path is safe to pass to skopeo --authfile.
 
@@ -79,10 +110,7 @@ def _get_upload_params(config: AsyncUploadConfig) -> S3Params | OCIParams:
             oci_username=username,
             oci_password=password,
             # Same as the default backend, but with additional args included
-            custom_oci_backend=utils._get_skopeo_backend(
-                pull_args=pull_args,
-                push_args=push_args
-            ),
+            custom_oci_backend=_base_image_backend(destination_config, pull_args, push_args),
         )
     else:
         raise ValueError(f"Unsupported destination type")

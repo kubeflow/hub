@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -42,6 +43,7 @@ func TestBuildK8sJobOCIBaseImageIndependentOfDestinationRegistry(t *testing.T) {
 				},
 				"metadata-config", asyncUploadResolvedTrust{}, "", "destination-secret",
 				"https://model-registry.example.com", "registry-id", "example.com/async-upload:latest",
+				"quay.io/quay/busybox:latest",
 			)
 			for _, env := range job.Spec.Template.Spec.Containers[0].Env {
 				if env.Name == "MODEL_SYNC_DESTINATION_OCI_BASE_IMAGE" {
@@ -65,6 +67,7 @@ type fakeKubernetesClient struct {
 	jobsByNamespace       map[string]map[string]*batchv1.Job
 	eventsByNamespace     map[string]*corev1.EventList
 	configMapsByNamespace map[string]map[string]*corev1.ConfigMap
+	getConfigMapErr       error
 	secretsByNamespace    map[string]map[string]*corev1.Secret
 	createdConfigMaps     []*corev1.ConfigMap
 	createConfigMapCalls  int
@@ -297,6 +300,9 @@ func (f *fakeKubernetesClient) GetModelTransferJob(ctx context.Context, namespac
 }
 
 func (f *fakeKubernetesClient) GetConfigMap(ctx context.Context, namespace string, name string) (*corev1.ConfigMap, error) {
+	if f.getConfigMapErr != nil {
+		return nil, f.getConfigMapErr
+	}
 	if f.configMapsByNamespace != nil {
 		if byNS, ok := f.configMapsByNamespace[namespace]; ok {
 			if configMap, ok := byNS[name]; ok {
@@ -836,6 +842,7 @@ func TestBuildK8sJobMountsTrustedCAForRegistry(t *testing.T) {
 		"https://my-registry-rest.apps.example.com/api/model_registry/v1alpha3",
 		"registry-id",
 		"example.com/async-upload:latest",
+		"mirror.example.com/library/busybox:1.0",
 	)
 
 	container := job.Spec.Template.Spec.Containers[0]
@@ -958,6 +965,7 @@ func TestBuildK8sJobSkipsTrustedCAForInsecureRegistry(t *testing.T) {
 		"http://my-registry-rest.apps.example.com/api/model_registry/v1alpha3",
 		"registry-id",
 		"example.com/async-upload:latest",
+		"mirror.example.com/library/busybox:1.0",
 	)
 
 	container := job.Spec.Template.Spec.Containers[0]
@@ -993,6 +1001,108 @@ func TestBuildK8sJobSkipsTrustedCAForInsecureRegistry(t *testing.T) {
 	}
 	if _, ok := job.Annotations[asyncUploadDestinationCAConfigAnnot]; ok {
 		t.Fatalf("did not expect %s annotation for insecure registry", asyncUploadDestinationCAConfigAnnot)
+	}
+}
+
+func TestResolveOCIBaseImage(t *testing.T) {
+	const namespace = "kubeflow"
+	const image = "mirror.example.com/library/busybox:1.0"
+
+	tests := []struct {
+		name      string
+		namespace string
+		value     string
+		present   bool
+		readError bool
+		wantError bool
+	}{
+		{name: "missing namespace", wantError: true},
+		{name: "missing configmap", namespace: namespace},
+		{name: "read error", namespace: namespace, readError: true, wantError: true},
+		{name: "missing key", namespace: namespace, present: true},
+		{name: "empty key", namespace: namespace, present: true, value: " "},
+		{name: "short name", namespace: namespace, present: true, value: "busybox:latest", wantError: true},
+		{name: "qualified image", namespace: namespace, present: true, value: image},
+		{name: "registry port", namespace: namespace, present: true, value: "mirror.example.com:5000/library/busybox:1.0"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			client := &fakeKubernetesClient{}
+			if tc.readError {
+				client.getConfigMapErr = fmt.Errorf("read denied")
+			}
+			if tc.present {
+				client.configMapsByNamespace = map[string]map[string]*corev1.ConfigMap{
+					namespace: {
+						asyncUploadConfigMapName: {Data: map[string]string{ociBaseImageConfigMapKey: tc.value}},
+					},
+				}
+			}
+			got, err := resolveOCIBaseImage(testContext(), client, tc.namespace)
+			if (err != nil) != tc.wantError {
+				t.Fatalf("resolveOCIBaseImage() error = %v, wantError %v", err, tc.wantError)
+			}
+			want := strings.TrimSpace(tc.value)
+			if want == "" {
+				want = defaultOCIBaseImage
+			}
+			if !tc.wantError && got != want {
+				t.Fatalf("resolveOCIBaseImage() = %q, want %q", got, want)
+			}
+		})
+	}
+}
+
+func TestCreateModelTransferJobRejectsInvalidBaseImageBeforeCreatingResources(t *testing.T) {
+	client := &fakeKubernetesClient{configMapsByNamespace: map[string]map[string]*corev1.ConfigMap{
+		"kubeflow": {asyncUploadConfigMapName: {Data: map[string]string{ociBaseImageConfigMapKey: "busybox:latest"}}},
+	}}
+	payload := models.ModelTransferJob{
+		Name:           "test-job",
+		JobDisplayName: "test job",
+		Namespace:      "kubeflow",
+		Source:         models.ModelTransferJobSource{Type: models.ModelTransferJobSourceTypeURI, URI: "https://example.com/model"},
+		Destination: models.ModelTransferJobDestination{
+			Type: models.ModelTransferJobDestinationTypeOCI, URI: "quay.io/example/model:latest",
+			Registry: "quay.io", Username: "user", Password: "password",
+		},
+		UploadIntent:    models.ModelTransferJobUploadIntentUpdateArtifact,
+		ModelArtifactId: "artifact-id",
+	}
+
+	_, err := NewModelRegistryRepository().CreateModelTransferJob(
+		testContext(), client, "kubeflow", payload, "registry-id", true, "kubeflow", nil,
+	)
+	if err == nil || !strings.Contains(err.Error(), ociBaseImageConfigMapKey) {
+		t.Fatalf("expected missing base image error, got %v", err)
+	}
+	if client.createConfigMapCalls != 0 {
+		t.Fatalf("created %d ConfigMaps before validating the base image", client.createConfigMapCalls)
+	}
+}
+
+func TestBuildK8sJobUsesBaseImageForAnyOCIRegistry(t *testing.T) {
+	const baseImage = "mirror.example.com/library/busybox:1.0"
+	for _, registry := range []string{"quay.io", "registry.internal.example.com"} {
+		t.Run(registry, func(t *testing.T) {
+			job := buildK8sJob("test-job", "job-id", models.ModelTransferJob{
+				Destination: models.ModelTransferJobDestination{
+					Type: models.ModelTransferJobDestinationTypeOCI, Registry: registry,
+					URI: registry + "/example/model:latest",
+				},
+			}, "metadata", asyncUploadResolvedTrust{}, "", "destination-secret",
+				"https://registry.example.com", "registry-id", "example.com/async-upload:latest", baseImage)
+			for _, env := range job.Spec.Template.Spec.Containers[0].Env {
+				if env.Name == "MODEL_SYNC_DESTINATION_OCI_BASE_IMAGE" {
+					if env.Value != baseImage {
+						t.Fatalf("base image = %q, want %q", env.Value, baseImage)
+					}
+					return
+				}
+			}
+			t.Fatal("base image env var missing")
+		})
 	}
 }
 

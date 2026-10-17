@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/distribution/reference"
 	"github.com/google/uuid"
 	"github.com/kubeflow/hub/ui/bff/internal/constants"
 	helper "github.com/kubeflow/hub/ui/bff/internal/helpers"
@@ -27,6 +28,8 @@ const (
 	DefaultAsyncUploadImage  = "ghcr.io/kubeflow/hub/job/async-upload:latest"
 	asyncUploadConfigMapName = "model-registry-ui-config"
 	asyncUploadConfigMapKey  = "images-jobs-async-upload"
+	ociBaseImageConfigMapKey = "images-oci-base-image"
+	defaultOCIBaseImage      = "quay.io/quay/busybox:latest"
 )
 
 var (
@@ -305,6 +308,16 @@ func (m *ModelRegistryRepository) createModelTransferJobResources(
 		payload.Destination.Registry, _ = extractRegistryFromURI(payload.Destination.URI)
 	}
 
+	var baseImage string
+	var baseImageSource string
+	if payload.Destination.Type == models.ModelTransferJobDestinationTypeOCI {
+		var err error
+		baseImage, baseImageSource, err = resolveOCIBaseImageWithSource(ctx, client, m.ociBaseImageNamespace(podNamespace))
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	logger := helper.GetContextLogger(ctx)
 
 	modelRegistryAddress, err := m.getModelRegistryAddress(ctx, client, namespace, modelRegistryID, isFederatedMode)
@@ -375,7 +388,12 @@ func (m *ModelRegistryRepository) createModelTransferJobResources(
 		modelRegistryAddress,
 		modelRegistryID,
 		imageURI,
+		baseImage,
 	)
+	if baseImageSource != "" {
+		job.Spec.Template.Spec.Containers[0].Env = append(job.Spec.Template.Spec.Containers[0].Env,
+			corev1.EnvVar{Name: "MODEL_SYNC_DESTINATION_OCI_BASE_IMAGE_SOURCE", Value: baseImageSource})
+	}
 	jobCreated, err := client.CreateModelTransferJob(ctx, payload.Namespace, job)
 	if err != nil {
 		cleanupCreatedResources(ctx, client, payload.Namespace, configMapName, sourceSecretName, destSecretName, trustConfig.managedConfigMaps...)
@@ -553,6 +571,11 @@ func (m *ModelRegistryRepository) UpdateModelTransferJob(
 
 	reuseDestCreds := (newPayload.Destination.Username == "" && newPayload.Destination.Password == "") &&
 		oldDestSecret != nil && len(oldDestSecret.Data[".dockerconfigjson"]) > 0
+	if newPayload.Destination.Type == models.ModelTransferJobDestinationTypeOCI {
+		if _, err := resolveOCIBaseImage(ctx, client, m.ociBaseImageNamespace(podNamespace)); err != nil {
+			return nil, err
+		}
+	}
 
 	var existingDestSecretName string
 	if reuseDestCreds {
@@ -695,8 +718,45 @@ func resolveAsyncUploadImage(ctx context.Context, client k8s.KubernetesClientInt
 	return DefaultAsyncUploadImage
 }
 
+func resolveOCIBaseImage(ctx context.Context, client k8s.KubernetesClientInterface, podNamespace string) (string, error) {
+	image, _, err := resolveOCIBaseImageWithSource(ctx, client, podNamespace)
+	return image, err
+}
+
+func (m *ModelRegistryRepository) ociBaseImageNamespace(podNamespace string) string {
+	if namespace := strings.TrimSpace(m.OCIBaseImageConfigNamespace); namespace != "" {
+		return namespace
+	}
+	return strings.TrimSpace(podNamespace)
+}
+
+func resolveOCIBaseImageWithSource(ctx context.Context, client k8s.KubernetesClientInterface, podNamespace string) (string, string, error) {
+	if podNamespace == "" {
+		return "", "", fmt.Errorf("OCI base-image configuration namespace is unavailable: set --oci-base-image-config-namespace or OCI_BASE_IMAGE_CONFIG_NAMESPACE when running outside a Pod")
+	}
+
+	cm, err := client.GetConfigMap(ctx, podNamespace, asyncUploadConfigMapName)
+	if apierrors.IsNotFound(err) {
+		return defaultOCIBaseImage, "bff-default", nil
+	}
+	if err != nil {
+		return "", "", fmt.Errorf("failed to read OCI base image from ConfigMap %s/%s: %w", podNamespace, asyncUploadConfigMapName, err)
+	}
+	if cm == nil {
+		return defaultOCIBaseImage, "bff-default", nil
+	}
+	image := strings.TrimSpace(cm.Data[ociBaseImageConfigMapKey])
+	if image == "" {
+		return defaultOCIBaseImage, "bff-default", nil
+	}
+	if _, err := reference.ParseNamed(image); err != nil {
+		return "", "", fmt.Errorf("invalid OCI base image in ConfigMap %s/%s key %s: use a registry-qualified image such as mirror.example.com/library/busybox:1.0: %w", podNamespace, asyncUploadConfigMapName, ociBaseImageConfigMapKey, err)
+	}
+	return image, "deployment-config", nil
+}
+
 func buildK8sJob(jobName, jobID string, payload models.ModelTransferJob,
-	configMapName string, trustConfig asyncUploadResolvedTrust, sourceSecretName, destSecretName, modelRegistryAddress, modelRegistryID, imageURI string) *batchv1.Job {
+	configMapName string, trustConfig asyncUploadResolvedTrust, sourceSecretName, destSecretName, modelRegistryAddress, modelRegistryID, imageURI, baseImage string) *batchv1.Job {
 
 	backoffLimit := int32(3)
 
@@ -747,7 +807,7 @@ func buildK8sJob(jobName, jobID string, payload models.ModelTransferJob,
 	}
 
 	if payload.Destination.Type == models.ModelTransferJobDestinationTypeOCI {
-		envVars = append(envVars, corev1.EnvVar{Name: "MODEL_SYNC_DESTINATION_OCI_BASE_IMAGE", Value: "quay.io/quay/busybox:latest"})
+		envVars = append(envVars, corev1.EnvVar{Name: "MODEL_SYNC_DESTINATION_OCI_BASE_IMAGE", Value: baseImage})
 	}
 
 	annotations := map[string]string{

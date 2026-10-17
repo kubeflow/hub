@@ -6,6 +6,7 @@ import os
 import configargparse as cap
 from typing import Any, Dict
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from .models import (
     AsyncUploadConfig,
@@ -78,7 +79,8 @@ def _parser() -> cap.ArgumentParser:
     p.add_argument("--destination-oci-registry")
     p.add_argument("--destination-oci-username")
     p.add_argument("--destination-oci-password")
-    p.add_argument("--destination-oci-base-image", default="public.ecr.aws/docker/library/busybox:latest")
+    p.add_argument("--destination-oci-base-image")
+    p.add_argument("--destination-oci-base-image-source", choices=["explicit", "deployment-config", "bff-default"], default="explicit")
     # The `type` converter is needed here to support env-based booleans
     # See: https://github.com/bw2/ConfigArgParse/tree/master?tab=readme-ov-file#special-values
     p.add_argument("--destination-oci-enable-tls-verify", default=True, type=str2bool)
@@ -407,6 +409,39 @@ def _resolve_signing(sign_flag: bool | None) -> bool:
     return False
 
 
+def validate_oci_base_image(value: str | None) -> str:
+    """Require an explicit registry host for the image pulled inside the Job pod."""
+    if not value or not value.strip():
+        raise ValueError(
+            "MODEL_SYNC_DESTINATION_OCI_BASE_IMAGE is required for an OCI destination. "
+            "Set a registry-qualified image such as mirror.example.com/library/busybox:1.0."
+        )
+
+    image = value.strip()
+    registry, separator, repository = image.partition("/")
+    if (
+        not separator
+        or not repository
+        or not (registry == "localhost" or "." in registry or ":" in registry)
+        or any(character.isspace() for character in image)
+    ):
+        raise ValueError(
+            "MODEL_SYNC_DESTINATION_OCI_BASE_IMAGE must include a registry hostname, "
+            "for example mirror.example.com/library/busybox:1.0."
+        )
+
+    try:
+        parsed = urlsplit(f"docker://{image}")
+        if not parsed.hostname or parsed.username or parsed.password or parsed.port == 0 or parsed.query or parsed.fragment or "//" in parsed.path:
+            raise ValueError("invalid image reference")
+    except ValueError as error:
+        raise ValueError(
+            "MODEL_SYNC_DESTINATION_OCI_BASE_IMAGE must be a registry-qualified image reference, "
+            "for example mirror.example.com/library/busybox:1.0."
+        ) from error
+    return image
+
+
 def get_config(argv: list[str] | None = None) -> AsyncUploadConfig:
     """
     Return a validated AsyncUploadConfig instance.
@@ -483,7 +518,8 @@ def get_config(argv: list[str] | None = None) -> AsyncUploadConfig:
             username=args.destination_oci_username,
             password=args.destination_oci_password,
             email=None,
-            base_image=args.destination_oci_base_image,
+            base_image=validate_oci_base_image(args.destination_oci_base_image) if args.destination_oci_base_image is not None else OCIConfig.model_fields["base_image"].default,
+            base_image_source=args.destination_oci_base_image_source if args.destination_oci_base_image is not None else "job-default",
             enable_tls_verify=args.destination_oci_enable_tls_verify,
             credentials_path=args.destination_oci_credentials_path
         )

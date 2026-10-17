@@ -10,7 +10,9 @@ import (
 	"github.com/kubeflow/hub/ui/bff/internal/models"
 )
 
-type ModelRegistryRepository struct{}
+type ModelRegistryRepository struct {
+	OCIBaseImageConfigNamespace string
+}
 
 func NewModelRegistryRepository() *ModelRegistryRepository {
 	return &ModelRegistryRepository{}

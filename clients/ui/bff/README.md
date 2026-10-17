@@ -60,6 +60,29 @@ make lint
 
 For more information on configuring golangci-lint see the [documentation](https://golangci-lint.run/).
 
+### OCI upload base-image configuration
+
+The BFF reads `data.images-oci-base-image` from `model-registry-ui-config`.
+Set `--oci-base-image-config-namespace` or `OCI_BASE_IMAGE_CONFIG_NAMESPACE` to select its namespace.
+An explicit namespace takes precedence over the BFF Pod namespace, which is read from the service-account namespace file.
+When neither is available (for example, a local process without the option), OCI upload requests fail with a configuration-location error.
+This setting does not change the namespace in which upload Jobs are created or the lookup location for the Job container image.
+
+Example for local development:
+
+```sh
+go run ./cmd --dev-mode --deployment-mode=standalone --oci-base-image-config-namespace=my-dashboard-namespace
+```
+
+A missing ConfigMap, missing key, or blank value uses `quay.io/quay/busybox:latest` for all OCI destinations.
+A nonempty value must be a registry-qualified image reference; invalid references and ConfigMap read failures other than NotFound are reported as errors.
+The BFF injects the selected image and diagnostic source (`deployment-config` or `bff-default`) into each Job, including retries.
+Referenced images must be reachable from the Job pod; syntax validation does not verify connectivity, credentials, or CA trust.
+
+Jobs created outside the BFF can set `MODEL_SYNC_DESTINATION_OCI_BASE_IMAGE` directly.
+When omitted, the Python Job retains its own `public.ecr.aws/docker/library/busybox:latest` default.
+Pull-failure messages identify the image, configuration source, and underlying error. For disconnected installations, configure a reachable internal image.
+
 ## Building and Deploying
 
 Run the following command to build the BFF:

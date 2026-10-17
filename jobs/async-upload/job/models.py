@@ -44,7 +44,15 @@ class OCIConfig(BaseModel):
     password: str | None = None
     email: str | None = None
     base_image: str = "public.ecr.aws/docker/library/busybox:latest"
+    base_image_source: Literal["explicit", "deployment-config", "bff-default", "job-default"] = "explicit"
     enable_tls_verify: bool = True
+
+    @model_validator(mode='before')
+    @classmethod
+    def default_base_image_source(cls, values):
+        if isinstance(values, dict) and "base_image" not in values and "base_image_source" not in values:
+            values = {**values, "base_image_source": "job-default"}
+        return values
 
     @model_validator(mode='after')
     def validate_oci_credentials(self) -> 'OCIConfig':

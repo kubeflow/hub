@@ -63,6 +63,7 @@ The integration tests require:
 
 - `MR_HOST_URL`: Model Registry URL (default: `http://localhost:8080`)
 - `CONTAINER_IMAGE_URI`: Container image for the async-upload job (default: `ghcr.io/kubeflow/hub/job/async-upload:latest`)
+- `MODEL_SYNC_DESTINATION_OCI_BASE_IMAGE`: Base image for OCI uploads. The integration test defaults to the BusyBox image seeded into its local registry; override it with a registry-qualified image reachable from the Job pod.
 
 ## What the Tests Do
 
