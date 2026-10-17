@@ -23,6 +23,39 @@ import (
 
 const testNamespace = "test-namespace"
 
+func TestBuildK8sJobOCIBaseImageIndependentOfDestinationRegistry(t *testing.T) {
+	for _, registry := range []string{"quay.io", "other-registry.io", "registry.internal:5000"} {
+		t.Run(registry, func(t *testing.T) {
+			job := buildK8sJob(
+				"test-job", "job-id",
+				models.ModelTransferJob{
+					Namespace: "kubeflow",
+					Source: models.ModelTransferJobSource{
+						Type: models.ModelTransferJobSourceTypeURI,
+						URI:  "https://example.com/model",
+					},
+					Destination: models.ModelTransferJobDestination{
+						Type:     models.ModelTransferJobDestinationTypeOCI,
+						URI:      registry + "/example/model:latest",
+						Registry: registry,
+					},
+				},
+				"metadata-config", asyncUploadResolvedTrust{}, "", "destination-secret",
+				"https://model-registry.example.com", "registry-id", "example.com/async-upload:latest",
+			)
+			for _, env := range job.Spec.Template.Spec.Containers[0].Env {
+				if env.Name == "MODEL_SYNC_DESTINATION_OCI_BASE_IMAGE" {
+					if env.Value != "quay.io/quay/busybox:latest" {
+						t.Fatalf("unexpected OCI base image %q", env.Value)
+					}
+					return
+				}
+			}
+			t.Fatal("OCI base image environment variable is missing")
+		})
+	}
+}
+
 // fakeKubernetesClient is a lightweight test double for KubernetesClientInterface that only
 // implements the methods used by GetAllModelTransferJobs. All other methods either return
 // zero values or panic if unexpectedly called.
