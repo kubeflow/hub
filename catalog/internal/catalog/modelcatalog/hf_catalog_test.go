@@ -2258,7 +2258,7 @@ func TestSetSourceCredentialStatus(t *testing.T) {
 		{
 			name:            "API key with successful auth and username",
 			hasApiKey:       true,
-			authenticated:   boolPtr(true),
+			authenticated:   new(true),
 			hfUsername:      "jdoe",
 			expectHasApiKey: true,
 			expectAuthSet:   true,
@@ -2268,7 +2268,7 @@ func TestSetSourceCredentialStatus(t *testing.T) {
 		{
 			name:              "API key with failed auth",
 			hasApiKey:         true,
-			authenticated:     boolPtr(false),
+			authenticated:     new(false),
 			hfUsername:        "",
 			expectHasApiKey:   true,
 			expectAuthSet:     true,
