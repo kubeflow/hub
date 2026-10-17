@@ -73,6 +73,8 @@ func (d DeploymentMode) IsFederatedMode() bool {
 }
 
 type EnvConfig struct {
+	OCIBaseImageConfigNamespace string
+
 	Port                     int
 	MockK8Client             bool
 	MockMRClient             bool

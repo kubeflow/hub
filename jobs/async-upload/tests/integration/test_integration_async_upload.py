@@ -442,9 +442,14 @@ def _run_job_and_wait(env, tmp_path, k8s, configmap_data=None) -> JobResult:
     job_name = f"test-async-upload-job-{uuid.uuid4().hex[:8]}"
     namespace = "default"
 
+    # The base image was seeded into the local registry; pods cannot reach host localhost:5001.
+    env["MODEL_SYNC_DESTINATION_OCI_BASE_IMAGE"] = os.environ.get(
+        "MODEL_SYNC_DESTINATION_OCI_BASE_IMAGE",
+        "distribution-registry-test-service.local-oci-registry-ns.svc.cluster.local:5001/busybox:latest",
+    )
+
     # Forward optional env vars from the host environment to the container
     for var in (
-        "MODEL_SYNC_DESTINATION_OCI_BASE_IMAGE",
         "MODEL_SYNC_REGISTRY_SERVER_ADDRESS",
         "MODEL_SYNC_REGISTRY_PORT",
         "MODEL_SYNC_REGISTRY_IS_SECURE",

@@ -228,6 +228,7 @@ func NewApp(cfg config.EnvConfig, logger *slog.Logger) (*App, error) {
 		testEnv:                 testEnv,
 		rootCAs:                 rootCAs,
 	}
+	app.repositories.ModelRegistry.OCIBaseImageConfigNamespace = strings.TrimSpace(cfg.OCIBaseImageConfigNamespace)
 	return app, nil
 }
 

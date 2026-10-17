@@ -112,7 +112,7 @@ spec:
             - name: MODEL_SYNC_DESTINATION_OCI_CREDENTIALS_PATH
               value: "/opt/creds/destination/.dockerconfigjson"
             - name: MODEL_SYNC_DESTINATION_OCI_BASE_IMAGE
-              value: "public.ecr.aws/docker/library/busybox:latest"
+              value: "distribution-registry-test-service.local-oci-registry-ns.svc.cluster.local:5001/busybox:latest"
             - name: MODEL_SYNC_DESTINATION_OCI_ENABLE_TLS_VERIFY
               value: "false"
 

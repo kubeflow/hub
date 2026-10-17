@@ -47,6 +47,7 @@ func serveApiTest(method string, url string, body interface{}, k8Factory kuberne
 		kubernetesClientFactory: k8Factory,
 		logger:                  slog.Default(),
 		config:                  cfg,
+		podNamespace:            "bella-namespace",
 	}
 
 	var req *http.Request

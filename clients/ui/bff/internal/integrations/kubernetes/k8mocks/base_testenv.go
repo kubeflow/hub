@@ -266,6 +266,16 @@ func setupMock(mockK8sClient kubernetes.Interface, ctx context.Context) error {
 		return err
 	}
 
+	_, err = mockK8sClient.CoreV1().ConfigMaps("bella-namespace").Create(ctx, &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: "model-registry-ui-config", Namespace: "bella-namespace"},
+		Data: map[string]string{
+			"images-oci-base-image": "mirror.example.com/library/busybox:1.0",
+		},
+	}, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to create model registry UI image ConfigMap: %w", err)
+	}
+
 	err = addMcpDataToDefaultCatalogSourcesConfigMap(mockK8sClient, ctx, "kubeflow")
 	if err != nil {
 		return err

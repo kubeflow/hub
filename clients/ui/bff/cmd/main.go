@@ -52,6 +52,7 @@ func main() {
 	// bundle-paths accepts a comma-separated list of CA bundle file paths to trust for outbound TLS.
 	// If not provided via flag, it can be set via BUNDLE_PATHS env var (comma-separated). Defaults to empty.
 	defaultBundlePaths := getEnvAsString("BUNDLE_PATHS", "")
+	flag.StringVar(&cfg.OCIBaseImageConfigNamespace, "oci-base-image-config-namespace", getEnvAsString("OCI_BASE_IMAGE_CONFIG_NAMESPACE", ""), "Namespace containing the OCI base-image ConfigMap (defaults to the BFF Pod namespace)")
 	flag.Func("bundle-paths", "Comma-separated list of PEM CA bundle file paths to trust for outbound TLS (optional)", newOriginParser(&cfg.BundlePaths, defaultBundlePaths))
 	flag.StringVar(&cfg.AuthMethod, "auth-method", "internal", "Authentication method (internal or user_token)")
 	flag.StringVar(&cfg.AuthTokenHeader, "auth-token-header", getEnvAsString("AUTH_TOKEN_HEADER", config.DefaultAuthTokenHeader), "Header used to extract the token (e.g., Authorization)")
