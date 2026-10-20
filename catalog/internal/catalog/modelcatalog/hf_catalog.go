@@ -1814,6 +1814,11 @@ func (p *hfModelProvider) FetchModelsForPreview(ctx context.Context, modelIdenti
 // restrictToOrg prefixes included and excluded model lists with an
 // organization name for convenience and to prevent any other organization from
 // being retrieved.
+//
+// The prefixed lists are always freshly allocated. Callers pass slices taken
+// from a copied ModelSource, and a struct copy shares its slices' backing
+// arrays with the original, so writing in place would leak the prefix into the
+// shared source collection (and re-prefix it on every leader transition).
 func restrictToOrg(org string, included *[]string, excluded *[]string) {
 	if org == "" {
 		// No op
@@ -1822,19 +1827,27 @@ func restrictToOrg(org string, included *[]string, excluded *[]string) {
 
 	prefix := org + "/"
 
-	if included == nil || len(*included) == 0 {
-		*included = []string{prefix + "*"}
-	} else {
-		for i := range *included {
-			(*included)[i] = prefix + (*included)[i]
+	if included != nil {
+		if len(*included) == 0 {
+			*included = []string{prefix + "*"}
+		} else {
+			*included = prefixPatterns(prefix, *included)
 		}
 	}
 
-	if excluded != nil {
-		for i := range *excluded {
-			(*excluded)[i] = prefix + (*excluded)[i]
-		}
+	if excluded != nil && len(*excluded) > 0 {
+		*excluded = prefixPatterns(prefix, *excluded)
 	}
+}
+
+// prefixPatterns returns a new slice with prefix prepended to every pattern,
+// leaving the input slice untouched.
+func prefixPatterns(prefix string, patterns []string) []string {
+	out := make([]string, len(patterns))
+	for i, p := range patterns {
+		out[i] = prefix + p
+	}
+	return out
 }
 
 // setSourceCredentialStatus records hasApiKey, authenticated, and hfUsername on the source's

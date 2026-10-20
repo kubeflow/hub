@@ -2749,3 +2749,50 @@ func TestHFCardDataPopulation_FromLiveAPIShape(t *testing.T) {
 		})
 	}
 }
+
+func TestRestrictToOrg(t *testing.T) {
+	t.Run("empty org is a no-op", func(t *testing.T) {
+		included := []string{"granite-*"}
+		excluded := []string{"granite-old"}
+		restrictToOrg("", &included, &excluded)
+		assert.Equal(t, []string{"granite-*"}, included)
+		assert.Equal(t, []string{"granite-old"}, excluded)
+	})
+
+	t.Run("empty included defaults to the whole org", func(t *testing.T) {
+		var included, excluded []string
+		restrictToOrg("ibm-granite", &included, &excluded)
+		assert.Equal(t, []string{"ibm-granite/*"}, included)
+		assert.Empty(t, excluded)
+	})
+
+	t.Run("prefixes included and excluded patterns", func(t *testing.T) {
+		included := []string{"granite-*", "granite-3.1-8b"}
+		excluded := []string{"granite-old-*"}
+		restrictToOrg("ibm-granite", &included, &excluded)
+		assert.Equal(t, []string{"ibm-granite/granite-*", "ibm-granite/granite-3.1-8b"}, included)
+		assert.Equal(t, []string{"ibm-granite/granite-old-*"}, excluded)
+	})
+
+	// Regression test for kubeflow/hub#3215: a ModelSource copy shares its
+	// slices' backing arrays with the original, so restrictToOrg must not
+	// write the prefix back into the shared source collection.
+	t.Run("does not mutate the slices of the source it was copied from", func(t *testing.T) {
+		original := basecatalog.ModelSource{
+			CatalogSource: apimodels.CatalogSource{
+				IncludedModels: []string{"granite-*"},
+				ExcludedModels: []string{"granite-old-*"},
+			},
+		}
+
+		for range 2 { // simulate building the provider on two leader terms
+			sourceCopy := original
+			restrictToOrg("ibm-granite", &sourceCopy.IncludedModels, &sourceCopy.ExcludedModels)
+			assert.Equal(t, []string{"ibm-granite/granite-*"}, sourceCopy.IncludedModels)
+			assert.Equal(t, []string{"ibm-granite/granite-old-*"}, sourceCopy.ExcludedModels)
+		}
+
+		assert.Equal(t, []string{"granite-*"}, original.IncludedModels)
+		assert.Equal(t, []string{"granite-old-*"}, original.ExcludedModels)
+	})
+}
