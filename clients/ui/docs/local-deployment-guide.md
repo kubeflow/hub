@@ -107,7 +107,7 @@ to the MR service.
 In a separate terminal window to the previous step, test the service by querying one of the rest endpoints, for example:
 
 ```shell
-curl http://localhost:8080/api/model_registry/v1alpha3/registered_models
+curl http://localhost:8080/api/model_registry/v1/registered_models
 ```
 
 You should receive a 200 response if everything is working correctly, the body should look like:

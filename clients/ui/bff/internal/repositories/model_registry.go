@@ -10,6 +10,8 @@ import (
 	"github.com/kubeflow/hub/ui/bff/internal/models"
 )
 
+const ModelRegistryAPIPath = "/api/model_registry/v1"
+
 type ModelRegistryRepository struct{}
 
 func NewModelRegistryRepository() *ModelRegistryRepository {
@@ -138,10 +140,10 @@ func (m *ModelRegistryRepository) ResolveServerAddress(clusterIP string, httpPor
 	// In federated mode, if external address is available, use it
 	if isFederatedMode && externalAddressRest != "" {
 		// External address is assumed to be HTTPS
-		url := fmt.Sprintf("%s://%s/api/model_registry/v1alpha3", protocol, externalAddressRest)
+		url := fmt.Sprintf("%s://%s%s", protocol, externalAddressRest, ModelRegistryAPIPath)
 		return url
 	}
 
-	url := fmt.Sprintf("%s://%s:%d/api/model_registry/v1alpha3", protocol, clusterIP, httpPort)
+	url := fmt.Sprintf("%s://%s:%d%s", protocol, clusterIP, httpPort, ModelRegistryAPIPath)
 	return url
 }

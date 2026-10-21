@@ -55,7 +55,7 @@ export type ServingConfig = {
 };
 
 export type CatalogModel = {
-  source_id?: string;
+  sourceId?: string;
   name: string;
   provider?: string;
   readme?: string;
