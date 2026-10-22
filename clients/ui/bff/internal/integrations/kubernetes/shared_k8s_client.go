@@ -11,6 +11,7 @@ import (
 	"github.com/kubeflow/hub/ui/bff/internal/constants"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -722,4 +723,175 @@ func (kc *SharedClientLogic) PatchSecretOwnerReference(ctx context.Context, name
 	sessionLogger.Info("successfully patched secret owner reference", "name", name)
 	return nil
 
+}
+
+func (kc *SharedClientLogic) getLogger(ctx context.Context) *slog.Logger {
+	if ctx != nil {
+		if logger, ok := ctx.Value(constants.TraceLoggerKey).(*slog.Logger); ok && logger != nil {
+			return logger
+		}
+	}
+	if kc.Logger != nil {
+		return kc.Logger
+	}
+	return slog.Default()
+}
+
+// ListModelRegistryRoleBindings lists all RoleBindings in the given namespace that are labelled
+// with app.kubernetes.io/part-of=model-registry, scoping results to model-registry permissions only.
+func (kc *SharedClientLogic) ListModelRegistryRoleBindings(ctx context.Context, namespace string) ([]rbacv1.RoleBinding, error) {
+	if namespace == "" {
+		return nil, fmt.Errorf("namespace cannot be empty")
+	}
+
+	sessionLogger := kc.getLogger(ctx)
+
+	listCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	list, err := kc.Client.RbacV1().RoleBindings(namespace).List(listCtx, metav1.ListOptions{
+		LabelSelector: ModelRegistryRBACLabelSelector,
+	})
+	if err != nil {
+		sessionLogger.Error("failed to list model-registry role bindings",
+			"namespace", namespace,
+			"error", err,
+		)
+		return nil, fmt.Errorf("failed to list role bindings in namespace %s: %w", namespace, err)
+	}
+
+	sessionLogger.Info("listed model-registry role bindings",
+		"namespace", namespace,
+		"count", len(list.Items),
+	)
+
+	return list.Items, nil
+}
+
+// CreateModelRegistryRoleBinding creates a new RoleBinding in the given namespace.
+// The caller is responsible for setting the app.kubernetes.io/part-of=model-registry label.
+func (kc *SharedClientLogic) CreateModelRegistryRoleBinding(ctx context.Context, namespace string, rb *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error) {
+	if namespace == "" {
+		return nil, fmt.Errorf("namespace cannot be empty")
+	}
+	if rb == nil {
+		return nil, fmt.Errorf("role binding cannot be nil")
+	}
+
+	sessionLogger := kc.getLogger(ctx)
+
+	createCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	created, err := kc.Client.RbacV1().RoleBindings(namespace).Create(createCtx, rb, metav1.CreateOptions{})
+	if err != nil {
+		sessionLogger.Error("failed to create role binding",
+			"namespace", namespace,
+			"name", rb.Name,
+			"error", err,
+		)
+		return nil, fmt.Errorf("failed to create role binding %s: %w", rb.Name, err)
+	}
+
+	sessionLogger.Info("successfully created role binding",
+		"namespace", namespace,
+		"name", created.Name,
+	)
+
+	return created, nil
+}
+
+// PatchModelRegistryRoleBinding updates an existing RoleBinding using a strategic-merge patch,
+// replacing the subjects list with those provided in rb.
+func (kc *SharedClientLogic) PatchModelRegistryRoleBinding(ctx context.Context, namespace, name string, rb *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error) {
+	if namespace == "" || name == "" {
+		return nil, fmt.Errorf("namespace and name cannot be empty")
+	}
+	if rb == nil {
+		return nil, fmt.Errorf("role binding cannot be nil")
+	}
+
+	sessionLogger := kc.getLogger(ctx)
+
+	patchCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	// Only patch the subjects field; leave roleRef and labels untouched.
+	subjects := rb.Subjects
+	if subjects == nil {
+		subjects = []rbacv1.Subject{}
+	}
+	patchData := map[string]interface{}{
+		"subjects": subjects,
+	}
+
+	patchBytes, err := json.Marshal(patchData)
+	if err != nil {
+		sessionLogger.Error("failed to marshal patch for role binding",
+			"namespace", namespace,
+			"name", name,
+			"error", err,
+		)
+		return nil, fmt.Errorf("failed to marshal patch: %w", err)
+	}
+
+	patched, err := kc.Client.RbacV1().RoleBindings(namespace).Patch(
+		patchCtx,
+		name,
+		types.StrategicMergePatchType,
+		patchBytes,
+		metav1.PatchOptions{},
+	)
+	if err != nil {
+		sessionLogger.Error("failed to patch role binding",
+			"namespace", namespace,
+			"name", name,
+			"error", err,
+		)
+		return nil, fmt.Errorf("failed to patch role binding %s: %w", name, err)
+	}
+
+	sessionLogger.Info("successfully patched role binding",
+		"namespace", namespace,
+		"name", name,
+	)
+
+	return patched, nil
+}
+
+// DeleteModelRegistryRoleBinding deletes a RoleBinding by name in the given namespace.
+// Returns an error if the binding does not exist.
+func (kc *SharedClientLogic) DeleteModelRegistryRoleBinding(ctx context.Context, namespace, name string) error {
+	if namespace == "" || name == "" {
+		return fmt.Errorf("namespace and name cannot be empty")
+	}
+
+	sessionLogger := kc.getLogger(ctx)
+
+	delCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	err := kc.Client.RbacV1().RoleBindings(namespace).Delete(delCtx, name, metav1.DeleteOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			sessionLogger.Warn("role binding not found, nothing to delete",
+				"namespace", namespace,
+				"name", name,
+			)
+			return fmt.Errorf("role binding %s not found in namespace %s: %w", name, namespace, err)
+		}
+		sessionLogger.Error("failed to delete role binding",
+			"namespace", namespace,
+			"name", name,
+			"error", err,
+		)
+		return fmt.Errorf("failed to delete role binding %s: %w", name, err)
+	}
+
+	sessionLogger.Info("successfully deleted role binding",
+		"namespace", namespace,
+		"name", name,
+	)
+
+	return nil
 }
