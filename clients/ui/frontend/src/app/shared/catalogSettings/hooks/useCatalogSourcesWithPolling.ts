@@ -5,6 +5,8 @@ import type { CatalogSourcesPollingAPIState } from '~/app/shared/catalogSettings
 
 export const useCatalogSourcesWithPolling = (
   apiState: CatalogSourcesPollingAPIState,
+  /** Override the poll rate — used to speed the list up while an edit is settling. */
+  refreshRate: number = POLL_INTERVAL,
 ): FetchState<CatalogSourceList> => {
   const call = React.useCallback<FetchStateCallbackPromise<CatalogSourceList>>(
     (opts) => {
@@ -19,6 +21,6 @@ export const useCatalogSourcesWithPolling = (
   return useFetchState(
     call,
     { items: [], size: 0, pageSize: 0, nextPageToken: '' },
-    { initialPromisePurity: true, refreshRate: POLL_INTERVAL },
+    { initialPromisePurity: true, refreshRate },
   );
 };
