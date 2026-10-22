@@ -695,6 +695,7 @@ def get_auth_reference(image_path: str) -> str:
         'quay.io/my-org/my-registry@sha256:f1b3f5a2d...' -> 'quay.io/my-org/my-registry'
         'localhost:5000/my-local-image' -> 'localhost:5000/my-local-image'
         'localhost:5000/my-local-image:test-tag' -> 'localhost:5000/my-local-image'
+        'localhost/my-local-image:test-tag' -> 'localhost/my-local-image'
     """
     repo_path = image_path
 
@@ -720,9 +721,10 @@ def get_auth_reference(image_path: str) -> str:
     if first_slash_index != -1:
         hostname = repo_path[:first_slash_index]
 
-    # If the hostname part doesn't contain a '.' (like quay.io) or a ':' (like localhost:5000),
-    # it's a short name for an image on Docker Hub.
-    if "." not in hostname and ":" not in hostname:
+    # If the hostname part doesn't contain a '.' (like quay.io) or a ':' (like localhost:5000)
+    # and isn't 'localhost', it's a short name for an image on Docker Hub.
+    is_localhost = first_slash_index != -1 and hostname == "localhost"
+    if "." not in hostname and ":" not in hostname and not is_localhost:
         return "docker.io"
 
     # For all other images, the full repository path is the reference.
