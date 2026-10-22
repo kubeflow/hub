@@ -3,9 +3,8 @@ package modelcatalog
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 
+	"github.com/kubeflow/hub/catalog/internal/catalog/basecatalog"
 	model "github.com/kubeflow/hub/catalog/pkg/openapi"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
@@ -16,6 +15,11 @@ type PreviewConfig struct {
 	IncludedModels []string       `json:"includedModels,omitempty" yaml:"includedModels,omitempty"`
 	ExcludedModels []string       `json:"excludedModels,omitempty" yaml:"excludedModels,omitempty"`
 	Properties     map[string]any `json:"properties,omitempty" yaml:"properties,omitempty"`
+
+	// Files reads yamlCatalogPath files in path mode, confined to the server's
+	// catalog directories. It is set by the server, never parsed from the
+	// uploaded config.
+	Files *basecatalog.PreviewFiles `json:"-" yaml:"-"`
 }
 
 // ParsePreviewConfig parses the uploaded config bytes into a PreviewConfig.
@@ -42,6 +46,8 @@ func ParsePreviewConfig(configBytes []byte) (*PreviewConfig, error) {
 // PreviewSourceModels loads models from the source configuration and returns
 // preview results showing which models would be included or excluded.
 // If catalogDataBytes is provided, it will be used directly instead of reading from yamlCatalogPath.
+// Otherwise, path mode reads yamlCatalogPath through config.Files, confined to
+// the server's catalog directories.
 func PreviewSourceModels(ctx context.Context, config *PreviewConfig, catalogDataBytes []byte) ([]model.ModelPreviewResult, error) {
 	switch config.Type {
 	case "hf", "huggingface":
@@ -133,7 +139,8 @@ func loadHFModels(ctx context.Context, config *PreviewConfig) ([]hfPreviewModelR
 
 // loadYamlModelNames loads model names from a YAML catalog.
 // If catalogDataBytes is provided (stateless mode), it is used directly.
-// Otherwise, the catalog is read from yamlCatalogPath (path mode).
+// Otherwise, the catalog is read from yamlCatalogPath (path mode) through
+// config.Files, which confines reads to the server's catalog directories.
 func loadYamlModelNames(ctx context.Context, config *PreviewConfig, catalogDataBytes []byte) ([]string, error) {
 	var catalogBytes []byte
 
@@ -144,23 +151,13 @@ func loadYamlModelNames(ctx context.Context, config *PreviewConfig, catalogDataB
 		// Path mode: read from yamlCatalogPath
 		path, ok := config.Properties[yamlCatalogPathKey].(string)
 		if !ok || path == "" {
-			return nil, fmt.Errorf("missing required property: %s (provide catalogData file or set yamlCatalogPath in config)", yamlCatalogPathKey)
+			return nil, fmt.Errorf("missing required property: %s (provide catalogData, or a yamlCatalogPath inside a catalog source directory)", yamlCatalogPathKey)
 		}
 
-		// Resolve relative paths - for preview, we use the current working directory
-		if !filepath.IsAbs(path) {
-			cwd, err := os.Getwd()
-			if err != nil {
-				return nil, fmt.Errorf("failed to get working directory: %w", err)
-			}
-			path = filepath.Join(cwd, path)
-		}
-
-		// Read the catalog file
 		var err error
-		catalogBytes, err = os.ReadFile(path)
+		catalogBytes, err = config.Files.ReadFile(path)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read catalog file %s: %w", path, err)
+			return nil, fmt.Errorf("failed to read %s: %w", path, err)
 		}
 	}
 

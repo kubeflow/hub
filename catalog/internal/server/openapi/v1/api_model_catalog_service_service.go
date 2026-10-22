@@ -35,6 +35,7 @@ type ModelCatalogServiceAPIService struct {
 	labels           *catalog.LabelCollection
 	sourceRepository models.CatalogSourceRepository
 	skillPreviewer   SkillSourcePreviewer
+	previewFiles     *basecatalog.PreviewFiles
 }
 
 // SkillSourcePreviewer previews a git-skills-plugin source by resolving its
@@ -53,6 +54,13 @@ type ModelCatalogServiceOption func(*ModelCatalogServiceAPIService)
 // returns 501 Not Implemented.
 func WithSkillPreviewer(p SkillSourcePreviewer) ModelCatalogServiceOption {
 	return func(s *ModelCatalogServiceAPIService) { s.skillPreviewer = p }
+}
+
+// WithPreviewFiles enables path-mode YAML previews, reading yamlCatalogPath
+// through the given confined reader. When unset, a preview that relies on
+// yamlCatalogPath instead of uploaded catalogData returns 422.
+func WithPreviewFiles(pf *basecatalog.PreviewFiles) ModelCatalogServiceOption {
+	return func(s *ModelCatalogServiceAPIService) { s.previewFiles = pf }
 }
 
 // WithSkillSources wires the skill source collection into FindSources so that
@@ -738,6 +746,7 @@ func (m *ModelCatalogServiceAPIService) previewModelSource(ctx context.Context, 
 	if err != nil {
 		return ErrorResponse(http.StatusUnprocessableEntity, fmt.Errorf("invalid config: %w", err)), err
 	}
+	previewRequest.Files = m.previewFiles
 
 	previewResults, err := catalog.PreviewSourceModels(ctx, previewRequest, catalogDataBytes)
 	if err != nil {
@@ -787,6 +796,7 @@ func (m *ModelCatalogServiceAPIService) previewMCPSource(ctx context.Context, co
 	if err != nil {
 		return ErrorResponse(http.StatusUnprocessableEntity, fmt.Errorf("invalid config: %w", err)), err
 	}
+	previewRequest.Files = m.previewFiles
 
 	previewResults, err := mcpcatalog.PreviewSourceServers(ctx, previewRequest, catalogDataBytes)
 	if err != nil {

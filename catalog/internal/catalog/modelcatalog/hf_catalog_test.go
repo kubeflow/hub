@@ -2280,7 +2280,7 @@ func TestSetSourceCredentialStatus(t *testing.T) {
 		{
 			name:            "API key with successful auth and username",
 			hasApiKey:       true,
-			authenticated:   boolPtr(true),
+			authenticated:   new(true),
 			hfUsername:      "jdoe",
 			expectHasApiKey: true,
 			expectAuthSet:   true,
@@ -2290,7 +2290,7 @@ func TestSetSourceCredentialStatus(t *testing.T) {
 		{
 			name:              "API key with failed auth",
 			hasApiKey:         true,
-			authenticated:     boolPtr(false),
+			authenticated:     new(false),
 			hfUsername:        "",
 			expectHasApiKey:   true,
 			expectAuthSet:     true,
@@ -2332,12 +2332,12 @@ func TestShouldBlockGatedModel(t *testing.T) {
 	// Mock auth-check endpoint: 200 for granted models, 403 for denied,
 	// 429 for rate-limited, 503 for service unavailable.
 	grantedModels := map[string]bool{
-		"meta-llama/Llama-3-8B":        true,
+		"meta-llama/Llama-3-8B":       true,
 		"ibm-granite/granite-8b-code": true,
 	}
 	transientErrorModels := map[string]int{
-		"org/rate-limited-model":   http.StatusTooManyRequests,
-		"org/server-error-model":   http.StatusServiceUnavailable,
+		"org/rate-limited-model": http.StatusTooManyRequests,
+		"org/server-error-model": http.StatusServiceUnavailable,
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -2539,7 +2539,7 @@ func TestGetModelsFromHF_BlocksGatedWithoutAccess(t *testing.T) {
 	// Create provider with exact model patterns (no expansion needed)
 	source := &basecatalog.ModelSource{
 		CatalogSource: apimodels.CatalogSource{
-			Id:             "test-source",
+			Id: "test-source",
 			IncludedModels: []string{
 				"org/public-model",
 				"org/gated-no-access",

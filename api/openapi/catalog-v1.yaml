@@ -506,9 +506,11 @@ paths:
            the uploaded `catalogData`, enabling preview of new sources before saving
            anything to the server. This is ideal for testing configurations.
 
-        2. **Path mode (for existing sources):** Upload only `config` with a `yamlCatalogPath`
-           property. The assets are read from the specified file path on the server.
-           Use this for previewing changes to existing saved sources.
+        2. **Path mode (for existing sources):** Upload only `config` with a `yamlCatalogPath`.
+           The file must be inside a directory the server already loads catalog sources from:
+           the directory of a configured sources file, or of a configured source's catalog
+           file. Relative paths resolve against the sources file's directory. Other paths
+           are rejected with 422.
       tags:
         - ModelCatalogService
       requestBody:
@@ -557,8 +559,12 @@ paths:
                     1. **Stateless mode (recommended for new sources):** Upload both `config` and
                        `catalogData` files. The assets are read from `catalogData`, allowing preview
                        without saving anything to the server.
-                    2. **Path mode (for existing sources):** Upload only `config` with a `yamlCatalogPath`
-                       property pointing to a catalog file on the server filesystem.
+                    2. **Path mode (for existing sources):** Upload only `config` with a
+                       `yamlCatalogPath`. The file must be inside a directory the server
+                       already loads catalog sources from: the directory of a configured
+                       sources file, or of a configured source's catalog file. Relative
+                       paths resolve against the sources file's directory. Other paths
+                       are rejected with 422.
 
                     If both `catalogData` and `yamlCatalogPath` are provided, `catalogData` takes precedence.
             examples:

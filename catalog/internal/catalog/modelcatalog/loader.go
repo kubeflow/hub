@@ -108,6 +108,11 @@ func (l *ModelLoader) UpdateServices(services Services) {
 	l.services = services
 }
 
+// Paths returns the configuration file paths the loader reads from.
+func (l *ModelLoader) Paths() []string {
+	return l.state.Paths()
+}
+
 // NewModelLoader creates a new ModelLoader with external state
 func NewModelLoader(services Services, state basecatalog.LoaderState) *ModelLoader {
 	paths := state.Paths()

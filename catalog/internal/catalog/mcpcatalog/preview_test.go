@@ -8,7 +8,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/kubeflow/hub/catalog/internal/catalog/basecatalog"
 )
+
+// previewFilesFor builds the PreviewFiles the server would wire for a sources
+// file living in dir.
+func previewFilesFor(dir string) *basecatalog.PreviewFiles {
+	return basecatalog.NewPreviewFiles(func() []string {
+		return []string{filepath.Join(dir, "sources.yaml")}
+	}, nil)
+}
 
 func TestParseMCPPreviewConfig(t *testing.T) {
 	tests := []struct {
@@ -257,6 +267,16 @@ mcp_servers:
 			expectedExclude: 0,
 		},
 		{
+			name: "path outside the allowed directories",
+			config: &MCPPreviewConfig{
+				Type:       "yaml",
+				Properties: map[string]any{"yamlCatalogPath": "/nonexistent/path/servers.yaml"},
+				Files:      previewFilesFor(t.TempDir()),
+			},
+			expectError: true,
+			errorMsg:    "failed to read",
+		},
+		{
 			name: "unsupported source type",
 			config: &MCPPreviewConfig{
 				Type: "hf",
@@ -289,6 +309,7 @@ mcp_servers:
 					tt.config.Properties = make(map[string]any)
 				}
 				tt.config.Properties["yamlCatalogPath"] = catalogFile
+				tt.config.Files = previewFilesFor(tmpDir)
 			}
 
 			results, err := PreviewSourceServers(ctx, tt.config, catalogData)

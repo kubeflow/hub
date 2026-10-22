@@ -3,9 +3,8 @@ package mcpcatalog
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 
+	"github.com/kubeflow/hub/catalog/internal/catalog/basecatalog"
 	model "github.com/kubeflow/hub/catalog/pkg/openapi"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
@@ -17,6 +16,11 @@ type MCPPreviewConfig struct {
 	IncludedServers []string       `json:"includedServers,omitempty" yaml:"includedServers,omitempty"`
 	ExcludedServers []string       `json:"excludedServers,omitempty" yaml:"excludedServers,omitempty"`
 	Properties      map[string]any `json:"properties,omitempty" yaml:"properties,omitempty"`
+
+	// Files reads yamlCatalogPath files in path mode, confined to the server's
+	// catalog directories. It is set by the server, never parsed from the
+	// uploaded config.
+	Files *basecatalog.PreviewFiles `json:"-" yaml:"-"`
 }
 
 // ParseMCPPreviewConfig parses the uploaded config bytes into an MCPPreviewConfig.
@@ -42,6 +46,8 @@ func ParseMCPPreviewConfig(configBytes []byte) (*MCPPreviewConfig, error) {
 // PreviewSourceServers loads MCP servers from the source configuration and returns
 // preview results showing which servers would be included or excluded.
 // If catalogDataBytes is provided, it will be used directly instead of reading from yamlCatalogPath.
+// Otherwise, path mode reads yamlCatalogPath through config.Files, confined to
+// the server's catalog directories.
 func PreviewSourceServers(ctx context.Context, config *MCPPreviewConfig, catalogDataBytes []byte) ([]model.AssetPreviewResult, error) {
 	serverNames, err := loadServerNamesFromSource(ctx, config, catalogDataBytes)
 	if err != nil {
@@ -82,21 +88,13 @@ func loadYamlServerNames(ctx context.Context, config *MCPPreviewConfig, catalogD
 	} else {
 		path, ok := config.Properties[yamlMCPCatalogPathKey].(string)
 		if !ok || path == "" {
-			return nil, fmt.Errorf("missing required property: %s (provide catalogData file or set yamlCatalogPath in config)", yamlMCPCatalogPathKey)
-		}
-
-		if !filepath.IsAbs(path) {
-			cwd, err := os.Getwd()
-			if err != nil {
-				return nil, fmt.Errorf("failed to get working directory: %w", err)
-			}
-			path = filepath.Join(cwd, path)
+			return nil, fmt.Errorf("missing required property: %s (provide catalogData, or a yamlCatalogPath inside a catalog source directory)", yamlMCPCatalogPathKey)
 		}
 
 		var err error
-		catalogBytes, err = os.ReadFile(path)
+		catalogBytes, err = config.Files.ReadFile(path)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read catalog file %s: %w", path, err)
+			return nil, fmt.Errorf("failed to read %s: %w", path, err)
 		}
 	}
 

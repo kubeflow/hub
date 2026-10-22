@@ -1774,7 +1774,7 @@ func (r ApiPreviewCatalogSourceRequest) FilterStatus(filterStatus string) ApiPre
 	return r
 }
 
-// Optional YAML file containing the catalog data.  For model sources, the file should contain a &#x60;models:&#x60; key with a list of model entries. For MCP server sources, the file should contain an &#x60;mcp_servers:&#x60; key with a list of server entries.  This field enables stateless preview of new sources before saving them. When provided, the catalog data is read directly from this file instead of from the &#x60;yamlCatalogPath&#x60; property in the config.  **Two modes of operation:** 1. **Stateless mode (recommended for new sources):** Upload both &#x60;config&#x60; and    &#x60;catalogData&#x60; files. The assets are read from &#x60;catalogData&#x60;, allowing preview    without saving anything to the server. 2. **Path mode (for existing sources):** Upload only &#x60;config&#x60; with a &#x60;yamlCatalogPath&#x60;    property pointing to a catalog file on the server filesystem.  If both &#x60;catalogData&#x60; and &#x60;yamlCatalogPath&#x60; are provided, &#x60;catalogData&#x60; takes precedence.
+// Optional YAML file containing the catalog data.  For model sources, the file should contain a &#x60;models:&#x60; key with a list of model entries. For MCP server sources, the file should contain an &#x60;mcp_servers:&#x60; key with a list of server entries.  This field enables stateless preview of new sources before saving them. When provided, the catalog data is read directly from this file instead of from the &#x60;yamlCatalogPath&#x60; property in the config.  **Two modes of operation:** 1. **Stateless mode (recommended for new sources):** Upload both &#x60;config&#x60; and    &#x60;catalogData&#x60; files. The assets are read from &#x60;catalogData&#x60;, allowing preview    without saving anything to the server. 2. **Path mode (for existing sources):** Upload only &#x60;config&#x60; with a    &#x60;yamlCatalogPath&#x60;. The file must be inside a directory the server    already loads catalog sources from: the directory of a configured    sources file, or of a configured source&#39;s catalog file. Relative    paths resolve against the sources file&#39;s directory. Other paths    are rejected with 422.  If both &#x60;catalogData&#x60; and &#x60;yamlCatalogPath&#x60; are provided, &#x60;catalogData&#x60; takes precedence.
 func (r ApiPreviewCatalogSourceRequest) CatalogData(catalogData *os.File) ApiPreviewCatalogSourceRequest {
 	r.catalogData = catalogData
 	return r
@@ -1804,9 +1804,11 @@ The response type varies based on the `assetType` field in the uploaded config:
     the uploaded `catalogData`, enabling preview of new sources before saving
     anything to the server. This is ideal for testing configurations.
 
- 2. **Path mode (for existing sources):** Upload only `config` with a `yamlCatalogPath`
-    property. The assets are read from the specified file path on the server.
-    Use this for previewing changes to existing saved sources.
+ 2. **Path mode (for existing sources):** Upload only `config` with a `yamlCatalogPath`.
+    The file must be inside a directory the server already loads catalog sources from:
+    the directory of a configured sources file, or of a configured source's catalog
+    file. Relative paths resolve against the sources file's directory. Other paths
+    are rejected with 422.
 
     @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
     @return ApiPreviewCatalogSourceRequest

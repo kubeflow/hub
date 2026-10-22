@@ -2,6 +2,7 @@ package v1
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	model "github.com/kubeflow/hub/catalog/pkg/openapi"
@@ -88,12 +89,7 @@ func validPropertyOrder(property, valueColumn string) bool {
 	if property == "" || len(property) > 255 {
 		return false
 	}
-	for _, c := range propertyValueColumns {
-		if valueColumn == c {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(propertyValueColumns, valueColumn)
 }
 
 func (s orderBySpec) describe() string {

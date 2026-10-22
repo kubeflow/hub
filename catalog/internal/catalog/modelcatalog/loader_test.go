@@ -919,8 +919,6 @@ func (m *MockCatalogModelRepositoryWithDeleteTracking) DeletedIDs() []int32 {
 	return append([]int32{}, m.deletedIDs...)
 }
 
-func strPtr(s string) *string { return &s }
-
 // TestOrphanCleanupPreservesFailedModels verifies that models which fail to
 // load during a partial sync are preserved in the database rather than being
 // deleted as orphans. This covers the case where one model loads successfully
@@ -962,7 +960,7 @@ func TestOrphanCleanupPreservesFailedModels(t *testing.T) {
 				&models.CatalogModelImpl{
 					ID: &successID,
 					Attributes: &models.CatalogModelAttributes{
-						Name: strPtr(successModelName),
+						Name: new(successModelName),
 					},
 					Properties: &[]mrmodels.Properties{
 						mrmodels.NewStringProperty("source_id", sourceID, false),
@@ -971,7 +969,7 @@ func TestOrphanCleanupPreservesFailedModels(t *testing.T) {
 				&models.CatalogModelImpl{
 					ID: &failedID,
 					Attributes: &models.CatalogModelAttributes{
-						Name: strPtr(failedModelName),
+						Name: new(failedModelName),
 					},
 					Properties: &[]mrmodels.Properties{
 						mrmodels.NewStringProperty("source_id", sourceID, false),

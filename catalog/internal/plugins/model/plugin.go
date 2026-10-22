@@ -212,6 +212,32 @@ func (p *Plugin) RegisterRoutes(router chi.Router) error {
 
 	dbCatalog := modelcatalog.NewDBCatalog(p.services, p.loader.Sources)
 
+	// Preview path mode reads yamlCatalogPath only from directories the server
+	// already loads catalog sources from: the directories of the configured
+	// sources files and of every loaded YAML source's catalog file. The path
+	// lists are callbacks, so hot-reloaded sources count immediately.
+	previewFiles := basecatalog.NewPreviewFiles(
+		p.loader.Paths,
+		func() []string {
+			var paths []string
+			for _, src := range p.loader.Sources.AllSources() {
+				if path, ok := basecatalog.ResolveYAMLCatalogPath(src.Type, src.Origin, src.Properties); ok {
+					paths = append(paths, path)
+				}
+			}
+			if mcpSources != nil {
+				for _, src := range mcpSources.AllSources() {
+					if path, ok := basecatalog.ResolveYAMLCatalogPath(src.Type, src.Origin, src.Properties); ok {
+						paths = append(paths, path)
+					}
+				}
+			}
+			return paths
+		},
+	)
+	alphaOpts = append(alphaOpts, v1alpha1.WithPreviewFiles(previewFiles))
+	v1Opts = append(v1Opts, v1.WithPreviewFiles(previewFiles))
+
 	// v1alpha1 routes
 	alphaSvc := v1alpha1.NewModelCatalogServiceAPIService(
 		dbCatalog,

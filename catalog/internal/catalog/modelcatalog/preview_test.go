@@ -8,7 +8,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/kubeflow/hub/catalog/internal/catalog/basecatalog"
 )
+
+// previewFilesFor builds the PreviewFiles the server would wire for a sources
+// file living in dir.
+func previewFilesFor(dir string) *basecatalog.PreviewFiles {
+	return basecatalog.NewPreviewFiles(func() []string {
+		return []string{filepath.Join(dir, "sources.yaml")}
+	}, nil)
+}
 
 func TestParsePreviewConfig(t *testing.T) {
 	tests := []struct {
@@ -219,6 +229,7 @@ models:
 			config: &PreviewConfig{
 				Type:       "yaml",
 				Properties: map[string]any{"yamlCatalogPath": catalogPath},
+				Files:      previewFilesFor(tmpDir),
 			},
 			expectedTotal: 6,
 			expectedIncl:  6,
@@ -230,6 +241,7 @@ models:
 				Type:           "yaml",
 				IncludedModels: []string{"Granite/*"},
 				Properties:     map[string]any{"yamlCatalogPath": catalogPath},
+				Files:          previewFilesFor(tmpDir),
 			},
 			expectedTotal: 6,
 			expectedIncl:  2,
@@ -245,6 +257,7 @@ models:
 				Type:           "yaml",
 				IncludedModels: []string{"Granite/*", "Llama/*"},
 				Properties:     map[string]any{"yamlCatalogPath": catalogPath},
+				Files:          previewFilesFor(tmpDir),
 			},
 			expectedTotal: 6,
 			expectedIncl:  4,
@@ -256,6 +269,7 @@ models:
 				Type:           "yaml",
 				ExcludedModels: []string{"*-draft"},
 				Properties:     map[string]any{"yamlCatalogPath": catalogPath},
+				Files:          previewFilesFor(tmpDir),
 			},
 			expectedTotal: 6,
 			expectedIncl:  5,
@@ -271,6 +285,7 @@ models:
 				IncludedModels: []string{"Llama/*"},
 				ExcludedModels: []string{"*-draft"},
 				Properties:     map[string]any{"yamlCatalogPath": catalogPath},
+				Files:          previewFilesFor(tmpDir),
 			},
 			expectedTotal: 6,
 			expectedIncl:  1, // Only Llama/7b-chat
@@ -285,6 +300,7 @@ models:
 				Type:           "yaml",
 				IncludedModels: []string{"granite/*"}, // lowercase
 				Properties:     map[string]any{"yamlCatalogPath": catalogPath},
+				Files:          previewFilesFor(tmpDir),
 			},
 			expectedTotal: 6,
 			expectedIncl:  2, // Should match Granite/*
@@ -296,6 +312,7 @@ models:
 				Type:           "yaml",
 				IncludedModels: []string{"*/7b-*"},
 				Properties:     map[string]any{"yamlCatalogPath": catalogPath},
+				Files:          previewFilesFor(tmpDir),
 			},
 			expectedTotal: 6,
 			expectedIncl:  2, // Llama/7b-chat and Mistral/7b-instruct
@@ -329,13 +346,14 @@ models:
 			errorMsg:    "missing required property",
 		},
 		{
-			name: "catalog file not found",
+			name: "catalog path outside the allowed directories",
 			config: &PreviewConfig{
 				Type:       "yaml",
 				Properties: map[string]any{"yamlCatalogPath": "/nonexistent/path.yaml"},
+				Files:      previewFilesFor(t.TempDir()),
 			},
 			expectError: true,
-			errorMsg:    "failed to read catalog file",
+			errorMsg:    "failed to read",
 		},
 	}
 
@@ -453,7 +471,7 @@ models:
 			errorMsg:    "failed to parse catalog file",
 		},
 		{
-			name: "relative path resolution",
+			name: "relative path resolves against the config directory",
 			catalogContent: `source: Relative
 models:
   - name: Relative/Model
@@ -465,9 +483,7 @@ models:
 					Properties: map[string]any{"yamlCatalogPath": filepath.Base(path)},
 				}
 			},
-			// This will fail because relative path is resolved from cwd, not tmpDir
-			expectError: true,
-			errorMsg:    "failed to read catalog file",
+			expectedNames: []string{"Relative/Model"},
 		},
 	}
 
@@ -479,6 +495,7 @@ models:
 			require.NoError(t, err)
 
 			config := tt.setupConfig(catalogPath)
+			config.Files = previewFilesFor(tmpDir)
 			ctx := context.Background()
 
 			names, err := loadYamlModelNames(ctx, config, nil) // nil = path-based mode
@@ -634,6 +651,7 @@ models:
 			IncludedModels: []string{"ibm-granite/*"},
 			ExcludedModels: []string{"*-experimental"},
 			Properties:     map[string]any{"yamlCatalogPath": catalogPath},
+			Files:          previewFilesFor(tmpDir),
 		}
 
 		results, err := PreviewSourceModels(context.Background(), config, nil)
@@ -658,6 +676,7 @@ models:
 			Type:           "yaml",
 			IncludedModels: []string{"ibm-granite/*", "meta-llama/*"},
 			Properties:     map[string]any{"yamlCatalogPath": catalogPath},
+			Files:          previewFilesFor(tmpDir),
 		}
 
 		results, err := PreviewSourceModels(context.Background(), config, nil)
@@ -679,6 +698,7 @@ models:
 			Type:           "yaml",
 			ExcludedModels: []string{"*-experimental", "*-draft"},
 			Properties:     map[string]any{"yamlCatalogPath": catalogPath},
+			Files:          previewFilesFor(tmpDir),
 		}
 
 		results, err := PreviewSourceModels(context.Background(), config, nil)
