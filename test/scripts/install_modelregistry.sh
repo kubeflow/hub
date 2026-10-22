@@ -46,6 +46,6 @@ cd $MR_ROOT/manifests/kustomize/overlays/db && kustomize edit set namespace $nam
 kubectl -n $namespace apply -k "$MR_ROOT/manifests/kustomize/overlays/db"
 
 # Wait for model registry deployment
-kubectl wait --for=condition=Available deployment/model-registry-deployment -n "$namespace" --timeout=6m
+kubectl wait --for=condition=Available deployment/model-registry-deployment -n "$namespace" --timeout=15m
 modelregistry=$(kubectl get pod -n $namespace --selector="component=model-registry-server" --output jsonpath='{.items[0].metadata.name}')
-kubectl wait --for=condition=Ready pod/$modelregistry -n $namespace --timeout=6m
+kubectl wait --for=condition=Ready pod/$modelregistry -n $namespace --timeout=15m
