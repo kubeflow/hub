@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -251,4 +253,50 @@ properties:
 	_, err := p.PreviewSkillSource(context.Background(), []byte(cfg))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "exceeding the limit")
+}
+
+type previewCredentialSpy struct {
+	previewFakeResolver
+	called bool
+}
+
+func (f *previewCredentialSpy) Resolve(context.Context, SkillRepository, string, *Credentials) ([]ResolvedSkill, error) {
+	f.called = true
+	return nil, fmt.Errorf("unexpected repository resolution")
+}
+
+func TestPreviewSkillSource_RejectsCredentialRef(t *testing.T) {
+	configs := map[string]string{
+		"yaml": `assetType: skills
+type: git-skills-plugin
+properties:
+  repositories:
+    - url: https://example.com/a.git
+      refs: ["v1.0"]
+      credentialRef: github
+`,
+		"json": `{"assetType":"skills","type":"git-skills-plugin","properties":{"repositories":[{"url":"https://example.com/a.git","refs":["v1.0"],"credentialRef":"github"}]}}`,
+	}
+	for format, config := range configs {
+		for _, state := range []string{"missing", "empty", "populated"} {
+			t.Run(format+"/"+state, func(t *testing.T) {
+				dir := t.TempDir()
+				if state != "missing" {
+					content := ""
+					if state == "populated" {
+						content = "synthetic-preview-token\n"
+					}
+					require.NoError(t, os.WriteFile(filepath.Join(dir, "github"), []byte(content), 0o600))
+				}
+				spy := &previewCredentialSpy{}
+				p := newTestPreviewer(spy)
+				p.credentialsDir = dir
+
+				results, err := p.PreviewSkillSource(context.Background(), []byte(config))
+				require.EqualError(t, err, "credentialRef is not supported for skill source preview")
+				assert.Nil(t, results)
+				assert.False(t, spy.called, "reject before repository resolution")
+			})
+		}
+	}
 }

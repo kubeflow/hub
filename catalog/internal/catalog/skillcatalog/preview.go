@@ -22,16 +22,20 @@ const maxPreviewJobs = 100
 // SkillPreviewer previews a git-skills-plugin source by resolving its repositories
 // at each ref and reporting which discovered skills the source's include/exclude
 // filters would keep. It clones repositories (parse-only, discarded) exactly like
-// the loader — reusing the same resolver, credential handling, and clone limits —
-// so a preview behaves like the sync that would follow it.
+// the loader — reusing the same resolver and clone limits — but resolves
+// anonymously: the config is caller-supplied, so repositories that reference
+// stored credentials are rejected instead of previewed with them.
 type SkillPreviewer struct {
 	resolver       refResolver
 	credentialsDir string
 	limits         SyncLimits
 }
 
-// NewSkillPreviewer builds a previewer with the loader's limits and credentials
-// mount. Zero-valued limits fall back to the compiled-in defaults.
+// NewSkillPreviewer builds a previewer with the loader's limits. Zero-valued
+// limits fall back to the compiled-in defaults. credentialsDir is retained to
+// match the loader's wiring, but no credential file is ever read: preview
+// resolves anonymously and rejects repositories that reference stored
+// credentials.
 func NewSkillPreviewer(resolveLimits ResolveLimits, syncLimits SyncLimits, credentialsDir string) *SkillPreviewer {
 	if syncLimits.MaxInFlightClones <= 0 {
 		syncLimits.MaxInFlightClones = defaultMaxInFlightClones
@@ -78,6 +82,10 @@ func (p *SkillPreviewer) PreviewSkillSource(ctx context.Context, configBytes []b
 	filtersByURL := make(map[string]*basecatalog.NameFilter, len(spec.Repositories))
 	cleared := make([]SkillRepository, len(spec.Repositories))
 	for i, r := range spec.Repositories {
+		// Pasted preview configs must not select server-held credentials.
+		if r.CredentialRef != "" {
+			return nil, fmt.Errorf("credentialRef is not supported for skill source preview")
+		}
 		nf, ferr := basecatalog.NewNameFilter("includedSkills", r.IncludedSkills, "excludedSkills", r.ExcludedSkills)
 		if ferr != nil {
 			return nil, fmt.Errorf("repository %q: invalid include/exclude patterns: %w", r.URL, ferr)
