@@ -8,6 +8,7 @@ type ModelCatalogClientInterface interface {
 	CatalogSourcesInterface
 	CatalogModelsInterface
 	CatalogSourcePreviewInterface
+	CatalogSourceStatusInterface
 	McpServerCatalogInterface
 	AgentCatalogInterface
 }
@@ -17,6 +18,7 @@ type ModelCatalogClient struct {
 	CatalogSources
 	CatalogModels
 	CatalogSourcePreview
+	CatalogSourceStatus
 	McpServerCatalog
 	AgentCatalog
 }
