@@ -22,7 +22,7 @@ pytest-asyncio = "^1.4.0"
 aiohttp = "^3.13.5"
 
 [tool.poetry.group.integration.dependencies]
-kubernetes = "^33.1.0"
+kubernetes = ">=33.1,<38.0"
 pytest-html = "^4.2.0"
 
 [tool.poetry.requires-plugins]
