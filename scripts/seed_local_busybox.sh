@@ -3,7 +3,7 @@
 set -euo pipefail
 
 archive="$1"
-source_image="public.ecr.aws/docker/library/busybox:latest"
+source_image="${BUSYBOX_IMAGE:-quay.io/prometheus/busybox:latest}"
 local_image="localhost:5001/busybox:latest"
 
 curl --fail --silent --show-error --retry 10 --retry-connrefused --retry-delay 1 \

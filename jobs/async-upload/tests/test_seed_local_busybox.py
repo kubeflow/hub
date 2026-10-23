@@ -54,7 +54,7 @@ def test_seed_local_busybox_publishes_cached_image(registry_commands):
     assert result.returncode == 0, result.stderr
     assert command_log.read_text().splitlines() == [
         f"load -i {archive}",
-        "tag public.ecr.aws/docker/library/busybox:latest localhost:5001/busybox:latest",
+        "tag quay.io/prometheus/busybox:latest localhost:5001/busybox:latest",
         "push localhost:5001/busybox:latest",
     ]
     assert Path(env["PUSHED_IMAGE"]).exists()
@@ -74,10 +74,14 @@ def test_seed_local_busybox_fails_when_registry_push_fails(registry_commands):
 def test_make_seed_local_busybox_uses_ci_archive(registry_commands):
     archive, command_log, env = registry_commands
     env["BUSYBOX_IMAGE_ARCHIVE"] = str(archive)
+    env["BUSYBOX_IMAGE"] = "registry.example.com/busybox:custom"
 
     result = subprocess.run(
         ["make", "-C", str(MAKE_DIR), "seed-local-busybox"], env=env, capture_output=True, text=True
     )
 
     assert result.returncode == 0, result.stderr
+    assert command_log.read_text().splitlines()[1] == (
+        "tag registry.example.com/busybox:custom localhost:5001/busybox:latest"
+    )
     assert command_log.read_text().splitlines()[-1] == "push localhost:5001/busybox:latest"

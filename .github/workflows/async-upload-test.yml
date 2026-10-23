@@ -32,7 +32,7 @@ env:
   IMG_VERSION: cicd
   MYSQL_IMAGE: public.ecr.aws/docker/library/mysql:8.3
   REGISTRY_IMAGE: public.ecr.aws/docker/library/registry:2
-  BUSYBOX_IMAGE: public.ecr.aws/docker/library/busybox:latest
+  BUSYBOX_IMAGE: quay.io/prometheus/busybox:latest
   PUSH_IMAGE: false
 
 jobs:
