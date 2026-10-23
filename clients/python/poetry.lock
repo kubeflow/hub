@@ -1279,14 +1279,14 @@ sphinx-basic-ng = ">=1.0.0b2"
 
 [[package]]
 name = "graphql-core"
-version = "3.2.6"
+version = "3.2.12"
 description = "GraphQL implementation for Python, a port of GraphQL.js, the JavaScript reference implementation for GraphQL."
 optional = false
-python-versions = "<4,>=3.6"
+python-versions = "<4,>=3.7"
 groups = ["dev"]
 files = [
-    {file = "graphql_core-3.2.6-py3-none-any.whl", hash = "sha256:78b016718c161a6fb20a7d97bbf107f331cd1afe53e45566c59f776ed7f0b45f"},
-    {file = "graphql_core-3.2.6.tar.gz", hash = "sha256:c08eec22f9e40f0bd61d805907e3b3b1b9a320bc606e23dc145eebca07c8fbab"},
+    {file = "graphql_core-3.2.12-py3-none-any.whl", hash = "sha256:3d8f104532070485e13caa4092c1e71cda2ba6cffd96e98f285111ee10ed1e51"},
+    {file = "graphql_core-3.2.12.tar.gz", hash = "sha256:4579094d5fc8a1a59555a9b18e51b320779d9bbc63e2302c519af0c4919d9543"},
 ]
 
 [[package]]
