@@ -118,7 +118,7 @@ func TestParseSkillMD_NoFrontmatterSkipped(t *testing.T) {
 func TestParseSkillMD_LongBodyWarns(t *testing.T) {
 	var b strings.Builder
 	b.WriteString("---\nname: big\ndescription: A big skill.\n---\n")
-	for i := 0; i < 600; i++ {
+	for range 600 {
 		b.WriteString("line\n")
 	}
 	skill, err := ParseSkillMD([]byte(b.String()), "big")
