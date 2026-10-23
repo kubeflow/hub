@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 import schemathesis
-from schemathesis.specs.openapi.schemas import BaseOpenAPISchema
+from schemathesis.specs.openapi.schemas import OpenApiSchema
 
 from tests.constants import CATALOG_URL, get_verify_ssl
 
@@ -98,7 +98,7 @@ def generated_schema(
     request: pytest.FixtureRequest,
     pytestconfig: pytest.Config,
     verify_ssl: bool,
-) -> BaseOpenAPISchema:
+) -> OpenApiSchema:
     """Generate schema for the API based on the schema_file parameter.
 
     Args:
@@ -107,7 +107,7 @@ def generated_schema(
         verify_ssl: Whether to verify SSL certificates.
 
     Returns:
-        BaseOpenAPISchema: The generated OpenAPI schema for testing.
+        OpenApiSchema: The generated OpenAPI schema for testing.
 
     Raises:
         FileNotFoundError: If the schema file or config file cannot be found.
