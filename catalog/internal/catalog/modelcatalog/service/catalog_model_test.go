@@ -2022,7 +2022,6 @@ func TestListDoublePropertyOrderingPagination(t *testing.T) {
 
 			seen := make(map[string]int, len(tt.values))
 			for j, v := range tt.values {
-				v := v
 				name := fmt.Sprintf("double-order-%d-%d", i, j)
 				saved, err := modelRepo.Save(&models.CatalogModelImpl{
 					Attributes: &models.CatalogModelAttributes{Name: new(name), ExternalID: new(name)},

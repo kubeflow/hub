@@ -241,7 +241,7 @@ func (r *RepoResolver) RemoteCommit(ctx context.Context, repo SkillRepository, r
 // object (matching what Resolve records). Returns "" when nothing matched.
 func peelLsRemote(out, ref string) string {
 	var direct, peeled string
-	for _, line := range strings.Split(strings.TrimSpace(out), "\n") {
+	for line := range strings.SplitSeq(strings.TrimSpace(out), "\n") {
 		fields := strings.Fields(line)
 		if len(fields) < 2 {
 			continue
@@ -289,12 +289,12 @@ func (r *RepoResolver) checkProtocol(rawURL string) error {
 }
 
 func transportOf(rawURL string) string {
-	if i := strings.Index(rawURL, "://"); i >= 0 {
-		return strings.ToLower(rawURL[:i])
+	if before, _, ok := strings.Cut(rawURL, "://"); ok {
+		return strings.ToLower(before)
 	}
 	// git remote-helper syntax: transport::address (e.g. ext::sh -c ...).
-	if i := strings.Index(rawURL, "::"); i >= 0 {
-		return strings.ToLower(rawURL[:i])
+	if before, _, ok := strings.Cut(rawURL, "::"); ok {
+		return strings.ToLower(before)
 	}
 	if scpLikeRe.MatchString(rawURL) {
 		return "ssh"
@@ -335,7 +335,7 @@ func (r *RepoResolver) checkImmutableRef(ctx context.Context, dir, url, ref stri
 	// The pattern also lists branches that merely end in /ref (a tag v1.0 next to
 	// a branch release/v1.0), so ref is refused only when it names one of the
 	// listed branches (see refNameMatches).
-	for _, line := range strings.Split(strings.TrimSpace(out), "\n") {
+	for line := range strings.SplitSeq(strings.TrimSpace(out), "\n") {
 		if fields := strings.Fields(line); len(fields) >= 2 && refNameMatches(fields[1], ref) {
 			return fmt.Errorf("ref %q is a branch; skills must be pinned to a tag or commit SHA", ref)
 		}

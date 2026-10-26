@@ -691,9 +691,7 @@ func (l *SkillLoader) schedulePeriodicSync(ctx context.Context, sourceID string,
 // the goroutine on wg. It is a general-purpose ticker loop, kept independent of
 // minutes/spec semantics so it can be tested with arbitrarily short intervals.
 func runPeriodicSync(ctx context.Context, interval time.Duration, wg *sync.WaitGroup, action func()) {
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 		for {
@@ -704,7 +702,7 @@ func runPeriodicSync(ctx context.Context, interval time.Duration, wg *sync.WaitG
 				action()
 			}
 		}
-	}()
+	})
 }
 
 // credentialsForRepo resolves a repository's git credentials from the loader's
@@ -800,13 +798,11 @@ func resolveJobsConcurrently(ctx context.Context, jobs []refJob, workers int, se
 
 	var wg sync.WaitGroup
 	for range workers {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for ij := range queue {
 				results[ij.idx] = resolveOne(ctx, ij.job, knownCommit(ij.job.repo, ij.job.ref), sem, resolver, credentials)
 			}
-		}()
+		})
 	}
 
 	// Feed jobs in order; workers return promptly on a cancelled context, so this
