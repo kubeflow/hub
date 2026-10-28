@@ -104,28 +104,38 @@ func (app *App) AttachModelCatalogRESTClient(next func(http.ResponseWriter, *htt
 			return
 		}
 
-		modelCatalog, err := app.repositories.ModelCatalog.GetModelCatalogWithMode(r.Context(), client, namespace, app.config.DeploymentMode.IsFederatedMode())
-		if err != nil {
-			app.notFoundResponse(w, r)
-			return
-		}
 		apiPath := repositories.ModelCatalogAPIPath
 		if strings.HasPrefix(r.URL.Path, McpServerCatalogPathPrefix) {
 			apiPath = repositories.McpCatalogAPIPath
 		} else if strings.HasPrefix(r.URL.Path, AgentCatalogPathPrefix) {
 			apiPath = repositories.AgentCatalogAPIPath
+		} else if strings.HasPrefix(r.URL.Path, SkillCatalogPathPrefix) {
+			apiPath = repositories.SkillCatalogAPIPath
 		}
 
-		modelCatalogBaseURL := modelCatalog.ServerAddress
-		if apiPath != repositories.ModelCatalogAPIPath {
-			modelCatalogBaseURL = strings.Replace(modelCatalogBaseURL, repositories.ModelCatalogAPIPath, apiPath, 1)
-		}
-
-		// If we are in dev mode, we need to resolve the server address to the local host
-		// to allow the client to connect to the model registry via port forwarded from the cluster to the local machine.
-		// If you are in federated mode, we do not want to override the server address.
+		var modelCatalogBaseURL string
+		// In dev mode (non-federated), the catalog is reached via a local port-forward to
+		// the pod's own container port, which always serves plain HTTP here (the catalog
+		// binary is started with no TLS cert/key; any TLS a real deployment terminates
+		// happens at a Service/Route in front of it, which port-forwarding bypasses). Skip
+		// the K8s service lookup entirely in this branch — it also isn't reliable for this
+		// purpose: it requires the Service to carry a plain `component` label matching
+		// ModelCatalogServiceName's expected value, which this repo's own kustomize
+		// manifests don't set (they use `app.kubernetes.io/component` instead), so the
+		// lookup fails even outside dev mode. That mismatch is pre-existing and unrelated
+		// to skills — out of scope here.
 		if app.config.DevMode && !app.config.DeploymentMode.IsFederatedMode() {
-			modelCatalogBaseURL = app.repositories.ModelCatalog.ResolveServerAddress("localhost", int32(app.config.DevModeCatalogPort), modelCatalog.IsHTTPS, "", app.config.DeploymentMode.IsFederatedMode(), apiPath)
+			modelCatalogBaseURL = app.repositories.ModelCatalog.ResolveServerAddress("localhost", int32(app.config.DevModeCatalogPort), false, "", false, apiPath)
+		} else {
+			modelCatalog, err := app.repositories.ModelCatalog.GetModelCatalogWithMode(r.Context(), client, namespace, app.config.DeploymentMode.IsFederatedMode())
+			if err != nil {
+				app.notFoundResponse(w, r)
+				return
+			}
+			modelCatalogBaseURL = modelCatalog.ServerAddress
+			if apiPath != repositories.ModelCatalogAPIPath {
+				modelCatalogBaseURL = strings.Replace(modelCatalogBaseURL, repositories.ModelCatalogAPIPath, apiPath, 1)
+			}
 		}
 
 		// Set up a child logger for the rest client that automatically adds the request id to all statements for
