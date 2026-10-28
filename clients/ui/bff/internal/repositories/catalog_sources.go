@@ -23,6 +23,23 @@ type CatalogSourcesInterface interface {
 	GetCatalogLabels(client httpclient.HTTPClientInterface, pageValues url.Values) (*models.CatalogLabelList, error)
 }
 
+type CatalogSourceStatusInterface interface {
+	ClearSourceStatus(client httpclient.HTTPClientInterface, sourceID string) error
+}
+
+type CatalogSourceStatus struct{}
+
+func (CatalogSourceStatus) ClearSourceStatus(client httpclient.HTTPClientInterface, sourceID string) error {
+	path, err := url.JoinPath(sourcesPath, sourceID, "status")
+	if err != nil {
+		return fmt.Errorf("error building source status path: %w", err)
+	}
+	if err := client.DELETE(path); err != nil {
+		return fmt.Errorf("error clearing source status: %w", err)
+	}
+	return nil
+}
+
 type CatalogSources struct {
 	CatalogSourcesInterface
 }
