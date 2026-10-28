@@ -1350,3 +1350,23 @@ def test_hint_server_address_port_http_with_non_80_port_warning(mock_get_registe
 
     assert len(caplog.records) == 1
     assert "Server address protocol is http://, but port is not 80 or ending with 80" in caplog.records[0].message
+
+
+def test_save_to_s3_passes_region_to_client(monkeypatch, mocker, mock_get_registered_models, tmp_path):
+    monkeypatch.delenv("AWS_DEFAULT_REGION", raising=False)
+    monkeypatch.delenv("AWS_REGION", raising=False)
+    (tmp_path / "model.bin").touch()
+    upload = mocker.patch("model_registry._client._upload_to_s3", return_value="s3://bucket/models")
+    client = ModelRegistry(server_address="http://localhost", author="test_author")
+
+    client.save_to_s3(
+        path=str(tmp_path),
+        bucket_name="bucket",
+        s3_prefix="models",
+        endpoint_url="http://minio:9000",
+        access_key_id="access-key",
+        secret_access_key="secret-key",  # noqa: S106
+        region="eu-west-1",
+    )
+
+    assert upload.call_args.kwargs["s3"].meta.region_name == "eu-west-1"

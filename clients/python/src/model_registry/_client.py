@@ -705,6 +705,7 @@ class ModelRegistry:
             endpoint_url=endpoint_url,
             access_key_id=access_key_id,
             secret_access_key=secret_access_key,
+            region=region,
             multipart_threshold=multipart_threshold,
             multipart_chunksize=multipart_chunksize,
             max_pool_connections=max_pool_connections,
