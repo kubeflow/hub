@@ -45,15 +45,21 @@ const McpCatalogSourceConfigsTable: React.FC<McpCatalogSourceConfigsTableProps> 
   onAddSource,
   onDeleteSource,
 }) => {
-  const { apiState, refreshMcpCatalogSourceConfigs, mcpCatalogSourcesLoadError } =
-    React.useContext(McpCatalogSettingsContext);
+  const {
+    apiState,
+    refreshMcpCatalogSourceConfigs,
+    refreshMcpCatalogSources,
+    mcpCatalogSourcesLoadError,
+  } = React.useContext(McpCatalogSettingsContext);
 
   const handleToggleUpdate = React.useCallback(
     async (checked: boolean, config: McpCatalogSourceConfig) => {
       await apiState.api.updateMcpCatalogSourceConfig({}, config.id, { enabled: checked });
+      await apiState.api.clearMcpCatalogSourceStatus({}, config.id);
       refreshMcpCatalogSourceConfigs();
+      refreshMcpCatalogSources();
     },
-    [apiState.api, refreshMcpCatalogSourceConfigs],
+    [apiState.api, refreshMcpCatalogSourceConfigs, refreshMcpCatalogSources],
   );
 
   const deleteModalBody = React.useCallback(

@@ -15,16 +15,15 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	"os/signal"
-	"syscall"
-
-	"github.com/kubeflow/hub/ui/bff/internal/api"
-	"github.com/kubeflow/hub/ui/bff/internal/config"
-
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
+
+	"github.com/kubeflow/hub/ui/bff/internal/api"
+	"github.com/kubeflow/hub/ui/bff/internal/config"
 
 	_ "github.com/kubeflow/hub/ui/bff/openapi" // swagger docs for Swagger UI
 )
@@ -82,7 +81,7 @@ func main() {
 		Level: cfg.LogLevel,
 	}))
 
-	//validate auth method
+	// validate auth method
 	if cfg.AuthMethod != config.AuthMethodInternal && cfg.AuthMethod != config.AuthMethodUser {
 		logger.Error("invalid auth method: (must be internal or user_token)", "authMethod", cfg.AuthMethod)
 		os.Exit(1)

@@ -2,6 +2,7 @@ package httpclient
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -17,6 +18,7 @@ import (
 func setupTestLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 }
+
 func TestHTTPClient_GET_Success(t *testing.T) {
 	// Setup test server
 	expectedResponse := map[string]interface{}{
@@ -275,6 +277,56 @@ func TestHTTPClient_PATCH_Error(t *testing.T) {
 
 	httpErr, ok := err.(*HTTPError)
 	assert.True(t, ok)
+	assert.Equal(t, http.StatusNotFound, httpErr.StatusCode)
+	assert.Equal(t, errorResponse.Code, httpErr.Code)
+	assert.Equal(t, errorResponse.Message, httpErr.Message)
+}
+
+func TestHTTPClient_DELETE_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodDelete, r.Method)
+		assert.Equal(t, "/sources/test-source/status", r.URL.Path)
+		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+
+		body, err := io.ReadAll(r.Body)
+		assert.NoError(t, err)
+		assert.Empty(t, body)
+
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	client, err := NewHTTPClient(setupTestLogger(), server.URL, nil, false, nil)
+	require.NoError(t, err)
+
+	err = client.DELETE(context.Background(), "/sources/test-source/status")
+	assert.NoError(t, err)
+}
+
+func TestHTTPClient_DELETE_Error(t *testing.T) {
+	errorResponse := ErrorResponse{
+		Code:    "404",
+		Message: "Source not found",
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodDelete, r.Method)
+		assert.Equal(t, "/sources/test-source/status", r.URL.Path)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		err := json.NewEncoder(w).Encode(errorResponse)
+		assert.NoError(t, err)
+	}))
+	defer server.Close()
+
+	client, err := NewHTTPClient(setupTestLogger(), server.URL, nil, false, nil)
+	require.NoError(t, err)
+
+	err = client.DELETE(context.Background(), "/sources/test-source/status")
+
+	var httpErr *HTTPError
+	require.ErrorAs(t, err, &httpErr)
 	assert.Equal(t, http.StatusNotFound, httpErr.StatusCode)
 	assert.Equal(t, errorResponse.Code, httpErr.Code)
 	assert.Equal(t, errorResponse.Message, httpErr.Message)

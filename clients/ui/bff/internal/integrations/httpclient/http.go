@@ -1,6 +1,7 @@
 package httpclient
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -20,6 +21,7 @@ type HTTPClientInterface interface {
 	POST(url string, body io.Reader) ([]byte, error)
 	POSTWithContentType(url string, body io.Reader, contentType string) ([]byte, error)
 	PATCH(url string, body io.Reader) ([]byte, error)
+	DELETE(ctx context.Context, url string) error
 }
 
 // RawResponse is an unprocessed upstream response. Unlike GET, it preserves the
@@ -115,9 +117,9 @@ func (c *HTTPClient) GET(url string) ([]byte, error) {
 			StatusCode:    response.StatusCode,
 			ErrorResponse: errorResponse,
 		}
-		//Sometimes the code comes empty from model registry API
-		//also not all error codes are correctly implemented
-		//see https://github.com/kubeflow/hub/issues/95
+		// Sometimes the code comes empty from model registry API
+		// also not all error codes are correctly implemented
+		// see https://github.com/kubeflow/hub/issues/95
 		if httpError.Code == "" {
 			httpError.Code = strconv.Itoa(response.StatusCode)
 		}
@@ -220,9 +222,9 @@ func (c *HTTPClient) POSTWithContentType(url string, body io.Reader, contentType
 			StatusCode:    response.StatusCode,
 			ErrorResponse: errorResponse,
 		}
-		//Sometimes the code comes empty from model registry API
-		//also not all error codes are correctly implemented
-		//see https://github.com/kubeflow/hub/issues/95
+		// Sometimes the code comes empty from model registry API
+		// also not all error codes are correctly implemented
+		// see https://github.com/kubeflow/hub/issues/95
 		if httpError.Code == "" {
 			httpError.Code = strconv.Itoa(response.StatusCode)
 		}
@@ -277,15 +279,68 @@ func (c *HTTPClient) PATCH(url string, body io.Reader) ([]byte, error) {
 			StatusCode:    response.StatusCode,
 			ErrorResponse: errorResponse,
 		}
-		//Sometimes the code comes empty from model registry API
-		//also not all error codes are correctly implemented
-		//see https://github.com/kubeflow/hub/issues/95
+		// Sometimes the code comes empty from model registry API
+		// also not all error codes are correctly implemented
+		// see https://github.com/kubeflow/hub/issues/95
 		if httpError.Code == "" {
 			httpError.Code = strconv.Itoa(response.StatusCode)
 		}
 		return nil, httpError
 	}
 	return responseBody, nil
+}
+
+func (c *HTTPClient) DELETE(ctx context.Context, url string) error {
+	fullURL := c.baseURL + url
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, fullURL, nil)
+	if err != nil {
+		return err
+	}
+
+	requestId := uuid.NewString()
+
+	req.Header.Set("Content-Type", "application/json")
+
+	c.applyHeaders(req)
+
+	logUpstreamReq(c.logger, requestId, req)
+
+	response, err := c.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	responseBody, err := io.ReadAll(response.Body)
+	logUpstreamResp(c.logger, requestId, response, responseBody)
+	if err != nil {
+		return fmt.Errorf("error reading response body: %w", err)
+	}
+
+	if response.StatusCode != http.StatusNoContent {
+		var errorResponse ErrorResponse
+		if err := json.Unmarshal(responseBody, &errorResponse); err != nil {
+			// If we can't unmarshal as JSON, create a generic error response with the raw body
+			c.logger.Warn("received non-JSON error response",
+				"status_code", response.StatusCode,
+				"content_type", response.Header.Get("Content-Type"),
+				"body_preview", string(responseBody[:min(len(responseBody), 200)]))
+
+			errorResponse = ErrorResponse{
+				Code:    strconv.Itoa(response.StatusCode),
+				Message: fmt.Sprintf("HTTP %d: %s", response.StatusCode, string(responseBody)),
+			}
+		}
+		httpError := &HTTPError{
+			StatusCode:    response.StatusCode,
+			ErrorResponse: errorResponse,
+		}
+		if httpError.Code == "" {
+			httpError.Code = strconv.Itoa(response.StatusCode)
+		}
+		return httpError
+	}
+	return nil
 }
 
 func (c *HTTPClient) applyHeaders(req *http.Request) {

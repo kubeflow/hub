@@ -43,7 +43,8 @@ const McpManageSourceForm: React.FC<McpManageSourceFormProps> = ({
   const [formData, setData] = useManageMcpSourceData(existingData);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submitError, setSubmitError] = React.useState<Error | undefined>(undefined);
-  const { apiState, refreshMcpCatalogSourceConfigs } = React.useContext(McpCatalogSettingsContext);
+  const { apiState, refreshMcpCatalogSourceConfigs, refreshMcpCatalogSources } =
+    React.useContext(McpCatalogSettingsContext);
 
   const preview = useMcpSourcePreview({
     formData,
@@ -68,11 +69,20 @@ const McpManageSourceForm: React.FC<McpManageSourceFormProps> = ({
 
       if (isEditMode) {
         await apiState.api.updateMcpCatalogSourceConfig({}, formData.id, payload);
+
+        try {
+          await apiState.api.clearMcpCatalogSourceStatus({}, formData.id);
+        } catch {
+          throw new Error(
+            'Source configuration was saved, but its previous status could not be cleared. Reload to check the current status.',
+          );
+        }
       } else {
         await apiState.api.createMcpCatalogSourceConfig({}, payload);
       }
 
       refreshMcpCatalogSourceConfigs();
+      refreshMcpCatalogSources();
       navigate(mcpCatalogSettingsUrl());
     } catch (error) {
       setSubmitError(error instanceof Error ? error : new Error(MCP_ERROR_MESSAGES.SAVE_FAILED));

@@ -109,6 +109,7 @@ const (
 	McpCatalogSettingsPathPrefix           = SettingsPath + "/mcp_catalog"
 	McpCatalogSettingsSourceConfigListPath = McpCatalogSettingsPathPrefix + "/source_configs"
 	McpCatalogSettingsSourceConfigPath     = McpCatalogSettingsSourceConfigListPath + "/:" + CatalogSourceId
+	McpCatalogClearStatusPath              = McpCatalogSettingsPathPrefix + "/source_config" + "/:" + CatalogSourceId + "/status"
 )
 
 type App struct {
@@ -117,7 +118,7 @@ type App struct {
 	kubernetesClientFactory k8s.KubernetesClientFactory
 	repositories            *repositories.Repositories
 	podNamespace            string
-	//used only on mocked k8s client
+	// used only on mocked k8s client
 	testEnv *envtest.Environment
 	// rootCAs used for outbound TLS connections to Model Registry/Catalog
 	rootCAs *x509.CertPool
@@ -166,7 +167,7 @@ func NewApp(cfg config.EnvConfig, logger *slog.Logger) (*App, error) {
 	}
 
 	if cfg.MockK8Client {
-		//mock all k8s calls with 'env test'
+		// mock all k8s calls with 'env test'
 		var clientset kubernetes.Interface
 		ctx, cancel := context.WithCancel(context.Background())
 		testEnv, clientset, err = k8mocks.SetupEnvTest(k8mocks.TestEnvInput{
@@ -177,11 +178,11 @@ func NewApp(cfg config.EnvConfig, logger *slog.Logger) (*App, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to setup envtest: %w", err)
 		}
-		//create mocked kubernetes client factory
+		// create mocked kubernetes client factory
 		k8sFactory, err = k8mocks.NewMockedKubernetesClientFactory(clientset, testEnv, cfg, logger)
 
 	} else {
-		//create kubernetes client factory
+		// create kubernetes client factory
 		k8sFactory, err = k8s.NewKubernetesClientFactory(cfg, logger)
 	}
 
@@ -192,7 +193,7 @@ func NewApp(cfg config.EnvConfig, logger *slog.Logger) (*App, error) {
 	var mrClient repositories.ModelRegistryClientInterface
 
 	if cfg.MockMRClient {
-		//mock all model registry calls
+		// mock all model registry calls
 		mrClient, err = mocks.NewModelRegistryClient(logger)
 	} else {
 		mrClient, err = repositories.NewModelRegistryClient(logger)
@@ -205,7 +206,7 @@ func NewApp(cfg config.EnvConfig, logger *slog.Logger) (*App, error) {
 	var modelCatalogClient repositories.ModelCatalogClientInterface
 
 	if cfg.MockMRCatalogClient {
-		//mock all model registry catalog calls
+		// mock all model registry catalog calls
 		modelCatalogClient, err = mocks.NewModelCatalogClientMock(logger)
 	} else {
 		modelCatalogClient, err = repositories.NewModelCatalogClient(logger)
@@ -237,7 +238,7 @@ func (app *App) Shutdown() error {
 	if app.testEnv == nil {
 		return nil
 	}
-	//shutdown the envtest control plane when we are in the mock mode.
+	// shutdown the envtest control plane when we are in the mock mode.
 	app.logger.Info("shutting env test...")
 	return app.testEnv.Stop()
 }
@@ -294,6 +295,8 @@ func (app *App) Routes() http.Handler {
 	apiRouter.GET(CatalogSourceModelArtifactsCatchAll, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.AttachModelCatalogRESTClient(app.GetCatalogSourceModelArtifactsHandler))))
 	apiRouter.GET(CatalogModelPerformanceArtifacts, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.AttachModelCatalogRESTClient(app.GetCatalogModelPerformanceArtifactsHandler))))
 	apiRouter.GET(CatalogModelSecurityArtifacts, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.AttachModelCatalogRESTClient(app.GetCatalogModelSecurityArtifactsHandler))))
+	apiRouter.DELETE(McpCatalogClearStatusPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.AttachModelRegistryRESTClientWithAPIPath(repositories.ModelCatalogV1APIPath, app.ClearMcpCatalogSourceStatusHandler))))
+
 	// Kubernetes routes
 	apiRouter.GET(UserPath, app.UserHandler)
 	apiRouter.POST(CheckNamespaceRegistryAccessPath, app.CheckNamespaceRegistryAccessHandler)
@@ -321,20 +324,20 @@ func (app *App) Routes() http.Handler {
 		apiRouter.PATCH(ModelRegistrySettingsPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.UpdateModelRegistrySettingsHandler)))
 		apiRouter.DELETE(ModelRegistrySettingsPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.DeleteModelRegistrySettingsHandler)))
 
-		//SettingsPath: Certificate endpoints
+		// SettingsPath: Certificate endpoints
 		apiRouter.GET(CertificatesPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.GetCertificatesHandler)))
 
-		//SettingsPath: Role Binding endpoints
+		// SettingsPath: Role Binding endpoints
 		apiRouter.GET(RoleBindingListPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.GetRoleBindingsHandler)))
 		apiRouter.POST(RoleBindingListPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.CreateRoleBindingHandler)))
 		apiRouter.PATCH(RoleBindingPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.PatchRoleBindingHandler)))
 		apiRouter.DELETE(RoleBindingPath, app.AttachNamespace(app.RequireListServiceAccessInNamespace(app.DeleteRoleBindingHandler)))
 
-		//SettingsPath Groups endpoints
+		// SettingsPath Groups endpoints
 		apiRouter.GET(GroupsPath, app.GetGroupsHandler)
 
-		//SettingsPath Namespace endpoints
-		//This namespace endpoint is used to get the namespaces for the current user inside the model registry settings
+		// SettingsPath Namespace endpoints
+		// This namespace endpoint is used to get the namespaces for the current user inside the model registry settings
 		apiRouter.GET(SettingsNamespacePath, app.GetNamespacesHandler)
 
 		// Model catalog settings page

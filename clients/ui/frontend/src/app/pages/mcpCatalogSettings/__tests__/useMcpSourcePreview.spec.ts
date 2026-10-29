@@ -55,6 +55,7 @@ const createMockApiState = (
     updateMcpCatalogSourceConfig: jest.fn(),
     deleteMcpCatalogSourceConfig: jest.fn(),
     previewMcpCatalogSource: jest.fn().mockResolvedValue(mockPreviewResult),
+    clearMcpCatalogSourceStatus: jest.fn(),
   },
   ...overrides,
 });

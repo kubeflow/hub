@@ -268,6 +268,8 @@ export type PreviewMcpCatalogSource = (
   queryParams?: PreviewCatalogSourceQueryParams,
 ) => Promise<McpCatalogSourcePreviewResult>;
 
+export type ClearMcpCatalogSourceStatus = (opts: APIOptions, sourceId: string) => Promise<void>;
+
 export type McpCatalogSettingsAPIs = {
   getMcpCatalogSourceConfigs: GetMcpCatalogSourceConfigs;
   createMcpCatalogSourceConfig: CreateMcpCatalogSourceConfig;
@@ -275,4 +277,5 @@ export type McpCatalogSettingsAPIs = {
   updateMcpCatalogSourceConfig: UpdateMcpCatalogSourceConfig;
   deleteMcpCatalogSourceConfig: DeleteMcpCatalogSourceConfig;
   previewMcpCatalogSource: PreviewMcpCatalogSource;
+  clearMcpCatalogSourceStatus: ClearMcpCatalogSourceStatus;
 };

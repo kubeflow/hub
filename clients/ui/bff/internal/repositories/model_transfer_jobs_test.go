@@ -178,6 +178,10 @@ func (f *fakeKubernetesClient) CanListServicesInNamespace(ctx context.Context, i
 	return false, nil
 }
 
+func (f *fakeKubernetesClient) CanUpdateMcpCatalogSources(ctx context.Context, identity *k8s.RequestIdentity, namespace string) (bool, error) {
+	return false, nil
+}
+
 func (f *fakeKubernetesClient) CanAccessServiceInNamespace(ctx context.Context, identity *k8s.RequestIdentity, namespace, serviceName string) (bool, error) {
 	return false, nil
 }
