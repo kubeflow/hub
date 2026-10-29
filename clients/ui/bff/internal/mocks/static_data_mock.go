@@ -830,9 +830,9 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 	//   public              — full metadata, no hf_gated_access_granted
 	//   private             — full metadata
 	//   gated_auto + true   — full metadata
-	//   gated_auto + false  — lock / request access; empty readme & description
+	//   gated_auto + false  — filtered from catalog
 	//   gated_manual + true — full metadata
-	//   gated_manual + false— lock / request access; empty readme & description
+	//   gated_manual + false— filtered from catalog
 	// Non-HF models (sample-source, admin sources) have no hf_access_type.
 	huggingFaceModel1 := models.CatalogModel{
 		Name:             "hf-mock/public-model",
@@ -970,7 +970,29 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 	}
 	allModels = append(allModels, additionalRepo1Models...)
 
-	return allModels
+	visibleModels := make([]models.CatalogModel, 0, len(allModels))
+	for _, model := range allModels {
+		if !isHFGatedModelWithoutAccess(model) {
+			visibleModels = append(visibleModels, model)
+		}
+	}
+
+	return visibleModels
+}
+
+func isHFGatedModelWithoutAccess(model models.CatalogModel) bool {
+	if model.CustomProperties == nil {
+		return false
+	}
+
+	properties := *model.CustomProperties
+	accessType := properties["hf_access_type"].MetadataStringValue
+	if accessType == nil || (accessType.StringValue != "gated_auto" && accessType.StringValue != "gated_manual") {
+		return false
+	}
+
+	granted := properties["hf_gated_access_granted"].MetadataStringValue
+	return granted == nil || granted.StringValue != "true"
 }
 
 func GetCatalogModelListMock() models.CatalogModelList {
