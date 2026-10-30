@@ -26,7 +26,7 @@ The project was formerly known as Model Registry.
  - [Blog KF 1.10 introducing UI for Model Registry, CSI, and other features](https://blog.kubeflow.org/kubeflow-1.10-release/#model-registry)
 2. Installation
  - [installing Model Registry standalone](https://www.kubeflow.org/docs/components/model-registry/installation/#standalone-installation)
- - [installing Model Registry with Kubeflow manifests](https://github.com/kubeflow/manifests/tree/master/applications/model-registry/upstream#readme)
+ - [installing Model Registry with Kubeflow manifests](https://github.com/kubeflow/manifests/tree/master/applications/hub/upstream#readme)
  - [installing Model Registry using ODH Operator](https://github.com/opendatahub-io/model-registry-operator/tree/main/docs#readme)
 3. Concepts
  - [Logical Model](./docs/logical_model.md)

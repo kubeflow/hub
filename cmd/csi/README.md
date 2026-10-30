@@ -1,7 +1,7 @@
 # Model Registry Custom Storage Initializer
 
 This is a Model Registry specific implementation of a KServe Custom Storage Initializer (CSI).
-More details on what `Custom Storage Initializer` is can be found in the [KServe doc](https://kserve.github.io/website/0.11/modelserving/storage/storagecontainers/).
+More details on what `Custom Storage Initializer` is can be found in the [KServe doc](https://kserve.github.io/website/docs/model-serving/storage/storage-containers).
 
 ## Implementation
 
