@@ -385,3 +385,19 @@ def test_upload_to_s3_uses_forward_slashes_in_keys(tmp_path):
     )
 
     assert sorted(s3.keys) == ["models/v1/config.json", "models/v1/sub/weights.safetensors"]
+
+
+@pytest.mark.parametrize(
+    ("image", "expected"),
+    [
+        ("quay.io/my-org/my-registry:1.0.0", "quay.io/my-org/my-registry"),
+        ("localhost:5000/my-local-image:test-tag", "localhost:5000/my-local-image"),
+        ("localhost/my-local-image:test-tag", "localhost/my-local-image"),
+        ("localhost/team/model@sha256:abc", "localhost/team/model"),
+        ("localhost", "docker.io"),
+        ("ubuntu:22.04", "docker.io"),
+        ("my-user/my-app:v2", "docker.io"),
+    ],
+)
+def test_get_auth_reference(image, expected):
+    assert utils.get_auth_reference(image) == expected
