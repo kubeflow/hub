@@ -4,14 +4,14 @@
 
 ## Prerequisites
 
-- [Kubeflow repo](https://github.com/kubeflow/kubeflow/tree/master/components/centraldashboard#development)
+- [Kubeflow repo](https://github.com/kubeflow/dashboard/tree/main/components/centraldashboard#development)
 - [Hub repo](../README.md)
 
 ## Setup
 
 ### Kubeflow repo (under centraldashboard)
 
-1. Change the [webpack config](https://github.com/kubeflow/kubeflow/blob/master/components/centraldashboard/webpack.config.js#L186) proxies to allow Model Registry:
+1. Change the [webpack config](https://github.com/kubeflow/dashboard/blob/main/components/centraldashboard/webpack.config.js#L186) proxies to allow Model Registry:
 
 ```javascript
         proxy: {
