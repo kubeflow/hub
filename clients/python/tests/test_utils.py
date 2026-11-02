@@ -332,6 +332,27 @@ def test_skopeo_backend_scrubs_errors(mocker, tmp_path, error, expected_args):
     assert "secret" not in repr(e.value)
 
 
+def test_save_to_oci_registry_removes_temp_dir_when_push_fails(mocker, tmp_path, get_mock_custom_oci_backend):
+    model_files_path = tmp_path / "model-files"
+    model_files_path.mkdir()
+    (model_files_path / "model.bin").touch()
+    temp_dir = tmp_path / "oci-layout"
+    temp_dir.mkdir()
+    mocker.patch("model_registry.utils.tempfile.mkdtemp", return_value=str(temp_dir))
+    mocker.patch("olot.basics.oci_layers_on_top")
+    get_mock_custom_oci_backend.push.side_effect = RuntimeError("push failed")
+
+    with pytest.raises(RuntimeError, match="push failed"):
+        save_to_oci_registry(
+            base_image="busybox",
+            oci_ref="quay.io/example/example:latest",
+            model_files_path=model_files_path,
+            custom_oci_backend=get_mock_custom_oci_backend,
+        )
+
+    assert not temp_dir.exists()
+
+
 def test_save_to_oci_registry_backend_not_found():
     backend = "non-existent"
     with pytest.raises(

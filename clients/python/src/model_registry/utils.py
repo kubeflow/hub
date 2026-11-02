@@ -388,18 +388,20 @@ or
     local_image_path = Path(dest_dir)
 
     params = {}
-    with temp_auth_file(auth) as auth_file:
-        if auth_file is not None:
-            params["authfile"] = auth_file.name
-        backend_def.pull(base_image, local_image_path, **params)
-        # Extract the absolute path from the files found in the path
-        files = [file[0] for file in _get_files_from_path(model_files_path)]  # type: ignore[arg-type]
-        oci_layers_on_top(local_image_path, files, modelcard, root_dir=model_files_path)
-        backend_def.push(local_image_path, oci_ref, **params)
+    try:
+        with temp_auth_file(auth) as auth_file:
+            if auth_file is not None:
+                params["authfile"] = auth_file.name
+            backend_def.pull(base_image, local_image_path, **params)
+            # Extract the absolute path from the files found in the path
+            files = [file[0] for file in _get_files_from_path(model_files_path)]  # type: ignore[arg-type]
+            oci_layers_on_top(local_image_path, files, modelcard, root_dir=model_files_path)
+            backend_def.push(local_image_path, oci_ref, **params)
+    finally:
+        if dest_dir_cleanup:
+            shutil.rmtree(dest_dir)
 
     # Return the OCI URI
-    if dest_dir_cleanup:
-        shutil.rmtree(dest_dir)
     return f"oci://{oci_ref}"
 
 
