@@ -687,3 +687,31 @@ def test_download_from_s3_download_error(minimal_update_artifact_env_source_dest
         # Now the loop will hit download_file and propagate our exception
         with pytest.raises(Exception, match="Download failed"):
             download_from_s3(config.source, config.storage.path)
+
+
+def test_download_from_s3_rejects_key_traversal(
+    minimal_update_artifact_env_source_dest_vars, tmp_path
+):
+    """A key with ".." must not write outside the storage directory."""
+    os.environ["MODEL_SYNC_SOURCE_AWS_KEY"] = "my-model"
+    config = get_config([])
+    storage_path = tmp_path / "staging"
+    storage_path.mkdir()
+
+    def paginate(*, Bucket, Prefix):
+        return [{"Contents": [{"Key": "my-model/../../escape.txt"}]}]
+
+    def download_file(bucket, key, filename):
+        Path(filename).write_text("owned")
+
+    with patch("job.download._connect_to_s3") as mock_connect:
+        mock_s3 = Mock()
+        mock_connect.return_value = (mock_s3, Mock())
+        mock_s3.get_paginator.return_value.paginate.side_effect = paginate
+        mock_s3.download_file.side_effect = download_file
+
+        with pytest.raises(ValueError, match="escapes destination"):
+            download_from_s3(config.source, str(storage_path))
+
+    mock_s3.download_file.assert_not_called()
+    assert not (tmp_path / "escape.txt").exists()

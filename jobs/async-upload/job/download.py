@@ -51,6 +51,8 @@ def download_from_s3(config: S3StorageConfig, storage_path: str):
     prefix = config.key
     directory_prefix = prefix if prefix.endswith("/") else f"{prefix}/"
 
+    dest_root = Path(storage_path).resolve()
+
     paginator = s3_client.get_paginator("list_objects_v2")
     for page in paginator.paginate(Bucket=bucket_name, Prefix=prefix):
         for obj in page.get("Contents", []):
@@ -64,6 +66,10 @@ def download_from_s3(config: S3StorageConfig, storage_path: str):
             else:
                 continue
             local_path = os.path.join(storage_path, relative)
+            # An object key with ".." segments resolves outside storage_path;
+            # refuse it so a crafted bucket cannot write over host files.
+            if not Path(local_path).resolve().is_relative_to(dest_root):
+                raise ValueError(f"S3 object key escapes destination: {key!r}")
             os.makedirs(os.path.dirname(local_path), exist_ok=True)
             logger.info(f"⏳ Downloading s3://{bucket_name}/{key} → {local_path}")
             s3_client.download_file(bucket_name, key, local_path)
