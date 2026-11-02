@@ -58,7 +58,7 @@ Further attributes which might be needed or helpful to provide access to the Mod
 
 The combination of `uri`, `storage_key`, `storage_path` and additional `customProperties` might be used downstream to determine access strategy to the model artifact/file at the uri, for example:
 
-* use CustomStorageInitializer: [https://kserve.github.io/website/master/modelserving/storage/storagecontainers/](https://kserve.github.io/website/master/modelserving/storage/storagecontainers/)
+* use CustomStorageInitializer: [https://kserve.github.io/website/docs/model-serving/storage/storage-containers](https://kserve.github.io/website/docs/model-serving/storage/storage-containers)
 * use the python function from the point above in a non-Kubernetes context
 * reimplement the python function from the point above in a non-Kubernetes context and in the preferred language of choice
 
@@ -361,7 +361,7 @@ model = registry.register_model(
 )
 ```
 
-this example make reference to KServe tutorial: [https://kserve.github.io/website/master/modelserving/storage/s3/s3/#deploy-the-model-on-s3-with-inferenceservice](https://kserve.github.io/website/master/modelserving/storage/s3/s3/#deploy-the-model-on-s3-with-inferenceservice)
+this example make reference to KServe tutorial: [https://kserve.github.io/website/docs/model-serving/storage/providers/s3#deploy-the-model-on-s3-with-inferenceservice](https://kserve.github.io/website/docs/model-serving/storage/providers/s3#deploy-the-model-on-s3-with-inferenceservice)
 
 resulting in:
 
