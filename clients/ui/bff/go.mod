@@ -3,7 +3,7 @@ module github.com/kubeflow/hub/ui/bff
 go 1.26.0
 
 require (
-	github.com/brianvoe/gofakeit/v7 v7.18.0
+	github.com/brianvoe/gofakeit/v7 v7.18.1
 	github.com/distribution/reference v0.6.0
 	github.com/google/uuid v1.6.0
 	github.com/julienschmidt/httprouter v1.3.0
@@ -15,9 +15,9 @@ require (
 	github.com/swaggo/http-swagger/v2 v2.0.2
 	github.com/swaggo/swag v1.16.6
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/api v0.37.1
-	k8s.io/apimachinery v0.37.1
-	k8s.io/client-go v0.37.1
+	k8s.io/api v0.37.2
+	k8s.io/apimachinery v0.37.2
+	k8s.io/client-go v0.37.2
 	sigs.k8s.io/controller-runtime v0.25.2
 )
 
