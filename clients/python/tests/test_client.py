@@ -1353,6 +1353,7 @@ def test_hint_server_address_port_http_with_non_80_port_warning(mock_get_registe
 
 
 def test_save_to_s3_passes_region_to_client(monkeypatch, mocker, mock_get_registered_models, tmp_path):
+    pytest.importorskip("boto3")
     monkeypatch.delenv("AWS_DEFAULT_REGION", raising=False)
     monkeypatch.delenv("AWS_REGION", raising=False)
     (tmp_path / "model.bin").touch()
