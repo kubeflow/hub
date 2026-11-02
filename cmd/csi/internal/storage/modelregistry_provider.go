@@ -79,7 +79,10 @@ func (p *ModelRegistryProvider) DownloadModel(modelDir string, modelName string,
 
 	log.Printf("Fetching model artifacts: version=%v", version)
 
+	// Only model artifacts can be served. A version can also hold metrics,
+	// parameters, or documentation, which may be newer than its model artifact.
 	artifacts, _, err := p.Client.ModelRegistryServiceAPI.GetModelVersionArtifacts(context.Background(), *version.Id).
+		ArtifactType(openapi.ARTIFACTTYPEQUERYPARAM_MODEL_ARTIFACT).
 		OrderBy(openapi.ORDERBYFIELD_CREATE_TIME).
 		SortOrder(openapi.SORTORDER_DESC).
 		Execute()

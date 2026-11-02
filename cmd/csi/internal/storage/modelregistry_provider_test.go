@@ -1,8 +1,13 @@
 package storage
 
 import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
+	kserve "github.com/kserve/kserve/pkg/agent/storage"
 	"github.com/kubeflow/hub/pkg/openapi"
 	"github.com/stretchr/testify/assert"
 )
@@ -184,6 +189,60 @@ func TestExtractProtocol(t *testing.T) {
 			}
 		})
 	}
+}
+
+type recordingProvider struct {
+	storageURI string
+}
+
+func (r *recordingProvider) DownloadModel(_ string, _ string, storageURI string) error {
+	r.storageURI = storageURI
+	return nil
+}
+
+func (*recordingProvider) UploadObject(string, string, []byte) error {
+	return nil
+}
+
+func TestDownloadModelUsesModelArtifactWhenNewerArtifactsExist(t *testing.T) {
+	const modelArtifact = `{"artifactType":"model-artifact","id":"3","name":"iris","uri":"s3://bucket/iris"}`
+	// A metric logged on the version after it was registered is the newest artifact.
+	const metric = `{"artifactType":"metric","id":"4","name":"accuracy","value":0.9}`
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/registered_model"):
+			_, _ = fmt.Fprint(w, `{"id":"1","name":"iris"}`)
+		case strings.HasSuffix(r.URL.Path, "/model_version"):
+			_, _ = fmt.Fprint(w, `{"id":"2","name":"v1","registeredModelId":"1"}`)
+		case strings.HasSuffix(r.URL.Path, "/model_versions/2/artifacts"):
+			items := metric + "," + modelArtifact
+			size := 2
+			if r.URL.Query().Get("artifactType") == string(openapi.ARTIFACTTYPEQUERYPARAM_MODEL_ARTIFACT) {
+				items, size = modelArtifact, 1
+			}
+			_, _ = fmt.Fprintf(w, `{"items":[%s],"size":%d,"pageSize":100,"nextPageToken":""}`, items, size)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	cfg := openapi.NewConfiguration()
+	cfg.Host = strings.TrimPrefix(server.URL, "http://")
+	cfg.Scheme = "http"
+	s3 := &recordingProvider{}
+	provider := &ModelRegistryProvider{
+		Client:       openapi.NewAPIClient(cfg),
+		Providers:    map[kserve.Protocol]kserve.Provider{kserve.S3: s3},
+		URIValidator: NewURIValidator(nil),
+	}
+
+	err := provider.DownloadModel(t.TempDir(), "", "model-registry://iris/v1")
+
+	assert.NoError(t, err)
+	assert.Equal(t, "s3://bucket/iris", s3.storageURI)
 }
 
 func stringPtr(s string) *string {
