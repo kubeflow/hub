@@ -33,7 +33,7 @@ runs:
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
       with:
         path: ${{ runner.temp }}/${{ inputs.name }}-image.tar
-        key: kind-image-${{ steps.image-key.outputs.digest }}-${{ runner.os }}-${{ runner.arch }}-v1
+        key: kind-image-${{ steps.image-key.outputs.digest }}-${{ runner.os }}-${{ runner.arch }}-v2
     - name: Prepare image archive
       shell: bash
       env:
