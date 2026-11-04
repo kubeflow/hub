@@ -21,6 +21,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
 
+// OCIBaseImageConfigNamespace contains the mock OCI base-image configuration.
+const OCIBaseImageConfigNamespace = "bella-namespace"
+
 var DefaultTestUsers = []TestUser{
 	{
 		UserName: "user@example.com",
@@ -266,8 +269,8 @@ func setupMock(mockK8sClient kubernetes.Interface, ctx context.Context) error {
 		return err
 	}
 
-	_, err = mockK8sClient.CoreV1().ConfigMaps("bella-namespace").Create(ctx, &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{Name: "model-registry-ui-config", Namespace: "bella-namespace"},
+	_, err = mockK8sClient.CoreV1().ConfigMaps(OCIBaseImageConfigNamespace).Create(ctx, &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: "model-registry-ui-config", Namespace: OCIBaseImageConfigNamespace},
 		Data: map[string]string{
 			"images-oci-base-image": "mirror.example.com/library/busybox:1.0",
 		},

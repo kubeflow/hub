@@ -229,6 +229,9 @@ func NewApp(cfg config.EnvConfig, logger *slog.Logger) (*App, error) {
 		rootCAs:                 rootCAs,
 	}
 	app.repositories.ModelRegistry.OCIBaseImageConfigNamespace = strings.TrimSpace(cfg.OCIBaseImageConfigNamespace)
+	if cfg.MockK8Client && app.repositories.ModelRegistry.OCIBaseImageConfigNamespace == "" {
+		app.repositories.ModelRegistry.OCIBaseImageConfigNamespace = k8mocks.OCIBaseImageConfigNamespace
+	}
 	return app, nil
 }
 
