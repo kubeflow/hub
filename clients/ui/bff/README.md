@@ -64,8 +64,8 @@ For more information on configuring golangci-lint see the [documentation](https:
 
 The BFF reads `data.images-oci-base-image` from `model-registry-ui-config`.
 Set `--oci-base-image-config-namespace` or `OCI_BASE_IMAGE_CONFIG_NAMESPACE` to select its namespace.
-An explicit namespace takes precedence over the BFF Pod namespace, which is read from the service-account namespace file.
-When neither is available (for example, a local process without the option), OCI upload requests fail with a configuration-location error.
+An explicit namespace takes precedence. In mock Kubernetes mode, an unset or blank option defaults to `bella-namespace`, where the mock ConfigMap is created.
+Otherwise, the BFF uses its Pod namespace, read from the service-account namespace file; when neither is available, OCI upload requests fail with a configuration-location error.
 This setting does not change the namespace in which upload Jobs are created or the lookup location for the Job container image.
 
 Example for local development:
