@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -9,9 +10,11 @@ import (
 	"github.com/kubeflow/hub/ui/bff/internal/models"
 )
 
-const sourcesPath = "/sources"
-const filterOptionPath = "/models/filter_options"
-const labelsPath = "/labels"
+const (
+	sourcesPath      = "/sources"
+	filterOptionPath = "/models/filter_options"
+	labelsPath       = "/labels"
+)
 
 type CatalogSourcesInterface interface {
 	GetAllCatalogSources(client httpclient.HTTPClientInterface, pageValues url.Values) (*models.CatalogSourceList, error)
@@ -21,6 +24,7 @@ type CatalogSourcesInterface interface {
 	GetCatalogModelPerformanceArtifacts(client httpclient.HTTPClientInterface, sourceId string, modelName string, pageValues url.Values) (*models.CatalogModelArtifactList, error)
 	GetCatalogModelSecurityArtifacts(client httpclient.HTTPClientInterface, sourceId string, modelName string, pageValues url.Values) (*models.CatalogModelArtifactList, error)
 	GetCatalogLabels(client httpclient.HTTPClientInterface, pageValues url.Values) (*models.CatalogLabelList, error)
+	ClearCatalogSourceStatus(ctx context.Context, client httpclient.HTTPClientInterface, sourceId string) error
 }
 
 type CatalogSources struct {
@@ -44,7 +48,6 @@ func (a CatalogSources) GetAllCatalogSources(client httpclient.HTTPClientInterfa
 
 func (a CatalogSources) GetCatalogSourceModel(client httpclient.HTTPClientInterface, sourceId string, modelName string) (*models.CatalogModel, error) {
 	path, err := url.JoinPath(sourcesPath, sourceId, "models", modelName)
-
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +85,6 @@ func (a CatalogSources) GetCatalogSourceModelArtifacts(client httpclient.HTTPCli
 
 func (a CatalogSources) GetCatalogFilterOptions(client httpclient.HTTPClientInterface) (*models.FilterOptionsList, error) {
 	responseData, err := client.GET(filterOptionPath)
-
 	if err != nil {
 		return nil, fmt.Errorf("error fetching filterOptionPath: %w", err)
 	}
@@ -149,4 +151,17 @@ func (a CatalogSources) GetCatalogLabels(client httpclient.HTTPClientInterface, 
 	}
 
 	return &labels, nil
+}
+
+func (a CatalogSources) ClearCatalogSourceStatus(ctx context.Context, client httpclient.HTTPClientInterface, sourceId string) error {
+	path, err := url.JoinPath(sourcesPath, url.PathEscape(sourceId), "status")
+	if err != nil {
+		return err
+	}
+
+	if err := client.DELETE(ctx, path); err != nil {
+		return fmt.Errorf("clearing catalogue source status: %w", err)
+	}
+
+	return nil
 }

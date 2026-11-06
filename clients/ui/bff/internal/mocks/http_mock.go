@@ -1,6 +1,7 @@
 package mocks
 
 import (
+	"context"
 	"io"
 
 	"github.com/kubeflow/hub/ui/bff/internal/integrations/httpclient"
@@ -38,4 +39,9 @@ func (m *MockHTTPClient) POSTWithContentType(url string, body io.Reader, content
 func (m *MockHTTPClient) PATCH(url string, body io.Reader) ([]byte, error) {
 	args := m.Called(url, body)
 	return args.Get(0).([]byte), args.Error(1)
+}
+
+func (m *MockHTTPClient) DELETE(ctx context.Context, path string) error {
+	args := m.Called(ctx, path)
+	return args.Error(0)
 }
