@@ -3,3 +3,259 @@ body,
 #root {
   height: 100%;
 }
+
+/* ==========================================================================
+   Dark Theme Design System for Kubeflow Hub
+   ========================================================================== */
+
+:root.pf-v6-theme-dark,
+html.pf-v6-theme-dark,
+html.dark-theme {
+  color-scheme: dark;
+
+  /* PatternFly v6 Design Tokens */
+  --pf-t--global--background--color--primary--default: #0b0f19;
+  --pf-t--global--background--color--secondary--default: #0f172a;
+  --pf-t--global--text--color--regular: #f8fafc;
+  --pf-t--global--text--color--subtle: #cbd5e1;
+  --pf-t--global--border--color--default: #1e293b;
+  --pf-t--global--link--color--default: #38bdf8;
+  --pf-t--global--link--color--hover: #7dd3fc;
+
+  /* PatternFly legacy / component compatibility tokens */
+  --pf-v6-global--BackgroundColor--100: var(--pf-t--global--background--color--primary--default);
+  --pf-v6-global--BackgroundColor--200: #111827;
+  --pf-v6-global--Color--100: var(--pf-t--global--text--color--regular);
+  --pf-v6-global--Color--200: var(--pf-t--global--text--color--subtle);
+  --pf-v6-global--BorderColor--100: var(--pf-t--global--border--color--default);
+  --pf-v6-global--link--Color: var(--pf-t--global--link--color--default);
+  --pf-v6-global--link--Color--hover: var(--pf-t--global--link--color--hover);
+}
+
+html.pf-v6-theme-dark,
+html.pf-v6-theme-dark body,
+html.dark-theme,
+html.dark-theme body {
+  background-color: var(--pf-t--global--background--color--primary--default);
+  color: var(--pf-t--global--text--color--regular);
+}
+
+/* Page Layout & Main Backgrounds */
+html.pf-v6-theme-dark .pf-v6-c-page,
+html.pf-v6-theme-dark .pf-v6-c-page__main,
+html.pf-v6-theme-dark .pf-v6-c-page__main-section,
+html.pf-v6-theme-dark .pf-v6-c-page__main-body {
+  background-color: var(--pf-t--global--background--color--primary--default);
+  color: var(--pf-t--global--text--color--regular);
+}
+
+/* Header Masthead */
+html.pf-v6-theme-dark .pf-v6-c-masthead {
+  background-color: var(--pf-t--global--background--color--secondary--default);
+  color: var(--pf-t--global--text--color--regular);
+  border-bottom: 1px solid var(--pf-t--global--border--color--default);
+  box-shadow: none;
+}
+
+/* Sidebar Navigation */
+html.pf-v6-theme-dark .pf-v6-c-page__sidebar,
+html.pf-v6-theme-dark .pf-v6-c-nav {
+  background-color: var(--pf-t--global--background--color--primary--default);
+  border-right: 1px solid var(--pf-t--global--border--color--default);
+}
+
+html.pf-v6-theme-dark .pf-v6-c-nav__link {
+  color: var(--pf-t--global--text--color--subtle);
+  transition: all 0.2s ease;
+}
+
+html.pf-v6-theme-dark .pf-v6-c-nav__link:hover,
+html.pf-v6-theme-dark .pf-v6-c-nav__link.pf-m-current {
+  color: var(--pf-t--global--link--color--default);
+  background-color: #1e293b;
+  border-left: 3px solid var(--pf-t--global--link--color--default);
+}
+
+/* Dropdowns & Menu Toggles */
+html.pf-v6-theme-dark .pf-v6-c-menu-toggle,
+html.pf-v6-theme-dark .pf-v6-c-menu-toggle__button,
+html.pf-v6-theme-dark .pf-v6-c-menu-toggle__text,
+html.pf-v6-theme-dark .pf-v6-c-select,
+html.pf-v6-theme-dark button[id*="menu-toggle"] {
+  background-color: #1e293b;
+  color: var(--pf-t--global--text--color--regular);
+  border: 1px solid #334155;
+  border-radius: 6px;
+}
+
+html.pf-v6-theme-dark .pf-v6-c-menu-toggle__controls,
+html.pf-v6-theme-dark .pf-v6-c-menu-toggle__toggle-icon,
+html.pf-v6-theme-dark .pf-v6-c-menu-toggle__icon,
+html.pf-v6-theme-dark .pf-v6-c-menu-toggle svg {
+  color: #94a3b8;
+}
+
+html.pf-v6-theme-dark .pf-v6-c-menu-toggle:hover {
+  background-color: #334155;
+  border-color: #475569;
+}
+
+/* Scoped Content & Empty State Text */
+html.pf-v6-theme-dark .pf-v6-c-content,
+html.pf-v6-theme-dark .pf-v6-c-empty-state,
+html.pf-v6-theme-dark .pf-v6-c-empty-state__body,
+html.pf-v6-theme-dark .pf-v6-c-empty-state__content,
+html.pf-v6-theme-dark .pf-v6-c-form__helper-text {
+  color: var(--pf-t--global--text--color--subtle);
+}
+
+/* Headings & Main Titles */
+html.pf-v6-theme-dark h1,
+html.pf-v6-theme-dark h2,
+html.pf-v6-theme-dark h3,
+html.pf-v6-theme-dark h4,
+html.pf-v6-theme-dark h5,
+html.pf-v6-theme-dark h6,
+html.pf-v6-theme-dark .pf-v6-c-title,
+html.pf-v6-theme-dark .pf-v6-c-page__main-title {
+  color: var(--pf-t--global--text--color--regular);
+  font-weight: 600;
+}
+
+/* Search Inputs & Form Controls */
+html.pf-v6-theme-dark .pf-v6-c-form-control,
+html.pf-v6-theme-dark .pf-v6-c-text-input-group,
+html.pf-v6-theme-dark input,
+html.pf-v6-theme-dark select,
+html.pf-v6-theme-dark textarea {
+  background-color: #1e293b;
+  color: var(--pf-t--global--text--color--regular);
+  border: 1px solid #334155;
+  border-radius: 6px;
+}
+
+html.pf-v6-theme-dark input::placeholder,
+html.pf-v6-theme-dark .pf-v6-c-text-input-group__text-input::placeholder {
+  color: #94a3b8;
+}
+
+/* Links & Interactive Actions */
+html.pf-v6-theme-dark a,
+html.pf-v6-theme-dark .pf-v6-c-button.pf-m-link,
+html.pf-v6-theme-dark .pf-v6-c-button.pf-m-inline {
+  color: var(--pf-t--global--link--color--default);
+  text-decoration: none;
+}
+
+html.pf-v6-theme-dark a:hover,
+html.pf-v6-theme-dark .pf-v6-c-button.pf-m-link:hover,
+html.pf-v6-theme-dark .pf-v6-c-button.pf-m-inline:hover {
+  color: var(--pf-t--global--link--color--hover);
+  text-decoration: underline;
+}
+
+/* Tables & Data Grids */
+html.pf-v6-theme-dark .pf-v6-c-table {
+  background-color: #111827;
+  color: var(--pf-t--global--text--color--regular);
+  border-color: var(--pf-t--global--border--color--default);
+}
+
+html.pf-v6-theme-dark .pf-v6-c-table__th,
+html.pf-v6-theme-dark .pf-v6-c-table__button,
+html.pf-v6-theme-dark .pf-v6-c-table__text,
+html.pf-v6-theme-dark .pf-v6-c-table__sort-indicator {
+  background-color: var(--pf-t--global--background--color--secondary--default);
+  color: var(--pf-t--global--text--color--regular);
+  font-weight: 600;
+  border-bottom: 1px solid var(--pf-t--global--border--color--default);
+}
+
+html.pf-v6-theme-dark .pf-v6-c-table__button span,
+html.pf-v6-theme-dark .pf-v6-c-table__button svg {
+  color: var(--pf-t--global--text--color--regular);
+}
+
+html.pf-v6-theme-dark .pf-v6-c-table__tr {
+  border-bottom: 1px solid var(--pf-t--global--border--color--default);
+  transition: background-color 0.15s ease;
+}
+
+html.pf-v6-theme-dark .pf-v6-c-table__tr:hover {
+  background-color: #1e293b;
+}
+
+html.pf-v6-theme-dark .pf-v6-c-table__td {
+  color: #f1f5f9;
+}
+
+/* PatternFly Badges & Labels */
+html.pf-v6-theme-dark .pf-v6-c-badge,
+html.pf-v6-theme-dark .pf-v6-c-label {
+  background-color: #1e293b;
+  color: var(--pf-t--global--link--color--default);
+  border: 1px solid #334155;
+  border-radius: 9999px;
+  font-weight: 500;
+}
+
+/* PatternFly Dropdowns & Menus */
+html.pf-v6-theme-dark .pf-v6-c-dropdown__menu,
+html.pf-v6-theme-dark .pf-v6-c-menu {
+  background-color: #1e293b;
+  color: var(--pf-t--global--text--color--regular);
+  border: 1px solid #334155;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+html.pf-v6-theme-dark .pf-v6-c-dropdown__menu-item:hover,
+html.pf-v6-theme-dark .pf-v6-c-menu__item:hover {
+  background-color: #334155;
+  color: var(--pf-t--global--link--color--default);
+}
+
+/* Pagination & Toolbar Dark Overrides */
+html.pf-v6-theme-dark .pf-v6-c-pagination,
+html.pf-v6-theme-dark .pf-v6-c-pagination__menu,
+html.pf-v6-theme-dark .pf-v6-c-toolbar,
+html.pf-v6-theme-dark .pf-v6-c-toolbar__content,
+html.pf-v6-theme-dark .pf-v6-c-toolbar__group,
+html.pf-v6-theme-dark .pf-v6-c-toolbar__item,
+html.pf-v6-theme-dark .pf-v6-c-options-menu,
+html.pf-v6-theme-dark .pf-v6-c-pagination__total-items {
+  background-color: var(--pf-t--global--background--color--primary--default);
+  color: var(--pf-t--global--text--color--subtle);
+  border-color: var(--pf-t--global--border--color--default);
+}
+
+html.pf-v6-theme-dark .pf-v6-c-pagination .pf-v6-c-button,
+html.pf-v6-theme-dark .pf-v6-c-pagination__nav-button {
+  color: var(--pf-t--global--text--color--regular);
+  background-color: transparent;
+}
+
+html.pf-v6-theme-dark .pf-v6-c-pagination .pf-v6-c-button.pf-m-disabled,
+html.pf-v6-theme-dark .pf-v6-c-pagination__nav-button.pf-m-disabled {
+  color: #475569;
+}
+
+/* Standalone Theme Toggle Button Styling */
+.theme-toggle-button {
+  font-size: 1.1rem;
+  margin-right: var(--pf-t--global--spacer--sm, 8px);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.theme-toggle-button:hover {
+  transform: scale(1.1);
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+}
+
+.theme-toggle-icon--dark {
+  color: var(--pf-t--color--yellow--50, #f59e0b);
+}
+
+.theme-toggle-icon--light {
+  color: var(--pf-t--global--icon--color--subtle, #64748b);
+}
