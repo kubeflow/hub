@@ -1,7 +1,11 @@
 import * as React from 'react';
-import { useQueryParamNamespaces } from 'mod-arch-core';
+import { useQueryParamNamespaces, POLL_INTERVAL } from 'mod-arch-core';
 import useModelCatalogAPIState from '~/app/hooks/modelCatalog/useModelCatalogAPIState';
 import { useCatalogSourcesWithPolling } from './hooks/useCatalogSourcesWithPolling';
+import {
+  useCatalogSourceSyncTracker,
+  SYNC_PENDING_POLL_INTERVAL,
+} from './hooks/useCatalogSourceSyncTracker';
 import type { CatalogSettingsContextDefinition, CatalogSettingsContextValue } from './types';
 
 /**
@@ -45,8 +49,20 @@ export const createCatalogSettingsContext = <TAPIState, TConfigList>(
     const [sourceConfigs, sourceConfigsLoaded, sourceConfigsLoadError, refreshSourceConfigs] =
       contextDef.useSourceConfigsList(apiState);
 
+    const { isSyncPending, markSyncPending, reconcileSyncPending, hasPendingSyncs } =
+      useCatalogSourceSyncTracker();
+
     const [catalogSources, catalogSourcesLoaded, catalogSourcesLoadError, refreshCatalogSources] =
-      useCatalogSourcesWithPolling(catalogAPIState);
+      useCatalogSourcesWithPolling(
+        catalogAPIState,
+        hasPendingSyncs ? SYNC_PENDING_POLL_INTERVAL : POLL_INTERVAL,
+      );
+
+    // Every poll gets handed back to the tracker so a pending mark clears as soon
+    // as the catalog reports something different for that source.
+    React.useEffect(() => {
+      reconcileSyncPending(catalogSources);
+    }, [catalogSources, reconcileSyncPending]);
 
     return React.useMemo(
       () => ({
@@ -60,6 +76,8 @@ export const createCatalogSettingsContext = <TAPIState, TConfigList>(
         catalogSourcesLoaded,
         catalogSourcesLoadError,
         refreshCatalogSources,
+        isSyncPending,
+        markSyncPending,
       }),
       [
         apiState,
@@ -72,6 +90,8 @@ export const createCatalogSettingsContext = <TAPIState, TConfigList>(
         catalogSourcesLoaded,
         catalogSourcesLoadError,
         refreshCatalogSources,
+        isSyncPending,
+        markSyncPending,
       ],
     );
   };
