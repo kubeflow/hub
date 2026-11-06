@@ -26,9 +26,7 @@ import (
 	"github.com/kubeflow/hub/internal/platform/db/postgres"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
 	contpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const catalogStartupHelperEnv = "TEST_CATALOG_STARTUP_HELPER"
@@ -51,7 +49,7 @@ func TestCatalogStartupRollingUpgrade(t *testing.T) {
 				contpostgres.WithDatabase("catalog_startup"),
 				contpostgres.WithUsername("postgres"),
 				contpostgres.WithPassword("postgres"),
-				testcontainers.WithWaitStrategy(wait.ForListeningPort("5432/tcp")),
+				contpostgres.BasicWaitStrategies(),
 			)
 			require.NoError(t, err)
 			t.Cleanup(func() {
