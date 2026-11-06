@@ -20,6 +20,7 @@ type HTTPClientInterface interface {
 	POST(url string, body io.Reader) ([]byte, error)
 	POSTWithContentType(url string, body io.Reader, contentType string) ([]byte, error)
 	PATCH(url string, body io.Reader) ([]byte, error)
+	DELETE(url string) error
 }
 
 // RawResponse is an unprocessed upstream response. Unlike GET, it preserves the
@@ -286,6 +287,52 @@ func (c *HTTPClient) PATCH(url string, body io.Reader) ([]byte, error) {
 		return nil, httpError
 	}
 	return responseBody, nil
+}
+
+func (c *HTTPClient) DELETE(url string) error {
+	requestId := uuid.NewString()
+
+	fullURL := c.baseURL + url
+	req, err := http.NewRequest(http.MethodDelete, fullURL, nil)
+	if err != nil {
+		return err
+	}
+
+	c.applyHeaders(req)
+
+	logUpstreamReq(c.logger, requestId, req)
+
+	response, err := c.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	responseBody, err := io.ReadAll(response.Body)
+	logUpstreamResp(c.logger, requestId, response, responseBody)
+	if err != nil {
+		return fmt.Errorf("error reading response body: %w", err)
+	}
+
+	if response.StatusCode != http.StatusNoContent {
+		var errorResponse ErrorResponse
+		if err := json.Unmarshal(responseBody, &errorResponse); err != nil {
+			errorResponse = ErrorResponse{
+				Code:    strconv.Itoa(response.StatusCode),
+				Message: fmt.Sprintf("HTTP %d: %s", response.StatusCode, string(responseBody)),
+			}
+		}
+		httpError := &HTTPError{
+			StatusCode:    response.StatusCode,
+			ErrorResponse: errorResponse,
+		}
+		if httpError.Code == "" {
+			httpError.Code = strconv.Itoa(response.StatusCode)
+		}
+		return httpError
+	}
+
+	return nil
 }
 
 func (c *HTTPClient) applyHeaders(req *http.Request) {

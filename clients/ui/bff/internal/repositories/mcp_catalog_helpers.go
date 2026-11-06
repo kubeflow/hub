@@ -11,6 +11,30 @@ const (
 	McpCatalogTypeYaml = "yaml"
 )
 
+// ShouldClearMcpCatalogSourceStatusOnUpdate determines whether catalog status
+// should be cleared after an UPDATE operation. Clear ONLY if YAML source changed
+// OR enabled changed from false to true.
+func ShouldClearMcpCatalogSourceStatusOnUpdate(before, after *models.McpCatalogSourceConfig) bool {
+	if before == nil || after == nil {
+		return false
+	}
+
+	yamlChanged := stringPointerValue(before.Yaml) != stringPointerValue(after.Yaml) ||
+		stringPointerValue(before.YamlCatalogPath) != stringPointerValue(after.YamlCatalogPath)
+
+	enabledFalseToTrue := before.Enabled != nil && !*before.Enabled &&
+		after.Enabled != nil && *after.Enabled
+
+	return yamlChanged || enabledFalseToTrue
+}
+
+func stringPointerValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
+}
+
 func ParseMcpCatalogYaml(raw string, isDefault bool) ([]models.McpCatalogSourceConfig, error) {
 	var parsed struct {
 		Catalogs []struct {

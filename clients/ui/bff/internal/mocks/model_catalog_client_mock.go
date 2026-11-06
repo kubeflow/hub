@@ -23,6 +23,15 @@ func NewModelCatalogClientMock(logger *slog.Logger) (*ModelCatalogClientMock, er
 	return &ModelCatalogClientMock{}, nil
 }
 
+func (m *ModelCatalogClientMock) ClearSourceStatus(client httpclient.HTTPClientInterface, sourceID string) error {
+	for _, expectedCall := range m.ExpectedCalls {
+		if expectedCall.Method == "ClearSourceStatus" {
+			return m.Called(client, sourceID).Error(0)
+		}
+	}
+	return nil
+}
+
 func (m *ModelCatalogClientMock) GetAllCatalogModelsAcrossSources(client httpclient.HTTPClientInterface, pageValues url.Values) (*models.CatalogModelList, error) {
 	allModels := GetCatalogModelMocks()
 	var filteredModels []models.CatalogModel

@@ -90,6 +90,14 @@ func (app *App) EnableTelemetry(next http.Handler) http.Handler {
 }
 
 func (app *App) AttachModelCatalogRESTClient(next func(http.ResponseWriter, *http.Request, httprouter.Params)) httprouter.Handle {
+	return app.attachModelCatalogRESTClient(next, repositories.ModelCatalogAPIPath, constants.ModelCatalogHttpClientKey)
+}
+
+func (app *App) AttachModelCatalogStatusRESTClient(next func(http.ResponseWriter, *http.Request, httprouter.Params)) httprouter.Handle {
+	return app.attachModelCatalogRESTClient(next, repositories.ModelCatalogStatusAPIPath, constants.ModelCatalogStatusHttpClientKey)
+}
+
+func (app *App) attachModelCatalogRESTClient(next func(http.ResponseWriter, *http.Request, httprouter.Params), requestedAPIPath string, clientContextKey any) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 		namespace, ok := r.Context().Value(constants.NamespaceHeaderParameterKey).(string)
@@ -109,10 +117,10 @@ func (app *App) AttachModelCatalogRESTClient(next func(http.ResponseWriter, *htt
 			app.notFoundResponse(w, r)
 			return
 		}
-		apiPath := repositories.ModelCatalogAPIPath
-		if strings.HasPrefix(r.URL.Path, McpServerCatalogPathPrefix) {
+		apiPath := requestedAPIPath
+		if requestedAPIPath == repositories.ModelCatalogAPIPath && strings.HasPrefix(r.URL.Path, McpServerCatalogPathPrefix) {
 			apiPath = repositories.McpCatalogAPIPath
-		} else if strings.HasPrefix(r.URL.Path, AgentCatalogPathPrefix) {
+		} else if requestedAPIPath == repositories.ModelCatalogAPIPath && strings.HasPrefix(r.URL.Path, AgentCatalogPathPrefix) {
 			apiPath = repositories.AgentCatalogAPIPath
 		}
 
@@ -159,7 +167,7 @@ func (app *App) AttachModelCatalogRESTClient(next func(http.ResponseWriter, *htt
 			app.serverErrorResponse(w, r, fmt.Errorf("failed to create HTTP client: %v", err))
 			return
 		}
-		ctx := context.WithValue(r.Context(), constants.ModelCatalogHttpClientKey, restHttpClient)
+		ctx := context.WithValue(r.Context(), clientContextKey, restHttpClient)
 		next(w, r.WithContext(ctx), ps)
 	}
 }
