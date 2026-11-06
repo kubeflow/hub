@@ -23,12 +23,10 @@ import { ApplicationsPage } from 'mod-arch-shared';
 import {
   decodeParams,
   getModelName,
-  getSourceFromSourceId,
   hasModelArtifacts,
   isModelValidated,
   getHfAccessLabelVariant,
 } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
-import { ModelCatalogContext } from '~/app/context/modelCatalog/ModelCatalogContext';
 import { useCatalogModel } from '~/app/hooks/modelCatalog/useCatalogModel';
 import { ModelRegistrySelectorContext } from '~/app/context/ModelRegistrySelectorContext';
 import { getRegisterCatalogModelRoute } from '~/app/routes/modelCatalog/catalogModelRegister';
@@ -36,11 +34,7 @@ import { CatalogModelDetailsParams } from '~/app/modelCatalogTypes';
 import { useCatalogModelArtifacts } from '~/app/hooks/modelCatalog/useCatalogModelArtifacts';
 import { modelCatalogUrl } from '~/app/routes/modelCatalog/catalogModel';
 import ScrollViewOnMount from '~/app/shared/components/ScrollViewOnMount';
-import {
-  ModelDetailsTab,
-  MODEL_CATALOG_GATED_ACCESS_REQUIRED,
-  MODEL_CATALOG_POPOVER_MESSAGES,
-} from '~/concepts/modelCatalog/const';
+import { ModelDetailsTab, MODEL_CATALOG_POPOVER_MESSAGES } from '~/concepts/modelCatalog/const';
 import { MODEL_CATALOG_TITLE } from '~/app/pages/modelCatalog/const';
 import ModelCatalogAccessLabel from '~/app/pages/modelCatalog/components/ModelCatalogAccessLabel';
 import ModelDetailsTabs from './ModelDetailsTabs';
@@ -61,19 +55,12 @@ const ModelDetailsPage: React.FC<ModelDetailsPageProps> = ({ tab }) => {
   const { modelRegistries, modelRegistriesLoadError, modelRegistriesLoaded } = React.useContext(
     ModelRegistrySelectorContext,
   );
-  const { catalogSources } = React.useContext(ModelCatalogContext);
-  const hfUsername = getSourceFromSourceId(
-    decodedParams.sourceId || '',
-    catalogSources,
-  )?.hfUsername;
-
   const [artifacts, artifactLoaded, artifactsLoadError] = useCatalogModelArtifacts(
     decodedParams.sourceId || '',
     encodeURIComponent(`${decodedParams.modelName}`),
   );
 
   const accessLabelVariant = model ? getHfAccessLabelVariant(model) : null;
-  const gatedAccessDenied = accessLabelVariant === 'gated-denied';
 
   const registerButtonTooltip = (headerContent: string, bodyContent: string) => (
     <Tooltip
@@ -96,10 +83,6 @@ const ModelDetailsPage: React.FC<ModelDetailsPageProps> = ({ tab }) => {
   );
 
   const registerModelButton = () => {
-    if (gatedAccessDenied) {
-      return registerButtonTooltip('', MODEL_CATALOG_GATED_ACCESS_REQUIRED.REGISTER_BUTTON_TOOLTIP);
-    }
-
     if (!modelRegistriesLoaded || modelRegistriesLoadError) {
       return null;
     }
@@ -224,8 +207,6 @@ const ModelDetailsPage: React.FC<ModelDetailsPageProps> = ({ tab }) => {
             artifacts={artifacts}
             artifactLoaded={artifactLoaded}
             artifactsLoadError={artifactsLoadError}
-            gatedAccessDenied={gatedAccessDenied}
-            hfUsername={hfUsername}
           />
         )}
       </ApplicationsPage>
