@@ -13,9 +13,7 @@ import (
 	"github.com/kubeflow/hub/internal/platform/db/postgres"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
 	contpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func TestCatalogStartupLifecycle(t *testing.T) {
@@ -23,7 +21,7 @@ func TestCatalogStartupLifecycle(t *testing.T) {
 		contpostgres.WithDatabase("catalog_lifecycle"),
 		contpostgres.WithUsername("postgres"),
 		contpostgres.WithPassword("postgres"),
-		testcontainers.WithWaitStrategy(wait.ForListeningPort("5432/tcp")),
+		contpostgres.BasicWaitStrategies(),
 	)
 	require.NoError(t, err)
 	t.Cleanup(func() { assert.NoError(t, container.Terminate(context.Background())) })

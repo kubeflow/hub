@@ -19,6 +19,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	contpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"gorm.io/gorm"
 )
 
 func TestInitializePostgres(t *testing.T) {
@@ -90,6 +91,14 @@ func TestInitializePostgres(t *testing.T) {
 		// within a handful of iterations.
 		for i := range 50 {
 			typeName := fmt.Sprintf("test.RaceType%d", i)
+			if i == 0 {
+				// Ensure the legacy insert loses at least once, regardless of
+				// how the remaining races are scheduled.
+				_, err := repo.Save(&models.TypeImpl{
+					Attributes: &models.TypeAttributes{Name: &typeName, TypeKind: &kind},
+				})
+				require.NoError(t, err)
+			}
 
 			var wg sync.WaitGroup
 			var saveErr, legacyErr error
@@ -110,7 +119,7 @@ func TestInitializePostgres(t *testing.T) {
 
 			require.NoError(t, saveErr, "Save must never fail, whether it wins or loses the race")
 			if legacyErr != nil {
-				assert.Contains(t, legacyErr.Error(), "duplicate key value violates unique constraint",
+				assert.ErrorIs(t, legacyErr, gorm.ErrDuplicatedKey,
 					"a losing legacy insert must fail cleanly on the UNIQUE(name) constraint, not silently create a second row")
 			}
 
