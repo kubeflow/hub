@@ -189,7 +189,7 @@ jobs:
           IMG_VERSION: ${{ steps.tags.outputs.tag }}
         run: make image/build
       - name: Start Kind Cluster
-        uses: helm/kind-action@1544676c07bb3570fcb70166beaa07c4528fd4aa # v1.15.1
+        uses: helm/kind-action@ea822c7bf1874f08e5a491df991c228edffc3376 # v1.15.2
         with:
           node_image: kindest/node:${{ matrix.kubernetes-version }}
           cluster_name: chart-testing-py-${{ matrix.python }}
@@ -308,7 +308,7 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Start Kind Cluster
-        uses: helm/kind-action@1544676c07bb3570fcb70166beaa07c4528fd4aa # v1.15.1
+        uses: helm/kind-action@ea822c7bf1874f08e5a491df991c228edffc3376 # v1.15.2
         with:
           node_image: kindest/node:${{ env.KUBERNETES_VERSION }}
           cluster_name: ${{ env.CLUSTER_NAME }}
