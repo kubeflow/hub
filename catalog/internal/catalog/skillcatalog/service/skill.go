@@ -244,7 +244,9 @@ func (r *SkillRepositoryImpl) ApplyStandardPagination(query *gorm.DB, listOption
 	return query.Scopes(scopes.PaginateWithOptions(entities, pag, r.GetConfig().DB, "Context", SkillOrderByColumns))
 }
 
-// DeleteBySource deletes all skills from a given source.
+// DeleteBySource deletes all skills from a given source. Same is_custom_property
+// = false guard as applySkillListFilters, so a SKILL.md metadata key named
+// "source_id" cannot get a skill deleted along with another source.
 func (r *SkillRepositoryImpl) DeleteBySource(sourceID string) error {
 	config := r.GetConfig()
 	tableName := utils.GetTableName(config.DB, &schema.Context{})
@@ -255,9 +257,10 @@ func (r *SkillRepositoryImpl) DeleteBySource(sourceID string) error {
 		Joins("INNER JOIN "+propTableName+" ON "+
 			tableName+".id = "+propTableName+".context_id").
 		Where(propTableName+".name = ? AND "+
+			propTableName+".is_custom_property = ? AND "+
 			propTableName+".string_value = ? AND "+
 			tableName+".type_id = ?",
-			"source_id", sourceID, config.TypeID)
+			"source_id", false, sourceID, config.TypeID)
 
 	return config.DB.Where("id IN (?)", subQuery).Delete(&schema.Context{}).Error
 }

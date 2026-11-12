@@ -125,4 +125,40 @@ func TestSkillRepository(t *testing.T) {
 			assert.Equal(t, 1, count, "skill %d appeared %d times in a source_id-filtered list", id, count)
 		}
 	})
+
+	// Same collision as above, but for the source-level operations the loader uses
+	// to drop skills of removed sources: a frontmatter value must not be taken for
+	// the skill's real source.
+	collidingName := "src-c|repo/meta|meta|latest"
+	realSourceID := "src-c"
+	metadataSourceID := "from-frontmatter"
+	_, err := repo.Save(&models.SkillImpl{
+		Attributes: &models.SkillAttributes{
+			Name: &collidingName,
+		},
+		Properties: &[]dbmodels.Properties{
+			{Name: "source_id", StringValue: &realSourceID},
+		},
+		CustomProperties: &[]dbmodels.Properties{
+			{Name: "source_id", StringValue: &metadataSourceID, IsCustomProperty: true},
+		},
+	})
+	require.NoError(t, err)
+
+	t.Run("GetDistinctSourceIDs_IgnoresCollidingCustomProperty", func(t *testing.T) {
+		sourceIDs, err := repo.GetDistinctSourceIDs()
+		require.NoError(t, err)
+		assert.Contains(t, sourceIDs, realSourceID)
+		assert.NotContains(t, sourceIDs, metadataSourceID)
+	})
+
+	t.Run("DeleteBySource_IgnoresCollidingCustomProperty", func(t *testing.T) {
+		require.NoError(t, repo.DeleteBySource(metadataSourceID))
+		_, err := repo.GetByName(collidingName)
+		require.NoError(t, err, "skill of source %q was deleted by DeleteBySource(%q)", realSourceID, metadataSourceID)
+
+		require.NoError(t, repo.DeleteBySource(realSourceID))
+		_, err = repo.GetByName(collidingName)
+		assert.ErrorIs(t, err, ErrSkillNotFound)
+	})
 }
