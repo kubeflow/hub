@@ -90,22 +90,19 @@ golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
 $(GOLANGCI_LINT): $(LOCALBIN)
 	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/v2/cmd/golangci-lint,${GOLANGCI_LINT_VERSION})
 
-SWAG_VERSION ?= v1.16.4
+SWAG_VERSION ?= v2.0.0-rc6
 SWAG ?= $(LOCALBIN)/swag-$(SWAG_VERSION)
 
 .PHONY: swag
 swag: $(SWAG) ## Download swag locally if necessary.
 $(SWAG): $(LOCALBIN)
-	$(call go-install-tool,$(SWAG),github.com/swaggo/swag/cmd/swag,$(SWAG_VERSION))
+	$(call go-install-tool,$(SWAG),github.com/swaggo/swag/v2/cmd/swag,$(SWAG_VERSION))
 
-ALL_GO_DIRS := $(shell find . -type f -name '*.go' -exec dirname {} \; | sed 's|^\./||' | sort -u)
-ALL_GO_DIRS_NO_CMD := $(shell echo "$(ALL_GO_DIRS)" | tr ' ' '\n' | grep -v '^cmd$$' | paste -sd, -)
-SWAG_DIRS := cmd,$(ALL_GO_DIRS_NO_CMD)
+SWAG_DIRS := cmd,internal/api,internal/models
 
 .PHONY: openapi
 openapi: swag ## Generate OpenAPI spec from annotations
-	$(SWAG) fmt -g cmd/main.go -d $(SWAG_DIRS)
-	$(SWAG) init --parseDependency -q -g main.go -d $(SWAG_DIRS) -o openapi --outputTypes go,json,yaml --requiredByDefault
+	$(SWAG) init --v3.1 --parseDependencyLevel 1 --parseInternal -q -g main.go -d $(SWAG_DIRS) -o openapi --outputTypes json,yaml
 
 
 # go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist

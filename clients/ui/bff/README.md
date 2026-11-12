@@ -103,9 +103,15 @@ make docker-build
 
 ### Endpoints
 
-See the [OpenAPI specification](../api/openapi/mod-arch.yaml) for a complete list of endpoints.
+See the generated [swagger.yaml](openapi/swagger.yaml) / [swagger.json](openapi/swagger.json) for BFF endpoints. The hand-maintained [mod-arch.yaml](../api/openapi/mod-arch.yaml) is a legacy reference.
 
-> **Note:** We are in the process of moving from a manually maintained OpenAPI spec to a generated one. For a short period we have both: the hand-maintained [mod-arch.yaml](../api/openapi/mod-arch.yaml) and the generated [swagger.yaml](openapi/swagger.yaml) / [swagger.json](openapi/swagger.json) (produced from Go code via swaggo). The goal is to generate the OpenAPI spec from the codebase rather than managing it manually; once the transition is complete, the generated spec will be the single source of truth.
+Run `make openapi` from `clients/ui` or `clients/ui/bff` to regenerate the specs. Update Swag annotations on handlers when changing an endpoint; do not edit generated files directly. `openapi/openapi.go` embeds the generated JSON for the development Swagger UI, so rebuild the BFF after regeneration.
+
+The pinned `github.com/swaggo/swag/v2` generator (`v2.0.0-rc6`, a release candidate) emits OpenAPI 3.1 using `--v3.1`. The filenames remain `swagger.json` / `swagger.yaml` for compatibility. Paths include `/api/v1` explicitly because `/healthcheck` lives outside that prefix. Settings, agent catalog, and MCP catalog endpoints are unavailable in Kubeflow integration mode. Authentication uses either `kubeflow-userid` or a configured token header, depending on deployment configuration.
+
+Do not enable `--requiredByDefault`: this release candidate ignores `omitempty` when applying it, incorrectly requiring optional PATCH fields. Required request bodies, path/query parameters, and explicit model validation tags are still documented.
+
+`.swaggo` and the documentation-only types in `internal/api/swagger_models.go` describe custom JSON serialization without changing runtime models. Swag cannot infer the generated union types' custom marshaling, so their schemas expose flattened variant fields selected by `artifactType` and `metadataType`. The registry-level PATCH alias is documented separately because Swag v2 does not filter path parameters when multiple routes share annotations.
 
 ### Sample local calls
 

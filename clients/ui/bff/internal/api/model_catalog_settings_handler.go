@@ -16,6 +16,21 @@ type ModelCatalogSettingsSourceConfigEnvelope Envelope[*models.CatalogSourceConf
 type ModelCatalogSettingsSourceConfigListEnvelope Envelope[*models.CatalogSourceConfigList, None]
 type ModelCatalogSourcePayloadEnvelope Envelope[*models.CatalogSourceConfigPayload, None]
 
+// GetAllCatalogSourceConfigsHandler lists model catalog source configurations.
+//
+//	@Summary		List all catalog sources
+//	@Description	Not available in Kubeflow integration mode.
+//	@Tags			ModelCatalogService
+//	@ID				getCatalogSources
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace	query		string	true	"Catalog namespace"
+//	@Success		200			{object}	ModelCatalogSettingsSourceConfigListEnvelope
+//	@Failure		400			{object}	ErrorEnvelope
+//	@Failure		403			{object}	ErrorEnvelope
+//	@Failure		500			{object}	ErrorEnvelope
+//	@Router			/api/v1/settings/model_catalog/source_configs [get]
 func (app *App) GetAllCatalogSourceConfigsHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	ctx := r.Context()
 
@@ -48,6 +63,23 @@ func (app *App) GetAllCatalogSourceConfigsHandler(w http.ResponseWriter, r *http
 
 }
 
+// GetCatalogSourceConfigHandler returns a model catalog source configuration.
+//
+//	@Summary		Get a Model Catalog Source
+//	@Description	Not available in Kubeflow integration mode.
+//	@Tags			ModelCatalogService
+//	@ID				getCatalogSource
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace	query		string	true	"Catalog namespace"
+//	@Param			source_id	path		string	true	"Catalog source ID"
+//	@Success		200			{object}	ModelCatalogSettingsSourceConfigEnvelope
+//	@Failure		400			{object}	ErrorEnvelope
+//	@Failure		403			{object}	ErrorEnvelope
+//	@Failure		404			{object}	ErrorEnvelope
+//	@Failure		500			{object}	ErrorEnvelope
+//	@Router			/api/v1/settings/model_catalog/source_configs/{source_id} [get]
 func (app *App) GetCatalogSourceConfigHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	ctx := r.Context()
 
@@ -88,6 +120,25 @@ func (app *App) GetCatalogSourceConfigHandler(w http.ResponseWriter, r *http.Req
 
 }
 
+// CreateCatalogSourceConfigHandler creates a model catalog source configuration.
+//
+//	@Summary		Create a Catalog source
+//	@Description	Not available in Kubeflow integration mode.
+//	@Tags			ModelCatalogService
+//	@ID				createCatalogSource
+//	@Accept			json
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace	query		string								true	"Catalog namespace"
+//	@Param			body		body		ModelCatalogSourcePayloadEnvelope	true	"Catalog source configuration"
+//	@Success		201			{object}	ModelCatalogSettingsSourceConfigEnvelope
+//	@Header			201			{string}	Location	"URL of the created catalog source"
+//	@Failure		400			{object}	ErrorEnvelope
+//	@Failure		403			{object}	ErrorEnvelope
+//	@Failure		409			{object}	ErrorEnvelope
+//	@Failure		500			{object}	ErrorEnvelope
+//	@Router			/api/v1/settings/model_catalog/source_configs [post]
 func (app *App) CreateCatalogSourceConfigHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	ctx := r.Context()
 
@@ -138,6 +189,26 @@ func (app *App) CreateCatalogSourceConfigHandler(w http.ResponseWriter, r *http.
 
 }
 
+// UpdateCatalogSourceConfigHandler updates a model catalog source configuration.
+//
+//	@Summary		Update a Model Catalog Source
+//	@Description	Not available in Kubeflow integration mode.
+//	@Tags			ModelCatalogService
+//	@ID				updateModelCatalogSource
+//	@Accept			json
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace	query		string								true	"Catalog namespace"
+//	@Param			source_id	path		string								true	"Catalog source ID"
+//	@Param			body		body		ModelCatalogSourcePayloadEnvelope	true	"Catalog source fields to update"
+//	@Success		200			{object}	ModelCatalogSettingsSourceConfigEnvelope
+//	@Failure		400			{object}	ErrorEnvelope
+//	@Failure		403			{object}	ErrorEnvelope
+//	@Failure		404			{object}	ErrorEnvelope
+//	@Failure		409			{object}	ErrorEnvelope
+//	@Failure		500			{object}	ErrorEnvelope
+//	@Router			/api/v1/settings/model_catalog/source_configs/{source_id} [patch]
 func (app *App) UpdateCatalogSourceConfigHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	ctx := r.Context()
 
@@ -190,6 +261,24 @@ func (app *App) UpdateCatalogSourceConfigHandler(w http.ResponseWriter, r *http.
 	}
 }
 
+// DeleteCatalogSourceConfigHandler deletes a model catalog source configuration.
+//
+//	@Summary		Delete a Model Catalog source
+//	@Description	Returns the deleted source with HTTP 200. Not available in Kubeflow integration mode.
+//	@Tags			ModelCatalogService
+//	@ID				deleteModelCatalogSource
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace	query		string	true	"Catalog namespace"
+//	@Param			source_id	path		string	true	"Catalog source ID"
+//	@Success		200			{object}	ModelCatalogSettingsSourceConfigEnvelope
+//	@Failure		400			{object}	ErrorEnvelope
+//	@Failure		403			{object}	ErrorEnvelope
+//	@Failure		404			{object}	ErrorEnvelope
+//	@Failure		409			{object}	ErrorEnvelope
+//	@Failure		500			{object}	ErrorEnvelope
+//	@Router			/api/v1/settings/model_catalog/source_configs/{source_id} [delete]
 func (app *App) DeleteCatalogSourceConfigHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	ctx := r.Context()
 
@@ -233,6 +322,23 @@ func (app *App) DeleteCatalogSourceConfigHandler(w http.ResponseWriter, r *http.
 	}
 }
 
+// ClearCatalogSourceCredentialsHandler clears stored catalog credentials.
+//
+//	@Summary		Clear catalog source credentials
+//	@Description	Removes stored Hugging Face credentials and returns an empty JSON object. Not available in Kubeflow integration mode.
+//	@Tags			ModelCatalogService
+//	@ID				clearCatalogSourceCredentials
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace	query		string	true	"Catalog namespace"
+//	@Param			source_id	path		string	true	"Catalog source ID"
+//	@Success		200			{object}	models.EmptyObject
+//	@Failure		400			{object}	ErrorEnvelope
+//	@Failure		403			{object}	ErrorEnvelope
+//	@Failure		409			{object}	ErrorEnvelope
+//	@Failure		500			{object}	ErrorEnvelope
+//	@Router			/api/v1/settings/model_catalog/source_configs/{source_id}/credentials [delete]
 func (app *App) ClearCatalogSourceCredentialsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	ctx := r.Context()
 

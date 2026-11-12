@@ -16,6 +16,28 @@ type AgentFilterOptionsListEnvelope Envelope[*models.FilterOptionsList, None]
 type AgentEnvelope Envelope[*models.Agent, None]
 type AgentArtifactListEnvelope Envelope[*models.AgentArtifactList, None]
 
+// GetAllAgentsHandler lists catalog agents.
+//
+//	@Summary		List agents
+//	@Description	Not available in Kubeflow integration mode.
+//	@Tags			AgentCatalogService
+//	@ID				findAgents
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace		query		string	true	"Catalog namespace"
+//	@Param			pageSize		query		int		false	"Maximum number of results"
+//	@Param			orderBy			query		string	false	"Field to order by"
+//	@Param			sortOrder		query		string	false	"Sort direction"	Enums(ASC,DESC)
+//	@Param			nextPageToken	query		string	false	"Pagination token"
+//	@Param			q				query		string	false	"Search query"
+//	@Param			source			query		string	false	"Source IDs to search, comma-separated"
+//	@Param			filterQuery		query		string	false	"Agent filter expression"
+//	@Success		200				{object}	AgentListEnvelope
+//	@Failure		400				{object}	ErrorEnvelope
+//	@Failure		404				{object}	ErrorEnvelope
+//	@Failure		500				{object}	ErrorEnvelope
+//	@Router			/api/v1/agent_catalog/agents [get]
 func (app *App) GetAllAgentsHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	client, ok := r.Context().Value(constants.ModelCatalogHttpClientKey).(httpclient.HTTPClientInterface)
 
@@ -46,6 +68,21 @@ func (app *App) GetAllAgentsHandler(w http.ResponseWriter, r *http.Request, _ ht
 	}
 }
 
+// GetAgentsFiltersHandler lists agent filter options.
+//
+//	@Summary		List agent filter options
+//	@Description	Not available in Kubeflow integration mode.
+//	@Tags			AgentCatalogService
+//	@ID				getAgentsFilterOptions
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace	query		string	true	"Catalog namespace"
+//	@Success		200			{object}	AgentFilterOptionsListEnvelope
+//	@Failure		400			{object}	ErrorEnvelope
+//	@Failure		404			{object}	ErrorEnvelope
+//	@Failure		500			{object}	ErrorEnvelope
+//	@Router			/api/v1/agent_catalog/agents_filter_options [get]
 func (app *App) GetAgentsFiltersHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	client, ok := r.Context().Value(constants.ModelCatalogHttpClientKey).(httpclient.HTTPClientInterface)
 
@@ -76,6 +113,22 @@ func (app *App) GetAgentsFiltersHandler(w http.ResponseWriter, r *http.Request, 
 	}
 }
 
+// GetAgentHandler returns a catalog agent.
+//
+//	@Summary		Get an agent
+//	@Description	Not available in Kubeflow integration mode.
+//	@Tags			AgentCatalogService
+//	@ID				getAgent
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace	query		string	true	"Catalog namespace"
+//	@Param			agent_id	path		string	true	"Agent ID"
+//	@Success		200			{object}	AgentEnvelope
+//	@Failure		400			{object}	ErrorEnvelope
+//	@Failure		404			{object}	ErrorEnvelope
+//	@Failure		500			{object}	ErrorEnvelope
+//	@Router			/api/v1/agent_catalog/agents/{agent_id} [get]
 func (app *App) GetAgentHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	client, ok := r.Context().Value(constants.ModelCatalogHttpClientKey).(httpclient.HTTPClientInterface)
 
@@ -113,6 +166,26 @@ func (app *App) GetAgentHandler(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 }
 
+// GetAgentArtifactsHandler lists artifacts for a catalog agent.
+//
+//	@Summary		List artifacts for an agent
+//	@Description	Not available in Kubeflow integration mode.
+//	@Tags			AgentCatalogService
+//	@ID				getAgentArtifacts
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace		query		string	true	"Catalog namespace"
+//	@Param			agent_id		path		string	true	"Agent ID"
+//	@Param			pageSize		query		int		false	"Maximum number of results"
+//	@Param			orderBy			query		string	false	"Field to order by"
+//	@Param			sortOrder		query		string	false	"Sort direction"	Enums(ASC,DESC)
+//	@Param			nextPageToken	query		string	false	"Pagination token"
+//	@Success		200				{object}	AgentArtifactListEnvelope
+//	@Failure		400				{object}	ErrorEnvelope
+//	@Failure		404				{object}	ErrorEnvelope
+//	@Failure		500				{object}	ErrorEnvelope
+//	@Router			/api/v1/agent_catalog/agents/{agent_id}/artifacts [get]
 func (app *App) GetAgentArtifactsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	client, ok := r.Context().Value(constants.ModelCatalogHttpClientKey).(httpclient.HTTPClientInterface)
 

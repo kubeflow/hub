@@ -20,6 +20,22 @@ type ModelVersionUpdateEnvelope Envelope[*openapi.ModelVersionUpdate, None]
 type ModelArtifactListEnvelope Envelope[*openapi.ModelArtifactList, None]
 type ModelArtifactEnvelope Envelope[*openapi.ModelArtifact, None]
 
+// GetAllModelVersionHandler lists model versions.
+//
+//	@Summary	List All ModelVersions
+//	@Tags		ModelRegistryService
+//	@ID			getModelVersions
+//	@Produce	json
+//	@Security	KubeflowUserID
+//	@Security	BearerAuth
+//	@Param		namespace			query		string	true	"Model registry namespace"
+//	@Param		model_registry_id	path		string	true	"Model registry name"
+//	@Success	200					{object}	ModelVersionListEnvelope
+//	@Failure	400					{object}	ErrorEnvelope
+//	@Failure	403					{object}	ErrorEnvelope
+//	@Failure	404					{object}	ErrorEnvelope
+//	@Failure	500					{object}	ErrorEnvelope
+//	@Router		/api/v1/model_registry/{model_registry_id}/model_versions [get]
 func (app *App) GetAllModelVersionHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	client, ok := r.Context().Value(constants.ModelRegistryHttpClientKey).(httpclient.HTTPClientInterface)
 	if !ok {
@@ -44,6 +60,23 @@ func (app *App) GetAllModelVersionHandler(w http.ResponseWriter, r *http.Request
 
 }
 
+// GetModelVersionHandler returns a model version.
+//
+//	@Summary	Get a ModelVersion
+//	@Tags		ModelRegistryService
+//	@ID			getModelVersion
+//	@Produce	json
+//	@Security	KubeflowUserID
+//	@Security	BearerAuth
+//	@Param		namespace			query		string	true	"Model registry namespace"
+//	@Param		model_registry_id	path		string	true	"Model registry name"
+//	@Param		model_version_id	path		string	true	"Model version ID"
+//	@Success	200					{object}	ModelVersionEnvelope
+//	@Failure	400					{object}	ErrorEnvelope
+//	@Failure	403					{object}	ErrorEnvelope
+//	@Failure	404					{object}	ErrorEnvelope
+//	@Failure	500					{object}	ErrorEnvelope
+//	@Router		/api/v1/model_registry/{model_registry_id}/model_versions/{model_version_id} [get]
 func (app *App) GetModelVersionHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	client, ok := r.Context().Value(constants.ModelRegistryHttpClientKey).(httpclient.HTTPClientInterface)
 	if !ok {
@@ -72,6 +105,26 @@ func (app *App) GetModelVersionHandler(w http.ResponseWriter, r *http.Request, p
 	}
 }
 
+// CreateModelVersionHandler creates a model version.
+//
+//	@Summary	Create a ModelVersion
+//	@Tags		ModelRegistryService
+//	@ID			createModelVersion
+//	@Accept		json
+//	@Produce	json
+//	@Security	KubeflowUserID
+//	@Security	BearerAuth
+//	@Param		namespace			query		string					true	"Model registry namespace"
+//	@Param		model_registry_id	path		string					true	"Model registry name"
+//	@Param		body				body		ModelVersionEnvelope	true	"Model version to create"
+//	@Success	201					{object}	ModelVersionEnvelope
+//	@Header		201					{string}	Location	"URL of the created model version"
+//	@Failure	400					{object}	ErrorEnvelope
+//	@Failure	403					{object}	ErrorEnvelope
+//	@Failure	404					{object}	ErrorEnvelope
+//	@Failure	409					{object}	ErrorEnvelope
+//	@Failure	500					{object}	ErrorEnvelope
+//	@Router		/api/v1/model_registry/{model_registry_id}/model_versions [post]
 func (app *App) CreateModelVersionHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	client, ok := r.Context().Value(constants.ModelRegistryHttpClientKey).(httpclient.HTTPClientInterface)
 	if !ok {
@@ -126,6 +179,26 @@ func (app *App) CreateModelVersionHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// UpdateModelVersionHandler updates a model version.
+//
+//	@Summary	Update a ModelVersion
+//	@Tags		ModelRegistryService
+//	@ID			updateModelVersion
+//	@Accept		json
+//	@Produce	json
+//	@Security	KubeflowUserID
+//	@Security	BearerAuth
+//	@Param		namespace			query		string						true	"Model registry namespace"
+//	@Param		model_registry_id	path		string						true	"Model registry name"
+//	@Param		model_version_id	path		string						true	"Model version ID"
+//	@Param		body				body		ModelVersionUpdateEnvelope	true	"Model version fields to update"
+//	@Success	200					{object}	ModelVersionEnvelope
+//	@Failure	400					{object}	ErrorEnvelope
+//	@Failure	403					{object}	ErrorEnvelope
+//	@Failure	404					{object}	ErrorEnvelope
+//	@Failure	409					{object}	ErrorEnvelope
+//	@Failure	500					{object}	ErrorEnvelope
+//	@Router		/api/v1/model_registry/{model_registry_id}/model_versions/{model_version_id} [patch]
 func (app *App) UpdateModelVersionHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	client, ok := r.Context().Value(constants.ModelRegistryHttpClientKey).(httpclient.HTTPClientInterface)
 	if !ok {
@@ -176,6 +249,28 @@ func (app *App) UpdateModelVersionHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// GetAllModelArtifactsByModelVersionHandler lists a model version's artifacts.
+//
+//	@Summary	List all artifacts associated with the ModelVersion
+//	@Tags		ModelRegistryService
+//	@ID			getModelVersionArtifacts
+//	@Produce	json
+//	@Security	KubeflowUserID
+//	@Security	BearerAuth
+//	@Param		namespace			query		string	true	"Model registry namespace"
+//	@Param		model_registry_id	path		string	true	"Model registry name"
+//	@Param		model_version_id	path		string	true	"Model version ID"
+//	@Param		pageSize			query		int		false	"Maximum number of results"
+//	@Param		orderBy				query		string	false	"Field to order by"
+//	@Param		sortOrder			query		string	false	"Sort direction"	Enums(ASC,DESC)
+//	@Param		nextPageToken		query		string	false	"Pagination token"
+//	@Param		name				query		string	false	"Filter by name"
+//	@Success	200					{object}	ModelArtifactListEnvelope
+//	@Failure	400					{object}	ErrorEnvelope
+//	@Failure	403					{object}	ErrorEnvelope
+//	@Failure	404					{object}	ErrorEnvelope
+//	@Failure	500					{object}	ErrorEnvelope
+//	@Router		/api/v1/model_registry/{model_registry_id}/model_versions/{model_version_id}/artifacts [get]
 func (app *App) GetAllModelArtifactsByModelVersionHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	client, ok := r.Context().Value(constants.ModelRegistryHttpClientKey).(httpclient.HTTPClientInterface)
 	if !ok {
@@ -199,6 +294,27 @@ func (app *App) GetAllModelArtifactsByModelVersionHandler(w http.ResponseWriter,
 	}
 }
 
+// CreateModelArtifactByModelVersionHandler creates an artifact in a model version.
+//
+//	@Summary	Create an Artifact in a ModelVersion
+//	@Tags		ModelRegistryService
+//	@ID			createModelVersionArtifact
+//	@Accept		json
+//	@Produce	json
+//	@Security	KubeflowUserID
+//	@Security	BearerAuth
+//	@Param		namespace			query		string					true	"Model registry namespace"
+//	@Param		model_registry_id	path		string					true	"Model registry name"
+//	@Param		model_version_id	path		string					true	"Model version ID"
+//	@Param		body				body		ModelArtifactEnvelope	true	"Model artifact to create"
+//	@Success	201					{object}	ModelArtifactEnvelope
+//	@Header		201					{string}	Location	"URL of the created model artifact"
+//	@Failure	400					{object}	ErrorEnvelope
+//	@Failure	403					{object}	ErrorEnvelope
+//	@Failure	404					{object}	ErrorEnvelope
+//	@Failure	409					{object}	ErrorEnvelope
+//	@Failure	500					{object}	ErrorEnvelope
+//	@Router		/api/v1/model_registry/{model_registry_id}/model_versions/{model_version_id}/artifacts [post]
 func (app *App) CreateModelArtifactByModelVersionHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	client, ok := r.Context().Value(constants.ModelRegistryHttpClientKey).(httpclient.HTTPClientInterface)
 	if !ok {

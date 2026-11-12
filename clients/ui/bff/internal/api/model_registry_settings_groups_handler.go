@@ -13,6 +13,18 @@ import (
 type GroupsEnvelope Envelope[[]models.Group, None]
 
 // STUB IMPLEMENTATION (see kubernetes clients for more details)
+//
+//	@Summary		Get Available Groups
+//	@Description	Stub implementation. Not available in Kubeflow integration mode.
+//	@Tags			K8SOperation
+//	@ID				getGroups
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Success		200	{object}	GroupsEnvelope
+//	@Failure		400	{object}	ErrorEnvelope
+//	@Failure		500	{object}	ErrorEnvelope
+//	@Router			/api/v1/settings/groups [get]
 func (app *App) GetGroupsHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	ctx := r.Context()

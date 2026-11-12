@@ -1,0 +1,6 @@
+// None is always nil; envelope metadata is omitted from JSON.
+skip github.com/kubeflow/hub/ui/bff/internal/api.None
+
+// These generated union types marshal the selected value, not their Go wrapper fields.
+replace github.com/kubeflow/hub/pkg/openapi.MetadataValue github.com/kubeflow/hub/ui/bff/internal/api.SwaggerMetadataValue
+replace github.com/kubeflow/hub/pkg/openapi.Artifact github.com/kubeflow/hub/ui/bff/internal/api.SwaggerArtifact

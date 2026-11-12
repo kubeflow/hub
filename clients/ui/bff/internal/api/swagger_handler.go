@@ -20,11 +20,22 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/kubeflow/hub/ui/bff/openapi"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
 // GetSwaggerHandler serves the Swagger UI for interactive API documentation.
 func (app *App) GetSwaggerHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	// http-swagger uses the Swag v1 registry. Serve the embedded v2-generated
+	// document directly so the UI and on-disk OpenAPI 3.1 spec stay identical.
+	if r.URL.Path == SwaggerDocPath {
+		w.Header().Set("Content-Type", "application/json")
+		if _, err := w.Write(openapi.Document); err != nil {
+			app.LogError(r, err)
+		}
+		return
+	}
+
 	httpSwagger.Handler(
 		httpSwagger.URL(SwaggerDocPath),
 		httpSwagger.DeepLinking(true),

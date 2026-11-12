@@ -12,6 +12,19 @@ import (
 
 type UserEnvelope Envelope[*models.User, None]
 
+// UserHandler returns configuration for the current user.
+//
+//	@Summary		Get configuration info
+//	@Description	Gets the user and deployment configuration needed by the UI.
+//	@Tags			K8SOperation
+//	@ID				getConfig
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Success		200	{object}	UserEnvelope
+//	@Failure		400	{object}	ErrorEnvelope
+//	@Failure		500	{object}	ErrorEnvelope
+//	@Router			/api/v1/user [get]
 func (app *App) UserHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	ctx := r.Context()

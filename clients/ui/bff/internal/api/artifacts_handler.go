@@ -16,6 +16,26 @@ import (
 type ArtifactListEnvelope Envelope[*openapi.ArtifactList, None]
 type ArtifactEnvelope Envelope[*openapi.Artifact, None]
 
+// CreateArtifactHandler creates an artifact.
+//
+//	@Summary	Create an Artifact
+//	@Tags		ModelRegistryService
+//	@ID			createArtifact
+//	@Accept		json
+//	@Produce	json
+//	@Security	KubeflowUserID
+//	@Security	BearerAuth
+//	@Param		namespace			query		string				true	"Model registry namespace"
+//	@Param		model_registry_id	path		string				true	"Model registry name"
+//	@Param		body				body		ArtifactEnvelope	true	"Artifact to create; artifactType selects the variant"
+//	@Success	201					{object}	ArtifactEnvelope
+//	@Header		201					{string}	Location	"URL of the created artifact"
+//	@Failure	400					{object}	ErrorEnvelope
+//	@Failure	403					{object}	ErrorEnvelope
+//	@Failure	404					{object}	ErrorEnvelope
+//	@Failure	409					{object}	ErrorEnvelope
+//	@Failure	500					{object}	ErrorEnvelope
+//	@Router		/api/v1/model_registry/{model_registry_id}/artifacts [post]
 func (app *App) CreateArtifactHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	client, ok := r.Context().Value(constants.ModelRegistryHttpClientKey).(httpclient.HTTPClientInterface)
 	if !ok {
@@ -72,6 +92,23 @@ func (app *App) CreateArtifactHandler(w http.ResponseWriter, r *http.Request, _ 
 	}
 }
 
+// GetArtifactHandler returns an artifact.
+//
+//	@Summary	Get an Artifact
+//	@Tags		ModelRegistryService
+//	@ID			getArtifact
+//	@Produce	json
+//	@Security	KubeflowUserID
+//	@Security	BearerAuth
+//	@Param		namespace			query		string	true	"Model registry namespace"
+//	@Param		model_registry_id	path		string	true	"Model registry name"
+//	@Param		artifact_id			path		string	true	"Artifact ID"
+//	@Success	200					{object}	ArtifactEnvelope
+//	@Failure	400					{object}	ErrorEnvelope
+//	@Failure	403					{object}	ErrorEnvelope
+//	@Failure	404					{object}	ErrorEnvelope
+//	@Failure	500					{object}	ErrorEnvelope
+//	@Router		/api/v1/model_registry/{model_registry_id}/artifacts/{artifact_id} [get]
 func (app *App) GetArtifactHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	client, ok := r.Context().Value(constants.ModelRegistryHttpClientKey).(httpclient.HTTPClientInterface)
 	if !ok {
@@ -95,6 +132,27 @@ func (app *App) GetArtifactHandler(w http.ResponseWriter, r *http.Request, ps ht
 	}
 }
 
+// GetAllArtifactsHandler lists artifacts.
+//
+//	@Summary	List All Artifacts
+//	@Tags		ModelRegistryService
+//	@ID			getArtifacts
+//	@Produce	json
+//	@Security	KubeflowUserID
+//	@Security	BearerAuth
+//	@Param		namespace			query		string	true	"Model registry namespace"
+//	@Param		model_registry_id	path		string	true	"Model registry name"
+//	@Param		pageSize			query		int		false	"Maximum number of results"
+//	@Param		orderBy				query		string	false	"Field to order by"
+//	@Param		sortOrder			query		string	false	"Sort direction"	Enums(ASC,DESC)
+//	@Param		nextPageToken		query		string	false	"Pagination token"
+//	@Param		name				query		string	false	"Filter by name"
+//	@Success	200					{object}	ArtifactListEnvelope
+//	@Failure	400					{object}	ErrorEnvelope
+//	@Failure	403					{object}	ErrorEnvelope
+//	@Failure	404					{object}	ErrorEnvelope
+//	@Failure	500					{object}	ErrorEnvelope
+//	@Router		/api/v1/model_registry/{model_registry_id}/artifacts [get]
 func (app *App) GetAllArtifactsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	client, ok := r.Context().Value(constants.ModelRegistryHttpClientKey).(httpclient.HTTPClientInterface)
 

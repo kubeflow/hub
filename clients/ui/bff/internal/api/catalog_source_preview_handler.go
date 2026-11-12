@@ -15,6 +15,27 @@ import (
 
 type CatalogSourcePreviewEnvelope Envelope[*models.CatalogSourcePreviewResult, None]
 
+// CreateCatalogSourcePreviewHandler previews catalog source configuration effects.
+//
+//	@Summary		Preview catalog source configuration effects
+//	@Description	Accepts a JSON data envelope (not multipart). Not available in Kubeflow integration mode.
+//	@Tags			ModelCatalogService
+//	@ID				previewCatalogSource
+//	@Accept			json
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace		query		string												true	"Catalog namespace"
+//	@Param			pageSize		query		int													false	"Maximum number of results"
+//	@Param			nextPageToken	query		string												false	"Pagination token"
+//	@Param			filterStatus	query		string												false	"Filter preview results by inclusion status"	Enums(all,included,excluded)
+//	@Param			assetType		query		string												false	"Asset type to preview"							Enums(models,mcp_servers)
+//	@Param			body			body		Envelope[models.CatalogSourcePreviewRequest,None]	true	"Catalog source preview configuration"
+//	@Success		200				{object}	CatalogSourcePreviewEnvelope
+//	@Failure		400				{object}	ErrorEnvelope
+//	@Failure		403				{object}	ErrorEnvelope
+//	@Failure		500				{object}	ErrorEnvelope
+//	@Router			/api/v1/settings/model_catalog/source_preview [post]
 func (app *App) CreateCatalogSourcePreviewHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	ctx := r.Context()
 

@@ -16,6 +16,31 @@ type McpServerFilterOptionsListEnvelope Envelope[*models.FilterOptionsList, None
 type McpServerEnvelope Envelope[*models.McpServer, None]
 type McpServerToolsListEnvelope Envelope[*models.McpToolList, None]
 
+// GetAllMcpServersHandler lists catalog MCP servers.
+//
+//	@Summary		List MCP servers
+//	@Description	Not available in Kubeflow integration mode.
+//	@Tags			MCPCatalogService
+//	@ID				getAllMcpServers
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace		query		string	true	"Catalog namespace"
+//	@Param			pageSize		query		int		false	"Maximum number of results"
+//	@Param			orderBy			query		string	false	"Field to order by"
+//	@Param			sortOrder		query		string	false	"Sort direction"	Enums(ASC,DESC)
+//	@Param			nextPageToken	query		string	false	"Pagination token"
+//	@Param			name			query		string	false	"Filter by server name"
+//	@Param			q				query		string	false	"Search query"
+//	@Param			source			query		string	false	"Source IDs to search, comma-separated"
+//	@Param			filterQuery		query		string	false	"MCP server filter expression"
+//	@Param			includeTools	query		boolean	false	"Include tools in server responses"
+//	@Success		200				{object}	McpServerListEnvelope
+//	@Failure		400				{object}	ErrorEnvelope
+//	@Failure		403				{object}	ErrorEnvelope
+//	@Failure		404				{object}	ErrorEnvelope
+//	@Failure		500				{object}	ErrorEnvelope
+//	@Router			/api/v1/mcp_catalog/mcp_servers [get]
 func (app *App) GetAllMcpServersHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	client, ok := r.Context().Value(constants.ModelCatalogHttpClientKey).(httpclient.HTTPClientInterface)
 
@@ -46,6 +71,22 @@ func (app *App) GetAllMcpServersHandler(w http.ResponseWriter, r *http.Request, 
 	}
 }
 
+// GetMcpServersFiltersHandler lists MCP server filter options.
+//
+//	@Summary		List MCP server filter options
+//	@Description	Not available in Kubeflow integration mode.
+//	@Tags			MCPCatalogService
+//	@ID				getMcpServersFilterOptions
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace	query		string	true	"Catalog namespace"
+//	@Success		200			{object}	McpServerFilterOptionsListEnvelope
+//	@Failure		400			{object}	ErrorEnvelope
+//	@Failure		403			{object}	ErrorEnvelope
+//	@Failure		404			{object}	ErrorEnvelope
+//	@Failure		500			{object}	ErrorEnvelope
+//	@Router			/api/v1/mcp_catalog/mcp_servers_filter_options [get]
 func (app *App) GetMcpServersFiltersHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	client, ok := r.Context().Value(constants.ModelCatalogHttpClientKey).(httpclient.HTTPClientInterface)
 
@@ -76,6 +117,24 @@ func (app *App) GetMcpServersFiltersHandler(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+// GetMcpServerHandler returns a catalog MCP server.
+//
+//	@Summary		Get an MCP server
+//	@Description	Not available in Kubeflow integration mode.
+//	@Tags			MCPCatalogService
+//	@ID				getMcpServer
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace		query		string	true	"Catalog namespace"
+//	@Param			server_id		path		string	true	"MCP server ID"
+//	@Param			includeTools	query		boolean	false	"Include tools in the server response"
+//	@Success		200				{object}	McpServerEnvelope
+//	@Failure		400				{object}	ErrorEnvelope
+//	@Failure		403				{object}	ErrorEnvelope
+//	@Failure		404				{object}	ErrorEnvelope
+//	@Failure		500				{object}	ErrorEnvelope
+//	@Router			/api/v1/mcp_catalog/mcp_servers/{server_id} [get]
 func (app *App) GetMcpServerHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	client, ok := r.Context().Value(constants.ModelCatalogHttpClientKey).(httpclient.HTTPClientInterface)
 
@@ -114,6 +173,23 @@ func (app *App) GetMcpServerHandler(w http.ResponseWriter, r *http.Request, ps h
 
 }
 
+// GetMcpServersToolsHandler lists an MCP server's tools.
+//
+//	@Summary		List tools for an MCP server
+//	@Description	Not available in Kubeflow integration mode.
+//	@Tags			MCPCatalogService
+//	@ID				getMcpServerTools
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace	query		string	true	"Catalog namespace"
+//	@Param			server_id	path		string	true	"MCP server ID"
+//	@Success		200			{object}	McpServerToolsListEnvelope
+//	@Failure		400			{object}	ErrorEnvelope
+//	@Failure		403			{object}	ErrorEnvelope
+//	@Failure		404			{object}	ErrorEnvelope
+//	@Failure		500			{object}	ErrorEnvelope
+//	@Router			/api/v1/mcp_catalog/mcp_servers/{server_id}/tools [get]
 func (app *App) GetMcpServersToolsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	client, ok := r.Context().Value(constants.ModelCatalogHttpClientKey).(httpclient.HTTPClientInterface)
 
@@ -151,6 +227,29 @@ func (app *App) GetMcpServersToolsHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// GetMcpServerLogoHandler serves an inline image or redirects to an external logo.
+//
+//	@Summary		Get an MCP server logo
+//	@Description	Proxies image bytes or an upstream redirect. Not available in Kubeflow integration mode.
+//	@Tags			MCPCatalogService
+//	@ID				getMcpServerLogo
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace			query	string	true	"Catalog namespace"
+//	@Param			server_id			path	string	true	"MCP server ID"
+//	@Success		200					"Logo image"
+//	@Success		301					"Permanent redirect to logo URL"
+//	@Success		302					"Redirect to logo URL"
+//	@Success		303					"See other logo URL"
+//	@Success		307					"Temporary redirect to logo URL"
+//	@Success		308					"Permanent redirect to logo URL"
+//	@Header			301,302,303,307,308	{string}	Location	"External logo URL"
+//	@Failure		400					{object}	ErrorEnvelope
+//	@Failure		403					{object}	ErrorEnvelope
+//	@Failure		404					{object}	ErrorEnvelope
+//	@Failure		500					{object}	ErrorEnvelope
+//	@Produce		image/png,image/jpeg,image/gif,image/webp,image/svg+xml
+//	@Router			/api/v1/mcp_catalog/mcp_servers/{server_id}/logo [get]
 func (app *App) GetMcpServerLogoHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	client, ok := r.Context().Value(constants.ModelCatalogHttpClientKey).(httpclient.HTTPClientInterface)
 

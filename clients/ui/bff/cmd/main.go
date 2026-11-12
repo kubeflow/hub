@@ -4,9 +4,19 @@
 //	@license.name	Apache 2.0
 //	@license.url	https://www.apache.org/licenses/LICENSE-2.0
 
-//	@host		localhost:4000
-//	@BasePath	/api/v1
-//	@schemes	http https
+//	@externalDocs.description	Kubeflow Hub BFF documentation
+//	@externalDocs.url			https://github.com/kubeflow/hub/tree/main/clients/ui/bff
+
+//	@servers.url			/
+//	@servers.description	BFF server
+
+//	@securityDefinitions.apikey	KubeflowUserID
+//	@in							header
+//	@name						kubeflow-userid
+//	@description				User identity in internal authentication mode.
+
+//	@securityDefinitions.bearerauth	BearerAuth
+//	@description					Bearer token in user_token authentication mode. Header and prefix are configurable.
 
 package main
 
@@ -25,8 +35,6 @@ import (
 	"net/http"
 	"os"
 	"time"
-
-	_ "github.com/kubeflow/hub/ui/bff/openapi" // swagger docs for Swagger UI
 )
 
 func main() {
