@@ -85,10 +85,6 @@ func (r *InferenceServiceController) Reconcile(ctx context.Context, req ctrl.Req
 	mrIs := &openapi.InferenceService{}
 	mrApiCtx := context.Background()
 
-	if r.bearerToken != "" {
-		mrApiCtx = context.WithValue(context.Background(), openapi.ContextAccessToken, r.bearerToken)
-	}
-
 	// Initialize logger format
 	log := r.log.WithValues("InferenceService", req.Name, "namespace", req.Namespace)
 
@@ -270,6 +266,11 @@ func (r *InferenceServiceController) initModelRegistryService(ctx context.Contex
 
 	log1 := log.WithValues("mr-namespace", namespace, "mr-name", name)
 
+	// The URL annotation and the namespace label are set by whoever can create
+	// the InferenceService, so only a registry resolved from a Service in the
+	// registries namespace is sent the controller's own bearer token.
+	sendToken := r.bearerToken != "" && url == "" && namespace == r.defaultModelRegistryNamespace
+
 	if url == "" {
 		log1.Info("Retrieving url from deployed model registry service")
 
@@ -281,12 +282,16 @@ func (r *InferenceServiceController) initModelRegistryService(ctx context.Contex
 	}
 
 	cfg := &openapi.Configuration{
-		HTTPClient: r.httpClient,
+		HTTPClient:    r.httpClient,
+		DefaultHeader: make(map[string]string),
 		Servers: openapi.ServerConfigurations{
 			{
 				URL: url,
 			},
 		},
+	}
+	if sendToken {
+		cfg.AddDefaultHeader("Authorization", "Bearer "+r.bearerToken)
 	}
 
 	client := openapi.NewAPIClient(cfg)
