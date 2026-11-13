@@ -6,12 +6,16 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/kubeflow/hub/catalog/internal/catalog/modelcatalog/models"
 	dbmodels "github.com/kubeflow/hub/internal/platform/db/entity"
 	"github.com/kubeflow/hub/internal/platform/db/schema"
 	"github.com/kubeflow/hub/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 func TestCatalogModelRepository(t *testing.T) {
@@ -2069,4 +2073,35 @@ func TestListDoublePropertyOrderingPagination(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSortValueQueryArtifactFilterPropertyIsBound(t *testing.T) {
+	mockDB, _, err := sqlmock.New()
+	require.NoError(t, err)
+	defer func() { _ = mockDB.Close() }()
+
+	db, err := gorm.Open(postgres.New(postgres.Config{Conn: mockDB}), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+		DryRun: true,
+	})
+	require.NoError(t, err)
+
+	repo := NewCatalogModelRepository(db, 1).(*CatalogModelRepositoryImpl)
+
+	// The escaped identifier lets the property name carry arbitrary characters.
+	payload := "x ON true WHERE (SELECT pg_sleep(5)) IS NULL --"
+	listOptions := models.CatalogModelListOptions{
+		Pagination: dbmodels.Pagination{
+			FilterQuery: new("`artifacts." + payload + "`='a'"),
+			OrderBy:     new("artifacts.accuracy.double_value"),
+		},
+	}
+
+	query, column := repo.sortValueQuery(&listOptions)
+	require.NotNil(t, query)
+	assert.Equal(t, "double_value", column)
+
+	stmt := query.Find(&[]schema.Context{}).Statement
+	assert.NotContains(t, stmt.SQL.String(), "pg_sleep", "filter property name must not be interpolated into SQL")
+	assert.Contains(t, stmt.Vars, payload, "filter property name should be passed as a bound parameter")
 }

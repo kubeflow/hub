@@ -588,10 +588,13 @@ func (r *CatalogModelRepositoryImpl) sortValueQuery(listOptions *models.CatalogM
 			artifactConditions := r.extractArtifactConditions(filterQuery)
 			if len(artifactConditions) > 0 {
 				// Apply each artifact filter condition to the sorting subquery
-				for _, condition := range artifactConditions {
+				for i, condition := range artifactConditions {
 					// Create a separate ArtifactProperty alias for this filter condition
-					// to avoid conflicts with the sorting property JOIN
-					filterPropAlias := fmt.Sprintf("ArtifactProperty_filter_%s", condition.property)
+					// to avoid conflicts with the sorting property JOIN. The alias is
+					// derived from the position, not the property name: the name comes
+					// from the request's filterQuery and must only reach SQL as a bound
+					// parameter.
+					filterPropAlias := fmt.Sprintf("ArtifactProperty_filter_%d", i)
 					valueColumn := r.determineValueColumn(condition)
 
 					// Add JOINs for the filter condition
