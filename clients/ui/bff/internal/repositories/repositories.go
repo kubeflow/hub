@@ -6,6 +6,7 @@ type Repositories struct {
 	ModelRegistry                  *ModelRegistryRepository
 	ModelCatalog                   *ModelCatalogRepository
 	ModelRegistrySettings          *ModelRegistrySettingsRepository
+	ModelRegistryRBAC              *ModelRegistryRBACRepository
 	ModelRegistryClient            ModelRegistryClientInterface
 	ModelCatalogClient             ModelCatalogClientInterface
 	ModelCatalogSettingsRepository *ModelCatalogSettingsRepository
@@ -21,6 +22,7 @@ func NewRepositories(modelRegistryClient ModelRegistryClientInterface, modelCata
 		ModelCatalog:                   NewCatalogRepository(),
 		ModelCatalogClient:             modelCatalogClient,
 		ModelRegistrySettings:          NewModelRegistrySettingsRepository(),
+		ModelRegistryRBAC:              NewModelRegistryRBACRepository(),
 		ModelRegistryClient:            modelRegistryClient,
 		ModelCatalogSettingsRepository: NewModelCatalogSettingsRepository(),
 		McpCatalogSettingsRepository:   NewMcpCatalogSettingsRepository(),
