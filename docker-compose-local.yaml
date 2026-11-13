@@ -17,11 +17,13 @@ networks:
 services:
   model-registry-ui:
     build:
-      context: ./clients/ui
-      dockerfile: Dockerfile.standalone
+      context: .
+      dockerfile: clients/ui/Dockerfile.standalone
       args:
         DEPLOYMENT_MODE: standalone
         STYLE_THEME: mui-theme
+        UI_SOURCE_CODE: ./clients/ui/frontend
+        BFF_SOURCE_CODE: ./clients/ui/bff
     command:
       - --port=9000
       - --mock-k8s-client=true

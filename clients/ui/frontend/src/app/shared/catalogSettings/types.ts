@@ -22,6 +22,10 @@ export type CatalogSettingsContextValue<TAPIState, TConfigList> = {
   catalogSourcesLoaded: boolean;
   catalogSourcesLoadError?: Error;
   refreshCatalogSources: () => void;
+  /** True while a source has been edited and the catalog has not confirmed the reload. */
+  isSyncPending: (sourceId: string) => boolean;
+  /** Mark a source as awaiting a catalog reload after a successful write. */
+  markSyncPending: (sourceId: string) => void;
 };
 
 /**
