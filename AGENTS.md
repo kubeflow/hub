@@ -128,7 +128,7 @@ make lint                         # Run golangci-lint on all Go code
 make vet                          # Run go vet on all packages
 ```
 
-`golangci-lint` v2.9.0 is used. There is no project-level `.golangci.yml` config file — the default golangci-lint configuration applies.
+`golangci-lint` v2.15.0 is used. There is no project-level `.golangci.yml` config file — the default golangci-lint configuration applies.
 
 ### Testing
 
