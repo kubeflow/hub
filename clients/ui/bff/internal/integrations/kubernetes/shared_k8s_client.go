@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/kubeflow/hub/ui/bff/internal/constants"
@@ -306,6 +307,57 @@ func (kc *SharedClientLogic) PatchSecret(ctx context.Context, namespace string, 
 	return nil
 }
 
+// RemoveSecretKey drops a single key from a Secret, leaving the Secret and its
+// other keys in place. Used to retire one skill source's git token from the
+// shared git-credentials Secret without disturbing the other sources sharing it.
+// A missing Secret or a missing key is treated as success, so cleanup is idempotent.
+func (kc *SharedClientLogic) RemoveSecretKey(
+	ctx context.Context,
+	namespace string,
+	secretName string,
+	key string,
+) error {
+	sessionLogger := ctx.Value(constants.TraceLoggerKey).(*slog.Logger)
+
+	secret, err := kc.Client.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		sessionLogger.Error("failed to get secret for key removal",
+			"namespace", namespace,
+			"name", secretName,
+			"error", err,
+		)
+		return fmt.Errorf("failed to get secret %s: %w", secretName, err)
+	}
+
+	if _, ok := secret.Data[key]; !ok {
+		return nil
+	}
+	delete(secret.Data, key)
+	// Data already carries the surviving keys; StringData would be merged back in
+	// on update and resurrect the key we just removed.
+	secret.StringData = nil
+
+	if _, err := kc.Client.CoreV1().Secrets(namespace).Update(ctx, secret, metav1.UpdateOptions{}); err != nil {
+		sessionLogger.Error("failed to remove key from secret",
+			"namespace", namespace,
+			"name", secretName,
+			"key", key,
+			"error", err,
+		)
+		return fmt.Errorf("failed to remove key %s from secret %s: %w", key, secretName, err)
+	}
+
+	sessionLogger.Info("successfully removed key from secret",
+		"namespace", namespace,
+		"name", secretName,
+		"key", key,
+	)
+	return nil
+}
+
 func (kc *SharedClientLogic) DeleteSecret(
 	ctx context.Context,
 	namespace string,
@@ -422,6 +474,116 @@ func (kc *SharedClientLogic) UpdateMcpCatalogSourceConfig(
 	}
 
 	sessionLogger.Info("successfully updated MCP catalog sources configmap",
+		"namespace", namespace,
+		"name", configMap.Name,
+	)
+
+	return nil
+}
+
+func (kc *SharedClientLogic) GetAllSkillCatalogSourceConfigs(
+	sessionCtx context.Context,
+	namespace string,
+) (corev1.ConfigMap, corev1.ConfigMap, error) {
+	if namespace == "" {
+		return corev1.ConfigMap{}, corev1.ConfigMap{}, fmt.Errorf("namespace cannot be empty")
+	}
+
+	sessionLogger := sessionCtx.Value(constants.TraceLoggerKey).(*slog.Logger)
+
+	// The default and user ConfigMaps have no data dependency on each other, and this is
+	// called on essentially every skill-catalog-settings request — fetch them concurrently
+	// rather than paying two sequential K8s round trips.
+	var defaultCMVal, userCMVal corev1.ConfigMap
+	var defaultErr, userErr error
+	var wg sync.WaitGroup
+
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		defaultCM, err := kc.Client.CoreV1().
+			ConfigMaps(namespace).
+			Get(sessionCtx, SkillCatalogSourceDefaultConfigMapName, metav1.GetOptions{})
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				sessionLogger.Info("default skill catalog source configmap not found, using empty",
+					"namespace", namespace,
+					"name", SkillCatalogSourceDefaultConfigMapName,
+				)
+				return
+			}
+			sessionLogger.Error("failed to fetch default skill catalog source configmap",
+				"namespace", namespace,
+				"name", SkillCatalogSourceDefaultConfigMapName,
+				"error", err,
+			)
+			defaultErr = fmt.Errorf("failed to get %s: %w", SkillCatalogSourceDefaultConfigMapName, err)
+			return
+		}
+		defaultCMVal = *defaultCM
+	}()
+	go func() {
+		defer wg.Done()
+		userCM, err := kc.Client.CoreV1().
+			ConfigMaps(namespace).
+			Get(sessionCtx, SkillCatalogSourceUserConfigMapName, metav1.GetOptions{})
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				return
+			}
+			sessionLogger.Error("failed to fetch skill catalog source configmap",
+				"namespace", namespace,
+				"name", SkillCatalogSourceUserConfigMapName,
+				"error", err,
+			)
+			userErr = fmt.Errorf("failed to get %s: %w", SkillCatalogSourceUserConfigMapName, err)
+			return
+		}
+		userCMVal = *userCM
+	}()
+	wg.Wait()
+
+	if defaultErr != nil {
+		return corev1.ConfigMap{}, corev1.ConfigMap{}, defaultErr
+	}
+	if userErr != nil {
+		return corev1.ConfigMap{}, corev1.ConfigMap{}, userErr
+	}
+
+	return defaultCMVal, userCMVal, nil
+}
+
+func (kc *SharedClientLogic) UpdateSkillCatalogSourceConfig(
+	ctx context.Context,
+	namespace string,
+	configMap *corev1.ConfigMap,
+) error {
+	sessionLogger := ctx.Value(constants.TraceLoggerKey).(*slog.Logger)
+
+	if configMap.Name == "" {
+		configMap.Name = SkillCatalogSourceUserConfigMapName
+		configMap.Namespace = namespace
+	}
+
+	_, err := kc.Client.CoreV1().
+		ConfigMaps(namespace).
+		Update(ctx, configMap, metav1.UpdateOptions{})
+
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			_, err = kc.Client.CoreV1().ConfigMaps(namespace).Create(ctx, configMap, metav1.CreateOptions{})
+		}
+		if err != nil {
+			sessionLogger.Error("failed to update skill catalog sources configmap",
+				"namespace", namespace,
+				"name", configMap.Name,
+				"error", err,
+			)
+			return fmt.Errorf("failed to update configmap %s: %w", configMap.Name, err)
+		}
+	}
+
+	sessionLogger.Info("successfully updated skill catalog sources configmap",
 		"namespace", namespace,
 		"name", configMap.Name,
 	)
