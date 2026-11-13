@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import {
   ModularArchConfig,
   DeploymentMode,
@@ -8,6 +8,7 @@ import {
   useModularArchContext,
 } from 'mod-arch-core';
 import { useThemeContext } from 'mod-arch-kubeflow';
+import { ColorModeProvider } from '~/app/context/ThemeContext';
 import NavBar from '~/app/standalone/NavBar';
 
 // Mock the utilities
@@ -39,9 +40,18 @@ const createMockConfig = (
   ...(mandatoryNamespace && { mandatoryNamespace }),
 });
 
+const renderNavBar = (props?: Partial<React.ComponentProps<typeof NavBar>>) =>
+  render(
+    <ColorModeProvider>
+      <NavBar onLogout={jest.fn()} {...props} />
+    </ColorModeProvider>,
+  );
+
 describe('NavBar mandatory namespace functionality', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    localStorage.clear();
+    document.documentElement.className = '';
     // Mock fetch for script loading
     global.fetch = jest.fn().mockResolvedValue({ ok: false });
 
@@ -53,6 +63,8 @@ describe('NavBar mandatory namespace functionality', () => {
 
   afterEach(() => {
     jest.restoreAllMocks();
+    localStorage.clear();
+    document.documentElement.className = '';
     // Clean up fetch stub explicitly
     // @ts-expect-error – fetch might be undefined in node
     delete global.fetch;
@@ -78,7 +90,7 @@ describe('NavBar mandatory namespace functionality', () => {
       initializationError: undefined,
     } as ReturnType<typeof useNamespaceSelector>);
 
-    render(<NavBar onLogout={jest.fn()} />);
+    renderNavBar();
 
     const namespaceButton = await screen.findByText(mandatoryNamespace);
     expect(namespaceButton).toBeInTheDocument();
@@ -108,7 +120,7 @@ describe('NavBar mandatory namespace functionality', () => {
       initializationError: undefined,
     } as ReturnType<typeof useNamespaceSelector>);
 
-    render(<NavBar onLogout={jest.fn()} />);
+    renderNavBar();
 
     // Check that the namespace selector is present and enabled
     const namespaceButton = screen.getByText('namespace-1');
@@ -117,5 +129,31 @@ describe('NavBar mandatory namespace functionality', () => {
     // The MenuToggle button should be enabled (not disabled)
     const menuToggle = namespaceButton.closest('button');
     expect(menuToggle).not.toBeDisabled();
+  });
+
+  it('should render and toggle theme mode on button click', () => {
+    renderNavBar();
+
+    const themeToggle = screen.getByRole('button', { name: /toggle dark mode/i });
+    expect(themeToggle).toBeInTheDocument();
+    expect(themeToggle).toHaveAttribute('title', 'Switch to Dark Mode');
+    expect(document.documentElement.classList.contains('dark-theme')).toBe(false);
+    expect(document.documentElement.classList.contains('pf-v6-theme-dark')).toBe(false);
+
+    // Toggle to Dark Mode
+    fireEvent.click(themeToggle);
+
+    expect(document.documentElement.classList.contains('dark-theme')).toBe(true);
+    expect(document.documentElement.classList.contains('pf-v6-theme-dark')).toBe(true);
+    expect(localStorage.getItem('kubeflow_theme_mode')).toBe('dark');
+    expect(themeToggle).toHaveAttribute('title', 'Switch to Light Mode');
+
+    // Toggle back to Light Mode
+    fireEvent.click(themeToggle);
+
+    expect(document.documentElement.classList.contains('dark-theme')).toBe(false);
+    expect(document.documentElement.classList.contains('pf-v6-theme-dark')).toBe(false);
+    expect(localStorage.getItem('kubeflow_theme_mode')).toBe('light');
+    expect(themeToggle).toHaveAttribute('title', 'Switch to Dark Mode');
   });
 });
