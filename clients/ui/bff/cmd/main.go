@@ -42,6 +42,9 @@ func main() {
 	flag.BoolVar(&cfg.DevMode, "dev-mode", false, "Use development mode for access to local K8s cluster")
 	flag.IntVar(&cfg.DevModeModelRegistryPort, "dev-mode-model-registry-port", getEnvAsInt("DEV_MODE_MODEL_REGISTRY_PORT", 8080), "Use port when in development mode for model registry")
 	flag.IntVar(&cfg.DevModeCatalogPort, "dev-mode-catalog-port", getEnvAsInt("DEV_MODE_CATALOG_PORT", 8081), "Use port when in development mode for catalog")
+	flag.StringVar(&cfg.DevModeCatalogNamespace, "dev-mode-catalog-namespace", getEnvAsString("DEV_MODE_CATALOG_NAMESPACE", ""), "Namespace where the catalog service runs in dev mode (used for skill catalog settings ConfigMap writes)")
+	flag.StringVar(&cfg.SkillCatalogGitCredentialsSecret, "skill-catalog-git-credentials-secret", getEnvAsString("SKILL_CATALOG_GIT_CREDENTIALS_SECRET", "skill-catalog-git-credentials"), "Name of the Secret mounted into the catalog pod holding per-source git tokens, keyed by skill source id")
+	flag.StringVar(&cfg.SkillCatalogMarketplaceURL, "skill-catalog-marketplace-url", getEnvAsString("SKILL_CATALOG_MARKETPLACE_URL", ""), "External URL of the catalog's claude/marketplace.json, shown in skill install instructions. Empty (default) uses the catalog's in-cluster address, which suits agents running in the cluster; set this when the catalog is exposed through a Route or Ingress")
 
 	// New deployment mode flag
 	flag.Var(&cfg.DeploymentMode, "deployment-mode", "Deployment mode (kubeflow, federated, or standalone)")
