@@ -1,6 +1,7 @@
 package mocks
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"math"
@@ -156,7 +157,6 @@ func (m *ModelCatalogClientMock) GetAllCatalogModelsAcrossSources(client httpcli
 	}
 
 	return &catalogModelList, nil
-
 }
 
 func (m *ModelCatalogClientMock) GetCatalogSourceModel(client httpclient.HTTPClientInterface, sourceId string, modelName string) (*models.CatalogModel, error) {
@@ -294,7 +294,6 @@ func extractMetricsTypeFilter(filterQuery string) string {
 func (m *ModelCatalogClientMock) GetCatalogModelPerformanceArtifacts(client httpclient.HTTPClientInterface, sourceId string, modelName string, pageValues url.Values) (*models.CatalogModelArtifactList, error) {
 	allMockModelPerformanceArtifacts := GetCatalogPerformanceMetricsArtifactListMock(4)
 	return &allMockModelPerformanceArtifacts, nil
-
 }
 
 func (m *ModelCatalogClientMock) GetCatalogModelSecurityArtifacts(client httpclient.HTTPClientInterface, sourceId string, modelName string, pageValues url.Values) (*models.CatalogModelArtifactList, error) {
@@ -742,4 +741,13 @@ func (m *ModelCatalogClientMock) GetAgentArtifacts(client httpclient.HTTPClientI
 	}
 
 	return GetAgentArtifactListMock(agentId), nil
+}
+
+func (m *ModelCatalogClientMock) ClearCatalogSourceStatus(
+	_ context.Context,
+	_ httpclient.HTTPClientInterface,
+	_ string,
+) error {
+	// just acknowledges that the source status has been cleared
+	return nil
 }

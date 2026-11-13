@@ -1,5 +1,8 @@
-import { restCREATE, handleRestFailures } from 'mod-arch-core';
-import { previewMcpCatalogSource } from '~/app/api/mcpCatalogSettings/service';
+import { restCREATE, restDELETE, handleRestFailures } from 'mod-arch-core';
+import {
+  clearMcpCatalogSourceStatus,
+  previewMcpCatalogSource,
+} from '~/app/api/mcpCatalogSettings/service';
 import { McpCatalogSourceType } from '~/app/mcpServerCatalogTypes';
 import { PreviewCatalogSourceQueryParams } from '~/app/modelCatalogTypes';
 
@@ -7,6 +10,7 @@ const mockRestPromise = Promise.resolve({ data: {} });
 
 jest.mock('mod-arch-core', () => ({
   restCREATE: jest.fn(() => mockRestPromise),
+  restDELETE: jest.fn(() => mockRestPromise),
   assembleModArchBody: jest.fn((data) => data),
   isModArchResponse: jest.fn(() => true),
   handleRestFailures: jest.fn(() => mockRestPromise),
@@ -14,8 +18,43 @@ jest.mock('mod-arch-core', () => ({
 
 const handleRestFailuresMock = jest.mocked(handleRestFailures);
 const restCREATEMock = jest.mocked(restCREATE);
+const restDELETEMock = jest.mocked(restDELETE);
 
 const APIOptionsMock = {};
+
+describe('clearMcpCatalogSourceStatus', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should clear source status with an encoded source ID', async () => {
+    await clearMcpCatalogSourceStatus('/api/v1/settings/mcp_catalog', { namespace: 'kubeflow' })(
+      APIOptionsMock,
+      'mcp_source',
+    );
+
+    expect(restDELETEMock).toHaveBeenCalledTimes(1);
+    expect(restDELETEMock).toHaveBeenCalledWith(
+      '/api/v1/settings/mcp_catalog',
+      '/source_config/mcp_source/status',
+      {},
+      { namespace: 'kubeflow' },
+      APIOptionsMock,
+    );
+    expect(handleRestFailuresMock).toHaveBeenCalledWith(mockRestPromise);
+  });
+
+  it('should propagate a clear failure', async () => {
+    handleRestFailuresMock.mockRejectedValueOnce(new Error('forbidden'));
+
+    await expect(
+      clearMcpCatalogSourceStatus('/api/v1/settings/mcp_catalog')(
+        APIOptionsMock,
+        'community_mcp_servers',
+      ),
+    ).rejects.toThrow('forbidden');
+  });
+});
 
 describe('previewMcpCatalogSource', () => {
   beforeEach(() => {

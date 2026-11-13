@@ -1,11 +1,17 @@
 package tests
 
 import (
+	"context"
+	"errors"
+
 	"github.com/kubeflow/hub/ui/bff/internal/integrations/kubernetes"
 	mocks2 "github.com/kubeflow/hub/ui/bff/internal/integrations/kubernetes/k8mocks"
 	"github.com/kubeflow/hub/ui/bff/internal/mocks"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 )
 
 var _ = Describe("Kubernetes Internal Client Test", func() {
@@ -73,6 +79,53 @@ var _ = Describe("Kubernetes Internal Client Test", func() {
 })
 
 var _ = Describe("KubernetesClient Internal SAR Test", func() {
+	Context("CanUpdateMcpCatalogSources", func() {
+		It("should allow a user with MCP source update permission", func() {
+			identity := &kubernetes.RequestIdentity{
+				UserID: mocks2.DefaultTestUsers[0].UserName,
+				Groups: []string{},
+			}
+			serviceAccountMockedK8client, err := kubernetesMockedStaticClientFactory.GetClient(mocks.NewMockSessionContextNoParent())
+			Expect(err).NotTo(HaveOccurred())
+
+			allowed, err := serviceAccountMockedK8client.CanUpdateMcpCatalogSources(ctx, identity, "kubeflow")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(allowed).To(BeTrue())
+		})
+
+		It("should deny a user without MCP source update permission", func() {
+			identity := &kubernetes.RequestIdentity{
+				UserID: mocks2.DefaultTestUsers[1].UserName,
+				Groups: mocks2.DefaultTestUsers[1].Groups,
+			}
+			serviceAccountMockedK8client, err := kubernetesMockedStaticClientFactory.GetClient(mocks.NewMockSessionContextNoParent())
+			Expect(err).NotTo(HaveOccurred())
+
+			allowed, err := serviceAccountMockedK8client.CanUpdateMcpCatalogSources(ctx, identity, "dora-namespace")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(allowed).To(BeFalse())
+		})
+
+		It("should propagate an access-review API failure", func() {
+			expectedErr := errors.New("Kubernetes API unavailable")
+			fakeClientset := fake.NewClientset()
+			fakeClientset.PrependReactor("create", "subjectaccessreviews", func(k8stesting.Action) (bool, runtime.Object, error) {
+				return true, nil, expectedErr
+			})
+			internalK8client := &kubernetes.InternalKubernetesClient{
+				SharedClientLogic: kubernetes.SharedClientLogic{
+					Client: fakeClientset,
+				},
+			}
+			identity := &kubernetes.RequestIdentity{UserID: mocks2.DefaultTestUsers[0].UserName}
+
+			allowed, err := internalK8client.CanUpdateMcpCatalogSources(context.Background(), identity, "kubeflow")
+			Expect(allowed).To(BeFalse())
+			Expect(err).To(MatchError(ContainSubstring("checking MCP source update permission")))
+			Expect(errors.Is(err, expectedErr)).To(BeTrue())
+		})
+	})
+
 	Context("CanListServicesInNamespace", func() {
 
 		It("should allow allowed user to access services", func() {

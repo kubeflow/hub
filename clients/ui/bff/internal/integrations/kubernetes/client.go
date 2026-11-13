@@ -8,16 +8,27 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const ComponentLabelValue = "model-registry"
-const ComponentLabelValueCatalog = "model-catalog"
+const (
+	ComponentLabelValue        = "model-registry"
+	ComponentLabelValueCatalog = "model-catalog"
+)
 
-const CatalogSourceKey = "sources.yaml"
-const CatalogSourceDefaultConfigMapName = "default-catalog-sources"
-const CatalogSourceUserConfigMapName = "model-catalog-sources"
+const (
+	CatalogSourceKey                  = "sources.yaml"
+	CatalogSourceDefaultConfigMapName = "default-catalog-sources"
+	CatalogSourceUserConfigMapName    = "model-catalog-sources"
+)
 
-const McpCatalogSourceKey = "sources.yaml"
-const McpCatalogSourceDefaultConfigMapName = CatalogSourceDefaultConfigMapName
-const McpCatalogSourceUserConfigMapName = "mcp-catalog-sources"
+const (
+	McpServerAPIGroup = "mcp.x-k8s.io"
+	McpServerResource = "mcpservers"
+)
+
+const (
+	McpCatalogSourceKey                  = "sources.yaml"
+	McpCatalogSourceDefaultConfigMapName = CatalogSourceDefaultConfigMapName
+	McpCatalogSourceUserConfigMapName    = "mcp-catalog-sources"
+)
 
 type KubernetesClientInterface interface {
 	// Service discovery
@@ -36,6 +47,7 @@ type KubernetesClientInterface interface {
 	CanAccessServiceInNamespace(ctx context.Context, identity *RequestIdentity, namespace, serviceName string) (bool, error)
 	CanNamespaceAccessRegistry(ctx context.Context, identity *RequestIdentity, jobNamespace, registryName, registryNamespace string) (bool, error)
 	GetSelfSubjectRulesReview(ctx context.Context, identity *RequestIdentity, namespace string) ([]string, error)
+	CanUpdateMcpCatalogSources(ctx context.Context, identity *RequestIdentity, namespace string) (bool, error)
 
 	// Meta
 	IsClusterAdmin(identity *RequestIdentity) (bool, error)
@@ -45,7 +57,7 @@ type KubernetesClientInterface interface {
 	// Model Registry Settings
 	GetGroups(ctx context.Context) ([]string, error)
 
-	//Model Catalog Settings
+	// Model Catalog Settings
 	GetAllCatalogSourceConfigs(ctx context.Context, namespace string) (corev1.ConfigMap, corev1.ConfigMap, error)
 	UpdateCatalogSourceConfig(ctx context.Context, namespace string, configMap *corev1.ConfigMap) error
 	CreateSecret(ctx context.Context, namespace string, secret *corev1.Secret) (*corev1.Secret, error)

@@ -19,7 +19,6 @@ import (
 var _ = Describe("TestModelRegistryHandler", func() {
 	Context("fetching model registries", Ordered, func() {
 		It("should retrieve the model registries successfully", func() {
-
 			By("creating the test app")
 			testApp := App{
 				kubernetesClientFactory: kubernetesMockedStaticClientFactory,
@@ -52,12 +51,11 @@ var _ = Describe("TestModelRegistryHandler", func() {
 			Expect(rr.Code).To(Equal(http.StatusOK))
 
 			By("should match the expected model registries")
-			var expected = []models.ModelRegistryModel{
+			expected := []models.ModelRegistryModel{
 				{Name: "model-registry", Description: "Model Registry Description", DisplayName: "Model Registry", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1alpha3", IsAvailable: true},
 				{Name: "model-registry-one", Description: "Model Registry One description", DisplayName: "Model Registry One", ServerAddress: "http://127.0.0.1:8080/api/model_registry/v1alpha3", IsAvailable: false},
 			}
 			Expect(actual.Data).To(ConsistOf(expected))
 		})
-
 	})
 })

@@ -44,6 +44,10 @@ export type SourceConfigService<TConfig, TConfigList, TPayload, TPreviewRequest,
     data: TPreviewRequest,
     additionalQueryParams?: PreviewCatalogSourceQueryParams,
   ) => Promise<TPreviewResult>;
+  clearSourceStatus: (
+    hostPath: string,
+    queryParams?: Record<string, unknown>,
+  ) => (opts: APIOptions, sourceId: string) => Promise<void>;
 };
 
 export const createSourceConfigService = <
@@ -140,5 +144,18 @@ export const createSourceConfigService = <
           }
           throw new Error('Invalid response format');
         }),
+
+    clearSourceStatus:
+      (hostpath: string, queryParams = {}) =>
+      (opts, sourceId: string) =>
+        handleRestFailures(
+          restDELETE(
+            hostpath,
+            `/source_config/${encodeURIComponent(sourceId)}/status`,
+            {},
+            queryParams,
+            opts,
+          ),
+        ),
   };
 };

@@ -37,7 +37,7 @@ func (app *App) RecoverPanic(next http.Handler) http.Handler {
 
 func (app *App) InjectRequestIdentity(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		//skip use headers check if we are not on /api/v1 (i.e. we are on /healthcheck and / (static fe files) )
+		// skip use headers check if we are not on /api/v1 (i.e. we are on /healthcheck and / (static fe files) )
 		if !strings.HasPrefix(r.URL.Path, ApiPathPrefix) && !strings.HasPrefix(r.URL.Path, PathPrefix+ApiPathPrefix) {
 			next.ServeHTTP(w, r)
 			return
@@ -90,8 +90,16 @@ func (app *App) EnableTelemetry(next http.Handler) http.Handler {
 }
 
 func (app *App) AttachModelCatalogRESTClient(next func(http.ResponseWriter, *http.Request, httprouter.Params)) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	return app.AttachModelRegistryRESTClientWithAPIPath("", next)
+}
 
+// AttachModelRegistryRESTClientWithAPIPath allows a ModelCatalog
+// REST client to be attached with an optional apiPathOverride
+func (app *App) AttachModelRegistryRESTClientWithAPIPath(
+	apiPathOverride string,
+	next func(http.ResponseWriter, *http.Request, httprouter.Params),
+) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		namespace, ok := r.Context().Value(constants.NamespaceHeaderParameterKey).(string)
 		if !ok || namespace == "" {
 			app.badRequestResponse(w, r, fmt.Errorf("missing namespace in the context"))
@@ -109,11 +117,15 @@ func (app *App) AttachModelCatalogRESTClient(next func(http.ResponseWriter, *htt
 			app.notFoundResponse(w, r)
 			return
 		}
-		apiPath := repositories.ModelCatalogAPIPath
-		if strings.HasPrefix(r.URL.Path, McpServerCatalogPathPrefix) {
-			apiPath = repositories.McpCatalogAPIPath
-		} else if strings.HasPrefix(r.URL.Path, AgentCatalogPathPrefix) {
-			apiPath = repositories.AgentCatalogAPIPath
+
+		apiPath := apiPathOverride
+		if apiPath == "" {
+			apiPath = repositories.ModelCatalogAPIPath
+			if strings.HasPrefix(r.URL.Path, McpServerCatalogPathPrefix) {
+				apiPath = repositories.McpCatalogAPIPath
+			} else if strings.HasPrefix(r.URL.Path, AgentCatalogPathPrefix) {
+				apiPath = repositories.AgentCatalogAPIPath
+			}
 		}
 
 		modelCatalogBaseURL := modelCatalog.ServerAddress
@@ -166,7 +178,6 @@ func (app *App) AttachModelCatalogRESTClient(next func(http.ResponseWriter, *htt
 
 func (app *App) AttachModelRegistryRESTClient(next func(http.ResponseWriter, *http.Request, httprouter.Params)) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-
 		modelRegistryID := ps.ByName(ModelRegistryId)
 
 		namespace, ok := r.Context().Value(constants.NamespaceHeaderParameterKey).(string)
@@ -247,7 +258,6 @@ func (app *App) AttachNamespace(next func(http.ResponseWriter, *http.Request, ht
 
 func (app *App) RequireListServiceAccessInNamespace(next func(http.ResponseWriter, *http.Request, httprouter.Params)) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-
 		ctx := r.Context()
 		identity, ok := ctx.Value(constants.RequestIdentityKey).(*kubernetes.RequestIdentity)
 		if !ok || identity == nil {
@@ -296,7 +306,7 @@ func (app *App) RequireListServiceAccessInNamespace(next func(http.ResponseWrite
 			}
 		}
 
-		//Add authorization context for passing to downstream handler GetAllModelRegistriesHandler
+		// Add authorization context for passing to downstream handler GetAllModelRegistriesHandler
 		authCtx := &models.ServiceAuthorizationContext{
 			AllowList:           allowList,
 			AllowedServiceNames: allowedServiceNames,
@@ -310,7 +320,6 @@ func (app *App) RequireListServiceAccessInNamespace(next func(http.ResponseWrite
 
 func (app *App) RequireAccessToMRService(next func(http.ResponseWriter, *http.Request, httprouter.Params)) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-
 		ctx := r.Context()
 		identity, ok := ctx.Value(constants.RequestIdentityKey).(*kubernetes.RequestIdentity)
 		if !ok || identity == nil {
@@ -342,7 +351,6 @@ func (app *App) RequireAccessToMRService(next func(http.ResponseWriter, *http.Re
 		}
 
 		allowed, err := client.CanAccessServiceInNamespace(r.Context(), identity, namespace, serviceName)
-
 		if err != nil {
 			app.forbiddenResponse(w, r, fmt.Sprintf("SAR or SelfSAR AccessReview failed for service %s in namespace %s: %v", serviceName, namespace, err))
 			return

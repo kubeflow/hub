@@ -23,3 +23,4 @@ export const getMcpCatalogSourceConfig = service.getSourceConfig;
 export const updateMcpCatalogSourceConfig = service.updateSourceConfig;
 export const deleteMcpCatalogSourceConfig = service.deleteSourceConfig;
 export const previewMcpCatalogSource = service.previewSource;
+export const clearMcpCatalogSourceStatus = service.clearSourceStatus;

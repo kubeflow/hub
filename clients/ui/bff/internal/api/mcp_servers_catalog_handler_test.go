@@ -11,7 +11,6 @@ import (
 
 var _ = Describe("TestMcpServersCatalogHandler", func() {
 	Context("testing MCP Servers Catalog Handler", Ordered, func() {
-
 		It("should retrieve all MCP servers", func() {
 			By("fetching all MCP servers")
 			requestIdentity := kubernetes.RequestIdentity{
@@ -115,6 +114,40 @@ var _ = Describe("TestMcpServersCatalogHandler", func() {
 			Expect(rs.Header.Get("Content-Type")).To(Equal("application/json"))
 			Expect(string(body)).To(ContainSubstring(`"error"`))
 			Expect(string(body)).NotTo(Equal("404 page not found"))
+		})
+
+		It("should clear status successfully", func() {
+			By("clearing the MCP catalog source status")
+			requestIdentity := kubernetes.RequestIdentity{
+				UserID: "user@example.com",
+			}
+
+			actual, rs, err := setupApiTest[Envelope[any, any]](http.MethodDelete, "/api/v1/settings/mcp_catalog/source_config/community_mcp_servers/status?namespace=kubeflow", nil, kubernetesMockedStaticClientFactory, requestIdentity, "kubeflow")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(rs.StatusCode).To(Equal(http.StatusOK))
+			Expect(actual.Data).To(BeNil())
+		})
+
+		It("should deny clearing status without update permission", func() {
+			By("clearing status as a user without MCP source update permission")
+			requestIdentity := kubernetes.RequestIdentity{
+				UserID: "bellaNonAdmin@example.com",
+			}
+
+			_, rs, err := setupApiTest[ErrorEnvelope](http.MethodDelete, "/api/v1/settings/mcp_catalog/source_config/community_mcp_servers/status?namespace=bella-namespace", nil, kubernetesMockedStaticClientFactory, requestIdentity, "bella-namespace")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(rs.StatusCode).To(Equal(http.StatusForbidden))
+		})
+
+		It("should fail to clear status for a non-existent source", func() {
+			By("clearing status for a source that does not exist")
+			requestIdentity := kubernetes.RequestIdentity{
+				UserID: "user@example.com",
+			}
+
+			_, rs, err := setupApiTest[ErrorEnvelope](http.MethodDelete, "/api/v1/settings/mcp_catalog/source_config/does_not_exist/status?namespace=kubeflow", nil, kubernetesMockedStaticClientFactory, requestIdentity, "kubeflow")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(rs.StatusCode).To(Equal(http.StatusNotFound))
 		})
 	})
 })
