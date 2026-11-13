@@ -263,15 +263,15 @@ describe('ModelCatalogCard HF access labels', () => {
     hfAccessType: 'gated_auto',
     hfGatedAccessGranted: 'true',
   });
-
-  const gatedDeniedModel = createHfAccessCardModel({
+  const gatedWithoutGrantModel = createHfAccessCardModel({
     name: 'meta-llama/Llama-3.1-8B-Instruct-INT8',
     hfAccessType: 'gated_auto',
     hfGatedAccessGranted: 'false',
+    description: 'Visible metadata for gated model without an access grant.',
   });
 
   beforeEach(() => {
-    setupHfAccessCardIntercepts([privateModel, gatedGrantedModel, gatedDeniedModel]);
+    setupHfAccessCardIntercepts([privateModel, gatedGrantedModel, gatedWithoutGrantModel]);
     modelCatalog.visit();
     modelCatalog.findLoadingState().should('not.exist');
     modelCatalog.findModelCatalogCardByName('Llama-3.1-8B-Instruct-FP8-dynamic').should('exist');
@@ -301,17 +301,16 @@ describe('ModelCatalogCard HF access labels', () => {
     modelCatalog.findModelCatalogCardDescriptionByName(modelName).should('be.visible');
   });
 
-  it('should show warning Gated label with popover and minimal card for denied gated HF model', () => {
+  it('shows the standard Gated label and description without an access grant', () => {
     const modelName = 'Llama-3.1-8B-Instruct-INT8';
 
     modelCatalog.findModelCatalogCardByName(modelName).within(() => {
-      modelCatalog.findAccessLabelGatedDenied().should('contain.text', 'Gated');
-      modelCatalog.openGatedDeniedAccessLabelPopover();
+      modelCatalog.findAccessLabelGated().should('contain.text', 'Gated');
+      modelCatalog.openGatedAccessLabelPopover();
     });
-    modelCatalog.expectAccessLabelPopoverText(
-      MODEL_CATALOG_POPOVER_MESSAGES.HF_GATED_ACCESS_DENIED,
-    );
-    modelCatalog.findModelCatalogCardDetailLinkByName(modelName).should('exist');
-    modelCatalog.findModelCatalogCardDescriptionByName(modelName).should('not.exist');
+    modelCatalog.expectAccessLabelPopoverText(MODEL_CATALOG_POPOVER_MESSAGES.HF_GATED);
+    modelCatalog
+      .findModelCatalogCardDescriptionByName(modelName)
+      .should('contain.text', 'Visible metadata for gated model without an access grant.');
   });
 });

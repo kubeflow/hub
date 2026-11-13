@@ -4,10 +4,20 @@ import {
   CatalogSourcePreviewModel,
   CatalogSourceType,
 } from '~/app/modelCatalogTypes';
-import { isHfGatedAccessDeniedFromFields } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
+import { isGatedAccessType } from '~/app/pages/modelCatalog/utils/modelCatalogUtils';
 import { ManageSourceFormData } from '~/app/pages/modelCatalogSettings/useManageSourceData';
 import { generateSourceIdFromName } from '~/app/shared/catalogSettings/utils/generateSourceIdFromName';
 import { parseCommaSeparatedList } from '~/app/shared/catalogSettings/utils/parseCommaSeparatedList';
+
+export const isHfGatedAccessDeniedFromFields = (
+  accessType?: string | null,
+  gatedAccessGranted?: boolean | null,
+): boolean => {
+  if (!accessType || !isGatedAccessType(accessType)) {
+    return false;
+  }
+  return gatedAccessGranted !== true;
+};
 
 export const isPreviewModelGatedAccessDenied = (model: CatalogSourcePreviewModel): boolean =>
   isHfGatedAccessDeniedFromFields(model.hfAccessType, model.hfGatedAccessGranted);
