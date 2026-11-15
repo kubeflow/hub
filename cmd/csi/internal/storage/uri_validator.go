@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/http"
 	"net/url"
 	"strings"
 )
@@ -65,6 +66,19 @@ func (v *URIValidator) Validate(artifactURI string) error {
 	}
 
 	return fmt.Errorf("%w: URI %q does not match any entry in allowlist %v", ErrArtifactURINotAllowed, artifactURI, v.AllowedPrefixes)
+}
+
+// maxRedirects matches the limit net/http applies when CheckRedirect is nil.
+const maxRedirects = 10
+
+// CheckRedirect is an http.Client CheckRedirect hook that runs Validate on every
+// redirect target, so an artifact URI that passes the blocklist and allowlist
+// cannot redirect the download to a URI that would not.
+func (v *URIValidator) CheckRedirect(req *http.Request, via []*http.Request) error {
+	if len(via) >= maxRedirects {
+		return fmt.Errorf("stopped after %d redirects", maxRedirects)
+	}
+	return v.Validate(req.URL.String())
 }
 
 func isBlockedHost(host string) bool {
