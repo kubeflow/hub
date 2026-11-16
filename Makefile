@@ -192,11 +192,11 @@ bin/envtest:
 
 GOLANGCI_LINT ?= ${PROJECT_BIN}/golangci-lint
 bin/golangci-lint:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/main/install.sh | sh -s -- -b $(PROJECT_BIN) v2.12.2
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/main/install.sh | sh -s -- -b $(PROJECT_BIN) v2.15.0
 
 GOVERTER ?= ${PROJECT_BIN}/goverter
 bin/goverter:
-	GOBIN=$(PROJECT_PATH)/bin ${GO} install github.com/jmattheis/goverter/cmd/goverter@v1.9.2
+	GOBIN=$(PROJECT_PATH)/bin ${GO} install github.com/jmattheis/goverter/cmd/goverter@v1.11.1
 
 YQ ?= ${PROJECT_BIN}/yq
 bin/yq:

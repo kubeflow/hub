@@ -4,7 +4,7 @@ ARG BFF_SOURCE_CODE=./bff
 
 # Set the base images for the build stages
 ARG NODE_BASE_IMAGE=node:22
-ARG GOLANG_BASE_IMAGE=golang:1.26.7
+ARG GOLANG_BASE_IMAGE=golang:1.27.3
 ARG DISTROLESS_BASE_IMAGE=gcr.io/distroless/static:nonroot
 
 # UI build stage
