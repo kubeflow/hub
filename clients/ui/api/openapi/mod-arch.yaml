@@ -2952,7 +2952,7 @@ components:
           description: |-
             Labels associated with the source. The catalog source labels can be
             used to filter models from sources with the same label (see
-            `sourceLabel` on `/api/model_catalog/v1alpha1/models`)
+            `sourceLabel` on `/api/model_catalog/v1/models`)
           type: array
           items:
             type: string
@@ -3851,7 +3851,7 @@ components:
           description: |-
             Labels associated with the source. The catalog source labels can be
             used to filter models from sources with the same label (see
-            `sourceLabel` on `/api/model_catalog/v1alpha1/models`)
+            `sourceLabel` on `/api/model_catalog/v1/models`)
           type: array
           items:
             type: string
