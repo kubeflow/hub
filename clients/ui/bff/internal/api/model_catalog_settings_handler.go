@@ -12,14 +12,21 @@ import (
 	"github.com/kubeflow/hub/ui/bff/internal/repositories"
 )
 
-type ModelCatalogSettingsSourceConfigEnvelope Envelope[*models.CatalogSourceConfig, None]
-type ModelCatalogSettingsSourceConfigListEnvelope Envelope[*models.CatalogSourceConfigList, None]
-type ModelCatalogSourcePayloadEnvelope Envelope[*models.CatalogSourceConfigPayload, None]
+type (
+	ModelCatalogSettingsSourceConfigEnvelope     Envelope[*models.CatalogSourceConfig, None]
+	ModelCatalogSettingsSourceConfigListEnvelope Envelope[*models.CatalogSourceConfigList, None]
+	ModelCatalogSourcePayloadEnvelope            Envelope[*models.CatalogSourceConfigPayload, None]
+)
+
+type ModelCatalogSourceCreateEnvelope struct {
+	Data     json.RawMessage `json:"data" validate:"required" swaggertype:"object" oneOf:"models.YamlCatalogSourceCreate,models.HFCatalogSourceCreate"`
+	Metadata None            `json:"metadata,omitempty"`
+}
 
 // GetAllCatalogSourceConfigsHandler lists model catalog source configurations.
 //
 //	@Summary		List all catalog sources
-//	@Description	Not available in Kubeflow integration mode.
+//	@Description	Lists default and user-defined model catalog source configurations, including labels, inclusion/exclusion patterns, and effective credential-configuration indicators. Not available in Kubeflow integration mode.
 //	@Tags			ModelCatalogService
 //	@ID				getCatalogSources
 //	@Produce		json
@@ -56,17 +63,15 @@ func (app *App) GetAllCatalogSourceConfigsHandler(w http.ResponseWriter, r *http
 	}
 
 	err = app.WriteJSON(w, http.StatusOK, modelCatalogSource, nil)
-
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
-
 }
 
 // GetCatalogSourceConfigHandler returns a model catalog source configuration.
 //
 //	@Summary		Get a Model Catalog Source
-//	@Description	Not available in Kubeflow integration mode.
+//	@Description	Returns one model catalog source configuration. hasConfiguredApiKey indicates whether an effective Hugging Face API-key reference is configured; it does not prove the Secret exists or authentication succeeded. Not available in Kubeflow integration mode.
 //	@Tags			ModelCatalogService
 //	@ID				getCatalogSource
 //	@Produce		json
@@ -98,7 +103,6 @@ func (app *App) GetCatalogSourceConfigHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	catalogSourceConfig, err := app.repositories.ModelCatalogSettingsRepository.GetCatalogSourceConfig(ctx, client, namespace, catalogSourceId)
-
 	if err != nil {
 		if errors.Is(err, repositories.ErrCatalogSourceNotFound) {
 			app.notFoundResponse(w, r)
@@ -113,17 +117,15 @@ func (app *App) GetCatalogSourceConfigHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	err = app.WriteJSON(w, http.StatusOK, modelCatalogSource, nil)
-
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
-
 }
 
 // CreateCatalogSourceConfigHandler creates a model catalog source configuration.
 //
 //	@Summary		Create a Catalog source
-//	@Description	Not available in Kubeflow integration mode.
+//	@Description	Creates a yaml or hf catalog source. YAML sources require complete catalog content in yaml; Hugging Face sources require allowedOrganization and optionally accept apiKey. Labels and includedModels/excludedModels control discovery and inclusion. Not available in Kubeflow integration mode.
 //	@Tags			ModelCatalogService
 //	@ID				createCatalogSource
 //	@Accept			json
@@ -131,7 +133,7 @@ func (app *App) GetCatalogSourceConfigHandler(w http.ResponseWriter, r *http.Req
 //	@Security		KubeflowUserID
 //	@Security		BearerAuth
 //	@Param			namespace	query		string								true	"Catalog namespace"
-//	@Param			body		body		ModelCatalogSourcePayloadEnvelope	true	"Catalog source configuration"
+//	@Param			body		body		ModelCatalogSourceCreateEnvelope	true	"Catalog source configuration"
 //	@Success		201			{object}	ModelCatalogSettingsSourceConfigEnvelope
 //	@Header			201			{string}	Location	"URL of the created catalog source"
 //	@Failure		400			{object}	ErrorEnvelope
@@ -154,14 +156,18 @@ func (app *App) CreateCatalogSourceConfigHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	var envelope ModelCatalogSourcePayloadEnvelope
+	var envelope ModelCatalogSourceCreateEnvelope
 	if err := json.NewDecoder(r.Body).Decode(&envelope); err != nil {
 		app.serverErrorResponse(w, r, fmt.Errorf("error decoding JSON: %v", err.Error()))
 		return
 	}
 
-	newCatalogSource, err := app.repositories.ModelCatalogSettingsRepository.CreateCatalogSourceConfig(ctx, client, namespace, *envelope.Data)
-
+	payload, err := models.DecodeCatalogSourceCreate(envelope.Data)
+	if err != nil {
+		app.badRequestResponse(w, r, fmt.Errorf("error decoding catalog source: %w", err))
+		return
+	}
+	newCatalogSource, err := app.repositories.ModelCatalogSettingsRepository.CreateCatalogSourceConfig(ctx, client, namespace, payload)
 	if err != nil {
 		if errors.Is(err, repositories.ErrCatalogSourceAlreadyExist) ||
 			errors.Is(err, repositories.ErrCatalogSourceIdRequired) ||
@@ -186,13 +192,12 @@ func (app *App) CreateCatalogSourceConfigHandler(w http.ResponseWriter, r *http.
 		app.serverErrorResponse(w, r, fmt.Errorf("error writing JSON"))
 		return
 	}
-
 }
 
 // UpdateCatalogSourceConfigHandler updates a model catalog source configuration.
 //
 //	@Summary		Update a Model Catalog Source
-//	@Description	Not available in Kubeflow integration mode.
+//	@Description	Updates source configuration and model inclusion/exclusion patterns. Default-source and provider-type changes are restricted; concurrent updates may return 409. Not available in Kubeflow integration mode.
 //	@Tags			ModelCatalogService
 //	@ID				updateModelCatalogSource
 //	@Accept			json
@@ -235,7 +240,6 @@ func (app *App) UpdateCatalogSourceConfigHandler(w http.ResponseWriter, r *http.
 		catalogSourceId = envelope.Data.Id
 	}
 	updatedCatalogSource, err := app.repositories.ModelCatalogSettingsRepository.UpdateCatalogSourceConfig(ctx, client, namespace, catalogSourceId, *envelope.Data)
-
 	if err != nil {
 		if errors.Is(err, repositories.ErrCatalogSourceNotFound) {
 			app.notFoundResponse(w, r)
@@ -255,7 +259,6 @@ func (app *App) UpdateCatalogSourceConfigHandler(w http.ResponseWriter, r *http.
 	}
 
 	err = app.WriteJSON(w, http.StatusOK, modelCatalogSource, nil)
-
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
@@ -297,7 +300,6 @@ func (app *App) DeleteCatalogSourceConfigHandler(w http.ResponseWriter, r *http.
 	catalogSourceId := ps.ByName(CatalogSourceId)
 
 	deletedCatalogSource, err := app.repositories.ModelCatalogSettingsRepository.DeleteCatalogSourceConfig(ctx, client, namespace, catalogSourceId)
-
 	if err != nil {
 		if errors.Is(err, repositories.ErrCannotDeleteDefaultSource) {
 			app.forbiddenResponse(w, r, err.Error())
@@ -316,7 +318,6 @@ func (app *App) DeleteCatalogSourceConfigHandler(w http.ResponseWriter, r *http.
 	}
 
 	err = app.WriteJSON(w, http.StatusOK, modelCatalogSource, nil)
-
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}

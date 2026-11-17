@@ -99,10 +99,15 @@ $(SWAG): $(LOCALBIN)
 	$(call go-install-tool,$(SWAG),github.com/swaggo/swag/v2/cmd/swag,$(SWAG_VERSION))
 
 SWAG_DIRS := cmd,internal/api,internal/models
+YQ ?= $(abspath ../../../bin/yq)
+
+$(YQ):
+	$(MAKE) -C ../../.. bin/yq
 
 .PHONY: openapi
-openapi: swag ## Generate OpenAPI spec from annotations
+openapi: swag $(YQ) ## Generate OpenAPI spec from annotations
 	$(SWAG) init --v3.1 --parseDependencyLevel 1 --parseInternal -q -g main.go -d $(SWAG_DIRS) -o openapi --outputTypes json,yaml
+	YQ="$(YQ)" bash ../../../scripts/normalize_bff_openapi.sh
 
 
 # go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist

@@ -111,7 +111,15 @@ The pinned `github.com/swaggo/swag/v2` generator (`v2.0.0-rc6`, a release candid
 
 Do not enable `--requiredByDefault`: this release candidate ignores `omitempty` when applying it, incorrectly requiring optional PATCH fields. Required request bodies, path/query parameters, and explicit model validation tags are still documented.
 
-`.swaggo` and the documentation-only types in `internal/api/swagger_models.go` describe custom JSON serialization without changing runtime models. Swag cannot infer the generated union types' custom marshaling, so their schemas expose flattened variant fields selected by `artifactType` and `metadataType`. The registry-level PATCH alias is documented separately because Swag v2 does not filter path parameters when multiple routes share annotations.
+Schemas come from the runtime Go models and response envelopes referenced by handler annotations. Field descriptions and examples are maintained on those models in `internal/models/`. `.swaggo` skips `api.None`, so envelopes without metadata do not advertise a metadata property; descriptions for real metadata remain on the generic envelope field.
+
+Swag cannot infer custom `MarshalJSON` implementations or component-level discriminated unions. After Swag generation, `scripts/normalize_bff_openapi.sh` uses the repository's pinned `yq` tool to restore `openapi.MetadataValue` and `openapi.Artifact` from `api/openapi/model-registry.yaml`. This preserves flattened JSON, required metadata value fields, all five artifact variants, and discriminator mappings without duplicate Go types. Artifact tags distinguish union branches but remain optional on standalone model-artifact schemas that accept defaults. Run `make openapi`, which installs `yq` if needed, rather than invoking Swag alone.
+
+Creation handlers use dedicated request types in `internal/models/`, with explicit required tags independent of response and PATCH models. Model source creation uses Swag's native `oneOf` field tag for YAML and Hugging Face payloads; the handler decodes the corresponding provider-specific request type. No creation requirements are patched into the generated specification. The normalization step also restores explicit CSV serialization.
+
+Handler annotations preserve useful descriptions, parameter examples, and verified defaults from the legacy specification. `go test ./openapi` checks generated documentation, runtime-model references, and route coverage. The legacy specification is not merged into generated output, and stale behavior claims are not carried forward.
+
+The registry-level PATCH alias is documented separately in `internal/api/model_versions_handler.go` because Swag v2 does not filter path parameters when multiple routes share annotations.
 
 ### Sample local calls
 

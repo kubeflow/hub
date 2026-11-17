@@ -37,7 +37,7 @@ func TestGeneratedOpenAPI(t *testing.T) {
 	doc := swag.New(swag.GenerateOpenAPI3Doc(true)).GetOpenAPI()
 	require.NoError(t, json.Unmarshal(jsonSpec, doc))
 	assert.Equal(t, "3.1.0", doc.OpenAPI)
-	require.Len(t, doc.Servers, 1)
+	require.NotEmpty(t, doc.Servers)
 	assert.Equal(t, "/", doc.Servers[0].Spec.URL)
 	assert.Empty(t, doc.Paths.Spec.Paths["/healthcheck"].Spec.Spec.Get.Spec.Security)
 	assert.NotContains(t, doc.Paths.Spec.Paths, "/api/v1/healthcheck")
@@ -103,8 +103,8 @@ func TestGeneratedOpenAPI(t *testing.T) {
 			return true
 		}
 		path := eval(call.Args[0])
-		if strings.HasPrefix(path, "/api/v1/swagger/") {
-			return true // Swagger UI serves its own assets, not a business API.
+		if !strings.HasPrefix(path, api.ApiPathPrefix) || strings.HasPrefix(path, api.SwaggerPath+"/") {
+			return true
 		}
 		path = pathParam.ReplaceAllString(path, "{$1}")
 		expected[strings.ToLower(method.Sel.Name)+" "+path] = true
@@ -113,6 +113,9 @@ func TestGeneratedOpenAPI(t *testing.T) {
 	require.NotEmpty(t, expected)
 	actual := map[string]bool{}
 	for path, pathRef := range doc.Paths.Spec.Paths {
+		if !strings.HasPrefix(path, api.ApiPathPrefix) {
+			continue
+		}
 		item := pathRef.Spec.Spec
 		for _, method := range []string{"get", "post", "patch", "delete"} {
 			op := item.Get
@@ -145,21 +148,67 @@ func TestGeneratedOpenAPI(t *testing.T) {
 	}
 	assert.Equal(t, expected, actual, "generated spec must cover exactly the registered API routes")
 
-	// Union wrappers and nil metadata must not leak Go field names into the API.
+	// Response schemas must reference the same envelopes used by the handlers,
+	// rather than separate documentation-only model types.
 	schemas := doc.Components.Spec.Schemas
-	assert.Contains(t, schemas["api.SwaggerMetadataValue"].Spec.Properties, "string_value")
-	assert.NotContains(t, schemas["api.SwaggerMetadataValue"].Spec.Properties, "MetadataStringValue")
-	assert.Contains(t, schemas["api.SwaggerArtifact"].Spec.Properties, "uri")
-	assert.NotContains(t, schemas["api.SwaggerArtifact"].Spec.Properties, "ModelArtifact")
-	assert.Len(t, schemas["api.SwaggerArtifact"].Spec.Properties["value"].Spec.OneOf, 2)
+	for name := range schemas {
+		assert.NotContains(t, name, "Swagger", "schemas must use runtime types")
+	}
+	for path, envelope := range map[string]string{
+		"/api/v1/model_registry":                                                       "ModelRegistryListEnvelope",
+		"/api/v1/model_catalog/models":                                                 "CatalogModelListEnvelope",
+		"/api/v1/model_catalog/sources/{source_id}/models/{model_name}":                "CatalogModelEnvelope",
+		"/api/v1/model_catalog/sources/{source_id}/artifacts/{model_name}":             "catalogModelArtifactsListEnvelope",
+		"/api/v1/model_catalog/sources/{source_id}/performance_artifacts/{model_name}": "catalogModelArtifactsListEnvelope",
+		"/api/v1/model_catalog/sources/{source_id}/security_artifacts/{model_name}":    "catalogModelArtifactsListEnvelope",
+		"/api/v1/agent_catalog/agents":                                                 "AgentListEnvelope",
+		"/api/v1/agent_catalog/agents/{agent_id}":                                      "AgentEnvelope",
+		"/api/v1/agent_catalog/agents/{agent_id}/artifacts":                            "AgentArtifactListEnvelope",
+		"/api/v1/mcp_catalog/mcp_servers":                                              "McpServerListEnvelope",
+		"/api/v1/mcp_catalog/mcp_servers/{server_id}":                                  "McpServerEnvelope",
+		"/api/v1/mcp_catalog/mcp_servers/{server_id}/tools":                            "McpServerToolsListEnvelope",
+	} {
+		t.Run(envelope+path, func(t *testing.T) {
+			_, ok := schemas["api."+envelope]
+			require.True(t, ok, "missing runtime envelope schema: api.%s", envelope)
+			response := doc.Paths.Spec.Paths[path].Spec.Spec.Get.Spec.Responses.Spec.Response["200"].Spec.Spec
+			assert.Equal(t, "#/components/schemas/api."+envelope, response.Content["application/json"].Spec.Schema.Ref.Ref)
+		})
+	}
 	assert.Contains(t, schemas["api.RegisteredModelEnvelope"].Spec.Properties, "data")
-	assert.NotContains(t, schemas["api.RegisteredModelEnvelope"].Spec.Properties, "metadata")
-	assert.Empty(t, schemas["openapi.RegisteredModelUpdate"].Spec.Required)
+	for _, name := range []string{"openapi.RegisteredModelUpdate", "openapi.ModelVersionUpdate", "models.CatalogSourceConfigPayload", "models.McpCatalogSourceConfigPayload"} {
+		assert.Empty(t, schemas[name].Spec.Required, name)
+	}
+	for name, required := range map[string][]string{
+		"models.RegisteredModelCreate":                {"name"},
+		"models.ModelVersionCreate":                   {"name", "registeredModelId"},
+		"models.ModelVersionCreateForRegisteredModel": {"name"},
+		"models.YamlCatalogSourceCreate":              {"id", "name", "type", "yaml"},
+		"models.HFCatalogSourceCreate":                {"id", "name", "type", "allowedOrganization"},
+		"models.McpCatalogSourceCreate":               {"id", "name", "type", "yaml"},
+	} {
+		require.Contains(t, schemas, name)
+		assert.ElementsMatch(t, required, schemas[name].Spec.Required, name)
+	}
+	createSource := schemas["api.ModelCatalogSourceCreateEnvelope"].Spec
+	assert.Contains(t, createSource.Required, "data")
+	require.Len(t, createSource.Properties["data"].Spec.OneOf, 2)
+	assert.Equal(t, "#/components/schemas/models.YamlCatalogSourceCreate", createSource.Properties["data"].Spec.OneOf[0].Ref.Ref)
+	assert.Equal(t, "#/components/schemas/models.HFCatalogSourceCreate", createSource.Properties["data"].Spec.OneOf[1].Ref.Ref)
+	assert.Equal(t, []interface{}{"yaml"}, schemas["models.YamlCatalogSourceCreate"].Spec.Properties["type"].Spec.Enum)
+	assert.Equal(t, []interface{}{"hf"}, schemas["models.HFCatalogSourceCreate"].Spec.Properties["type"].Spec.Enum)
+	preview := doc.Paths.Spec.Paths["/api/v1/settings/model_catalog/source_preview"].Spec.Spec.Post.Spec
+	assert.Equal(t, "#/components/schemas/api.CatalogSourcePreviewEnvelope", preview.Responses.Spec.Response["200"].Spec.Spec.Content["application/json"].Spec.Schema.Ref.Ref)
+	previewRequestRef := preview.RequestBody.Spec.Spec.Content["application/json"].Spec.Schema.Ref.Ref
+	previewRequestSchema := strings.TrimPrefix(previewRequestRef, "#/components/schemas/")
+	_, ok := schemas[previewRequestSchema]
+	require.True(t, ok, "missing preview request schema: %s", previewRequestSchema)
+	assert.Equal(t, "#/components/schemas/models.CatalogSourcePreviewRequest", schemas[previewRequestSchema].Spec.Properties["data"].Ref.Ref)
 
 	createModel := doc.Paths.Spec.Paths["/api/v1/model_registry/{model_registry_id}/registered_models"].Spec.Spec.Post.Spec
 	require.NotNil(t, createModel.RequestBody)
 	assert.True(t, createModel.RequestBody.Spec.Spec.Required)
-	assert.Equal(t, "#/components/schemas/api.RegisteredModelEnvelope", createModel.RequestBody.Spec.Spec.Content["application/json"].Spec.Schema.Ref.Ref)
+	assert.Equal(t, "#/components/schemas/api.RegisteredModelCreateEnvelope", createModel.RequestBody.Spec.Spec.Content["application/json"].Spec.Schema.Ref.Ref)
 	logo := doc.Paths.Spec.Paths["/api/v1/mcp_catalog/mcp_servers/{server_id}/logo"].Spec.Spec.Get.Spec
 	assert.Contains(t, logo.Responses.Spec.Response["200"].Spec.Spec.Content, "image/png")
 	assert.NotContains(t, logo.Responses.Spec.Response["200"].Spec.Spec.Content, "application/json")

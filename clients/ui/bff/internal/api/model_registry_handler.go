@@ -15,14 +15,14 @@ type ModelRegistryEnvelope Envelope[models.ModelRegistryModel, None]
 // GetAllModelRegistriesHandler lists accessible model registries.
 //
 //	@Summary		List All Model Registries
-//	@Description	Gets model registries the current user can access in the namespace.
+//	@Description	Discovers Model Registry services the current user can access in the selected namespace. Returns their display names, descriptions, REST server addresses, TLS settings, and availability indicators.
 //	@Tags			K8SOperation
 //	@ID				getModelRegistries
 //	@Produce		json
 //	@Security		KubeflowUserID
 //	@Security		BearerAuth
-//	@Param			namespace	query		string	true	"Model registry namespace"
-//	@Success		200			{object}	ModelRegistryListEnvelope
+//	@Param			namespace	query		string									true	"Model registry namespace"
+//	@Success		200			{object}	ModelRegistryListEnvelope	"Accessible Model Registry services"
 //	@Failure		400			{object}	ErrorEnvelope
 //	@Failure		403			{object}	ErrorEnvelope
 //	@Failure		500			{object}	ErrorEnvelope

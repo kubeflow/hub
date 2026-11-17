@@ -9,6 +9,19 @@
 
 //	@servers.url			/
 //	@servers.description	BFF server
+//	@servers.url			http://localhost:8080
+//	@servers.description	Local BFF server
+
+//	@tag.name			ModelRegistryService
+//	@tag.description	Model Registry REST API for registered models, versions, artifacts, and model transfer jobs.
+//	@tag.name			K8SOperation
+//	@tag.description	Kubernetes-backed discovery, user configuration, namespaces, and registry settings.
+//	@tag.name			ModelCatalogService
+//	@tag.description	Model catalog discovery, filtering, evaluation artifacts, and source configuration.
+//	@tag.name			MCPCatalogService
+//	@tag.description	MCP server discovery, tools, and catalog source configuration.
+//	@tag.name			AgentCatalogService
+//	@tag.description	Agent discovery, deployment metadata, and deployment artifacts.
 
 //	@securityDefinitions.apikey	KubeflowUserID
 //	@in							header
@@ -25,16 +38,15 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	"os/signal"
-	"syscall"
-
-	"github.com/kubeflow/hub/ui/bff/internal/api"
-	"github.com/kubeflow/hub/ui/bff/internal/config"
-
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
+
+	"github.com/kubeflow/hub/ui/bff/internal/api"
+	"github.com/kubeflow/hub/ui/bff/internal/config"
 )
 
 func main() {
@@ -90,7 +102,7 @@ func main() {
 		Level: cfg.LogLevel,
 	}))
 
-	//validate auth method
+	// validate auth method
 	if cfg.AuthMethod != config.AuthMethodInternal && cfg.AuthMethod != config.AuthMethodUser {
 		logger.Error("invalid auth method: (must be internal or user_token)", "authMethod", cfg.AuthMethod)
 		os.Exit(1)

@@ -15,11 +15,12 @@ import (
 type McpCatalogSettingsSourceConfigEnvelope Envelope[*models.McpCatalogSourceConfig, None]
 type McpCatalogSettingsSourceConfigListEnvelope Envelope[*models.McpCatalogSourceConfigList, None]
 type McpCatalogSourcePayloadEnvelope Envelope[*models.McpCatalogSourceConfigPayload, None]
+type McpCatalogSourceCreateEnvelope Envelope[*models.McpCatalogSourceCreate, None]
 
 // GetAllMcpCatalogSourceConfigsHandler lists MCP catalog source configurations.
 //
 //	@Summary		List all MCP catalog sources
-//	@Description	Not available in Kubeflow integration mode.
+//	@Description	Lists default and user-defined MCP catalog source configurations, including labels, enabled state, and server inclusion/exclusion patterns. Not available in Kubeflow integration mode.
 //	@Tags			MCPCatalogService
 //	@ID				getMcpCatalogSources
 //	@Produce		json
@@ -64,7 +65,7 @@ func (app *App) GetAllMcpCatalogSourceConfigsHandler(w http.ResponseWriter, r *h
 // GetMcpCatalogSourceConfigHandler returns an MCP catalog source configuration.
 //
 //	@Summary		Get an MCP Catalog Source
-//	@Description	Not available in Kubeflow integration mode.
+//	@Description	Returns one MCP source's YAML catalog configuration, labels, and includedServers/excludedServers patterns. Not available in Kubeflow integration mode.
 //	@Tags			MCPCatalogService
 //	@ID				getMcpCatalogSource
 //	@Produce		json
@@ -117,7 +118,7 @@ func (app *App) GetMcpCatalogSourceConfigHandler(w http.ResponseWriter, r *http.
 // CreateMcpCatalogSourceConfigHandler creates an MCP catalog source configuration.
 //
 //	@Summary		Create an MCP Catalog source
-//	@Description	Not available in Kubeflow integration mode.
+//	@Description	Creates an MCP catalog source from YAML content. Labels can be used by sourceLabel when searching servers; includedServers/excludedServers select which servers are ingested. Not available in Kubeflow integration mode.
 //	@Tags			MCPCatalogService
 //	@ID				createMcpCatalogSource
 //	@Accept			json
@@ -125,7 +126,7 @@ func (app *App) GetMcpCatalogSourceConfigHandler(w http.ResponseWriter, r *http.
 //	@Security		KubeflowUserID
 //	@Security		BearerAuth
 //	@Param			namespace	query		string							true	"Catalog namespace"
-//	@Param			body		body		McpCatalogSourcePayloadEnvelope	true	"MCP catalog source configuration"
+//	@Param			body		body		McpCatalogSourceCreateEnvelope	true	"MCP catalog source configuration"
 //	@Success		201			{object}	McpCatalogSettingsSourceConfigEnvelope
 //	@Header			201			{string}	Location	"URL of the created MCP catalog source"
 //	@Failure		400			{object}	ErrorEnvelope
@@ -148,7 +149,7 @@ func (app *App) CreateMcpCatalogSourceConfigHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	var envelope McpCatalogSourcePayloadEnvelope
+	var envelope McpCatalogSourceCreateEnvelope
 	if err := json.NewDecoder(r.Body).Decode(&envelope); err != nil {
 		app.badRequestResponse(w, r, fmt.Errorf("error decoding JSON: %w", err))
 		return
@@ -159,7 +160,8 @@ func (app *App) CreateMcpCatalogSourceConfigHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	created, err := app.repositories.McpCatalogSettingsRepository.CreateMcpCatalogSourceConfig(ctx, client, namespace, *envelope.Data)
+	payload := models.McpCatalogSourceConfigPayload(*envelope.Data)
+	created, err := app.repositories.McpCatalogSettingsRepository.CreateMcpCatalogSourceConfig(ctx, client, namespace, payload)
 	if err != nil {
 		if errors.Is(err, repositories.ErrMcpCatalogSourceAlreadyExist) ||
 			errors.Is(err, repositories.ErrMcpCatalogSourceIdRequired) ||
@@ -186,7 +188,7 @@ func (app *App) CreateMcpCatalogSourceConfigHandler(w http.ResponseWriter, r *ht
 // UpdateMcpCatalogSourceConfigHandler updates an MCP catalog source configuration.
 //
 //	@Summary		Update an MCP Catalog Source
-//	@Description	Not available in Kubeflow integration mode.
+//	@Description	Updates an MCP source's configuration and server inclusion/exclusion patterns. Default-source and provider-type changes are restricted; concurrent updates may return 409. Not available in Kubeflow integration mode.
 //	@Tags			MCPCatalogService
 //	@ID				updateMcpCatalogSource
 //	@Accept			json

@@ -18,7 +18,10 @@ type CatalogSourcePreviewEnvelope Envelope[*models.CatalogSourcePreviewResult, N
 // CreateCatalogSourcePreviewHandler previews catalog source configuration effects.
 //
 //	@Summary		Preview catalog source configuration effects
-//	@Description	Accepts a JSON data envelope (not multipart). Not available in Kubeflow integration mode.
+//	@Description	Tests a source configuration without saving it and returns assets with their inclusion/exclusion status. Accepts a JSON data envelope, not multipart; the BFF translates it to config/catalogData multipart parts for the catalog service.
+//	@Description	For YAML sources, provide catalog content in data.properties.yaml or a configured data.properties.yamlCatalogPath. For Hugging Face sources, properties may include apiKey and allowedOrganization; when editing a saved source, stored credentials can be resolved by data.id.
+//	@Description	assetType=models uses includedModels/excludedModels patterns and model summary counts. assetType=mcp_servers uses includedServers/excludedServers and asset summary counts. Hugging Face results may include hfAccessType and hfGatedAccessGranted; the summary reports inaccessible gated models across all pages.
+//	@Description	Not available in Kubeflow integration mode.
 //	@Tags			ModelCatalogService
 //	@ID				previewCatalogSource
 //	@Accept			json
@@ -26,14 +29,15 @@ type CatalogSourcePreviewEnvelope Envelope[*models.CatalogSourcePreviewResult, N
 //	@Security		KubeflowUserID
 //	@Security		BearerAuth
 //	@Param			namespace		query		string												true	"Catalog namespace"
-//	@Param			pageSize		query		int													false	"Maximum number of results"
-//	@Param			nextPageToken	query		string												false	"Pagination token"
-//	@Param			filterStatus	query		string												false	"Filter preview results by inclusion status"	Enums(all,included,excluded)
-//	@Param			assetType		query		string												false	"Asset type to preview"							Enums(models,mcp_servers)
-//	@Param			body			body		Envelope[models.CatalogSourcePreviewRequest,None]	true	"Catalog source preview configuration"
-//	@Success		200				{object}	CatalogSourcePreviewEnvelope
+//	@Param			pageSize		query		int													false	"Maximum number of assets in each preview page"	minimum(1)	default(10)	example(100)
+//	@Param			nextPageToken	query		string												false	"Opaque token from the preceding preview page"
+//	@Param			filterStatus	query		string												false	"all returns every evaluated asset; included/excluded returns only that inclusion status"	Enums(all,included,excluded)	default(all)
+//	@Param			assetType		query		string												false	"Asset type to preview; selects the inclusion/exclusion fields and summary counters"		Enums(models,mcp_servers)		default(models)
+//	@Param			body			body		Envelope[models.CatalogSourcePreviewRequest,None]	true	"Source preview configuration in data"
+//	@Success		200				{object}	CatalogSourcePreviewEnvelope	"Evaluated assets, pagination token, and source-wide summary"
 //	@Failure		400				{object}	ErrorEnvelope
 //	@Failure		403				{object}	ErrorEnvelope
+//	@Failure		422				{object}	ErrorEnvelope "Invalid configuration or catalog content"
 //	@Failure		500				{object}	ErrorEnvelope
 //	@Router			/api/v1/settings/model_catalog/source_preview [post]
 func (app *App) CreateCatalogSourcePreviewHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

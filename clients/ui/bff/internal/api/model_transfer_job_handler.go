@@ -20,20 +20,21 @@ type ModelTransferJobEventsEnvelope Envelope[models.ModelTransferJobEventsRespon
 
 // GetAllModelTransferJobsHandler lists model transfer jobs.
 //
-//	@Summary	List All Model Transfer Jobs
-//	@Tags		ModelRegistryService
-//	@ID			getModelTransferJobs
-//	@Produce	json
-//	@Security	KubeflowUserID
-//	@Security	BearerAuth
-//	@Param		namespace			query		string	true	"Model registry namespace"
-//	@Param		model_registry_id	path		string	true	"Model registry name"
-//	@Param		jobNamespace		query		string	false	"Job namespace; omitted to list across namespaces"
-//	@Success	200					{object}	ModelTransferJobListEnvelope
-//	@Failure	400					{object}	ErrorEnvelope
-//	@Failure	403					{object}	ErrorEnvelope
-//	@Failure	500					{object}	ErrorEnvelope
-//	@Router		/api/v1/model_registry/{model_registry_id}/model_transfer_jobs [get]
+//	@Summary		List All Model Transfer Jobs
+//	@Description	Lists transfer jobs associated with the selected registry. jobNamespace optionally limits the Kubernetes namespace containing the jobs; this route does not forward catalog-style pagination parameters.
+//	@Tags			ModelRegistryService
+//	@ID				getModelTransferJobs
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace			query		string	true	"Model registry namespace"
+//	@Param			model_registry_id	path		string	true	"Model registry name"
+//	@Param			jobNamespace		query		string	false	"Job namespace; omitted to list across namespaces"
+//	@Success		200					{object}	ModelTransferJobListEnvelope
+//	@Failure		400					{object}	ErrorEnvelope
+//	@Failure		403					{object}	ErrorEnvelope
+//	@Failure		500					{object}	ErrorEnvelope
+//	@Router			/api/v1/model_registry/{model_registry_id}/model_transfer_jobs [get]
 func (app *App) GetAllModelTransferJobsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	ctx := r.Context()
 
@@ -83,22 +84,23 @@ func (app *App) GetAllModelTransferJobsHandler(w http.ResponseWriter, r *http.Re
 
 // GetModelTransferJobHandler returns a model transfer job.
 //
-//	@Summary	Get a Model Transfer Job
-//	@Tags		ModelRegistryService
-//	@ID			getModelTransferJob
-//	@Produce	json
-//	@Security	KubeflowUserID
-//	@Security	BearerAuth
-//	@Param		namespace			query		string	true	"Model registry namespace"
-//	@Param		model_registry_id	path		string	true	"Model registry name"
-//	@Param		job_name			path		string	true	"Transfer job name"
-//	@Param		jobNamespace		query		string	true	"Namespace containing the job"
-//	@Success	200					{object}	ModelTransferJobEnvelope
-//	@Failure	400					{object}	ErrorEnvelope
-//	@Failure	403					{object}	ErrorEnvelope
-//	@Failure	404					{object}	ErrorEnvelope
-//	@Failure	500					{object}	ErrorEnvelope
-//	@Router		/api/v1/model_registry/{model_registry_id}/model_transfer_jobs/{job_name} [get]
+//	@Summary		Get a Model Transfer Job
+//	@Description	Returns a Kubernetes model transfer job, including source/destination, upload intent, status, timestamps, errors, and any recorded events. jobNamespace identifies the namespace containing the job, which may differ from the registry namespace.
+//	@Tags			ModelRegistryService
+//	@ID				getModelTransferJob
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace			query		string	true	"Model registry namespace"
+//	@Param			model_registry_id	path		string	true	"Model registry name"
+//	@Param			job_name			path		string	true	"Transfer job name"
+//	@Param			jobNamespace		query		string	true	"Namespace containing the job"
+//	@Success		200					{object}	ModelTransferJobEnvelope
+//	@Failure		400					{object}	ErrorEnvelope
+//	@Failure		403					{object}	ErrorEnvelope
+//	@Failure		404					{object}	ErrorEnvelope
+//	@Failure		500					{object}	ErrorEnvelope
+//	@Router			/api/v1/model_registry/{model_registry_id}/model_transfer_jobs/{job_name} [get]
 func (app *App) GetModelTransferJobHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	ctx := r.Context()
 
@@ -160,23 +162,25 @@ func (app *App) GetModelTransferJobHandler(w http.ResponseWriter, r *http.Reques
 
 // CreateModelTransferJobHandler creates a model transfer job.
 //
-//	@Summary	Create a Model Transfer Job
-//	@Tags		ModelRegistryService
-//	@ID			createModelTransferJob
-//	@Accept		json
-//	@Produce	json
-//	@Security	KubeflowUserID
-//	@Security	BearerAuth
-//	@Param		namespace			query		string						true	"Model registry namespace"
-//	@Param		model_registry_id	path		string						true	"Model registry name"
-//	@Param		body				body		ModelTransferJobEnvelope	true	"Transfer job; data.namespace defaults to the registry namespace"
-//	@Success	201					{object}	ModelTransferJobEnvelope
-//	@Header		201					{string}	Location	"URL of the created transfer job"
-//	@Failure	400					{object}	ErrorEnvelope
-//	@Failure	403					{object}	ErrorEnvelope
-//	@Failure	404					{object}	ErrorEnvelope
-//	@Failure	500					{object}	ErrorEnvelope
-//	@Router		/api/v1/model_registry/{model_registry_id}/model_transfer_jobs [post]
+//	@Summary		Create a Model Transfer Job
+//	@Description	Schedules a Kubernetes job to transfer a model from S3 or a URI to an OCI destination. Supply configuration inside data. uploadIntent selects create_model, create_version, or update_artifact; the corresponding registered-model/version/artifact fields identify the target.
+//	@Description	data.namespace defaults to the registry namespace. Existing Kubernetes credentials can be referenced by sourceSecretName and destSecretName. The Location header identifies the new transfer job.
+//	@Tags			ModelRegistryService
+//	@ID				createModelTransferJob
+//	@Accept			json
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace			query		string						true	"Model registry namespace"
+//	@Param			model_registry_id	path		string						true	"Model registry name"
+//	@Param			body				body		ModelTransferJobEnvelope	true	"Transfer job; data.namespace defaults to the registry namespace"
+//	@Success		201					{object}	ModelTransferJobEnvelope
+//	@Header			201					{string}	Location	"URL of the created transfer job"
+//	@Failure		400					{object}	ErrorEnvelope
+//	@Failure		403					{object}	ErrorEnvelope
+//	@Failure		404					{object}	ErrorEnvelope
+//	@Failure		500					{object}	ErrorEnvelope
+//	@Router			/api/v1/model_registry/{model_registry_id}/model_transfer_jobs [post]
 func (app *App) CreateModelTransferJobHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	ctx := r.Context()
 
@@ -246,24 +250,25 @@ func (app *App) CreateModelTransferJobHandler(w http.ResponseWriter, r *http.Req
 
 // UpdateModelTransferJobHandler retries or replaces a model transfer job.
 //
-//	@Summary	Update a Model Transfer Job
-//	@Tags		ModelRegistryService
-//	@ID			updateModelTransferJob
-//	@Accept		json
-//	@Produce	json
-//	@Security	KubeflowUserID
-//	@Security	BearerAuth
-//	@Param		namespace			query		string						true	"Model registry namespace"
-//	@Param		model_registry_id	path		string						true	"Model registry name"
-//	@Param		job_name			path		string						true	"Transfer job name"
-//	@Param		deleteOldJob		query		boolean						false	"Delete the previous job"	default(false)
-//	@Param		body				body		ModelTransferJobEnvelope	true	"Updated transfer job; data.namespace defaults to the registry namespace"
-//	@Success	200					{object}	ModelTransferJobEnvelope
-//	@Failure	400					{object}	ErrorEnvelope
-//	@Failure	403					{object}	ErrorEnvelope
-//	@Failure	404					{object}	ErrorEnvelope
-//	@Failure	500					{object}	ErrorEnvelope
-//	@Router		/api/v1/model_registry/{model_registry_id}/model_transfer_jobs/{job_name} [patch]
+//	@Summary		Update a Model Transfer Job
+//	@Description	Retries or replaces a transfer job using the supplied data payload. deleteOldJob controls whether the previous job is deleted; data.namespace defaults to the registry namespace.
+//	@Tags			ModelRegistryService
+//	@ID				updateModelTransferJob
+//	@Accept			json
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace			query		string						true	"Model registry namespace"
+//	@Param			model_registry_id	path		string						true	"Model registry name"
+//	@Param			job_name			path		string						true	"Transfer job name"
+//	@Param			deleteOldJob		query		boolean						false	"Delete the previous job"	default(false)
+//	@Param			body				body		ModelTransferJobEnvelope	true	"Updated transfer job; data.namespace defaults to the registry namespace"
+//	@Success		200					{object}	ModelTransferJobEnvelope
+//	@Failure		400					{object}	ErrorEnvelope
+//	@Failure		403					{object}	ErrorEnvelope
+//	@Failure		404					{object}	ErrorEnvelope
+//	@Failure		500					{object}	ErrorEnvelope
+//	@Router			/api/v1/model_registry/{model_registry_id}/model_transfer_jobs/{job_name} [patch]
 func (app *App) UpdateModelTransferJobHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	ctx := r.Context()
 
@@ -412,22 +417,23 @@ func (app *App) DeleteModelTransferJobHandler(w http.ResponseWriter, r *http.Req
 
 // GetModelTransferJobEventsHandler lists events for a model transfer job.
 //
-//	@Summary	Get Model Transfer Job Events
-//	@Tags		ModelRegistryService
-//	@ID			getModelTransferJobEvents
-//	@Produce	json
-//	@Security	KubeflowUserID
-//	@Security	BearerAuth
-//	@Param		namespace			query		string	true	"Model registry namespace"
-//	@Param		model_registry_id	path		string	true	"Model registry name"
-//	@Param		job_name			path		string	true	"Transfer job name"
-//	@Param		jobNamespace		query		string	true	"Namespace containing the job"
-//	@Success	200					{object}	ModelTransferJobEventsEnvelope
-//	@Failure	400					{object}	ErrorEnvelope
-//	@Failure	403					{object}	ErrorEnvelope
-//	@Failure	404					{object}	ErrorEnvelope
-//	@Failure	500					{object}	ErrorEnvelope
-//	@Router		/api/v1/model_registry/{model_registry_id}/model_transfer_jobs/{job_name}/events [get]
+//	@Summary		Get Model Transfer Job Events
+//	@Description	Returns Kubernetes events related to the transfer job's pod, including timestamps, event types, reasons, and messages. jobNamespace is the namespace containing the job, not necessarily the registry namespace.
+//	@Tags			ModelRegistryService
+//	@ID				getModelTransferJobEvents
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace			query		string	true	"Model registry namespace"
+//	@Param			model_registry_id	path		string	true	"Model registry name"
+//	@Param			job_name			path		string	true	"Transfer job name"
+//	@Param			jobNamespace		query		string	true	"Namespace containing the job"
+//	@Success		200					{object}	ModelTransferJobEventsEnvelope
+//	@Failure		400					{object}	ErrorEnvelope
+//	@Failure		403					{object}	ErrorEnvelope
+//	@Failure		404					{object}	ErrorEnvelope
+//	@Failure		500					{object}	ErrorEnvelope
+//	@Router			/api/v1/model_registry/{model_registry_id}/model_transfer_jobs/{job_name}/events [get]
 func (app *App) GetModelTransferJobEventsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	ctx := r.Context()
 

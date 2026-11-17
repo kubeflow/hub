@@ -13,6 +13,24 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 )
 
+func TestCatalogSourceCreateDecoding(t *testing.T) {
+	for _, raw := range []string{
+		`{"id":"yaml_source","name":"YAML","type":"yaml","yaml":"models: []","enabled":false,"labels":["custom"],"includedModels":["org/*"],"excludedModels":[],"yamlCatalogPath":"models.yaml","allowedOrganization":"ignored"}`,
+		`{"id":"hf_source","name":"HF","type":"hf","allowedOrganization":"org","apiKey":"test-token","yaml":"ignored","hasConfiguredApiKey":false,"isDefault":false}`,
+		`{"id":"source","name":"Unknown","type":"unsupported"}`,
+	} {
+		var expected models.CatalogSourceConfigPayload
+		require.NoError(t, json.Unmarshal([]byte(raw), &expected))
+		actual, err := models.DecodeCatalogSourceCreate([]byte(raw))
+		require.NoError(t, err)
+		assert.Equal(t, expected, actual, "creation types must preserve existing payload fields")
+	}
+	for _, raw := range []string{`{`, `{"type":false}`, `{"type":"yaml","yaml":true}`, `{"type":"hf","allowedOrganization":false}`} {
+		_, err := models.DecodeCatalogSourceCreate([]byte(raw))
+		assert.Error(t, err)
+	}
+}
+
 func TestConfiguredApiKeyParsingAndMerging(t *testing.T) {
 	defaultYAML := `catalogs:
   - id: hf_source

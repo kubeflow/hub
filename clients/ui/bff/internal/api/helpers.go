@@ -10,16 +10,17 @@ import (
 )
 
 type Envelope[D any, M any] struct {
-	Data     D `json:"data"`
+	// The request or response payload
+	Data D `json:"data" validate:"required"`
+
+	// Metadata about the request or response
 	Metadata M `json:"metadata,omitempty"`
 }
 
 type None *struct{}
 
 func (app *App) WriteJSON(w http.ResponseWriter, status int, data any, headers http.Header) error {
-
 	js, err := json.MarshalIndent(data, "", "\t")
-
 	if err != nil {
 		return err
 	}
@@ -33,7 +34,6 @@ func (app *App) WriteJSON(w http.ResponseWriter, status int, data any, headers h
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_, err = w.Write(js)
-
 	if err != nil {
 		return err
 	}
@@ -42,7 +42,6 @@ func (app *App) WriteJSON(w http.ResponseWriter, status int, data any, headers h
 }
 
 func (app *App) ReadJSON(w http.ResponseWriter, r *http.Request, dst any) error {
-
 	maxBytes := 1_048_576
 	r.Body = http.MaxBytesReader(w, r.Body, int64(maxBytes))
 
@@ -50,7 +49,6 @@ func (app *App) ReadJSON(w http.ResponseWriter, r *http.Request, dst any) error 
 	dec.DisallowUnknownFields()
 
 	err := dec.Decode(dst)
-
 	if err != nil {
 		var syntaxError *json.SyntaxError
 		var unmarshalTypeError *json.UnmarshalTypeError
