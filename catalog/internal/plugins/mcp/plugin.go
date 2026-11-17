@@ -132,7 +132,21 @@ func (p *Plugin) RegisterRoutes(router chi.Router) error {
 		router.Method(route.Method, route.Pattern, route.HandlerFunc)
 	}
 
-	router.Get("/api/mcp_catalog/v1alpha1/mcp_servers/{server_id}/logo", LogoHandler(mcpProvider))
+	registerLogoRoutes(router, mcpProvider)
 
 	return nil
+}
+
+// logoRoutePaths lists the logo endpoint for every served API version. The logo
+// is served by a custom handler (not the generated controllers), so each
+// version must be registered explicitly.
+var logoRoutePaths = []string{
+	"/api/mcp_catalog/v1alpha1/mcp_servers/{server_id}/logo",
+	"/api/mcp_catalog/v1/mcp_servers/{server_id}/logo",
+}
+
+func registerLogoRoutes(router chi.Router, provider mcpcatalog.MCPCatalogProvider) {
+	for _, path := range logoRoutePaths {
+		router.Get(path, LogoHandler(provider))
+	}
 }

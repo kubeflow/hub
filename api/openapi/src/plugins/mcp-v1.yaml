@@ -151,6 +151,80 @@ paths:
           type: string
         in: path
         required: true
+  /api/mcp_catalog/v1/mcp_servers/{server_id}/logo:
+    description: >-
+      The REST endpoint/path used to fetch the logo image for an `MCPServer`.
+    get:
+      # This operation is served by a custom handler in the MCP plugin
+      # (internal/plugins/mcp/logo_handler.go): it returns raw image bytes or a
+      # 302 redirect, which the generated JSON controller cannot express.
+      # `x-internal` documents the endpoint in the published spec while excluding
+      # it from client/server code generation so the manual route is authoritative.
+      x-internal: true
+      summary: Get the logo image for an `MCPServer`.
+      description: >-
+        Returns the MCP server's logo. When the stored logo is an inline data
+        URI, the decoded image bytes are served directly with the matching image
+        content type (restricted to a set of known image media types). When the
+        stored logo is a plain http(s) URL, the client is redirected to it.
+      tags:
+        - MCPCatalogService
+      parameters:
+        - name: server_id
+          description: A unique identifier for an `MCPServer`.
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        "200":
+          description: The MCP server logo image.
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/gif:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+            image/svg+xml:
+              schema:
+                type: string
+                format: binary
+            image/x-icon:
+              schema:
+                type: string
+                format: binary
+        "302":
+          description: >-
+            Redirect to the external logo URL when the stored logo is a plain
+            http(s) URL rather than an inline data URI.
+          headers:
+            Location:
+              description: The external logo URL.
+              schema:
+                type: string
+                format: uri
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "413":
+          description: The stored logo exceeds the maximum allowed size.
+        "415":
+          description: The stored logo has an unsupported media type.
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      operationId: getMCPServerLogo
 components:
   schemas:
     MCPServer:

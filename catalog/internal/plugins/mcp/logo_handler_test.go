@@ -338,3 +338,27 @@ func TestLogoHandler_DataURI_TooLarge(t *testing.T) {
 
 	assert.Equal(t, http.StatusRequestEntityTooLarge, w.Code)
 }
+
+func TestRegisterLogoRoutes_ServesAllAPIVersions(t *testing.T) {
+	pngData := []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
+	dataURI := "data:image/png;base64," + base64.StdEncoding.EncodeToString(pngData)
+	provider := &mockProvider{
+		servers: map[string]*openapi.MCPServer{
+			"1": serverWithLogo(dataURI),
+		},
+	}
+	r := chi.NewRouter()
+	registerLogoRoutes(r, provider)
+
+	for _, version := range []string{"v1alpha1", "v1"} {
+		t.Run(version, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/mcp_catalog/%s/mcp_servers/1/logo", version), nil)
+			w := httptest.NewRecorder()
+			r.ServeHTTP(w, req)
+
+			assert.Equal(t, http.StatusOK, w.Code)
+			assert.Equal(t, "image/png", w.Header().Get("Content-Type"))
+			assert.Equal(t, pngData, w.Body.Bytes())
+		})
+	}
+}
