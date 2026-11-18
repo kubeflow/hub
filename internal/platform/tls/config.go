@@ -67,6 +67,14 @@ func (c *TLSConfig) BuildTLSConfig() (*tls.Config, error) {
 		MinVersion:         tls.VersionTLS12,
 	}
 
+	// InsecureSkipVerify turns off chain verification too, so a configured CA
+	// would otherwise be ignored. VerifyServerCert only controls the host name
+	// check: verify the chain against the CA here, like the PostgreSQL
+	// connector does for sslmode=require with an sslrootcert (verify-ca).
+	if rootCAs != nil && !c.VerifyServerCert {
+		tlsConfig.VerifyConnection = verifyPeerChain(rootCAs)
+	}
+
 	if c.CertPath != "" && c.KeyPath != "" {
 		cert, err := tls.LoadX509KeyPair(c.CertPath, c.KeyPath)
 		if err != nil {
@@ -88,6 +96,27 @@ func (c *TLSConfig) BuildTLSConfig() (*tls.Config, error) {
 	}
 
 	return tlsConfig, nil
+}
+
+// verifyPeerChain returns a VerifyConnection callback that checks the server's
+// certificate chain against roots without checking the host name.
+func verifyPeerChain(roots *x509.CertPool) func(tls.ConnectionState) error {
+	return func(cs tls.ConnectionState) error {
+		if len(cs.PeerCertificates) == 0 {
+			return fmt.Errorf("server did not present a certificate")
+		}
+		opts := x509.VerifyOptions{
+			Roots:         roots,
+			Intermediates: x509.NewCertPool(),
+		}
+		for _, cert := range cs.PeerCertificates[1:] {
+			opts.Intermediates.AddCert(cert)
+		}
+		if _, err := cs.PeerCertificates[0].Verify(opts); err != nil {
+			return fmt.Errorf("failed to verify server certificate: %w", err)
+		}
+		return nil
+	}
 }
 
 // parseCipherSuites parses a colon-separated list of cipher suite names
