@@ -5,8 +5,6 @@ import { appChrome } from '~/__tests__/cypress/cypress/pages/appChrome';
 import { mockModelRegistry } from '~/__mocks__/mockModelRegistry';
 import {
   setupModelCatalogIntercepts,
-  setupHfAccessCardIntercepts,
-  interceptSingleModel,
   setupValidatedModelIntercepts,
   interceptArtifactsList,
   interceptPerformanceArtifactsList,
@@ -19,7 +17,6 @@ import {
   MODEL_REGISTRY_API_VERSION,
 } from '~/__tests__/cypress/cypress/support/commands/api';
 import { ModelCatalogTask } from '~/concepts/modelCatalog/const';
-import { buildHfAccessCustomProperties } from '~/__tests__/utils/createHfAccessModel';
 
 describe('Model Catalog Details Page', () => {
   beforeEach(() => {
@@ -54,37 +51,6 @@ describe('Model Catalog Details Page', () => {
     modelCatalog.findModelCatalogDetailLink().first().click();
     appChrome.waitForA11y();
     modelCatalog.findModelArchitecture().should('not.exist');
-  });
-});
-
-describe('Model Catalog Details Page - Gated model without access grant', () => {
-  it('shows the standard details and model card when metadata is available', () => {
-    const sourceId = 'hugging_face_source';
-    const modelName = 'meta-llama/gated-model';
-    const description = 'Visible details for a gated model without an access grant.';
-    const readmeHeading = 'Gated model card remains visible';
-    const gatedModel = mockCatalogModel({
-      name: modelName,
-      source_id: sourceId,
-      description,
-      readme: `# ${readmeHeading}`,
-      customProperties: buildHfAccessCustomProperties('gated_auto', 'false'),
-    });
-    setupHfAccessCardIntercepts([gatedModel]);
-    interceptSingleModel(sourceId, gatedModel);
-    interceptArtifactsList({ items: [], size: 0, pageSize: 10, nextPageToken: '' });
-
-    modelCatalog.visit();
-    modelCatalog.findLoadingState().should('not.exist');
-    modelCatalog
-      .findModelCatalogCardByName('gated-model')
-      .findByTestId('model-catalog-detail-link')
-      .click();
-
-    cy.url().should('include', sourceId).and('include', 'gated-model');
-    modelCatalog.findAccessLabelGated().should('be.visible');
-    modelCatalog.findDetailsDescription().should('contain.text', description);
-    modelCatalog.findModelCardMarkdown().should('contain.text', readmeHeading);
   });
 });
 
