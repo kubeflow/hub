@@ -27,7 +27,8 @@ requests = "^2.33.0"
 
 [tool.poetry.group.dev.dependencies]
 # Testing
-pytest = ">=8.0.0,<10.0.0"
+# pytest 9.2 removed Node._nodeid, which schemathesis < 4.32.7 relies on; schemathesis >= 4.32.7 requires Python >= 3.11
+pytest = ">=8.0.0,<9.2.0"
 pytest-xdist = "^3.5.0"
 pytest-timeout = "^2.2.0"
 pytest-cov = ">=4.1,<8.0"

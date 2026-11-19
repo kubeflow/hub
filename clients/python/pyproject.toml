@@ -47,7 +47,8 @@ myst-parser = { extras = ["linkify"], version = ">=2,<5" }
 sphinx-autobuild = ">=2021.3.14,<2025.0.0"
 
 [tool.poetry.group.dev.dependencies]
-pytest = ">=7.4.2,<10.0.0"
+# pytest 9.2 removed Node._nodeid, which schemathesis < 4.32.7 relies on; schemathesis >= 4.32.7 requires Python >= 3.11
+pytest = ">=7.4.2,<9.2.0"
 coverage = { extras = ["toml"], version = "^7.3.2" }
 pytest-cov = ">=4.1,<8.0"
 pytest-mock = ">=3.7.0"
