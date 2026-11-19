@@ -100,7 +100,7 @@ internal/server/openapi/v1/api_model_registry_service.go: bin/openapi-generator-
 
 # generate the openapi schema model and client
 .PHONY: gen/openapi
-gen/openapi: bin/openapi-generator-cli api/openapi/model-registry.yaml api/openapi/catalog.yaml openapi/validate pkg/openapi/client.go
+gen/openapi: bin/openapi-generator-cli api/openapi/model-registry.yaml api/openapi/model-registry-v1.yaml api/openapi/catalog.yaml openapi/validate pkg/openapi/client.go pkg/openapi-v1/client.go
 	make -C catalog $@
 
 pkg/openapi/client.go: bin/openapi-generator-cli api/openapi/model-registry.yaml clean-pkg-openapi bin/goimports
@@ -108,6 +108,15 @@ pkg/openapi/client.go: bin/openapi-generator-cli api/openapi/model-registry.yaml
 		-i api/openapi/model-registry.yaml -g go -o pkg/openapi --package-name openapi \
 		--ignore-file-override ./.openapi-generator-ignore --additional-properties=isGoSubmodule=true,enumClassPrefix=true,useOneOfDiscriminatorLookup=true,generateUnmarshalJSON=false
 	$(PROJECT_BIN)/goimports -w pkg/openapi
+
+# pkg/openapi-v1 is a separate Go module/client from pkg/openapi (v1alpha3): the model-registry
+# server shares pkg/openapi's model types internally across both API versions, so repointing it
+# to v1 would break v1alpha3 server internals. The v1 BFF client gets its own package instead.
+pkg/openapi-v1/client.go: bin/openapi-generator-cli api/openapi/model-registry-v1.yaml clean-pkg-openapi-v1 bin/goimports
+	${OPENAPI_GENERATOR} generate \
+		-i api/openapi/model-registry-v1.yaml -g go -o pkg/openapi-v1 --package-name openapi \
+		--ignore-file-override ./.openapi-generator-ignore --additional-properties=isGoSubmodule=true,enumClassPrefix=true,useOneOfDiscriminatorLookup=true,generateUnmarshalJSON=false
+	$(PROJECT_BIN)/goimports -w pkg/openapi-v1
 
 # Start the MySQL database
 .PHONY: start/mysql
@@ -171,6 +180,12 @@ clean-pkg-openapi:
 	while IFS= read -r file; do rm -f "pkg/openapi/$$file"; done < pkg/openapi/.openapi-generator/FILES
 	make -C catalog $@
 
+.PHONY: clean-pkg-openapi-v1
+clean-pkg-openapi-v1:
+	if [ -f pkg/openapi-v1/.openapi-generator/FILES ]; then \
+		while IFS= read -r file; do rm -f "pkg/openapi-v1/$$file"; done < pkg/openapi-v1/.openapi-generator/FILES; \
+	fi
+
 .PHONY: clean-internal-server-openapi
 clean-internal-server-openapi:
 	while IFS= read -r file; do rm -f "internal/server/openapi/v1alpha3/$$file"; done < internal/server/openapi/v1alpha3/.openapi-generator/FILES
@@ -180,7 +195,7 @@ clean-internal-server-openapi:
 	make -C catalog $@
 
 .PHONY: clean
-clean: clean-pkg-openapi clean-internal-server-openapi clean/csi
+clean: clean-pkg-openapi clean-pkg-openapi-v1 clean-internal-server-openapi clean/csi
 	rm -Rf ./model-registry internal/converter/generated/*.go
 
 .PHONY: clean/odh

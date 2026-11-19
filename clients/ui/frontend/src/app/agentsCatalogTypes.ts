@@ -18,7 +18,7 @@ export type AgentEnvVar = {
 export type Agent = {
   id: string;
   name: string;
-  source_id?: string;
+  sourceId?: string;
   displayName?: string;
   description?: string;
   readme?: string;

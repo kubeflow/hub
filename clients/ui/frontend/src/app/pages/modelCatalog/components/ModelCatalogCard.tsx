@@ -48,7 +48,7 @@ const ModelCatalogCard: React.FC<ModelCatalogCardProps> = ({ model, source }) =>
   const showHeaderLabels = isValidated || accessLabelVariant || source;
 
   return (
-    <Card isFullHeight data-testid="model-catalog-card" key={`${model.name}/${model.source_id}`}>
+    <Card isFullHeight data-testid="model-catalog-card" key={`${model.name}/${model.sourceId}`}>
       <CardHeader>
         <Flex
           alignItems={{ default: 'alignItemsFlexStart' }}

@@ -23,7 +23,7 @@ const generateMockServers = (count: number, prefix: string, sourceId: string) =>
       id: `${prefix}-${i + 1}`,
       name: `${prefix} Server ${i + 1}`,
       description: `Description for ${prefix} server ${i + 1}`,
-      source_id: sourceId, // eslint-disable-line camelcase
+      sourceId,
     }),
   );
 

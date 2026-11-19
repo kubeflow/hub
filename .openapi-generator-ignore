@@ -37,6 +37,21 @@ pkg/openapi/**all_of.go
 pkg/openapi/go.mod
 pkg/openapi/go.sum
 
+# model and client files (v1)
+pkg/openapi-v1/api
+pkg/openapi-v1/api/**
+pkg/openapi-v1/git_push.sh
+pkg/openapi-v1/.gitignore
+pkg/openapi-v1/.travis.yml
+pkg/openapi-v1/.openapi-generator-ignore
+pkg/openapi-v1/README.md
+pkg/openapi-v1/docs/**.md
+pkg/openapi-v1/test
+pkg/openapi-v1/test/**
+pkg/openapi-v1/**all_of.go
+pkg/openapi-v1/go.mod
+pkg/openapi-v1/go.sum
+
 # server files to ignore (generated separately per API version, e.g. v1alpha3, v1)
 internal/server/openapi/*/api
 internal/server/openapi/*/api/**

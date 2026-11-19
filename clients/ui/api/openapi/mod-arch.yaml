@@ -2699,7 +2699,7 @@ components:
         name:
           type: string
           description: Agent identifier. Must be unique within a source.
-        source_id:
+        sourceId:
           type: string
           description: Catalog source that provides this entity.
         displayName:
@@ -2952,7 +2952,7 @@ components:
           description: |-
             Labels associated with the source. The catalog source labels can be
             used to filter models from sources with the same label (see
-            `sourceLabel` on `/api/model_catalog/v1alpha1/models`)
+            `sourceLabel` on `/api/model_catalog/v1/models`)
           type: array
           items:
             type: string
@@ -3536,7 +3536,7 @@ components:
         name:
           type: string
           description: Human-readable MCP server name
-        source_id:
+        sourceId:
           type: string
           description: ID of the catalog source this server belongs to
         description:
@@ -3851,7 +3851,7 @@ components:
           description: |-
             Labels associated with the source. The catalog source labels can be
             used to filter models from sources with the same label (see
-            `sourceLabel` on `/api/model_catalog/v1alpha1/models`)
+            `sourceLabel` on `/api/model_catalog/v1/models`)
           type: array
           items:
             type: string
