@@ -73,7 +73,14 @@ func (r *MetricHistoryRepositoryImpl) List(listOptions models.MetricHistoryListO
 
 func applyMetricHistoryListFilters(query *gorm.DB, listOptions *models.MetricHistoryListOptions) *gorm.DB {
 	if listOptions.Name != nil {
-		query = query.Where(utils.GetTableName(query, &schema.Artifact{})+".name LIKE ?", fmt.Sprintf("%%%s%%", *listOptions.Name))
+		// History rows are named "<experiment run id>:<metric name>__<timestamp>", and the
+		// timestamp is all digits. Match the whole metric name between ":" and "__", and
+		// skip longer names that only start with "<name>__" (such as "loss__ema" or
+		// "loss_" when asking for "loss"): those leave an "_" after the match.
+		nameColumn := utils.GetTableName(query, &schema.Artifact{}) + ".name"
+		name := escapeLike(*listOptions.Name)
+		query = query.Where(nameColumn+" LIKE ? AND "+nameColumn+" NOT LIKE ?",
+			"%:"+name+`\_\_%`, "%:"+name+`\_\_%\_%`)
 	} else if listOptions.ExternalID != nil {
 		query = query.Where(utils.GetTableName(query, &schema.Artifact{})+".external_id = ?", listOptions.ExternalID)
 	}

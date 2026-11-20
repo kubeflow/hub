@@ -159,6 +159,40 @@ func TestGetExperimentRunMetricHistoryWithNameFilter(t *testing.T) {
 	assert.NotContains(t, result.Items[0].CustomProperties, "experiment_run_id", "experiment_run_id should be filtered out of custom properties")
 }
 
+func TestGetExperimentRunMetricHistoryNameFilterMatchesWholeName(t *testing.T) {
+	service, cleanup := SetupModelRegistryService(t)
+	defer cleanup()
+
+	savedExperiment, err := service.UpsertExperiment(&openapi.Experiment{Name: "metric-name-match-experiment"})
+	require.NoError(t, err)
+	savedExperimentRun, err := service.UpsertExperimentRun(&openapi.ExperimentRun{Name: new("metric-name-match-run")}, savedExperiment.Id)
+	require.NoError(t, err)
+
+	// "loss" is a substring of the other names, and "_" is a LIKE wildcard.
+	for i, name := range []string{"loss", "loss_", "val_loss", "loss_scale", "loss__ema", "lossXscale"} {
+		_, err := service.UpsertExperimentRunArtifact(&openapi.Artifact{
+			Metric: &openapi.Metric{
+				Name:  new(name),
+				Value: new(float64(i)),
+				Step:  new(int64(1)),
+			},
+		}, *savedExperimentRun.Id)
+		require.NoError(t, err, "error upserting metric %s", name)
+	}
+
+	for _, name := range []string{"loss", "loss_", "loss__ema", "loss_scale"} {
+		result, err := service.GetExperimentRunMetricHistory(new(name), nil, api.ListOptions{}, savedExperimentRun.Id)
+		require.NoError(t, err)
+		require.Len(t, result.Items, 1, "metric history for %q", name)
+		assert.Equal(t, name, *result.Items[0].Name)
+
+		result, err = service.GetExperimentRunMetricHistory(new(name), nil, api.ListOptions{}, nil)
+		require.NoError(t, err)
+		require.Len(t, result.Items, 1, "bulk metric history for %q", name)
+		assert.Equal(t, name, *result.Items[0].Name)
+	}
+}
+
 func TestInsertMetricHistory(t *testing.T) {
 	service, cleanup := SetupModelRegistryService(t)
 	defer cleanup()
