@@ -1,13 +1,16 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/kubeflow/hub/ui/bff/internal/constants"
+	"github.com/kubeflow/hub/ui/bff/internal/integrations/httpclient"
 	"github.com/kubeflow/hub/ui/bff/internal/models"
 	"github.com/kubeflow/hub/ui/bff/internal/repositories"
 )
@@ -15,6 +18,21 @@ import (
 type McpCatalogSettingsSourceConfigEnvelope Envelope[*models.McpCatalogSourceConfig, None]
 type McpCatalogSettingsSourceConfigListEnvelope Envelope[*models.McpCatalogSourceConfigList, None]
 type McpCatalogSourcePayloadEnvelope Envelope[*models.McpCatalogSourceConfigPayload, None]
+
+func (app *App) clearMcpCatalogSourceStatus(ctx context.Context, sourceID string) {
+	client, ok := ctx.Value(constants.ModelCatalogStatusHttpClientKey).(httpclient.HTTPClientInterface)
+	if !ok {
+		app.logger.Warn("MCP source saved but status client is unavailable", slog.String("source_id", sourceID))
+		return
+	}
+
+	if err := app.repositories.ModelCatalogClient.ClearSourceStatus(client, sourceID); err != nil {
+		app.logger.Warn("MCP source saved but source status could not be cleared",
+			slog.String("source_id", sourceID),
+			slog.Any("error", err),
+		)
+	}
+}
 
 func (app *App) GetAllMcpCatalogSourceConfigsHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	ctx := r.Context()
@@ -163,6 +181,16 @@ func (app *App) UpdateMcpCatalogSourceConfigHandler(w http.ResponseWriter, r *ht
 		sourceID = envelope.Data.Id
 	}
 
+	previous, err := app.repositories.McpCatalogSettingsRepository.GetMcpCatalogSourceConfig(ctx, client, namespace, sourceID)
+	if err != nil {
+		if errors.Is(err, repositories.ErrMcpCatalogSourceNotFound) {
+			app.notFoundResponse(w, r)
+		} else {
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
 	updated, err := app.repositories.McpCatalogSettingsRepository.UpdateMcpCatalogSourceConfig(ctx, client, namespace, sourceID, *envelope.Data)
 	if err != nil {
 		if errors.Is(err, repositories.ErrMcpCatalogSourceNotFound) {
@@ -180,6 +208,9 @@ func (app *App) UpdateMcpCatalogSourceConfigHandler(w http.ResponseWriter, r *ht
 
 	result := McpCatalogSettingsSourceConfigEnvelope{
 		Data: updated,
+	}
+	if repositories.ShouldClearMcpCatalogSourceStatusOnUpdate(previous, updated) {
+		app.clearMcpCatalogSourceStatus(ctx, updated.Id)
 	}
 
 	if err = app.WriteJSON(w, http.StatusOK, result, nil); err != nil {
