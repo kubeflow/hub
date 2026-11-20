@@ -43,7 +43,7 @@ func (r *DocArtifactRepositoryImpl) List(listOptions models.DocArtifactListOptio
 
 func applyDocArtifactListFilters(query *gorm.DB, listOptions *models.DocArtifactListOptions) *gorm.DB {
 	if listOptions.Name != nil {
-		query = query.Where("name LIKE ?", fmt.Sprintf("%%:%s", *listOptions.Name))
+		query = query.Where("name LIKE ?", fmt.Sprintf("%%:%s", escapeLike(*listOptions.Name)))
 	} else if listOptions.ExternalID != nil {
 		query = query.Where("external_id = ?", listOptions.ExternalID)
 	}

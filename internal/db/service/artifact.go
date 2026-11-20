@@ -80,7 +80,7 @@ func (r *ArtifactRepositoryImpl) List(listOptions models.ArtifactListOptions) (*
 	if listOptions.Name != nil {
 		// Name is not prefixed with the parent resource id to allow for filtering by name only
 		// Parent resource Id is used later to filter by Attribution.context_id
-		query = query.Where("name LIKE ?", fmt.Sprintf("%%:%s", *listOptions.Name))
+		query = query.Where("name LIKE ?", fmt.Sprintf("%%:%s", escapeLike(*listOptions.Name)))
 	} else if listOptions.ExternalID != nil {
 		query = query.Where("external_id = ?", listOptions.ExternalID)
 	}

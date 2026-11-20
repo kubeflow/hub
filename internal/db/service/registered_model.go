@@ -44,7 +44,7 @@ func (r *RegisteredModelRepositoryImpl) List(listOptions models.RegisteredModelL
 
 func applyRegisteredModelListFilters(query *gorm.DB, listOptions *models.RegisteredModelListOptions) *gorm.DB {
 	if listOptions.Name != nil {
-		query = query.Where("name LIKE ?", listOptions.Name)
+		query = query.Where("name LIKE ?", escapeLike(*listOptions.Name))
 	} else if listOptions.ExternalID != nil {
 		query = query.Where("external_id = ?", listOptions.ExternalID)
 	}

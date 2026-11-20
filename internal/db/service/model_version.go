@@ -57,9 +57,9 @@ func (r *ModelVersionRepositoryImpl) List(listOptions models.ModelVersionListOpt
 func applyModelVersionListFilters(query *gorm.DB, listOptions *models.ModelVersionListOptions) *gorm.DB {
 	if listOptions.Name != nil {
 		if listOptions.ParentResourceID != nil {
-			query = query.Where("name LIKE ?", fmt.Sprintf("%d:%s", *listOptions.ParentResourceID, *listOptions.Name))
+			query = query.Where("name LIKE ?", fmt.Sprintf("%d:%s", *listOptions.ParentResourceID, escapeLike(*listOptions.Name)))
 		} else {
-			query = query.Where("name LIKE ?", fmt.Sprintf("%%:%s", *listOptions.Name))
+			query = query.Where("name LIKE ?", fmt.Sprintf("%%:%s", escapeLike(*listOptions.Name)))
 		}
 	} else if listOptions.ExternalID != nil {
 		query = query.Where("external_id = ?", listOptions.ExternalID)
