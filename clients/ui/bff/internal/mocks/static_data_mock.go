@@ -830,9 +830,11 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 	//   public              — full metadata, no hf_gated_access_granted
 	//   private             — full metadata
 	//   gated_auto + true   — full metadata
-	//   gated_auto + false  — lock / request access; empty readme & description
+	//   gated_auto + false  — excluded at ingestion by the catalog service
+	//                         (hf_catalog.go shouldBlockGatedModel); no fixture here
 	//   gated_manual + true — full metadata
-	//   gated_manual + false— lock / request access; empty readme & description
+	//   gated_manual + false— excluded at ingestion by the catalog service
+	//                         (hf_catalog.go shouldBlockGatedModel); no fixture here
 	// Non-HF models (sample-source, admin sources) have no hf_access_type.
 	huggingFaceModel1 := models.CatalogModel{
 		Name:             "hf-mock/public-model",
@@ -872,17 +874,6 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 		CustomProperties: hfAccessCustomProperties("gated_auto", "true"),
 	}
 
-	hfGatedAutoDenied := models.CatalogModel{
-		Name:             "meta-llama/Llama-3.1-8B-Instruct",
-		Description:      stringToPointer(""),
-		Provider:         stringToPointer("Meta"),
-		Tasks:            []string{},
-		License:          stringToPointer("unknown"),
-		SourceId:         stringToPointer("hugging_face_source"),
-		Readme:           stringToPointer(""),
-		CustomProperties: hfAccessCustomProperties("gated_auto", "false"),
-	}
-
 	hfGatedManualGranted := models.CatalogModel{
 		Name:             "hf-mock/gated-manual-granted",
 		Description:      stringToPointer("Gated manual model with access granted (hf_access_type=gated_manual, hf_gated_access_granted=true)"),
@@ -892,17 +883,6 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 		SourceId:         stringToPointer("hugging_face_source"),
 		Readme:           stringToPointer("# Gated manual model\n\nFull metadata when manual gate access is granted."),
 		CustomProperties: hfAccessCustomProperties("gated_manual", "true"),
-	}
-
-	hfGatedManualDenied := models.CatalogModel{
-		Name:             "hf-mock/gated-manual-denied",
-		Description:      stringToPointer(""),
-		Provider:         stringToPointer("hf-mock"),
-		Tasks:            []string{},
-		License:          stringToPointer("unknown"),
-		SourceId:         stringToPointer("hugging_face_source"),
-		Readme:           stringToPointer(""),
-		CustomProperties: hfAccessCustomProperties("gated_manual", "false"),
 	}
 
 	otherModel1 := models.CatalogModel{
@@ -963,8 +943,7 @@ Granite 3.1 Instruct Models are primarily finetuned using instruction-response p
 		sampleModel1, sampleModel2, sampleModel3, sampleModel4,
 		huggingFaceModel1,
 		hfPrivateModel,
-		hfGatedAutoGranted, hfGatedAutoDenied,
-		hfGatedManualGranted, hfGatedManualDenied,
+		hfGatedAutoGranted, hfGatedManualGranted,
 		noPerformanceModel,
 		otherModel1, otherModel2,
 	}

@@ -4,9 +4,6 @@ import { modelCatalog } from '~/__tests__/cypress/cypress/pages/modelCatalog';
 import { appChrome } from '~/__tests__/cypress/cypress/pages/appChrome';
 import { mockModelRegistry } from '~/__mocks__/mockModelRegistry';
 import {
-  GATED_DENIED_DETAILS_MODEL_NAME,
-  GATED_DENIED_DETAILS_SOURCE_ID,
-  setupGatedDeniedDetailsIntercepts,
   setupModelCatalogIntercepts,
   setupValidatedModelIntercepts,
   interceptArtifactsList,
@@ -528,48 +525,5 @@ describe('Model Catalog Registration - Model Type Field', () => {
 
     modelCatalog.findModelTypeSelect().should('contain.text', 'Predictive Model');
     modelCatalog.findModelTypeSelect().should('be.disabled');
-  });
-});
-
-describe('Model Catalog Details Page - Gated access denied', () => {
-  it('shows gated access required state instead of model details', () => {
-    setupGatedDeniedDetailsIntercepts({ hfUsername: 'alice' });
-
-    modelCatalog.visitModelDetails(GATED_DENIED_DETAILS_SOURCE_ID, GATED_DENIED_DETAILS_MODEL_NAME);
-    appChrome.waitForA11y();
-
-    modelCatalog.findGatedAccessRequiredState().should('be.visible');
-    modelCatalog.findGatedAccessRequiredState().should('contain.text', 'Model access required');
-    modelCatalog
-      .findGatedAccessRequiredState()
-      .should('contain.text', 'Log in to the Hugging Face account');
-    modelCatalog.findGatedAccessRequiredState().should('contain.text', 'alice');
-    modelCatalog.findGatedAccessRequestLink().should('be.visible');
-    modelCatalog.findDetailsDescription().should('not.exist');
-    modelCatalog.findModelCardMarkdown().should('not.exist');
-    modelCatalog.findRegisterModelButton().should('have.attr', 'aria-disabled', 'true');
-    modelCatalog.findRegisterModelButton().trigger('mouseenter');
-    modelCatalog
-      .findRegisterCatalogModelTooltip()
-      .should('be.visible')
-      .and('contain.text', 'Model access is required to deploy or register this model.');
-    modelCatalog.findAccessLabelGatedDenied().should('be.visible');
-  });
-
-  it('shows generic gated access guidance when hfUsername is unavailable', () => {
-    setupGatedDeniedDetailsIntercepts();
-
-    modelCatalog.visitModelDetails(GATED_DENIED_DETAILS_SOURCE_ID, GATED_DENIED_DETAILS_MODEL_NAME);
-
-    modelCatalog.findGatedAccessRequiredState().should('be.visible');
-    modelCatalog
-      .findGatedAccessRequiredState()
-      .should(
-        'contain.text',
-        'This model is gated on Hugging Face. Request access on Hugging Face.',
-      );
-    modelCatalog
-      .findGatedAccessRequiredState()
-      .should('not.contain.text', 'Log in to the Hugging Face account');
   });
 });

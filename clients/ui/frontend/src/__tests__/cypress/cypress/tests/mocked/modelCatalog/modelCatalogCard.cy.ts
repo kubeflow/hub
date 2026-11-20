@@ -263,20 +263,12 @@ describe('ModelCatalogCard HF access labels', () => {
     hfAccessType: 'gated_auto',
     hfGatedAccessGranted: 'true',
   });
-
-  const gatedDeniedModel = createHfAccessCardModel({
-    name: 'meta-llama/Llama-3.1-8B-Instruct-INT8',
-    hfAccessType: 'gated_auto',
-    hfGatedAccessGranted: 'false',
-  });
-
   beforeEach(() => {
-    setupHfAccessCardIntercepts([privateModel, gatedGrantedModel, gatedDeniedModel]);
+    setupHfAccessCardIntercepts([privateModel, gatedGrantedModel]);
     modelCatalog.visit();
     modelCatalog.findLoadingState().should('not.exist');
     modelCatalog.findModelCatalogCardByName('Llama-3.1-8B-Instruct-FP8-dynamic').should('exist');
     modelCatalog.findModelCatalogCardByName('Llama-3.1-8B-Instruct-INT4').should('exist');
-    modelCatalog.findModelCatalogCardByName('Llama-3.1-8B-Instruct-INT8').should('exist');
   });
 
   it('should show Private label with popover on private HF model card', () => {
@@ -299,19 +291,5 @@ describe('ModelCatalogCard HF access labels', () => {
     });
     modelCatalog.expectAccessLabelPopoverText(MODEL_CATALOG_POPOVER_MESSAGES.HF_GATED);
     modelCatalog.findModelCatalogCardDescriptionByName(modelName).should('be.visible');
-  });
-
-  it('should show warning Gated label with popover and minimal card for denied gated HF model', () => {
-    const modelName = 'Llama-3.1-8B-Instruct-INT8';
-
-    modelCatalog.findModelCatalogCardByName(modelName).within(() => {
-      modelCatalog.findAccessLabelGatedDenied().should('contain.text', 'Gated');
-      modelCatalog.openGatedDeniedAccessLabelPopover();
-    });
-    modelCatalog.expectAccessLabelPopoverText(
-      MODEL_CATALOG_POPOVER_MESSAGES.HF_GATED_ACCESS_DENIED,
-    );
-    modelCatalog.findModelCatalogCardDetailLinkByName(modelName).should('exist');
-    modelCatalog.findModelCatalogCardDescriptionByName(modelName).should('not.exist');
   });
 });
