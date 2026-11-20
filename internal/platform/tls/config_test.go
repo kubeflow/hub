@@ -1,11 +1,20 @@
 package tls_test
 
 import (
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"math/big"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	tlsconfig "github.com/kubeflow/hub/internal/platform/tls"
 )
@@ -455,4 +464,94 @@ func TestBuildTLSConfig_SameCAAndRootCert(t *testing.T) {
 	if tlsConf.RootCAs == nil {
 		t.Error("Expected RootCAs to be set")
 	}
+}
+
+// TestBuildTLSConfig_RootCAWithoutVerifyServerCert checks that a configured root
+// CA is enforced when VerifyServerCert is false: the server certificate must
+// chain to the CA, but its host name is not checked.
+func TestBuildTLSConfig_RootCAWithoutVerifyServerCert(t *testing.T) {
+	ca := newTestCert(t, "test-ca", nil)
+	signed := newTestCert(t, "db.example.com", &ca)
+	untrusted := newTestCert(t, "db.example.com", nil)
+
+	rootCAFile := filepath.Join(t.TempDir(), "rootca.pem")
+	caPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: ca.Leaf.Raw})
+	if err := os.WriteFile(rootCAFile, caPEM, 0644); err != nil {
+		t.Fatalf("Failed to write root CA file: %v", err)
+	}
+
+	tlsConf, err := tlsconfig.NewTLSConfig("", "", rootCAFile, "", "", false).BuildTLSConfig()
+	if err != nil {
+		t.Fatalf("BuildTLSConfig() error = %v", err)
+	}
+
+	// The client dials 127.0.0.1, which is not in either certificate.
+	if err := tlsHandshake(t, tlsConf, signed); err != nil {
+		t.Errorf("Expected handshake to succeed with a server certificate signed by the root CA, got: %v", err)
+	}
+	if err := tlsHandshake(t, tlsConf, untrusted); err == nil {
+		t.Error("Expected handshake to fail with a server certificate not signed by the root CA")
+	}
+}
+
+// newTestCert returns a certificate for cn signed by parent, or self-signed
+// when parent is nil.
+func newTestCert(t *testing.T, cn string, parent *tls.Certificate) tls.Certificate {
+	t.Helper()
+
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("Failed to generate key: %v", err)
+	}
+	template := &x509.Certificate{
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: cn},
+		DNSNames:              []string{cn},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(time.Hour),
+		IsCA:                  parent == nil,
+		BasicConstraintsValid: true,
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+	}
+	issuer, signer := template, crypto.Signer(key)
+	if parent != nil {
+		issuer, signer = parent.Leaf, parent.PrivateKey.(crypto.Signer)
+	}
+	der, err := x509.CreateCertificate(rand.Reader, template, issuer, &key.PublicKey, signer)
+	if err != nil {
+		t.Fatalf("Failed to create certificate: %v", err)
+	}
+	leaf, err := x509.ParseCertificate(der)
+	if err != nil {
+		t.Fatalf("Failed to parse certificate: %v", err)
+	}
+	return tls.Certificate{Certificate: [][]byte{der}, PrivateKey: key, Leaf: leaf}
+}
+
+// tlsHandshake runs a TLS handshake between clientConf and a local server
+// presenting serverCert, and returns the client's error.
+func tlsHandshake(t *testing.T, clientConf *tls.Config, serverCert tls.Certificate) error {
+	t.Helper()
+
+	ln, err := tls.Listen("tcp", "127.0.0.1:0", &tls.Config{Certificates: []tls.Certificate{serverCert}})
+	if err != nil {
+		t.Fatalf("Failed to listen: %v", err)
+	}
+	defer func() { _ = ln.Close() }()
+
+	go func() {
+		conn, err := ln.Accept()
+		if err != nil {
+			return
+		}
+		defer func() { _ = conn.Close() }()
+		_ = conn.(*tls.Conn).Handshake()
+	}()
+
+	conn, err := tls.Dial("tcp", ln.Addr().String(), clientConf)
+	if err != nil {
+		return err
+	}
+	return conn.Close()
 }
