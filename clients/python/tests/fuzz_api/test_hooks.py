@@ -54,6 +54,50 @@ def test_map_case_sanitizes_queries_without_generation_hooks(registry_schema):
     assert case.query == {"name": "ab"}
 
 
+@pytest.mark.parametrize(("path", "method", "field", "limit"), [
+    ("/api/model_registry/v1/model_versions/{model_version_id}", "PATCH", "externalId", 255),
+    ("/api/model_registry/v1/model_versions", "POST", "name", 218),
+    ("/api/model_registry/v1/registered_models", "POST", "name", 255),
+    ("/api/model_registry/v1/registered_models", "POST", "externalId", 255),
+    ("/api/model_registry/v1/registered_models/{registered_model_id}/versions", "POST", "name", 218),
+    ("/api/model_registry/v1/artifacts", "POST", "name", 218),
+    ("/api/model_registry/v1/serving_environments", "POST", "name", 255),
+])
+@pytest.mark.parametrize("length", [218, 219, 255, 256, 65536])
+def test_map_case_limits_database_identifiers(registry_schema, path, method, field, limit, length):
+    operation = registry_schema[path][method]
+    value = "界" * length
+    description = "a" * 65536
+    case = operation.Case(
+        media_type="application/json",
+        body={field: value, "description": description, "artifactType": "doc-artifact"},
+    )
+
+    map_case(HookContext(operation=operation), case)
+
+    assert case.body[field] == value[:limit]
+    assert case.body["description"] == description
+
+
+@pytest.mark.parametrize(("value", "expected"), [
+    pytest.param("a" * 65535, "a" * 65535, id="ascii-at-limit"),
+    pytest.param("a" * 65536, "a" * 65535, id="ascii-over-limit"),
+    pytest.param("界" * 21845, "界" * 21845, id="unicode-at-limit"),
+    pytest.param("界" * 21846, "界" * 21845, id="unicode-over-limit"),
+    pytest.param("a" + "界" * 21845, "a" + "界" * 21844, id="partial-unicode-character"),
+])
+def test_map_case_limits_artifact_uri_bytes(registry_schema, value, expected):
+    operation = registry_schema["/api/model_registry/v1/artifacts"]["POST"]
+    case = operation.Case(
+        media_type="application/json",
+        body={"artifactType": "doc-artifact", "uri": value},
+    )
+
+    map_case(HookContext(operation=operation), case)
+
+    assert case.body["uri"] == expected
+
+
 def test_map_case_uses_v1_model_artifact_path(registry_schema):
     operation = registry_schema["/api/model_registry/v1/model_artifacts/{model_artifact_id}"]["PATCH"]
     case = operation.Case(

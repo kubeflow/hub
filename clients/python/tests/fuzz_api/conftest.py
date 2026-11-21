@@ -87,6 +87,19 @@ def _sanitize_body_dict(context: Any, body: dict) -> dict:
     allowed = _resolve_allowed(context)
     body = {k: v for k, v in body.items() if k in allowed}
     _enforce_field_types(body)
+    # Schemathesis coverage includes large strings when maxLength is absent.
+    # Both databases store names and external IDs in VARCHAR(255). Child names
+    # are prefixed with a parent ID or UUID plus ':', so reserve 37 characters.
+    name_limit = 255 if context.operation.path in {
+        "/api/model_registry/v1/registered_models",
+        "/api/model_registry/v1/serving_environments",
+    } else 218
+    for field, limit in (("name", name_limit), ("externalId", 255)):
+        if field in body:
+            body[field] = body[field][:limit]
+    # MySQL stores artifact URIs as TEXT, limited to 65535 bytes, not characters.
+    if "uri" in body:
+        body["uri"] = body["uri"].encode("utf-8")[:65535].decode("utf-8", errors="ignore")
     if "name" in body and body["name"] == "":
         body["name"] = f"fuzz-{secrets.randbelow(1000000)}"
     if "customProperties" in body:
