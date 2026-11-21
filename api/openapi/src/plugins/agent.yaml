@@ -3,6 +3,7 @@ paths:
     description: >-
       The REST endpoint/path used to list zero or more `Agent` entities.
     get:
+      deprecated: true
       summary: List agents.
       tags:
         - AgentCatalogService
@@ -58,6 +59,7 @@ paths:
   /api/agent_catalog/v1alpha1/agents/filter_options:
     description: Lists options for `filterQuery` when listing agents.
     get:
+      deprecated: true
       summary: Lists fields and values that can be used in `filterQuery` on the list agents endpoint.
       tags:
         - AgentCatalogService
@@ -76,6 +78,7 @@ paths:
     description: >-
       The REST endpoint/path used to get a single `Agent` entity.
     get:
+      deprecated: true
       summary: Get an agent by ID.
       tags:
         - AgentCatalogService
@@ -101,6 +104,7 @@ paths:
     description: >-
       The REST endpoint/path used to list artifacts for a specific agent.
     get:
+      deprecated: true
       summary: List artifacts for an agent.
       tags:
         - AgentCatalogService

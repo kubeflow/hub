@@ -3,6 +3,7 @@ paths:
     description: >-
       The REST endpoint/path used to list zero or more `CatalogModel` entities from all `CatalogSources`.
     get:
+      deprecated: true
       summary: Search catalog models across sources.
       tags:
         - ModelCatalogService
@@ -138,6 +139,7 @@ paths:
   /api/model_catalog/v1alpha1/models/filter_options:
     description: Lists options for `filterQuery` when listing models.
     get:
+      deprecated: true
       summary: Lists fields and available options that can be used in `filterQuery` on the list models endpoint.
       tags:
         - ModelCatalogService
@@ -155,6 +157,7 @@ paths:
     description: >-
       The REST endpoint/path used to get a `CatalogModel`.
     get:
+      deprecated: true
       summary: Get a `CatalogModel`.
       tags:
         - ModelCatalogService
@@ -185,6 +188,7 @@ paths:
     description: >-
       The REST endpoint/path used to list `CatalogArtifacts`.
     get:
+      deprecated: true
       summary: List CatalogArtifacts.
       tags:
         - ModelCatalogService
@@ -222,6 +226,7 @@ paths:
     description: >-
       Lists performance metrics artifacts (that is, artifacts of type `CatalogMetricsArtifact` where `metricsType` is `performance-metrics`).
     get:
+      deprecated: true
       summary: List CatalogArtifacts.
       tags:
         - ModelCatalogService

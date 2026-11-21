@@ -3,6 +3,7 @@ paths:
     description: >-
       The REST endpoint/path used to list zero or more `MCPServer` entities.
     get:
+      deprecated: true
       summary: List MCP servers.
       tags:
         - MCPCatalogService
@@ -52,6 +53,7 @@ paths:
   /api/mcp_catalog/v1alpha1/mcp_servers/filter_options:
     description: Lists options for `filterQuery` when listing MCP servers.
     get:
+      deprecated: true
       summary: Lists fields, values, and named queries that can be used in `filterQuery` on the list MCP servers endpoint.
       tags:
         - MCPCatalogService
@@ -69,6 +71,7 @@ paths:
     description: >-
       The REST endpoint/path used to get an `MCPServer`.
     get:
+      deprecated: true
       summary: Get an `MCPServer`.
       tags:
         - MCPCatalogService
@@ -95,6 +98,7 @@ paths:
     description: >-
       The REST endpoint/path used to list zero or more `MCPTool` entities for an `MCPServer`.
     get:
+      deprecated: true
       summary: List tools exposed by an `MCPServer`.
       tags:
         - MCPCatalogService
@@ -125,6 +129,7 @@ paths:
     description: >-
       The REST endpoint/path used to get a specific `MCPTool` from an `MCPServer`.
     get:
+      deprecated: true
       summary: Get an `MCPTool` from an `MCPServer`.
       tags:
         - MCPCatalogService
@@ -155,6 +160,7 @@ paths:
     description: >-
       The REST endpoint/path used to fetch the logo image for an `MCPServer`.
     get:
+      deprecated: true
       # This operation is served by a custom handler in the MCP plugin
       # (internal/plugins/mcp/logo_handler.go): it returns raw image bytes or a
       # 302 redirect, which the generated JSON controller cannot express.
