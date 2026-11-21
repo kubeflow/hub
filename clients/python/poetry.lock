@@ -1327,31 +1327,11 @@ markers = {main = "extra == \"hf\" and sys_platform != \"emscripten\""}
 
 [[package]]
 name = "harfile"
-version = "0.5.0"
-description = "Writer for HTTP Archive (HAR) files"
-optional = false
-python-versions = ">=3.8"
-groups = ["dev"]
-markers = "python_version == \"3.10\""
-files = [
-    {file = "harfile-0.5.0-py3-none-any.whl", hash = "sha256:ab8a01d0d21d3b7f5ad57e7dc56b8b829f6a8855c1fa143aad464e7e8169f5e3"},
-    {file = "harfile-0.5.0.tar.gz", hash = "sha256:c1524b8f0a39dd9f19365760aefb3adbba951818310d17b2eaa293de1f4c170a"},
-]
-
-[package.extras]
-bench = ["pytest-codspeed (==5.0.3) ; python_version >= \"3.9\""]
-cov = ["coverage-enable-subprocess", "coverage[toml] (>=7)"]
-dev = ["coverage (>=7)", "coverage-enable-subprocess", "coverage[toml] (>=7)", "hypothesis (>=6)", "hypothesis-jsonschema (>=0.23.1)", "jsonschema (>=4.18.0)", "pytest (>=6.2.0,<8)", "pytest-codspeed (==5.0.3) ; python_version >= \"3.9\""]
-tests = ["coverage (>=7)", "hypothesis (>=6)", "hypothesis-jsonschema (>=0.23.1)", "jsonschema (>=4.18.0)", "pytest (>=6.2.0,<8)"]
-
-[[package]]
-name = "harfile"
 version = "0.7.0"
 description = "Writer for HTTP Archive (HAR) files"
 optional = false
 python-versions = ">=3.8"
 groups = ["dev"]
-markers = "python_version >= \"3.11\""
 files = [
     {file = "harfile-0.7.0-py3-none-any.whl", hash = "sha256:6c81fe1da5ffdabe7627cdea545e3a6c91bc0bd62a10df53d240036c1d00e0a0"},
     {file = "harfile-0.7.0.tar.gz", hash = "sha256:133e7fd1b8e5222d5052779307e8527906363e368971e134ae77f4f7d07d8b23"},
@@ -1534,35 +1514,11 @@ zoneinfo = ["tzdata (>=2025.2) ; sys_platform == \"win32\" or sys_platform == \"
 
 [[package]]
 name = "hypothesis-graphql"
-version = "0.13.2"
-description = "Hypothesis strategies for GraphQL queries"
-optional = false
-python-versions = ">=3.10"
-groups = ["dev"]
-markers = "python_version == \"3.10\""
-files = [
-    {file = "hypothesis_graphql-0.13.2-py3-none-any.whl", hash = "sha256:fafcc07b901f04d64ac9c6c2e0c48a66817f04bd330766bd8b91bf76dc341a6a"},
-    {file = "hypothesis_graphql-0.13.2.tar.gz", hash = "sha256:6d6f8a7c28aa2aa78830713cb1fff49bd3ea0b0045a5490c216ead7dc02e0276"},
-]
-
-[package.dependencies]
-graphql-core = ">=3.1.0,<3.3.0"
-hypothesis = ">=6.84.3,<7.0"
-
-[package.extras]
-bench = ["pytest-codspeed (>=5)"]
-cov = ["coverage-enable-subprocess", "coverage[toml] (>=7)"]
-dev = ["coverage (>=7)", "coverage-enable-subprocess", "coverage[toml] (>=7)", "pytest (>=6.2.0,<8)", "pytest-xdist (>=3)"]
-tests = ["coverage (>=7)", "pytest (>=6.2.0,<8)", "pytest-xdist (>=3)"]
-
-[[package]]
-name = "hypothesis-graphql"
 version = "0.13.6"
 description = "Hypothesis strategies for GraphQL queries"
 optional = false
 python-versions = ">=3.10"
 groups = ["dev"]
-markers = "python_version >= \"3.11\""
 files = [
     {file = "hypothesis_graphql-0.13.6-py3-none-any.whl", hash = "sha256:64e2425a0ed64fcf0610aeb2a23f61e6fa568249c646313f3926e22ed846c269"},
     {file = "hypothesis_graphql-0.13.6.tar.gz", hash = "sha256:8902f9ca57752466bf53d46cb1a9ab7bc45769838dd668c18379b867cc688435"},
@@ -3762,16 +3718,16 @@ vault = ["cryptography (>=40.0.0)", "hvac"]
 
 [[package]]
 name = "setuptools"
-version = "83.0.0"
+version = "84.1.0"
 description = "Most extensible Python build backend with support for C/C++ extension modules"
 optional = false
 python-versions = ">=3.10"
-groups = ["docs"]
-markers = "python_version >= \"3.12\""
+groups = ["dev", "docs"]
 files = [
-    {file = "setuptools-83.0.0-py3-none-any.whl", hash = "sha256:29b23c360f22f414dc7336bb39178cc7bcbf6021ed2733cde173f09dba19abb3"},
-    {file = "setuptools-83.0.0.tar.gz", hash = "sha256:025bccbbf0fa05b6192bc64ae1e7b16e001fd6d6d4d5de03c97b1c1ade523bef"},
+    {file = "setuptools-84.1.0-py3-none-any.whl", hash = "sha256:5231689c6ac8156cd155cfb98c3fd6fb252c3e7e9bd3d78b64d3c55f132624c9"},
+    {file = "setuptools-84.1.0.tar.gz", hash = "sha256:23657205b63d4d31395ab917815247f694aafad28cd21316bf5fd45a51048ea0"},
 ]
+markers = {docs = "python_version >= \"3.12\""}
 
 [package.extras]
 check = ["pytest-checkdocs (>=2.14)", "pytest-ruff (>=0.2.1) ; sys_platform != \"cygwin\"", "ruff (>=0.13.0) ; sys_platform != \"cygwin\""]
