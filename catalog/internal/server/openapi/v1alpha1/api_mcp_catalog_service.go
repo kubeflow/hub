@@ -3,7 +3,7 @@
 /*
  * Catalog REST API
  *
- * REST API for Kubeflow Hub Catalog
+ * The `v1alpha1` catalog API is deprecated, please use `v1`.
  *
  * API version: v1alpha1
  */
@@ -122,6 +122,7 @@ func (c *MCPCatalogServiceAPIController) OrderedRoutes() []Route {
 }
 
 // FindMCPServers - List MCP servers.
+// Deprecated
 func (c *MCPCatalogServiceAPIController) FindMCPServers(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -233,6 +234,7 @@ func (c *MCPCatalogServiceAPIController) FindMCPServers(w http.ResponseWriter, r
 }
 
 // FindMCPServersFilterOptions - Lists fields, values, and named queries that can be used in `filterQuery` on the list MCP servers endpoint.
+// Deprecated
 func (c *MCPCatalogServiceAPIController) FindMCPServersFilterOptions(w http.ResponseWriter, r *http.Request) {
 	result, err := c.service.FindMCPServersFilterOptions(r.Context())
 	// If an error occurred, encode the error with the status code
@@ -245,6 +247,7 @@ func (c *MCPCatalogServiceAPIController) FindMCPServersFilterOptions(w http.Resp
 }
 
 // GetMCPServer - Get an `MCPServer`.
+// Deprecated
 func (c *MCPCatalogServiceAPIController) GetMCPServer(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -301,6 +304,7 @@ func (c *MCPCatalogServiceAPIController) GetMCPServer(w http.ResponseWriter, r *
 }
 
 // FindMCPServerTools - List tools exposed by an `MCPServer`.
+// Deprecated
 func (c *MCPCatalogServiceAPIController) FindMCPServerTools(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -358,6 +362,7 @@ func (c *MCPCatalogServiceAPIController) FindMCPServerTools(w http.ResponseWrite
 }
 
 // GetMCPServerTool - Get an `MCPTool` from an `MCPServer`.
+// Deprecated
 func (c *MCPCatalogServiceAPIController) GetMCPServerTool(w http.ResponseWriter, r *http.Request) {
 	serverIdParam := chi.URLParam(r, "server_id")
 	if serverIdParam == "" {

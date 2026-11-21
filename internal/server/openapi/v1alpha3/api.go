@@ -3,7 +3,7 @@
 /*
  * Model Registry REST API
  *
- * REST API for Model Registry to create and manage ML model metadata
+ * The `v1alpha3` model registry API is deprecated, please use `v1`.
  *
  * API version: v1alpha3
  */
@@ -21,61 +21,117 @@ import (
 // The ModelRegistryServiceAPIRouter implementation should parse necessary information from the http request,
 // pass the data to a ModelRegistryServiceAPIServicer to perform the required actions, then write the service results to the http response.
 type ModelRegistryServiceAPIRouter interface {
+	// Deprecated
 	FindArtifact(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetArtifacts(http.ResponseWriter, *http.Request)
+	// Deprecated
 	CreateArtifact(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetArtifact(http.ResponseWriter, *http.Request)
+	// Deprecated
 	UpdateArtifact(http.ResponseWriter, *http.Request)
+	// Deprecated
 	FindExperiment(http.ResponseWriter, *http.Request)
+	// Deprecated
 	FindExperimentRun(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetExperimentRuns(http.ResponseWriter, *http.Request)
+	// Deprecated
 	CreateExperimentRun(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetExperimentRunsMetricHistory(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetExperimentRun(http.ResponseWriter, *http.Request)
+	// Deprecated
 	UpdateExperimentRun(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetExperimentRunArtifacts(http.ResponseWriter, *http.Request)
+	// Deprecated
 	UpsertExperimentRunArtifact(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetExperimentRunMetricHistory(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetExperiments(http.ResponseWriter, *http.Request)
+	// Deprecated
 	CreateExperiment(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetExperiment(http.ResponseWriter, *http.Request)
+	// Deprecated
 	UpdateExperiment(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetExperimentExperimentRuns(http.ResponseWriter, *http.Request)
+	// Deprecated
 	CreateExperimentExperimentRun(http.ResponseWriter, *http.Request)
+	// Deprecated
 	FindInferenceService(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetInferenceServices(http.ResponseWriter, *http.Request)
+	// Deprecated
 	CreateInferenceService(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetInferenceService(http.ResponseWriter, *http.Request)
+	// Deprecated
 	UpdateInferenceService(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetInferenceServiceModel(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetInferenceServiceServes(http.ResponseWriter, *http.Request)
+	// Deprecated
 	CreateInferenceServiceServe(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetInferenceServiceVersion(http.ResponseWriter, *http.Request)
+	// Deprecated
 	FindModelArtifact(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetModelArtifacts(http.ResponseWriter, *http.Request)
+	// Deprecated
 	CreateModelArtifact(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetModelArtifact(http.ResponseWriter, *http.Request)
+	// Deprecated
 	UpdateModelArtifact(http.ResponseWriter, *http.Request)
+	// Deprecated
 	FindModelVersion(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetModelVersions(http.ResponseWriter, *http.Request)
+	// Deprecated
 	CreateModelVersion(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetModelVersion(http.ResponseWriter, *http.Request)
+	// Deprecated
 	UpdateModelVersion(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetModelVersionArtifacts(http.ResponseWriter, *http.Request)
+	// Deprecated
 	UpsertModelVersionArtifact(http.ResponseWriter, *http.Request)
+	// Deprecated
 	FindRegisteredModel(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetRegisteredModels(http.ResponseWriter, *http.Request)
+	// Deprecated
 	CreateRegisteredModel(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetRegisteredModel(http.ResponseWriter, *http.Request)
+	// Deprecated
 	UpdateRegisteredModel(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetRegisteredModelVersions(http.ResponseWriter, *http.Request)
+	// Deprecated
 	CreateRegisteredModelVersion(http.ResponseWriter, *http.Request)
+	// Deprecated
 	FindServingEnvironment(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetServingEnvironments(http.ResponseWriter, *http.Request)
+	// Deprecated
 	CreateServingEnvironment(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetServingEnvironment(http.ResponseWriter, *http.Request)
+	// Deprecated
 	UpdateServingEnvironment(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetEnvironmentInferenceServices(http.ResponseWriter, *http.Request)
+	// Deprecated
 	CreateEnvironmentInferenceService(http.ResponseWriter, *http.Request)
 }
 
@@ -84,60 +140,116 @@ type ModelRegistryServiceAPIRouter interface {
 // while the service implementation can be ignored with the .openapi-generator-ignore file
 // and updated with the logic required for the API.
 type ModelRegistryServiceAPIServicer interface {
+	// Deprecated
 	FindArtifact(context.Context, string, string, string) (ImplResponse, error)
+	// Deprecated
 	GetArtifacts(context.Context, string, model.ArtifactTypeQueryParam, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
+	// Deprecated
 	CreateArtifact(context.Context, model.ArtifactCreate) (ImplResponse, error)
+	// Deprecated
 	GetArtifact(context.Context, string) (ImplResponse, error)
+	// Deprecated
 	UpdateArtifact(context.Context, string, model.ArtifactUpdate) (ImplResponse, error)
+	// Deprecated
 	FindExperiment(context.Context, string, string) (ImplResponse, error)
+	// Deprecated
 	FindExperimentRun(context.Context, string, string, string) (ImplResponse, error)
+	// Deprecated
 	GetExperimentRuns(context.Context, string, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
+	// Deprecated
 	CreateExperimentRun(context.Context, model.ExperimentRunCreate) (ImplResponse, error)
+	// Deprecated
 	GetExperimentRunsMetricHistory(context.Context, string, string, string, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
+	// Deprecated
 	GetExperimentRun(context.Context, string) (ImplResponse, error)
+	// Deprecated
 	UpdateExperimentRun(context.Context, string, model.ExperimentRunUpdate) (ImplResponse, error)
+	// Deprecated
 	GetExperimentRunArtifacts(context.Context, string, string, string, string, model.ArtifactTypeQueryParam, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
+	// Deprecated
 	UpsertExperimentRunArtifact(context.Context, string, model.Artifact) (ImplResponse, error)
+	// Deprecated
 	GetExperimentRunMetricHistory(context.Context, string, string, string, string, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
+	// Deprecated
 	GetExperiments(context.Context, string, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
+	// Deprecated
 	CreateExperiment(context.Context, model.ExperimentCreate) (ImplResponse, error)
+	// Deprecated
 	GetExperiment(context.Context, string) (ImplResponse, error)
+	// Deprecated
 	UpdateExperiment(context.Context, string, model.ExperimentUpdate) (ImplResponse, error)
+	// Deprecated
 	GetExperimentExperimentRuns(context.Context, string, string, string, string, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
+	// Deprecated
 	CreateExperimentExperimentRun(context.Context, string, model.ExperimentRun) (ImplResponse, error)
+	// Deprecated
 	FindInferenceService(context.Context, string, string, string) (ImplResponse, error)
+	// Deprecated
 	GetInferenceServices(context.Context, string, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
+	// Deprecated
 	CreateInferenceService(context.Context, model.InferenceServiceCreate) (ImplResponse, error)
+	// Deprecated
 	GetInferenceService(context.Context, string) (ImplResponse, error)
+	// Deprecated
 	UpdateInferenceService(context.Context, string, model.InferenceServiceUpdate) (ImplResponse, error)
+	// Deprecated
 	GetInferenceServiceModel(context.Context, string) (ImplResponse, error)
+	// Deprecated
 	GetInferenceServiceServes(context.Context, string, string, string, string, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
+	// Deprecated
 	CreateInferenceServiceServe(context.Context, string, model.ServeModelCreate) (ImplResponse, error)
+	// Deprecated
 	GetInferenceServiceVersion(context.Context, string) (ImplResponse, error)
+	// Deprecated
 	FindModelArtifact(context.Context, string, string, string) (ImplResponse, error)
+	// Deprecated
 	GetModelArtifacts(context.Context, string, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
+	// Deprecated
 	CreateModelArtifact(context.Context, model.ModelArtifactCreate) (ImplResponse, error)
+	// Deprecated
 	GetModelArtifact(context.Context, string) (ImplResponse, error)
+	// Deprecated
 	UpdateModelArtifact(context.Context, string, model.ModelArtifactUpdate) (ImplResponse, error)
+	// Deprecated
 	FindModelVersion(context.Context, string, string, string) (ImplResponse, error)
+	// Deprecated
 	GetModelVersions(context.Context, string, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
+	// Deprecated
 	CreateModelVersion(context.Context, model.ModelVersionCreate) (ImplResponse, error)
+	// Deprecated
 	GetModelVersion(context.Context, string) (ImplResponse, error)
+	// Deprecated
 	UpdateModelVersion(context.Context, string, model.ModelVersionUpdate) (ImplResponse, error)
+	// Deprecated
 	GetModelVersionArtifacts(context.Context, string, string, string, string, model.ArtifactTypeQueryParam, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
+	// Deprecated
 	UpsertModelVersionArtifact(context.Context, string, model.Artifact) (ImplResponse, error)
+	// Deprecated
 	FindRegisteredModel(context.Context, string, string) (ImplResponse, error)
+	// Deprecated
 	GetRegisteredModels(context.Context, string, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
+	// Deprecated
 	CreateRegisteredModel(context.Context, model.RegisteredModelCreate) (ImplResponse, error)
+	// Deprecated
 	GetRegisteredModel(context.Context, string) (ImplResponse, error)
+	// Deprecated
 	UpdateRegisteredModel(context.Context, string, model.RegisteredModelUpdate) (ImplResponse, error)
+	// Deprecated
 	GetRegisteredModelVersions(context.Context, string, string, string, string, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
+	// Deprecated
 	CreateRegisteredModelVersion(context.Context, string, model.ModelVersion) (ImplResponse, error)
+	// Deprecated
 	FindServingEnvironment(context.Context, string, string) (ImplResponse, error)
+	// Deprecated
 	GetServingEnvironments(context.Context, string, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
+	// Deprecated
 	CreateServingEnvironment(context.Context, model.ServingEnvironmentCreate) (ImplResponse, error)
+	// Deprecated
 	GetServingEnvironment(context.Context, string) (ImplResponse, error)
+	// Deprecated
 	UpdateServingEnvironment(context.Context, string, model.ServingEnvironmentUpdate) (ImplResponse, error)
+	// Deprecated
 	GetEnvironmentInferenceServices(context.Context, string, string, string, string, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
+	// Deprecated
 	CreateEnvironmentInferenceService(context.Context, string, model.InferenceServiceCreate) (ImplResponse, error)
 }

@@ -3,7 +3,7 @@
 /*
  * Model Registry REST API
  *
- * REST API for Model Registry to create and manage ML model metadata
+ * The `v1alpha3` model registry API is deprecated, please use `v1`.
  *
  * API version: v1alpha3
  */

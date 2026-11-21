@@ -3,7 +3,7 @@
 /*
  * Catalog REST API
  *
- * REST API for Kubeflow Hub Catalog
+ * The `v1alpha1` catalog API is deprecated, please use `v1`.
  *
  * API version: v1alpha1
  */
@@ -21,10 +21,15 @@ import (
 // The MCPCatalogServiceAPIRouter implementation should parse necessary information from the http request,
 // pass the data to a MCPCatalogServiceAPIServicer to perform the required actions, then write the service results to the http response.
 type MCPCatalogServiceAPIRouter interface {
+	// Deprecated
 	FindMCPServers(http.ResponseWriter, *http.Request)
+	// Deprecated
 	FindMCPServersFilterOptions(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetMCPServer(http.ResponseWriter, *http.Request)
+	// Deprecated
 	FindMCPServerTools(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetMCPServerTool(http.ResponseWriter, *http.Request)
 }
 
@@ -33,9 +38,14 @@ type MCPCatalogServiceAPIRouter interface {
 // while the service implementation can be ignored with the .openapi-generator-ignore file
 // and updated with the logic required for the API.
 type MCPCatalogServiceAPIServicer interface {
+	// Deprecated
 	FindMCPServers(context.Context, string, string, []string, string, string, bool, int32, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
+	// Deprecated
 	FindMCPServersFilterOptions(context.Context) (ImplResponse, error)
+	// Deprecated
 	GetMCPServer(context.Context, string, bool, int32) (ImplResponse, error)
+	// Deprecated
 	FindMCPServerTools(context.Context, string, string, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
+	// Deprecated
 	GetMCPServerTool(context.Context, string, string) (ImplResponse, error)
 }
