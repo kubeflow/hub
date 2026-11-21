@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Catalog REST API
-  description: REST API for Kubeflow Hub Catalog
+  description: The `v1alpha1` catalog API is deprecated, please use `v1`.
   version: v1alpha1
   license:
     name: Apache 2.0
@@ -15,6 +15,7 @@ paths:
     description: >-
       The REST endpoint/path used to list zero or more `CatalogLabel` entities.
     get:
+      deprecated: true
       summary: List All CatalogLabels
       tags:
         - ModelCatalogService
@@ -42,6 +43,7 @@ paths:
     description: >-
       The REST endpoint/path used to list zero or more `CatalogSource` entities.
     get:
+      deprecated: true
       summary: List All CatalogSources
       tags:
         - ModelCatalogService
@@ -72,6 +74,7 @@ paths:
       assets (models or MCP servers) with their inclusion/exclusion status based
       on the configured filters.
     post:
+      deprecated: true
       summary: Preview catalog source configuration
       description: |-
         Accepts a catalog source configuration and returns a list of assets showing

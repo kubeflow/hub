@@ -3,7 +3,7 @@
 /*
  * Catalog REST API
  *
- * REST API for Kubeflow Hub Catalog
+ * The `v1alpha1` catalog API is deprecated, please use `v1`.
  *
  * API version: v1alpha1
  */

@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Model Registry REST API
   version: v1alpha3
-  description: REST API for Model Registry to create and manage ML model metadata
+  description: The `v1alpha3` model registry API is deprecated, please use `v1`.
   license:
     name: Apache 2.0
     url: "https://www.apache.org/licenses/LICENSE-2.0"
@@ -15,6 +15,7 @@ paths:
     description: >-
       The REST endpoint/path used to search for an `Artifact` entity.  This path contains a `GET` operation to perform the find task.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       responses:
@@ -42,6 +43,7 @@ paths:
     description: >-
       The REST endpoint/path used to list and create zero or more `Artifact` entities.  This path contains a `GET` and `POST` operation to perform the list and create tasks, respectively.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       parameters:
@@ -68,6 +70,7 @@ paths:
       summary: List All Artifacts
       description: Gets a list of all `Artifact` entities.
     post:
+      deprecated: true
       requestBody:
         description: A new `Artifact` to be created.
         content:
@@ -98,6 +101,7 @@ paths:
     description: >-
       The REST endpoint/path used to get and update single instances of an `Artifact`. This path contains `GET` and `PATCH` operations used to perform the get and update tasks, respectively.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       responses:
@@ -117,6 +121,7 @@ paths:
       summary: Get an Artifact
       description: Gets the details of a single instance of an `Artifact`.
     patch:
+      deprecated: true
       requestBody:
         description: Updated `Artifact` information.
         content:
@@ -156,6 +161,7 @@ paths:
     description: >-
       The REST endpoint/path used to search for an `Experiment` entity.  This path contains a `GET` operation to perform the find task.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       responses:
@@ -180,6 +186,7 @@ paths:
     description: >-
       The REST endpoint/path used to search for an `ExperimentRun` entity.  This path contains a `GET` operation to perform the find task.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       responses:
@@ -207,6 +214,7 @@ paths:
     description: >-
       The REST endpoint/path used to list and create zero or more `ExperimentRun` entities.  This path contains a `GET` and `POST` operation to perform the list and create tasks, respectively.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       parameters:
@@ -228,6 +236,7 @@ paths:
       summary: List All ExperimentRuns
       description: Gets a list of all `ExperimentRun` entities.
     post:
+      deprecated: true
       requestBody:
         description: A new `ExperimentRun` to be created.
         content:
@@ -260,6 +269,7 @@ paths:
     description: >-
       The REST endpoint/path used to get metric history for multiple `ExperimentRun` entities. This path contains a `GET` operation to retrieve metrics with optional filtering.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       parameters:
@@ -289,6 +299,7 @@ paths:
     description: >-
       The REST endpoint/path used to get and update single instances of an `ExperimentRun`. This path contains `GET` and `PATCH` operations used to perform the get and update tasks, respectively.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       responses:
@@ -306,6 +317,7 @@ paths:
       summary: Get an ExperimentRun
       description: Gets the details of a single instance of an `ExperimentRun`.
     patch:
+      deprecated: true
       requestBody:
         description: Updated `ExperimentRun` information.
         content:
@@ -345,6 +357,7 @@ paths:
     description: >-
       The REST endpoint/path used to list and create zero or more `Artifact` entities for an `ExperimentRun`.  This path contains a `GET` and `POST` operation to perform the list and create tasks, respectively.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       parameters:
@@ -370,6 +383,7 @@ paths:
       operationId: getExperimentRunArtifacts
       summary: List all artifacts associated with the `ExperimentRun`
     post:
+      deprecated: true
       requestBody:
         description: A new or existing `Artifact` to be associated with the `ExperimentRun`.
         content:
@@ -413,6 +427,7 @@ paths:
     description: >-
       The REST endpoint/path used to get metric history for an `ExperimentRun`. This path contains a `GET` operation to retrieve metrics with optional filtering by name and step IDs.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       parameters:
@@ -451,6 +466,7 @@ paths:
     description: >-
       The REST endpoint/path used to list and create zero or more `Experiment` entities.  This path contains a `GET` and `POST` operation to perform the list and create tasks, respectively.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       parameters:
@@ -472,6 +488,7 @@ paths:
       summary: List All Experiments
       description: Gets a list of all `Experiment` entities.
     post:
+      deprecated: true
       requestBody:
         description: A new `Experiment` to be created.
         content:
@@ -502,6 +519,7 @@ paths:
     description: >-
       The REST endpoint/path used to get and update single instances of an `Experiment`. This path contains `GET` and `PATCH` operations used to perform the get and update tasks, respectively.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       responses:
@@ -519,6 +537,7 @@ paths:
       summary: Get an Experiment
       description: Gets the details of a single instance of an `Experiment`.
     patch:
+      deprecated: true
       requestBody:
         description: Updated `Experiment` information.
         content:
@@ -558,6 +577,7 @@ paths:
     description: >-
       The REST endpoint/path used to list and create zero or more `ExperimentRun` entities for an `Experiment`.  This path contains a `GET` and `POST` operation to perform the list and create tasks, respectively.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       parameters:
@@ -583,6 +603,7 @@ paths:
       summary: List All Experiment's ExperimentRuns
       description: Gets a list of all `ExperimentRun` entities for the `Experiment`.
     post:
+      deprecated: true
       requestBody:
         description: A new `ExperimentRun` to be created.
         content:
@@ -624,6 +645,7 @@ paths:
     description: >-
       The REST endpoint/path used to list and create zero or more `InferenceService` entities.  This path contains a `GET` and `POST` operation to perform the list and create tasks, respectively.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       responses:
@@ -651,6 +673,7 @@ paths:
     description: >-
       The REST endpoint/path used to list and create zero or more `InferenceService` entities.  This path contains a `GET` and `POST` operation to perform the list and create tasks, respectively.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       parameters:
@@ -676,6 +699,7 @@ paths:
       summary: List All InferenceServices
       description: Gets a list of all `InferenceService` entities.
     post:
+      deprecated: true
       requestBody:
         description: A new `InferenceService` to be created.
         content:
@@ -706,6 +730,7 @@ paths:
     description: >-
       The REST endpoint/path used to get and update single instances of an `InferenceService`. This path contains `GET` and `PATCH` operations used to perform the get and update tasks, respectively.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       responses:
@@ -723,6 +748,7 @@ paths:
       summary: Get a InferenceService
       description: Gets the details of a single instance of a `InferenceService`.
     patch:
+      deprecated: true
       requestBody:
         description: Updated `InferenceService` information.
         content:
@@ -762,6 +788,7 @@ paths:
     description: >-
       The REST endpoint/path used to list the `RegisteredModel` entity for an `InferenceService`.  This path contains a `GET` operation to perform the get task.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       responses:
@@ -792,6 +819,7 @@ paths:
     description: >-
       The REST endpoint/path used to list and create zero or more `ServeModel` entities for a `InferenceService`.  This path contains a `GET` and `POST` operation to perform the list and create tasks, respectively.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       parameters:
@@ -817,6 +845,7 @@ paths:
       summary: List All InferenceService's ServeModel actions
       description: Gets a list of all `ServeModel` entities for the `InferenceService`.
     post:
+      deprecated: true
       requestBody:
         description: A new `ServeModel` to be associated with the `InferenceService`.
         content:
@@ -858,6 +887,7 @@ paths:
     description: >-
       The REST endpoint/path used to get the current `ModelVersion` entity for a `InferenceService`. This path contains a `GET` operation to perform the get task.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       responses:
@@ -888,6 +918,7 @@ paths:
     description: >-
       The REST endpoint/path used to search for a `ModelArtifact` entity.  This path contains a `GET` operation to perform the find task.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       responses:
@@ -915,6 +946,7 @@ paths:
     description: >-
       The REST endpoint/path used to list and create zero or more `ModelArtifact` entities.  This path contains a `GET` and `POST` operation to perform the list and create tasks, respectively.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       parameters:
@@ -940,6 +972,7 @@ paths:
       summary: List All ModelArtifacts
       description: Gets a list of all `ModelArtifact` entities.
     post:
+      deprecated: true
       requestBody:
         description: A new `ModelArtifact` to be created.
         content:
@@ -970,6 +1003,7 @@ paths:
     description: >-
       The REST endpoint/path used to get and update single instances of an `ModelArtifact`. This path contains `GET` and `PATCH` operations used to perform the get and update tasks, respectively.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       responses:
@@ -987,6 +1021,7 @@ paths:
       summary: Get a ModelArtifact
       description: Gets the details of a single instance of a `ModelArtifact`.
     patch:
+      deprecated: true
       requestBody:
         description: Updated `ModelArtifact` information.
         content:
@@ -1026,6 +1061,7 @@ paths:
     description: >-
       The REST endpoint/path used to search for a `ModelVersion` entity.  This path contains a `GET` operation to perform the find task.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       responses:
@@ -1053,6 +1089,7 @@ paths:
     description: >-
       The REST endpoint/path used to list and create zero or more `ModelVersion` entities.  This path contains a `GET` and `POST` operation to perform the list and create tasks, respectively.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       parameters:
@@ -1074,6 +1111,7 @@ paths:
       summary: List All ModelVersions
       description: Gets a list of all `ModelVersion` entities.
     post:
+      deprecated: true
       requestBody:
         description: A new `ModelVersion` to be created.
         content:
@@ -1106,6 +1144,7 @@ paths:
     description: >-
       The REST endpoint/path used to get and update single instances of an `ModelVersion`. This path contains `GET` and `PATCH` operations used to perform the get and update tasks, respectively.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       responses:
@@ -1123,6 +1162,7 @@ paths:
       summary: Get a ModelVersion
       description: Gets the details of a single instance of a `ModelVersion`.
     patch:
+      deprecated: true
       requestBody:
         description: Updated `ModelVersion` information.
         content:
@@ -1162,6 +1202,7 @@ paths:
     description: >-
       The REST endpoint/path used to list and create zero or more `Artifact` entities for a `ModelVersion`.  This path contains a `GET` and `POST` operation to perform the list and create tasks, respectively.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       parameters:
@@ -1187,6 +1228,7 @@ paths:
       operationId: getModelVersionArtifacts
       summary: List all artifacts associated with the `ModelVersion`
     post:
+      deprecated: true
       requestBody:
         description: A new or existing `Artifact` to be associated with the `ModelVersion`.
         content:
@@ -1230,6 +1272,7 @@ paths:
     description: >-
       The REST endpoint/path used to search for a `RegisteredModel` entity.  This path contains a `GET` operation to perform the find task.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       responses:
@@ -1254,6 +1297,7 @@ paths:
     description: >-
       The REST endpoint/path used to list and create zero or more `RegisteredModel` entities.  This path contains a `GET` and `POST` operation to perform the list and create tasks, respectively.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       parameters:
@@ -1275,6 +1319,7 @@ paths:
       summary: List All RegisteredModels
       description: Gets a list of all `RegisteredModel` entities.
     post:
+      deprecated: true
       requestBody:
         description: A new `RegisteredModel` to be created.
         content:
@@ -1305,6 +1350,7 @@ paths:
     description: >-
       The REST endpoint/path used to get and update single instances of an `RegisteredModel`. This path contains `GET` and `PATCH` operations used to perform the get and update tasks, respectively.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       responses:
@@ -1322,6 +1368,7 @@ paths:
       summary: Get a RegisteredModel
       description: Gets the details of a single instance of a `RegisteredModel`.
     patch:
+      deprecated: true
       requestBody:
         description: Updated `RegisteredModel` information.
         content:
@@ -1361,6 +1408,7 @@ paths:
     description: >-
       The REST endpoint/path used to list and create zero or more `ModelVersion` entities for a `RegisteredModel`.  This path contains a `GET` and `POST` operation to perform the list and create tasks, respectively.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       parameters:
@@ -1386,6 +1434,7 @@ paths:
       summary: List All RegisteredModel's ModelVersions
       description: Gets a list of all `ModelVersion` entities for the `RegisteredModel`.
     post:
+      deprecated: true
       requestBody:
         description: A new `ModelVersion` to be created.
         content:
@@ -1427,6 +1476,7 @@ paths:
     description: >-
       The REST endpoint/path used to search for a `ServingEnvironment` entity.  This path contains a `GET` operation to perform the find task.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       responses:
@@ -1451,6 +1501,7 @@ paths:
     description: >-
       The REST endpoint/path used to list and create zero or more `ServingEnvironment` entities.  This path contains a `GET` and `POST` operation to perform the list and create tasks, respectively.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       parameters:
@@ -1472,6 +1523,7 @@ paths:
       summary: List All ServingEnvironments
       description: Gets a list of all `ServingEnvironment` entities.
     post:
+      deprecated: true
       requestBody:
         description: A new `ServingEnvironment` to be created.
         content:
@@ -1502,6 +1554,7 @@ paths:
     description: >-
       The REST endpoint/path used to get and update single instances of an `ServingEnvironment`. This path contains `GET` and `PATCH` operations used to perform the get and update tasks, respectively.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       responses:
@@ -1519,6 +1572,7 @@ paths:
       summary: Get a ServingEnvironment
       description: Gets the details of a single instance of a `ServingEnvironment`.
     patch:
+      deprecated: true
       requestBody:
         description: Updated `ServingEnvironment` information.
         content:
@@ -1558,6 +1612,7 @@ paths:
     description: >-
       The REST endpoint/path used to list and create zero or more `InferenceService` entities for a `ServingEnvironment`.  This path contains a `GET` and `POST` operation to perform the list and create tasks, respectively.
     get:
+      deprecated: true
       tags:
         - ModelRegistryService
       parameters:
@@ -1583,6 +1638,7 @@ paths:
       summary: List All ServingEnvironment's InferenceServices
       description: Gets a list of all `InferenceService` entities for the `ServingEnvironment`.
     post:
+      deprecated: true
       requestBody:
         description: A new `InferenceService` to be created.
         content:

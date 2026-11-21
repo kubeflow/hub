@@ -3,7 +3,7 @@
 /*
  * Catalog REST API
  *
- * REST API for Kubeflow Hub Catalog
+ * The `v1alpha1` catalog API is deprecated, please use `v1`.
  *
  * API version: v1alpha1
  */
@@ -159,6 +159,7 @@ func (c *ModelCatalogServiceAPIController) OrderedRoutes() []Route {
 }
 
 // FindLabels - List All CatalogLabels
+// Deprecated
 func (c *ModelCatalogServiceAPIController) FindLabels(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -211,6 +212,7 @@ func (c *ModelCatalogServiceAPIController) FindLabels(w http.ResponseWriter, r *
 }
 
 // FindModels - Search catalog models across sources.
+// Deprecated
 func (c *ModelCatalogServiceAPIController) FindModels(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -344,6 +346,7 @@ func (c *ModelCatalogServiceAPIController) FindModels(w http.ResponseWriter, r *
 }
 
 // FindModelsFilterOptions - Lists fields and available options that can be used in `filterQuery` on the list models endpoint.
+// Deprecated
 func (c *ModelCatalogServiceAPIController) FindModelsFilterOptions(w http.ResponseWriter, r *http.Request) {
 	result, err := c.service.FindModelsFilterOptions(r.Context())
 	// If an error occurred, encode the error with the status code
@@ -356,6 +359,7 @@ func (c *ModelCatalogServiceAPIController) FindModelsFilterOptions(w http.Respon
 }
 
 // FindSources - List All CatalogSources
+// Deprecated
 func (c *ModelCatalogServiceAPIController) FindSources(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -415,6 +419,7 @@ func (c *ModelCatalogServiceAPIController) FindSources(w http.ResponseWriter, r 
 }
 
 // PreviewCatalogSource - Preview catalog source configuration
+// Deprecated
 func (c *ModelCatalogServiceAPIController) PreviewCatalogSource(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
 		c.errorHandler(w, r, &ParsingError{Err: err}, nil)
@@ -484,6 +489,7 @@ func (c *ModelCatalogServiceAPIController) PreviewCatalogSource(w http.ResponseW
 }
 
 // GetModel - Get a `CatalogModel`.
+// Deprecated
 func (c *ModelCatalogServiceAPIController) GetModel(w http.ResponseWriter, r *http.Request) {
 	sourceIdParam := chi.URLParam(r, "source_id")
 	if sourceIdParam == "" {
@@ -528,6 +534,7 @@ func (c *ModelCatalogServiceAPIController) GetModel(w http.ResponseWriter, r *ht
 }
 
 // GetAllModelArtifacts - List CatalogArtifacts.
+// Deprecated
 func (c *ModelCatalogServiceAPIController) GetAllModelArtifacts(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -616,6 +623,7 @@ func (c *ModelCatalogServiceAPIController) GetAllModelArtifacts(w http.ResponseW
 }
 
 // GetAllModelPerformanceArtifacts - List CatalogArtifacts.
+// Deprecated
 func (c *ModelCatalogServiceAPIController) GetAllModelPerformanceArtifacts(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {

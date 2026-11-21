@@ -3,7 +3,7 @@
 /*
  * Catalog REST API
  *
- * REST API for Kubeflow Hub Catalog
+ * The `v1alpha1` catalog API is deprecated, please use `v1`.
  *
  * API version: v1alpha1
  */
@@ -21,9 +21,13 @@ import (
 // The AgentCatalogServiceAPIRouter implementation should parse necessary information from the http request,
 // pass the data to a AgentCatalogServiceAPIServicer to perform the required actions, then write the service results to the http response.
 type AgentCatalogServiceAPIRouter interface {
+	// Deprecated
 	FindAgents(http.ResponseWriter, *http.Request)
+	// Deprecated
 	FindAgentsFilterOptions(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetAgent(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetAgentArtifacts(http.ResponseWriter, *http.Request)
 }
 
@@ -32,8 +36,12 @@ type AgentCatalogServiceAPIRouter interface {
 // while the service implementation can be ignored with the .openapi-generator-ignore file
 // and updated with the logic required for the API.
 type AgentCatalogServiceAPIServicer interface {
+	// Deprecated
 	FindAgents(context.Context, string, string, []string, []string, string, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
+	// Deprecated
 	FindAgentsFilterOptions(context.Context) (ImplResponse, error)
+	// Deprecated
 	GetAgent(context.Context, string) (ImplResponse, error)
+	// Deprecated
 	GetAgentArtifacts(context.Context, string, []model.AgentArtifactTypeQueryParam, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
 }

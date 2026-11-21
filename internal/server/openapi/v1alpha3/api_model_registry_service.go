@@ -3,7 +3,7 @@
 /*
  * Model Registry REST API
  *
- * REST API for Model Registry to create and manage ML model metadata
+ * The `v1alpha3` model registry API is deprecated, please use `v1`.
  *
  * API version: v1alpha3
  */
@@ -735,6 +735,7 @@ func (c *ModelRegistryServiceAPIController) OrderedRoutes() []Route {
 }
 
 // FindArtifact - Get an Artifact that matches search parameters.
+// Deprecated
 func (c *ModelRegistryServiceAPIController) FindArtifact(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -773,6 +774,7 @@ func (c *ModelRegistryServiceAPIController) FindArtifact(w http.ResponseWriter, 
 }
 
 // GetArtifacts - List All Artifacts
+// Deprecated
 func (c *ModelRegistryServiceAPIController) GetArtifacts(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -832,6 +834,7 @@ func (c *ModelRegistryServiceAPIController) GetArtifacts(w http.ResponseWriter, 
 }
 
 // CreateArtifact - Create an Artifact
+// Deprecated
 func (c *ModelRegistryServiceAPIController) CreateArtifact(w http.ResponseWriter, r *http.Request) {
 	artifactCreateParam := *model.NewArtifactCreateWithDefaults()
 	d := json.NewDecoder(r.Body)
@@ -859,6 +862,7 @@ func (c *ModelRegistryServiceAPIController) CreateArtifact(w http.ResponseWriter
 }
 
 // GetArtifact - Get an Artifact
+// Deprecated
 func (c *ModelRegistryServiceAPIController) GetArtifact(w http.ResponseWriter, r *http.Request) {
 	idParam := chi.URLParam(r, "id")
 	if idParam == "" {
@@ -876,6 +880,7 @@ func (c *ModelRegistryServiceAPIController) GetArtifact(w http.ResponseWriter, r
 }
 
 // UpdateArtifact - Update an Artifact
+// Deprecated
 func (c *ModelRegistryServiceAPIController) UpdateArtifact(w http.ResponseWriter, r *http.Request) {
 	idParam := chi.URLParam(r, "id")
 	if idParam == "" {
@@ -908,6 +913,7 @@ func (c *ModelRegistryServiceAPIController) UpdateArtifact(w http.ResponseWriter
 }
 
 // FindExperiment - Get an Experiment that matches search parameters.
+// Deprecated
 func (c *ModelRegistryServiceAPIController) FindExperiment(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -939,6 +945,7 @@ func (c *ModelRegistryServiceAPIController) FindExperiment(w http.ResponseWriter
 }
 
 // FindExperimentRun - Get an ExperimentRun that matches search parameters.
+// Deprecated
 func (c *ModelRegistryServiceAPIController) FindExperimentRun(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -977,6 +984,7 @@ func (c *ModelRegistryServiceAPIController) FindExperimentRun(w http.ResponseWri
 }
 
 // GetExperimentRuns - List All ExperimentRuns
+// Deprecated
 func (c *ModelRegistryServiceAPIController) GetExperimentRuns(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -1029,6 +1037,7 @@ func (c *ModelRegistryServiceAPIController) GetExperimentRuns(w http.ResponseWri
 }
 
 // CreateExperimentRun - Create an ExperimentRun
+// Deprecated
 func (c *ModelRegistryServiceAPIController) CreateExperimentRun(w http.ResponseWriter, r *http.Request) {
 	experimentRunCreateParam := *model.NewExperimentRunCreateWithDefaults()
 	d := json.NewDecoder(r.Body)
@@ -1056,6 +1065,7 @@ func (c *ModelRegistryServiceAPIController) CreateExperimentRun(w http.ResponseW
 }
 
 // GetExperimentRunsMetricHistory - Get metric history for multiple ExperimentRuns
+// Deprecated
 func (c *ModelRegistryServiceAPIController) GetExperimentRunsMetricHistory(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -1122,6 +1132,7 @@ func (c *ModelRegistryServiceAPIController) GetExperimentRunsMetricHistory(w htt
 }
 
 // GetExperimentRun - Get an ExperimentRun
+// Deprecated
 func (c *ModelRegistryServiceAPIController) GetExperimentRun(w http.ResponseWriter, r *http.Request) {
 	experimentrunIdParam := chi.URLParam(r, "experimentrunId")
 	if experimentrunIdParam == "" {
@@ -1139,6 +1150,7 @@ func (c *ModelRegistryServiceAPIController) GetExperimentRun(w http.ResponseWrit
 }
 
 // UpdateExperimentRun - Update an ExperimentRun
+// Deprecated
 func (c *ModelRegistryServiceAPIController) UpdateExperimentRun(w http.ResponseWriter, r *http.Request) {
 	experimentrunIdParam := chi.URLParam(r, "experimentrunId")
 	if experimentrunIdParam == "" {
@@ -1171,6 +1183,7 @@ func (c *ModelRegistryServiceAPIController) UpdateExperimentRun(w http.ResponseW
 }
 
 // GetExperimentRunArtifacts - List all artifacts associated with the `ExperimentRun`
+// Deprecated
 func (c *ModelRegistryServiceAPIController) GetExperimentRunArtifacts(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -1249,6 +1262,7 @@ func (c *ModelRegistryServiceAPIController) GetExperimentRunArtifacts(w http.Res
 }
 
 // UpsertExperimentRunArtifact - Upsert an Artifact in an ExperimentRun
+// Deprecated
 func (c *ModelRegistryServiceAPIController) UpsertExperimentRunArtifact(w http.ResponseWriter, r *http.Request) {
 	experimentrunIdParam := chi.URLParam(r, "experimentrunId")
 	if experimentrunIdParam == "" {
@@ -1281,6 +1295,7 @@ func (c *ModelRegistryServiceAPIController) UpsertExperimentRunArtifact(w http.R
 }
 
 // GetExperimentRunMetricHistory - Get metric history for an ExperimentRun
+// Deprecated
 func (c *ModelRegistryServiceAPIController) GetExperimentRunMetricHistory(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -1352,6 +1367,7 @@ func (c *ModelRegistryServiceAPIController) GetExperimentRunMetricHistory(w http
 }
 
 // GetExperiments - List All Experiments
+// Deprecated
 func (c *ModelRegistryServiceAPIController) GetExperiments(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -1404,6 +1420,7 @@ func (c *ModelRegistryServiceAPIController) GetExperiments(w http.ResponseWriter
 }
 
 // CreateExperiment - Create an Experiment
+// Deprecated
 func (c *ModelRegistryServiceAPIController) CreateExperiment(w http.ResponseWriter, r *http.Request) {
 	experimentCreateParam := *model.NewExperimentCreateWithDefaults()
 	d := json.NewDecoder(r.Body)
@@ -1431,6 +1448,7 @@ func (c *ModelRegistryServiceAPIController) CreateExperiment(w http.ResponseWrit
 }
 
 // GetExperiment - Get an Experiment
+// Deprecated
 func (c *ModelRegistryServiceAPIController) GetExperiment(w http.ResponseWriter, r *http.Request) {
 	experimentIdParam := chi.URLParam(r, "experimentId")
 	if experimentIdParam == "" {
@@ -1448,6 +1466,7 @@ func (c *ModelRegistryServiceAPIController) GetExperiment(w http.ResponseWriter,
 }
 
 // UpdateExperiment - Update an Experiment
+// Deprecated
 func (c *ModelRegistryServiceAPIController) UpdateExperiment(w http.ResponseWriter, r *http.Request) {
 	experimentIdParam := chi.URLParam(r, "experimentId")
 	if experimentIdParam == "" {
@@ -1480,6 +1499,7 @@ func (c *ModelRegistryServiceAPIController) UpdateExperiment(w http.ResponseWrit
 }
 
 // GetExperimentExperimentRuns - List All Experiment's ExperimentRuns
+// Deprecated
 func (c *ModelRegistryServiceAPIController) GetExperimentExperimentRuns(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -1551,6 +1571,7 @@ func (c *ModelRegistryServiceAPIController) GetExperimentExperimentRuns(w http.R
 }
 
 // CreateExperimentExperimentRun - Create an ExperimentRun in Experiment
+// Deprecated
 func (c *ModelRegistryServiceAPIController) CreateExperimentExperimentRun(w http.ResponseWriter, r *http.Request) {
 	experimentIdParam := chi.URLParam(r, "experimentId")
 	if experimentIdParam == "" {
@@ -1583,6 +1604,7 @@ func (c *ModelRegistryServiceAPIController) CreateExperimentExperimentRun(w http
 }
 
 // FindInferenceService - Get an InferenceServices that matches search parameters.
+// Deprecated
 func (c *ModelRegistryServiceAPIController) FindInferenceService(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -1621,6 +1643,7 @@ func (c *ModelRegistryServiceAPIController) FindInferenceService(w http.Response
 }
 
 // GetInferenceServices - List All InferenceServices
+// Deprecated
 func (c *ModelRegistryServiceAPIController) GetInferenceServices(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -1673,6 +1696,7 @@ func (c *ModelRegistryServiceAPIController) GetInferenceServices(w http.Response
 }
 
 // CreateInferenceService - Create a InferenceService
+// Deprecated
 func (c *ModelRegistryServiceAPIController) CreateInferenceService(w http.ResponseWriter, r *http.Request) {
 	inferenceServiceCreateParam := *model.NewInferenceServiceCreateWithDefaults()
 	d := json.NewDecoder(r.Body)
@@ -1700,6 +1724,7 @@ func (c *ModelRegistryServiceAPIController) CreateInferenceService(w http.Respon
 }
 
 // GetInferenceService - Get a InferenceService
+// Deprecated
 func (c *ModelRegistryServiceAPIController) GetInferenceService(w http.ResponseWriter, r *http.Request) {
 	inferenceserviceIdParam := chi.URLParam(r, "inferenceserviceId")
 	if inferenceserviceIdParam == "" {
@@ -1717,6 +1742,7 @@ func (c *ModelRegistryServiceAPIController) GetInferenceService(w http.ResponseW
 }
 
 // UpdateInferenceService - Update a InferenceService
+// Deprecated
 func (c *ModelRegistryServiceAPIController) UpdateInferenceService(w http.ResponseWriter, r *http.Request) {
 	inferenceserviceIdParam := chi.URLParam(r, "inferenceserviceId")
 	if inferenceserviceIdParam == "" {
@@ -1749,6 +1775,7 @@ func (c *ModelRegistryServiceAPIController) UpdateInferenceService(w http.Respon
 }
 
 // GetInferenceServiceModel - Get InferenceService's RegisteredModel
+// Deprecated
 func (c *ModelRegistryServiceAPIController) GetInferenceServiceModel(w http.ResponseWriter, r *http.Request) {
 	inferenceserviceIdParam := chi.URLParam(r, "inferenceserviceId")
 	if inferenceserviceIdParam == "" {
@@ -1766,6 +1793,7 @@ func (c *ModelRegistryServiceAPIController) GetInferenceServiceModel(w http.Resp
 }
 
 // GetInferenceServiceServes - List All InferenceService's ServeModel actions
+// Deprecated
 func (c *ModelRegistryServiceAPIController) GetInferenceServiceServes(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -1837,6 +1865,7 @@ func (c *ModelRegistryServiceAPIController) GetInferenceServiceServes(w http.Res
 }
 
 // CreateInferenceServiceServe - Create a ServeModel action in a InferenceService
+// Deprecated
 func (c *ModelRegistryServiceAPIController) CreateInferenceServiceServe(w http.ResponseWriter, r *http.Request) {
 	inferenceserviceIdParam := chi.URLParam(r, "inferenceserviceId")
 	if inferenceserviceIdParam == "" {
@@ -1869,6 +1898,7 @@ func (c *ModelRegistryServiceAPIController) CreateInferenceServiceServe(w http.R
 }
 
 // GetInferenceServiceVersion - Get InferenceService's ModelVersion
+// Deprecated
 func (c *ModelRegistryServiceAPIController) GetInferenceServiceVersion(w http.ResponseWriter, r *http.Request) {
 	inferenceserviceIdParam := chi.URLParam(r, "inferenceserviceId")
 	if inferenceserviceIdParam == "" {
@@ -1886,6 +1916,7 @@ func (c *ModelRegistryServiceAPIController) GetInferenceServiceVersion(w http.Re
 }
 
 // FindModelArtifact - Get a ModelArtifact that matches search parameters.
+// Deprecated
 func (c *ModelRegistryServiceAPIController) FindModelArtifact(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -1924,6 +1955,7 @@ func (c *ModelRegistryServiceAPIController) FindModelArtifact(w http.ResponseWri
 }
 
 // GetModelArtifacts - List All ModelArtifacts
+// Deprecated
 func (c *ModelRegistryServiceAPIController) GetModelArtifacts(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -1976,6 +2008,7 @@ func (c *ModelRegistryServiceAPIController) GetModelArtifacts(w http.ResponseWri
 }
 
 // CreateModelArtifact - Create a ModelArtifact
+// Deprecated
 func (c *ModelRegistryServiceAPIController) CreateModelArtifact(w http.ResponseWriter, r *http.Request) {
 	modelArtifactCreateParam := *model.NewModelArtifactCreateWithDefaults()
 	d := json.NewDecoder(r.Body)
@@ -2003,6 +2036,7 @@ func (c *ModelRegistryServiceAPIController) CreateModelArtifact(w http.ResponseW
 }
 
 // GetModelArtifact - Get a ModelArtifact
+// Deprecated
 func (c *ModelRegistryServiceAPIController) GetModelArtifact(w http.ResponseWriter, r *http.Request) {
 	modelartifactIdParam := chi.URLParam(r, "modelartifactId")
 	if modelartifactIdParam == "" {
@@ -2020,6 +2054,7 @@ func (c *ModelRegistryServiceAPIController) GetModelArtifact(w http.ResponseWrit
 }
 
 // UpdateModelArtifact - Update a ModelArtifact
+// Deprecated
 func (c *ModelRegistryServiceAPIController) UpdateModelArtifact(w http.ResponseWriter, r *http.Request) {
 	modelartifactIdParam := chi.URLParam(r, "modelartifactId")
 	if modelartifactIdParam == "" {
@@ -2052,6 +2087,7 @@ func (c *ModelRegistryServiceAPIController) UpdateModelArtifact(w http.ResponseW
 }
 
 // FindModelVersion - Get a ModelVersion that matches search parameters.
+// Deprecated
 func (c *ModelRegistryServiceAPIController) FindModelVersion(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -2090,6 +2126,7 @@ func (c *ModelRegistryServiceAPIController) FindModelVersion(w http.ResponseWrit
 }
 
 // GetModelVersions - List All ModelVersions
+// Deprecated
 func (c *ModelRegistryServiceAPIController) GetModelVersions(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -2142,6 +2179,7 @@ func (c *ModelRegistryServiceAPIController) GetModelVersions(w http.ResponseWrit
 }
 
 // CreateModelVersion - Create a ModelVersion
+// Deprecated
 func (c *ModelRegistryServiceAPIController) CreateModelVersion(w http.ResponseWriter, r *http.Request) {
 	modelVersionCreateParam := *model.NewModelVersionCreateWithDefaults()
 	d := json.NewDecoder(r.Body)
@@ -2169,6 +2207,7 @@ func (c *ModelRegistryServiceAPIController) CreateModelVersion(w http.ResponseWr
 }
 
 // GetModelVersion - Get a ModelVersion
+// Deprecated
 func (c *ModelRegistryServiceAPIController) GetModelVersion(w http.ResponseWriter, r *http.Request) {
 	modelversionIdParam := chi.URLParam(r, "modelversionId")
 	if modelversionIdParam == "" {
@@ -2186,6 +2225,7 @@ func (c *ModelRegistryServiceAPIController) GetModelVersion(w http.ResponseWrite
 }
 
 // UpdateModelVersion - Update a ModelVersion
+// Deprecated
 func (c *ModelRegistryServiceAPIController) UpdateModelVersion(w http.ResponseWriter, r *http.Request) {
 	modelversionIdParam := chi.URLParam(r, "modelversionId")
 	if modelversionIdParam == "" {
@@ -2218,6 +2258,7 @@ func (c *ModelRegistryServiceAPIController) UpdateModelVersion(w http.ResponseWr
 }
 
 // GetModelVersionArtifacts - List all artifacts associated with the `ModelVersion`
+// Deprecated
 func (c *ModelRegistryServiceAPIController) GetModelVersionArtifacts(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -2296,6 +2337,7 @@ func (c *ModelRegistryServiceAPIController) GetModelVersionArtifacts(w http.Resp
 }
 
 // UpsertModelVersionArtifact - Upsert an Artifact in a ModelVersion
+// Deprecated
 func (c *ModelRegistryServiceAPIController) UpsertModelVersionArtifact(w http.ResponseWriter, r *http.Request) {
 	modelversionIdParam := chi.URLParam(r, "modelversionId")
 	if modelversionIdParam == "" {
@@ -2328,6 +2370,7 @@ func (c *ModelRegistryServiceAPIController) UpsertModelVersionArtifact(w http.Re
 }
 
 // FindRegisteredModel - Get a RegisteredModel that matches search parameters.
+// Deprecated
 func (c *ModelRegistryServiceAPIController) FindRegisteredModel(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -2359,6 +2402,7 @@ func (c *ModelRegistryServiceAPIController) FindRegisteredModel(w http.ResponseW
 }
 
 // GetRegisteredModels - List All RegisteredModels
+// Deprecated
 func (c *ModelRegistryServiceAPIController) GetRegisteredModels(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -2411,6 +2455,7 @@ func (c *ModelRegistryServiceAPIController) GetRegisteredModels(w http.ResponseW
 }
 
 // CreateRegisteredModel - Create a RegisteredModel
+// Deprecated
 func (c *ModelRegistryServiceAPIController) CreateRegisteredModel(w http.ResponseWriter, r *http.Request) {
 	registeredModelCreateParam := *model.NewRegisteredModelCreateWithDefaults()
 	d := json.NewDecoder(r.Body)
@@ -2438,6 +2483,7 @@ func (c *ModelRegistryServiceAPIController) CreateRegisteredModel(w http.Respons
 }
 
 // GetRegisteredModel - Get a RegisteredModel
+// Deprecated
 func (c *ModelRegistryServiceAPIController) GetRegisteredModel(w http.ResponseWriter, r *http.Request) {
 	registeredmodelIdParam := chi.URLParam(r, "registeredmodelId")
 	if registeredmodelIdParam == "" {
@@ -2455,6 +2501,7 @@ func (c *ModelRegistryServiceAPIController) GetRegisteredModel(w http.ResponseWr
 }
 
 // UpdateRegisteredModel - Update a RegisteredModel
+// Deprecated
 func (c *ModelRegistryServiceAPIController) UpdateRegisteredModel(w http.ResponseWriter, r *http.Request) {
 	registeredmodelIdParam := chi.URLParam(r, "registeredmodelId")
 	if registeredmodelIdParam == "" {
@@ -2487,6 +2534,7 @@ func (c *ModelRegistryServiceAPIController) UpdateRegisteredModel(w http.Respons
 }
 
 // GetRegisteredModelVersions - List All RegisteredModel's ModelVersions
+// Deprecated
 func (c *ModelRegistryServiceAPIController) GetRegisteredModelVersions(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -2558,6 +2606,7 @@ func (c *ModelRegistryServiceAPIController) GetRegisteredModelVersions(w http.Re
 }
 
 // CreateRegisteredModelVersion - Create a ModelVersion in RegisteredModel
+// Deprecated
 func (c *ModelRegistryServiceAPIController) CreateRegisteredModelVersion(w http.ResponseWriter, r *http.Request) {
 	registeredmodelIdParam := chi.URLParam(r, "registeredmodelId")
 	if registeredmodelIdParam == "" {
@@ -2590,6 +2639,7 @@ func (c *ModelRegistryServiceAPIController) CreateRegisteredModelVersion(w http.
 }
 
 // FindServingEnvironment - Find ServingEnvironment
+// Deprecated
 func (c *ModelRegistryServiceAPIController) FindServingEnvironment(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -2621,6 +2671,7 @@ func (c *ModelRegistryServiceAPIController) FindServingEnvironment(w http.Respon
 }
 
 // GetServingEnvironments - List All ServingEnvironments
+// Deprecated
 func (c *ModelRegistryServiceAPIController) GetServingEnvironments(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -2673,6 +2724,7 @@ func (c *ModelRegistryServiceAPIController) GetServingEnvironments(w http.Respon
 }
 
 // CreateServingEnvironment - Create a ServingEnvironment
+// Deprecated
 func (c *ModelRegistryServiceAPIController) CreateServingEnvironment(w http.ResponseWriter, r *http.Request) {
 	servingEnvironmentCreateParam := *model.NewServingEnvironmentCreateWithDefaults()
 	d := json.NewDecoder(r.Body)
@@ -2700,6 +2752,7 @@ func (c *ModelRegistryServiceAPIController) CreateServingEnvironment(w http.Resp
 }
 
 // GetServingEnvironment - Get a ServingEnvironment
+// Deprecated
 func (c *ModelRegistryServiceAPIController) GetServingEnvironment(w http.ResponseWriter, r *http.Request) {
 	servingenvironmentIdParam := chi.URLParam(r, "servingenvironmentId")
 	if servingenvironmentIdParam == "" {
@@ -2717,6 +2770,7 @@ func (c *ModelRegistryServiceAPIController) GetServingEnvironment(w http.Respons
 }
 
 // UpdateServingEnvironment - Update a ServingEnvironment
+// Deprecated
 func (c *ModelRegistryServiceAPIController) UpdateServingEnvironment(w http.ResponseWriter, r *http.Request) {
 	servingenvironmentIdParam := chi.URLParam(r, "servingenvironmentId")
 	if servingenvironmentIdParam == "" {
@@ -2749,6 +2803,7 @@ func (c *ModelRegistryServiceAPIController) UpdateServingEnvironment(w http.Resp
 }
 
 // GetEnvironmentInferenceServices - List All ServingEnvironment's InferenceServices
+// Deprecated
 func (c *ModelRegistryServiceAPIController) GetEnvironmentInferenceServices(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -2820,6 +2875,7 @@ func (c *ModelRegistryServiceAPIController) GetEnvironmentInferenceServices(w ht
 }
 
 // CreateEnvironmentInferenceService - Create a InferenceService in ServingEnvironment
+// Deprecated
 func (c *ModelRegistryServiceAPIController) CreateEnvironmentInferenceService(w http.ResponseWriter, r *http.Request) {
 	servingenvironmentIdParam := chi.URLParam(r, "servingenvironmentId")
 	if servingenvironmentIdParam == "" {

@@ -3,7 +3,7 @@
 /*
  * Catalog REST API
  *
- * REST API for Kubeflow Hub Catalog
+ * The `v1alpha1` catalog API is deprecated, please use `v1`.
  *
  * API version: v1alpha1
  */
@@ -110,6 +110,7 @@ func (c *AgentCatalogServiceAPIController) OrderedRoutes() []Route {
 }
 
 // FindAgents - List agents.
+// Deprecated
 func (c *AgentCatalogServiceAPIController) FindAgents(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -184,6 +185,7 @@ func (c *AgentCatalogServiceAPIController) FindAgents(w http.ResponseWriter, r *
 }
 
 // FindAgentsFilterOptions - Lists fields and values that can be used in `filterQuery` on the list agents endpoint.
+// Deprecated
 func (c *AgentCatalogServiceAPIController) FindAgentsFilterOptions(w http.ResponseWriter, r *http.Request) {
 	result, err := c.service.FindAgentsFilterOptions(r.Context())
 	// If an error occurred, encode the error with the status code
@@ -196,6 +198,7 @@ func (c *AgentCatalogServiceAPIController) FindAgentsFilterOptions(w http.Respon
 }
 
 // GetAgent - Get an agent by ID.
+// Deprecated
 func (c *AgentCatalogServiceAPIController) GetAgent(w http.ResponseWriter, r *http.Request) {
 	idParam := chi.URLParam(r, "id")
 	if idParam == "" {
@@ -213,6 +216,7 @@ func (c *AgentCatalogServiceAPIController) GetAgent(w http.ResponseWriter, r *ht
 }
 
 // GetAgentArtifacts - List artifacts for an agent.
+// Deprecated
 func (c *AgentCatalogServiceAPIController) GetAgentArtifacts(w http.ResponseWriter, r *http.Request) {
 	query, err := parseQuery(r.URL.RawQuery)
 	if err != nil {

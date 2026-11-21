@@ -1,7 +1,7 @@
 /*
 Model Registry REST API
 
-REST API for Model Registry to create and manage ML model metadata
+The `v1alpha3` model registry API is deprecated, please use `v1`.
 
 API version: v1alpha3
 */
@@ -45,6 +45,8 @@ Creates a new instance of an `Artifact`.
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiCreateArtifactRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) CreateArtifact(ctx context.Context) ApiCreateArtifactRequest {
 	return ApiCreateArtifactRequest{
@@ -56,6 +58,8 @@ func (a *ModelRegistryServiceAPIService) CreateArtifact(ctx context.Context) Api
 // Execute executes the request
 //
 //	@return Artifact
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) CreateArtifactExecute(r ApiCreateArtifactRequest) (*Artifact, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPost
@@ -213,6 +217,8 @@ Creates a new instance of a `InferenceService`.
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param servingenvironmentId A unique identifier for a `ServingEnvironment`.
 	@return ApiCreateEnvironmentInferenceServiceRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) CreateEnvironmentInferenceService(ctx context.Context, servingenvironmentId string) ApiCreateEnvironmentInferenceServiceRequest {
 	return ApiCreateEnvironmentInferenceServiceRequest{
@@ -225,6 +231,8 @@ func (a *ModelRegistryServiceAPIService) CreateEnvironmentInferenceService(ctx c
 // Execute executes the request
 //
 //	@return InferenceService
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) CreateEnvironmentInferenceServiceExecute(r ApiCreateEnvironmentInferenceServiceRequest) (*InferenceService, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPost
@@ -392,6 +400,8 @@ Creates a new instance of an `Experiment`.
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiCreateExperimentRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) CreateExperiment(ctx context.Context) ApiCreateExperimentRequest {
 	return ApiCreateExperimentRequest{
@@ -403,6 +413,8 @@ func (a *ModelRegistryServiceAPIService) CreateExperiment(ctx context.Context) A
 // Execute executes the request
 //
 //	@return Experiment
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) CreateExperimentExecute(r ApiCreateExperimentRequest) (*Experiment, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPost
@@ -560,6 +572,8 @@ Creates a new instance of an `ExperimentRun`.
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param experimentId A unique identifier for an `Experiment`.
 	@return ApiCreateExperimentExperimentRunRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) CreateExperimentExperimentRun(ctx context.Context, experimentId string) ApiCreateExperimentExperimentRunRequest {
 	return ApiCreateExperimentExperimentRunRequest{
@@ -572,6 +586,8 @@ func (a *ModelRegistryServiceAPIService) CreateExperimentExperimentRun(ctx conte
 // Execute executes the request
 //
 //	@return ExperimentRun
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) CreateExperimentExperimentRunExecute(r ApiCreateExperimentExperimentRunRequest) (*ExperimentRun, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPost
@@ -739,6 +755,8 @@ Creates a new instance of an `ExperimentRun`.
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiCreateExperimentRunRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) CreateExperimentRun(ctx context.Context) ApiCreateExperimentRunRequest {
 	return ApiCreateExperimentRunRequest{
@@ -750,6 +768,8 @@ func (a *ModelRegistryServiceAPIService) CreateExperimentRun(ctx context.Context
 // Execute executes the request
 //
 //	@return ExperimentRun
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) CreateExperimentRunExecute(r ApiCreateExperimentRunRequest) (*ExperimentRun, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPost
@@ -916,6 +936,8 @@ Creates a new instance of a `InferenceService`.
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiCreateInferenceServiceRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) CreateInferenceService(ctx context.Context) ApiCreateInferenceServiceRequest {
 	return ApiCreateInferenceServiceRequest{
@@ -927,6 +949,8 @@ func (a *ModelRegistryServiceAPIService) CreateInferenceService(ctx context.Cont
 // Execute executes the request
 //
 //	@return InferenceService
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) CreateInferenceServiceExecute(r ApiCreateInferenceServiceRequest) (*InferenceService, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPost
@@ -1084,6 +1108,8 @@ Creates a new instance of a `ServeModel` associated with `InferenceService`.
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param inferenceserviceId A unique identifier for a `InferenceService`.
 	@return ApiCreateInferenceServiceServeRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) CreateInferenceServiceServe(ctx context.Context, inferenceserviceId string) ApiCreateInferenceServiceServeRequest {
 	return ApiCreateInferenceServiceServeRequest{
@@ -1096,6 +1122,8 @@ func (a *ModelRegistryServiceAPIService) CreateInferenceServiceServe(ctx context
 // Execute executes the request
 //
 //	@return ServeModel
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) CreateInferenceServiceServeExecute(r ApiCreateInferenceServiceServeRequest) (*ServeModel, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPost
@@ -1263,6 +1291,8 @@ Creates a new instance of a `ModelArtifact`.
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiCreateModelArtifactRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) CreateModelArtifact(ctx context.Context) ApiCreateModelArtifactRequest {
 	return ApiCreateModelArtifactRequest{
@@ -1274,6 +1304,8 @@ func (a *ModelRegistryServiceAPIService) CreateModelArtifact(ctx context.Context
 // Execute executes the request
 //
 //	@return ModelArtifact
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) CreateModelArtifactExecute(r ApiCreateModelArtifactRequest) (*ModelArtifact, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPost
@@ -1429,6 +1461,8 @@ Creates a new instance of a `ModelVersion`.
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiCreateModelVersionRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) CreateModelVersion(ctx context.Context) ApiCreateModelVersionRequest {
 	return ApiCreateModelVersionRequest{
@@ -1440,6 +1474,8 @@ func (a *ModelRegistryServiceAPIService) CreateModelVersion(ctx context.Context)
 // Execute executes the request
 //
 //	@return ModelVersion
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) CreateModelVersionExecute(r ApiCreateModelVersionRequest) (*ModelVersion, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPost
@@ -1606,6 +1642,8 @@ Creates a new instance of a `RegisteredModel`.
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiCreateRegisteredModelRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) CreateRegisteredModel(ctx context.Context) ApiCreateRegisteredModelRequest {
 	return ApiCreateRegisteredModelRequest{
@@ -1617,6 +1655,8 @@ func (a *ModelRegistryServiceAPIService) CreateRegisteredModel(ctx context.Conte
 // Execute executes the request
 //
 //	@return RegisteredModel
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) CreateRegisteredModelExecute(r ApiCreateRegisteredModelRequest) (*RegisteredModel, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPost
@@ -1774,6 +1814,8 @@ Creates a new instance of a `ModelVersion`.
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param registeredmodelId A unique identifier for a `RegisteredModel`.
 	@return ApiCreateRegisteredModelVersionRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) CreateRegisteredModelVersion(ctx context.Context, registeredmodelId string) ApiCreateRegisteredModelVersionRequest {
 	return ApiCreateRegisteredModelVersionRequest{
@@ -1786,6 +1828,8 @@ func (a *ModelRegistryServiceAPIService) CreateRegisteredModelVersion(ctx contex
 // Execute executes the request
 //
 //	@return ModelVersion
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) CreateRegisteredModelVersionExecute(r ApiCreateRegisteredModelVersionRequest) (*ModelVersion, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPost
@@ -1953,6 +1997,8 @@ Creates a new instance of a `ServingEnvironment`.
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiCreateServingEnvironmentRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) CreateServingEnvironment(ctx context.Context) ApiCreateServingEnvironmentRequest {
 	return ApiCreateServingEnvironmentRequest{
@@ -1964,6 +2010,8 @@ func (a *ModelRegistryServiceAPIService) CreateServingEnvironment(ctx context.Co
 // Execute executes the request
 //
 //	@return ServingEnvironment
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) CreateServingEnvironmentExecute(r ApiCreateServingEnvironmentRequest) (*ServingEnvironment, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPost
@@ -2133,6 +2181,8 @@ Gets the details of a single instance of an `Artifact` that matches search param
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiFindArtifactRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) FindArtifact(ctx context.Context) ApiFindArtifactRequest {
 	return ApiFindArtifactRequest{
@@ -2144,6 +2194,8 @@ func (a *ModelRegistryServiceAPIService) FindArtifact(ctx context.Context) ApiFi
 // Execute executes the request
 //
 //	@return Artifact
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) FindArtifactExecute(r ApiFindArtifactRequest) (*Artifact, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -2310,6 +2362,8 @@ Gets the details of a single instance of an `Experiment` that matches search par
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiFindExperimentRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) FindExperiment(ctx context.Context) ApiFindExperimentRequest {
 	return ApiFindExperimentRequest{
@@ -2321,6 +2375,8 @@ func (a *ModelRegistryServiceAPIService) FindExperiment(ctx context.Context) Api
 // Execute executes the request
 //
 //	@return Experiment
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) FindExperimentExecute(r ApiFindExperimentRequest) (*Experiment, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -2480,6 +2536,8 @@ Gets the details of a single instance of an `ExperimentRun` that matches search 
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiFindExperimentRunRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) FindExperimentRun(ctx context.Context) ApiFindExperimentRunRequest {
 	return ApiFindExperimentRunRequest{
@@ -2491,6 +2549,8 @@ func (a *ModelRegistryServiceAPIService) FindExperimentRun(ctx context.Context) 
 // Execute executes the request
 //
 //	@return ExperimentRun
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) FindExperimentRunExecute(r ApiFindExperimentRunRequest) (*ExperimentRun, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -2664,6 +2724,8 @@ Gets the details of a single instance of `InferenceService` that matches search 
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiFindInferenceServiceRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) FindInferenceService(ctx context.Context) ApiFindInferenceServiceRequest {
 	return ApiFindInferenceServiceRequest{
@@ -2675,6 +2737,8 @@ func (a *ModelRegistryServiceAPIService) FindInferenceService(ctx context.Contex
 // Execute executes the request
 //
 //	@return InferenceService
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) FindInferenceServiceExecute(r ApiFindInferenceServiceRequest) (*InferenceService, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -2848,6 +2912,8 @@ Gets the details of a single instance of a `ModelArtifact` that matches search p
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiFindModelArtifactRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) FindModelArtifact(ctx context.Context) ApiFindModelArtifactRequest {
 	return ApiFindModelArtifactRequest{
@@ -2859,6 +2925,8 @@ func (a *ModelRegistryServiceAPIService) FindModelArtifact(ctx context.Context) 
 // Execute executes the request
 //
 //	@return ModelArtifact
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) FindModelArtifactExecute(r ApiFindModelArtifactRequest) (*ModelArtifact, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -3032,6 +3100,8 @@ Gets the details of a single instance of a `ModelVersion` that matches search pa
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiFindModelVersionRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) FindModelVersion(ctx context.Context) ApiFindModelVersionRequest {
 	return ApiFindModelVersionRequest{
@@ -3043,6 +3113,8 @@ func (a *ModelRegistryServiceAPIService) FindModelVersion(ctx context.Context) A
 // Execute executes the request
 //
 //	@return ModelVersion
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) FindModelVersionExecute(r ApiFindModelVersionRequest) (*ModelVersion, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -3209,6 +3281,8 @@ Gets the details of a single instance of a `RegisteredModel` that matches search
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiFindRegisteredModelRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) FindRegisteredModel(ctx context.Context) ApiFindRegisteredModelRequest {
 	return ApiFindRegisteredModelRequest{
@@ -3220,6 +3294,8 @@ func (a *ModelRegistryServiceAPIService) FindRegisteredModel(ctx context.Context
 // Execute executes the request
 //
 //	@return RegisteredModel
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) FindRegisteredModelExecute(r ApiFindRegisteredModelRequest) (*RegisteredModel, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -3372,6 +3448,8 @@ Finds a `ServingEnvironment` entity that matches query parameters.
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiFindServingEnvironmentRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) FindServingEnvironment(ctx context.Context) ApiFindServingEnvironmentRequest {
 	return ApiFindServingEnvironmentRequest{
@@ -3383,6 +3461,8 @@ func (a *ModelRegistryServiceAPIService) FindServingEnvironment(ctx context.Cont
 // Execute executes the request
 //
 //	@return ServingEnvironment
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) FindServingEnvironmentExecute(r ApiFindServingEnvironmentRequest) (*ServingEnvironment, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -3523,6 +3603,8 @@ Gets the details of a single instance of an `Artifact`.
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param id A unique identifier for an `Artifact`.
 	@return ApiGetArtifactRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) GetArtifact(ctx context.Context, id string) ApiGetArtifactRequest {
 	return ApiGetArtifactRequest{
@@ -3535,6 +3617,8 @@ func (a *ModelRegistryServiceAPIService) GetArtifact(ctx context.Context, id str
 // Execute executes the request
 //
 //	@return Artifact
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) GetArtifactExecute(r ApiGetArtifactRequest) (*Artifact, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -3721,6 +3805,8 @@ Gets a list of all `Artifact` entities.
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiGetArtifactsRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) GetArtifacts(ctx context.Context) ApiGetArtifactsRequest {
 	return ApiGetArtifactsRequest{
@@ -3732,6 +3818,8 @@ func (a *ModelRegistryServiceAPIService) GetArtifacts(ctx context.Context) ApiGe
 // Execute executes the request
 //
 //	@return ArtifactList
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) GetArtifactsExecute(r ApiGetArtifactsRequest) (*ArtifactList, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -3944,6 +4032,8 @@ Gets a list of all `InferenceService` entities for the `ServingEnvironment`.
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param servingenvironmentId A unique identifier for a `ServingEnvironment`.
 	@return ApiGetEnvironmentInferenceServicesRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) GetEnvironmentInferenceServices(ctx context.Context, servingenvironmentId string) ApiGetEnvironmentInferenceServicesRequest {
 	return ApiGetEnvironmentInferenceServicesRequest{
@@ -3956,6 +4046,8 @@ func (a *ModelRegistryServiceAPIService) GetEnvironmentInferenceServices(ctx con
 // Execute executes the request
 //
 //	@return InferenceServiceList
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) GetEnvironmentInferenceServicesExecute(r ApiGetEnvironmentInferenceServicesRequest) (*InferenceServiceList, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -4112,6 +4204,8 @@ Gets the details of a single instance of an `Experiment`.
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param experimentId A unique identifier for an `Experiment`.
 	@return ApiGetExperimentRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) GetExperiment(ctx context.Context, experimentId string) ApiGetExperimentRequest {
 	return ApiGetExperimentRequest{
@@ -4124,6 +4218,8 @@ func (a *ModelRegistryServiceAPIService) GetExperiment(ctx context.Context, expe
 // Execute executes the request
 //
 //	@return Experiment
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) GetExperimentExecute(r ApiGetExperimentRequest) (*Experiment, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -4308,6 +4404,8 @@ Gets a list of all `ExperimentRun` entities for the `Experiment`.
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param experimentId A unique identifier for an `Experiment`.
 	@return ApiGetExperimentExperimentRunsRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) GetExperimentExperimentRuns(ctx context.Context, experimentId string) ApiGetExperimentExperimentRunsRequest {
 	return ApiGetExperimentExperimentRunsRequest{
@@ -4320,6 +4418,8 @@ func (a *ModelRegistryServiceAPIService) GetExperimentExperimentRuns(ctx context
 // Execute executes the request
 //
 //	@return ExperimentRunList
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) GetExperimentExperimentRunsExecute(r ApiGetExperimentExperimentRunsRequest) (*ExperimentRunList, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -4476,6 +4576,8 @@ Gets the details of a single instance of an `ExperimentRun`.
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param experimentrunId A unique identifier for an `ExperimentRun`.
 	@return ApiGetExperimentRunRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) GetExperimentRun(ctx context.Context, experimentrunId string) ApiGetExperimentRunRequest {
 	return ApiGetExperimentRunRequest{
@@ -4488,6 +4590,8 @@ func (a *ModelRegistryServiceAPIService) GetExperimentRun(ctx context.Context, e
 // Execute executes the request
 //
 //	@return ExperimentRun
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) GetExperimentRunExecute(r ApiGetExperimentRunRequest) (*ExperimentRun, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -4677,6 +4781,8 @@ GetExperimentRunArtifacts List all artifacts associated with the `ExperimentRun`
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param experimentrunId A unique identifier for an `ExperimentRun`.
 	@return ApiGetExperimentRunArtifactsRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) GetExperimentRunArtifacts(ctx context.Context, experimentrunId string) ApiGetExperimentRunArtifactsRequest {
 	return ApiGetExperimentRunArtifactsRequest{
@@ -4689,6 +4795,8 @@ func (a *ModelRegistryServiceAPIService) GetExperimentRunArtifacts(ctx context.C
 // Execute executes the request
 //
 //	@return ArtifactList
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) GetExperimentRunArtifactsExecute(r ApiGetExperimentRunArtifactsRequest) (*ArtifactList, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -4897,6 +5005,8 @@ Gets the metric history for an `ExperimentRun` with optional filtering by metric
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param experimentrunId A unique identifier for an `ExperimentRun`.
 	@return ApiGetExperimentRunMetricHistoryRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) GetExperimentRunMetricHistory(ctx context.Context, experimentrunId string) ApiGetExperimentRunMetricHistoryRequest {
 	return ApiGetExperimentRunMetricHistoryRequest{
@@ -4909,6 +5019,8 @@ func (a *ModelRegistryServiceAPIService) GetExperimentRunMetricHistory(ctx conte
 // Execute executes the request
 //
 //	@return MetricList
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) GetExperimentRunMetricHistoryExecute(r ApiGetExperimentRunMetricHistoryRequest) (*MetricList, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -5098,6 +5210,8 @@ Gets a list of all `ExperimentRun` entities.
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiGetExperimentRunsRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) GetExperimentRuns(ctx context.Context) ApiGetExperimentRunsRequest {
 	return ApiGetExperimentRunsRequest{
@@ -5109,6 +5223,8 @@ func (a *ModelRegistryServiceAPIService) GetExperimentRuns(ctx context.Context) 
 // Execute executes the request
 //
 //	@return ExperimentRunList
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) GetExperimentRunsExecute(r ApiGetExperimentRunsRequest) (*ExperimentRunList, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -5294,6 +5410,8 @@ Gets the metric history for multiple `ExperimentRun` entities with optional filt
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiGetExperimentRunsMetricHistoryRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) GetExperimentRunsMetricHistory(ctx context.Context) ApiGetExperimentRunsMetricHistoryRequest {
 	return ApiGetExperimentRunsMetricHistoryRequest{
@@ -5305,6 +5423,8 @@ func (a *ModelRegistryServiceAPIService) GetExperimentRunsMetricHistory(ctx cont
 // Execute executes the request
 //
 //	@return MetricList
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) GetExperimentRunsMetricHistoryExecute(r ApiGetExperimentRunsMetricHistoryRequest) (*MetricList, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -5493,6 +5613,8 @@ Gets a list of all `Experiment` entities.
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiGetExperimentsRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) GetExperiments(ctx context.Context) ApiGetExperimentsRequest {
 	return ApiGetExperimentsRequest{
@@ -5504,6 +5626,8 @@ func (a *ModelRegistryServiceAPIService) GetExperiments(ctx context.Context) Api
 // Execute executes the request
 //
 //	@return ExperimentList
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) GetExperimentsExecute(r ApiGetExperimentsRequest) (*ExperimentList, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -5642,6 +5766,8 @@ Gets the details of a single instance of a `InferenceService`.
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param inferenceserviceId A unique identifier for a `InferenceService`.
 	@return ApiGetInferenceServiceRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) GetInferenceService(ctx context.Context, inferenceserviceId string) ApiGetInferenceServiceRequest {
 	return ApiGetInferenceServiceRequest{
@@ -5654,6 +5780,8 @@ func (a *ModelRegistryServiceAPIService) GetInferenceService(ctx context.Context
 // Execute executes the request
 //
 //	@return InferenceService
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) GetInferenceServiceExecute(r ApiGetInferenceServiceRequest) (*InferenceService, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -5789,6 +5917,8 @@ Gets the `RegisteredModel` entity for the `InferenceService`.
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param inferenceserviceId A unique identifier for a `InferenceService`.
 	@return ApiGetInferenceServiceModelRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) GetInferenceServiceModel(ctx context.Context, inferenceserviceId string) ApiGetInferenceServiceModelRequest {
 	return ApiGetInferenceServiceModelRequest{
@@ -5801,6 +5931,8 @@ func (a *ModelRegistryServiceAPIService) GetInferenceServiceModel(ctx context.Co
 // Execute executes the request
 //
 //	@return RegisteredModel
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) GetInferenceServiceModelExecute(r ApiGetInferenceServiceModelRequest) (*RegisteredModel, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -5985,6 +6117,8 @@ Gets a list of all `ServeModel` entities for the `InferenceService`.
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param inferenceserviceId A unique identifier for a `InferenceService`.
 	@return ApiGetInferenceServiceServesRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) GetInferenceServiceServes(ctx context.Context, inferenceserviceId string) ApiGetInferenceServiceServesRequest {
 	return ApiGetInferenceServiceServesRequest{
@@ -5997,6 +6131,8 @@ func (a *ModelRegistryServiceAPIService) GetInferenceServiceServes(ctx context.C
 // Execute executes the request
 //
 //	@return ServeModelList
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) GetInferenceServiceServesExecute(r ApiGetInferenceServiceServesRequest) (*ServeModelList, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -6153,6 +6289,8 @@ Gets the `ModelVersion` entity for the `InferenceService`.
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param inferenceserviceId A unique identifier for a `InferenceService`.
 	@return ApiGetInferenceServiceVersionRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) GetInferenceServiceVersion(ctx context.Context, inferenceserviceId string) ApiGetInferenceServiceVersionRequest {
 	return ApiGetInferenceServiceVersionRequest{
@@ -6165,6 +6303,8 @@ func (a *ModelRegistryServiceAPIService) GetInferenceServiceVersion(ctx context.
 // Execute executes the request
 //
 //	@return ModelVersion
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) GetInferenceServiceVersionExecute(r ApiGetInferenceServiceVersionRequest) (*ModelVersion, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -6333,6 +6473,8 @@ Gets a list of all `InferenceService` entities.
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiGetInferenceServicesRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) GetInferenceServices(ctx context.Context) ApiGetInferenceServicesRequest {
 	return ApiGetInferenceServicesRequest{
@@ -6344,6 +6486,8 @@ func (a *ModelRegistryServiceAPIService) GetInferenceServices(ctx context.Contex
 // Execute executes the request
 //
 //	@return InferenceServiceList
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) GetInferenceServicesExecute(r ApiGetInferenceServicesRequest) (*InferenceServiceList, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -6504,6 +6648,8 @@ Gets the details of a single instance of a `ModelArtifact`.
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param modelartifactId A unique identifier for a `ModelArtifact`.
 	@return ApiGetModelArtifactRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) GetModelArtifact(ctx context.Context, modelartifactId string) ApiGetModelArtifactRequest {
 	return ApiGetModelArtifactRequest{
@@ -6516,6 +6662,8 @@ func (a *ModelRegistryServiceAPIService) GetModelArtifact(ctx context.Context, m
 // Execute executes the request
 //
 //	@return ModelArtifact
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) GetModelArtifactExecute(r ApiGetModelArtifactRequest) (*ModelArtifact, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -6684,6 +6832,8 @@ Gets a list of all `ModelArtifact` entities.
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiGetModelArtifactsRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) GetModelArtifacts(ctx context.Context) ApiGetModelArtifactsRequest {
 	return ApiGetModelArtifactsRequest{
@@ -6695,6 +6845,8 @@ func (a *ModelRegistryServiceAPIService) GetModelArtifacts(ctx context.Context) 
 // Execute executes the request
 //
 //	@return ModelArtifactList
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) GetModelArtifactsExecute(r ApiGetModelArtifactsRequest) (*ModelArtifactList, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -6855,6 +7007,8 @@ Gets the details of a single instance of a `ModelVersion`.
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param modelversionId A unique identifier for a `ModelVersion`.
 	@return ApiGetModelVersionRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) GetModelVersion(ctx context.Context, modelversionId string) ApiGetModelVersionRequest {
 	return ApiGetModelVersionRequest{
@@ -6867,6 +7021,8 @@ func (a *ModelRegistryServiceAPIService) GetModelVersion(ctx context.Context, mo
 // Execute executes the request
 //
 //	@return ModelVersion
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) GetModelVersionExecute(r ApiGetModelVersionRequest) (*ModelVersion, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -7056,6 +7212,8 @@ GetModelVersionArtifacts List all artifacts associated with the `ModelVersion`
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param modelversionId A unique identifier for a `ModelVersion`.
 	@return ApiGetModelVersionArtifactsRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) GetModelVersionArtifacts(ctx context.Context, modelversionId string) ApiGetModelVersionArtifactsRequest {
 	return ApiGetModelVersionArtifactsRequest{
@@ -7068,6 +7226,8 @@ func (a *ModelRegistryServiceAPIService) GetModelVersionArtifacts(ctx context.Co
 // Execute executes the request
 //
 //	@return ArtifactList
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) GetModelVersionArtifactsExecute(r ApiGetModelVersionArtifactsRequest) (*ArtifactList, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -7260,6 +7420,8 @@ Gets a list of all `ModelVersion` entities.
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiGetModelVersionsRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) GetModelVersions(ctx context.Context) ApiGetModelVersionsRequest {
 	return ApiGetModelVersionsRequest{
@@ -7271,6 +7433,8 @@ func (a *ModelRegistryServiceAPIService) GetModelVersions(ctx context.Context) A
 // Execute executes the request
 //
 //	@return ModelVersionList
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) GetModelVersionsExecute(r ApiGetModelVersionsRequest) (*ModelVersionList, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -7409,6 +7573,8 @@ Gets the details of a single instance of a `RegisteredModel`.
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param registeredmodelId A unique identifier for a `RegisteredModel`.
 	@return ApiGetRegisteredModelRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) GetRegisteredModel(ctx context.Context, registeredmodelId string) ApiGetRegisteredModelRequest {
 	return ApiGetRegisteredModelRequest{
@@ -7421,6 +7587,8 @@ func (a *ModelRegistryServiceAPIService) GetRegisteredModel(ctx context.Context,
 // Execute executes the request
 //
 //	@return RegisteredModel
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) GetRegisteredModelExecute(r ApiGetRegisteredModelRequest) (*RegisteredModel, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -7605,6 +7773,8 @@ Gets a list of all `ModelVersion` entities for the `RegisteredModel`.
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param registeredmodelId A unique identifier for a `RegisteredModel`.
 	@return ApiGetRegisteredModelVersionsRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) GetRegisteredModelVersions(ctx context.Context, registeredmodelId string) ApiGetRegisteredModelVersionsRequest {
 	return ApiGetRegisteredModelVersionsRequest{
@@ -7617,6 +7787,8 @@ func (a *ModelRegistryServiceAPIService) GetRegisteredModelVersions(ctx context.
 // Execute executes the request
 //
 //	@return ModelVersionList
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) GetRegisteredModelVersionsExecute(r ApiGetRegisteredModelVersionsRequest) (*ModelVersionList, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -7806,6 +7978,8 @@ Gets a list of all `RegisteredModel` entities.
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiGetRegisteredModelsRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) GetRegisteredModels(ctx context.Context) ApiGetRegisteredModelsRequest {
 	return ApiGetRegisteredModelsRequest{
@@ -7817,6 +7991,8 @@ func (a *ModelRegistryServiceAPIService) GetRegisteredModels(ctx context.Context
 // Execute executes the request
 //
 //	@return RegisteredModelList
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) GetRegisteredModelsExecute(r ApiGetRegisteredModelsRequest) (*RegisteredModelList, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -7955,6 +8131,8 @@ Gets the details of a single instance of a `ServingEnvironment`.
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param servingenvironmentId A unique identifier for a `ServingEnvironment`.
 	@return ApiGetServingEnvironmentRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) GetServingEnvironment(ctx context.Context, servingenvironmentId string) ApiGetServingEnvironmentRequest {
 	return ApiGetServingEnvironmentRequest{
@@ -7967,6 +8145,8 @@ func (a *ModelRegistryServiceAPIService) GetServingEnvironment(ctx context.Conte
 // Execute executes the request
 //
 //	@return ServingEnvironment
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) GetServingEnvironmentExecute(r ApiGetServingEnvironmentRequest) (*ServingEnvironment, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -8135,6 +8315,8 @@ Gets a list of all `ServingEnvironment` entities.
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiGetServingEnvironmentsRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) GetServingEnvironments(ctx context.Context) ApiGetServingEnvironmentsRequest {
 	return ApiGetServingEnvironmentsRequest{
@@ -8146,6 +8328,8 @@ func (a *ModelRegistryServiceAPIService) GetServingEnvironments(ctx context.Cont
 // Execute executes the request
 //
 //	@return ServingEnvironmentList
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) GetServingEnvironmentsExecute(r ApiGetServingEnvironmentsRequest) (*ServingEnvironmentList, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
@@ -8291,6 +8475,8 @@ Updates an existing `Artifact`.
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param id A unique identifier for an `Artifact`.
 	@return ApiUpdateArtifactRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) UpdateArtifact(ctx context.Context, id string) ApiUpdateArtifactRequest {
 	return ApiUpdateArtifactRequest{
@@ -8303,6 +8489,8 @@ func (a *ModelRegistryServiceAPIService) UpdateArtifact(ctx context.Context, id 
 // Execute executes the request
 //
 //	@return Artifact
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) UpdateArtifactExecute(r ApiUpdateArtifactRequest) (*Artifact, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPatch
@@ -8461,6 +8649,8 @@ Updates an existing `Experiment`.
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param experimentId A unique identifier for an `Experiment`.
 	@return ApiUpdateExperimentRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) UpdateExperiment(ctx context.Context, experimentId string) ApiUpdateExperimentRequest {
 	return ApiUpdateExperimentRequest{
@@ -8473,6 +8663,8 @@ func (a *ModelRegistryServiceAPIService) UpdateExperiment(ctx context.Context, e
 // Execute executes the request
 //
 //	@return Experiment
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) UpdateExperimentExecute(r ApiUpdateExperimentRequest) (*Experiment, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPatch
@@ -8631,6 +8823,8 @@ Updates an existing `ExperimentRun`.
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param experimentrunId A unique identifier for an `ExperimentRun`.
 	@return ApiUpdateExperimentRunRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) UpdateExperimentRun(ctx context.Context, experimentrunId string) ApiUpdateExperimentRunRequest {
 	return ApiUpdateExperimentRunRequest{
@@ -8643,6 +8837,8 @@ func (a *ModelRegistryServiceAPIService) UpdateExperimentRun(ctx context.Context
 // Execute executes the request
 //
 //	@return ExperimentRun
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) UpdateExperimentRunExecute(r ApiUpdateExperimentRunRequest) (*ExperimentRun, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPatch
@@ -8801,6 +8997,8 @@ Updates an existing `InferenceService`.
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param inferenceserviceId A unique identifier for a `InferenceService`.
 	@return ApiUpdateInferenceServiceRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) UpdateInferenceService(ctx context.Context, inferenceserviceId string) ApiUpdateInferenceServiceRequest {
 	return ApiUpdateInferenceServiceRequest{
@@ -8813,6 +9011,8 @@ func (a *ModelRegistryServiceAPIService) UpdateInferenceService(ctx context.Cont
 // Execute executes the request
 //
 //	@return InferenceService
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) UpdateInferenceServiceExecute(r ApiUpdateInferenceServiceRequest) (*InferenceService, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPatch
@@ -8971,6 +9171,8 @@ Updates an existing `ModelArtifact`.
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param modelartifactId A unique identifier for a `ModelArtifact`.
 	@return ApiUpdateModelArtifactRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) UpdateModelArtifact(ctx context.Context, modelartifactId string) ApiUpdateModelArtifactRequest {
 	return ApiUpdateModelArtifactRequest{
@@ -8983,6 +9185,8 @@ func (a *ModelRegistryServiceAPIService) UpdateModelArtifact(ctx context.Context
 // Execute executes the request
 //
 //	@return ModelArtifact
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) UpdateModelArtifactExecute(r ApiUpdateModelArtifactRequest) (*ModelArtifact, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPatch
@@ -9141,6 +9345,8 @@ Updates an existing `ModelVersion`.
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param modelversionId A unique identifier for a `ModelVersion`.
 	@return ApiUpdateModelVersionRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) UpdateModelVersion(ctx context.Context, modelversionId string) ApiUpdateModelVersionRequest {
 	return ApiUpdateModelVersionRequest{
@@ -9153,6 +9359,8 @@ func (a *ModelRegistryServiceAPIService) UpdateModelVersion(ctx context.Context,
 // Execute executes the request
 //
 //	@return ModelVersion
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) UpdateModelVersionExecute(r ApiUpdateModelVersionRequest) (*ModelVersion, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPatch
@@ -9311,6 +9519,8 @@ Updates an existing `RegisteredModel`.
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param registeredmodelId A unique identifier for a `RegisteredModel`.
 	@return ApiUpdateRegisteredModelRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) UpdateRegisteredModel(ctx context.Context, registeredmodelId string) ApiUpdateRegisteredModelRequest {
 	return ApiUpdateRegisteredModelRequest{
@@ -9323,6 +9533,8 @@ func (a *ModelRegistryServiceAPIService) UpdateRegisteredModel(ctx context.Conte
 // Execute executes the request
 //
 //	@return RegisteredModel
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) UpdateRegisteredModelExecute(r ApiUpdateRegisteredModelRequest) (*RegisteredModel, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPatch
@@ -9481,6 +9693,8 @@ Updates an existing `ServingEnvironment`.
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param servingenvironmentId A unique identifier for a `ServingEnvironment`.
 	@return ApiUpdateServingEnvironmentRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) UpdateServingEnvironment(ctx context.Context, servingenvironmentId string) ApiUpdateServingEnvironmentRequest {
 	return ApiUpdateServingEnvironmentRequest{
@@ -9493,6 +9707,8 @@ func (a *ModelRegistryServiceAPIService) UpdateServingEnvironment(ctx context.Co
 // Execute executes the request
 //
 //	@return ServingEnvironment
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) UpdateServingEnvironmentExecute(r ApiUpdateServingEnvironmentRequest) (*ServingEnvironment, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPatch
@@ -9651,6 +9867,8 @@ Creates a new instance of an Artifact if needed and associates it with `Experime
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param experimentrunId A unique identifier for an `ExperimentRun`.
 	@return ApiUpsertExperimentRunArtifactRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) UpsertExperimentRunArtifact(ctx context.Context, experimentrunId string) ApiUpsertExperimentRunArtifactRequest {
 	return ApiUpsertExperimentRunArtifactRequest{
@@ -9663,6 +9881,8 @@ func (a *ModelRegistryServiceAPIService) UpsertExperimentRunArtifact(ctx context
 // Execute executes the request
 //
 //	@return Artifact
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) UpsertExperimentRunArtifactExecute(r ApiUpsertExperimentRunArtifactRequest) (*Artifact, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPost
@@ -9832,6 +10052,8 @@ Creates a new instance of an Artifact if needed and associates it with `ModelVer
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param modelversionId A unique identifier for a `ModelVersion`.
 	@return ApiUpsertModelVersionArtifactRequest
+
+Deprecated
 */
 func (a *ModelRegistryServiceAPIService) UpsertModelVersionArtifact(ctx context.Context, modelversionId string) ApiUpsertModelVersionArtifactRequest {
 	return ApiUpsertModelVersionArtifactRequest{
@@ -9844,6 +10066,8 @@ func (a *ModelRegistryServiceAPIService) UpsertModelVersionArtifact(ctx context.
 // Execute executes the request
 //
 //	@return Artifact
+//
+// Deprecated
 func (a *ModelRegistryServiceAPIService) UpsertModelVersionArtifactExecute(r ApiUpsertModelVersionArtifactRequest) (*Artifact, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPost

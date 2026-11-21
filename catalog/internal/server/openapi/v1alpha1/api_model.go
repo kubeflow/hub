@@ -3,7 +3,7 @@
 /*
  * Catalog REST API
  *
- * REST API for Kubeflow Hub Catalog
+ * The `v1alpha1` catalog API is deprecated, please use `v1`.
  *
  * API version: v1alpha1
  */
@@ -22,13 +22,21 @@ import (
 // The ModelCatalogServiceAPIRouter implementation should parse necessary information from the http request,
 // pass the data to a ModelCatalogServiceAPIServicer to perform the required actions, then write the service results to the http response.
 type ModelCatalogServiceAPIRouter interface {
+	// Deprecated
 	FindLabels(http.ResponseWriter, *http.Request)
+	// Deprecated
 	FindModels(http.ResponseWriter, *http.Request)
+	// Deprecated
 	FindModelsFilterOptions(http.ResponseWriter, *http.Request)
+	// Deprecated
 	FindSources(http.ResponseWriter, *http.Request)
+	// Deprecated
 	PreviewCatalogSource(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetModel(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetAllModelArtifacts(http.ResponseWriter, *http.Request)
+	// Deprecated
 	GetAllModelPerformanceArtifacts(http.ResponseWriter, *http.Request)
 }
 
@@ -37,12 +45,20 @@ type ModelCatalogServiceAPIRouter interface {
 // while the service implementation can be ignored with the .openapi-generator-ignore file
 // and updated with the logic required for the API.
 type ModelCatalogServiceAPIServicer interface {
+	// Deprecated
 	FindLabels(context.Context, model.CatalogAssetType, string, string, model.SortOrder, string) (ImplResponse, error)
+	// Deprecated
 	FindModels(context.Context, bool, int32, string, string, string, string, []string, string, []string, string, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
+	// Deprecated
 	FindModelsFilterOptions(context.Context) (ImplResponse, error)
+	// Deprecated
 	FindSources(context.Context, string, model.CatalogAssetType, string, model.OrderByField, model.SortOrder, string) (ImplResponse, error)
+	// Deprecated
 	PreviewCatalogSource(context.Context, *os.File, string, string, string, *os.File) (ImplResponse, error)
+	// Deprecated
 	GetModel(context.Context, string, string) (ImplResponse, error)
+	// Deprecated
 	GetAllModelArtifacts(context.Context, string, string, []model.ArtifactTypeQueryParam, []model.ArtifactTypeQueryParam, string, string, string, model.SortOrder, string) (ImplResponse, error)
+	// Deprecated
 	GetAllModelPerformanceArtifacts(context.Context, string, string, int32, bool, string, string, string, string, string, string, string, model.SortOrder, string) (ImplResponse, error)
 }
