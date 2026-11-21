@@ -47,9 +47,9 @@ func (r *ExperimentRunRepositoryImpl) List(listOptions models.ExperimentRunListO
 func applyExperimentRunListFilters(query *gorm.DB, listOptions *models.ExperimentRunListOptions) *gorm.DB {
 	if listOptions.Name != nil {
 		if listOptions.ExperimentID != nil {
-			query = query.Where("name LIKE ?", fmt.Sprintf("%d:%s", *listOptions.ExperimentID, *listOptions.Name))
+			query = query.Where("name LIKE ?", fmt.Sprintf("%d:%s", *listOptions.ExperimentID, escapeLike(*listOptions.Name)))
 		} else {
-			query = query.Where("name LIKE ?", fmt.Sprintf("%%:%s", *listOptions.Name))
+			query = query.Where("name LIKE ?", fmt.Sprintf("%%:%s", escapeLike(*listOptions.Name)))
 		}
 	} else if listOptions.ExternalID != nil {
 		query = query.Where("external_id = ?", listOptions.ExternalID)

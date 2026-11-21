@@ -57,9 +57,9 @@ func (r *InferenceServiceRepositoryImpl) List(listOptions models.InferenceServic
 func applyInferenceServiceListFilters(query *gorm.DB, listOptions *models.InferenceServiceListOptions) *gorm.DB {
 	if listOptions.Name != nil {
 		if listOptions.ParentResourceID != nil {
-			query = query.Where("name LIKE ?", fmt.Sprintf("%d:%s", *listOptions.ParentResourceID, *listOptions.Name))
+			query = query.Where("name LIKE ?", fmt.Sprintf("%d:%s", *listOptions.ParentResourceID, escapeLike(*listOptions.Name)))
 		} else {
-			query = query.Where("name LIKE ?", fmt.Sprintf("%%:%s", *listOptions.Name))
+			query = query.Where("name LIKE ?", fmt.Sprintf("%%:%s", escapeLike(*listOptions.Name)))
 		}
 	} else if listOptions.ExternalID != nil {
 		query = query.Where("external_id = ?", listOptions.ExternalID)
