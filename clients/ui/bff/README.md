@@ -103,9 +103,23 @@ make docker-build
 
 ### Endpoints
 
-See the [OpenAPI specification](../api/openapi/mod-arch.yaml) for a complete list of endpoints.
+See the generated [swagger.yaml](openapi/swagger.yaml) / [swagger.json](openapi/swagger.json) for BFF endpoints. The hand-maintained [mod-arch.yaml](../api/openapi/mod-arch.yaml) is a legacy reference.
 
-> **Note:** We are in the process of moving from a manually maintained OpenAPI spec to a generated one. For a short period we have both: the hand-maintained [mod-arch.yaml](../api/openapi/mod-arch.yaml) and the generated [swagger.yaml](openapi/swagger.yaml) / [swagger.json](openapi/swagger.json) (produced from Go code via swaggo). The goal is to generate the OpenAPI spec from the codebase rather than managing it manually; once the transition is complete, the generated spec will be the single source of truth.
+Run `make openapi` from `clients/ui` or `clients/ui/bff` to regenerate the specs. Update Swag annotations on handlers when changing an endpoint; do not edit generated files directly. `openapi/openapi.go` embeds the generated JSON for the development Swagger UI, so rebuild the BFF after regeneration.
+
+The pinned `github.com/swaggo/swag/v2` generator (`v2.0.0-rc6`, a release candidate) emits OpenAPI 3.1 using `--v3.1`. The filenames remain `swagger.json` / `swagger.yaml` for compatibility. Paths include `/api/v1` explicitly because `/healthcheck` lives outside that prefix. Settings, agent catalog, and MCP catalog endpoints are unavailable in Kubeflow integration mode. Authentication uses either `kubeflow-userid` or a configured token header, depending on deployment configuration.
+
+Do not enable `--requiredByDefault`: this release candidate ignores `omitempty` when applying it, incorrectly requiring optional PATCH fields. Required request bodies, path/query parameters, and explicit model validation tags are still documented.
+
+Schemas come from the runtime Go models and response envelopes referenced by handler annotations. Field descriptions and examples are maintained on those models in `internal/models/`. `.swaggo` skips `api.None`, so envelopes without metadata do not advertise a metadata property; descriptions for real metadata remain on the generic envelope field.
+
+Swag cannot infer custom `MarshalJSON` implementations or component-level discriminated unions. After Swag generation, `scripts/normalize_bff_openapi.sh` uses the repository's pinned `yq` tool to restore `openapi.MetadataValue` and `openapi.Artifact` from `api/openapi/model-registry.yaml`. This preserves flattened JSON, required metadata value fields, all five artifact variants, and discriminator mappings without duplicate Go types. Artifact tags distinguish union branches but remain optional on standalone model-artifact schemas that accept defaults. Run `make openapi`, which installs `yq` if needed, rather than invoking Swag alone.
+
+Creation handlers use dedicated request types in `internal/models/`, with explicit required tags independent of response and PATCH models. Model source creation uses Swag's native `oneOf` field tag for YAML and Hugging Face payloads; the handler decodes the corresponding provider-specific request type. No creation requirements are patched into the generated specification. The normalization step also restores explicit CSV serialization.
+
+Handler annotations preserve useful descriptions, parameter examples, and verified defaults from the legacy specification. `go test ./openapi` checks generated documentation, runtime-model references, and route coverage. The legacy specification is not merged into generated output, and stale behavior claims are not carried forward.
+
+The registry-level PATCH alias is documented separately in `internal/api/model_versions_handler.go` because Swag v2 does not filter path parameters when multiple routes share annotations.
 
 ### Sample local calls
 

@@ -1,0 +1,2 @@
+// None-backed envelope metadata is omitted from JSON.
+skip github.com/kubeflow/hub/ui/bff/internal/api.None

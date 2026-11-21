@@ -144,6 +144,10 @@ frontend-build-standalone:
 bff-build:
 	cd bff && make build
 
+.PHONY: openapi
+openapi: ## Generate the BFF OpenAPI spec from Go annotations.
+	$(MAKE) -C bff openapi
+
 .PHONY: build
 build: frontend-build bff-build
 
@@ -151,6 +155,3 @@ build: frontend-build bff-build
 .PHONY: run-local-mocked
 run-local-mocked: frontend-build-standalone bff-build
 	rm -r ./bff/static-local-run && cp -r ./frontend/dist/ ./bff/static-local-run/ && cd bff && make run STATIC_ASSETS_DIR=./static-local-run MOCK_K8S_CLIENT=true DEV_MODE=true
-
-
-	

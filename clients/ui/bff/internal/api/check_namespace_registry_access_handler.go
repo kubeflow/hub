@@ -27,6 +27,21 @@ type CheckNamespaceRegistryAccessResponse struct {
 
 type CheckNamespaceRegistryAccessEnvelope Envelope[CheckNamespaceRegistryAccessResponse, None]
 
+// CheckNamespaceRegistryAccessHandler checks access between a namespace and registry.
+//
+//	@Summary		Check namespace access to a model registry
+//	@Description	Checks whether a namespace can access the registry. cannotCheck is true when subject access reviews are forbidden.
+//	@Tags			K8SOperation
+//	@ID				checkNamespaceRegistryAccess
+//	@Accept			json
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			body	body		CheckNamespaceRegistryAccessRequestEnvelope	true	"Namespace and target registry"
+//	@Success		200		{object}	CheckNamespaceRegistryAccessEnvelope
+//	@Failure		400		{object}	ErrorEnvelope
+//	@Failure		500		{object}	ErrorEnvelope
+//	@Router			/api/v1/check-namespace-registry-access [post]
 func (app *App) CheckNamespaceRegistryAccessHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	ctx := r.Context()
 

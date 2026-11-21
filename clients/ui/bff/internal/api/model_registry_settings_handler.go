@@ -17,6 +17,21 @@ type ModelRegistrySettingsEnvelope Envelope[models.ModelRegistryKind, None]
 type ModelRegistryAndCredentialsSettingsEnvelope Envelope[models.ModelRegistryAndCredentials, None]
 type ModelRegistrySettingsPayloadEnvelope Envelope[models.ModelRegistrySettingsPayload, None]
 
+// GetAllModelRegistriesSettingsHandler lists model registry settings.
+//
+//	@Summary		List All Model Registry Settings
+//	@Description	Stub implementation. Not available in Kubeflow integration mode.
+//	@Tags			K8SOperation
+//	@ID				getModelRegistrySettings
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace	query		string	true	"Model registry namespace"
+//	@Success		200			{object}	ModelRegistrySettingsListEnvelope
+//	@Failure		400			{object}	ErrorEnvelope
+//	@Failure		403			{object}	ErrorEnvelope
+//	@Failure		500			{object}	ErrorEnvelope
+//	@Router			/api/v1/settings/model_registry [get]
 func (app *App) GetAllModelRegistriesSettingsHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	ctxLogger := helper.GetContextLoggerFromReq(r)
 	ctxLogger.Info("This functionality is not implement yet. This is a STUB API to unblock frontend development")
@@ -75,6 +90,22 @@ func (app *App) GetAllModelRegistriesSettingsHandler(w http.ResponseWriter, r *h
 
 }
 
+// GetModelRegistrySettingsHandler returns model registry settings and credentials.
+//
+//	@Summary		Get Model Registry Settings
+//	@Description	Stub implementation. Not available in Kubeflow integration mode.
+//	@Tags			K8SOperation
+//	@ID				getModelRegistrySetting
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace			query		string	true	"Model registry namespace"
+//	@Param			model_registry_id	path		string	true	"Model registry name"
+//	@Success		200					{object}	ModelRegistryAndCredentialsSettingsEnvelope
+//	@Failure		400					{object}	ErrorEnvelope
+//	@Failure		403					{object}	ErrorEnvelope
+//	@Failure		500					{object}	ErrorEnvelope
+//	@Router			/api/v1/settings/model_registry/{model_registry_id} [get]
 func (app *App) GetModelRegistrySettingsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	ctxLogger := helper.GetContextLoggerFromReq(r)
 	ctxLogger.Info("This functionality is not implement yet. This is a STUB API to unblock frontend development")
@@ -101,6 +132,24 @@ func (app *App) GetModelRegistrySettingsHandler(w http.ResponseWriter, r *http.R
 	}
 }
 
+// CreateModelRegistrySettingsHandler creates model registry settings.
+//
+//	@Summary		Create Model Registry Settings
+//	@Description	Stub implementation. Not available in Kubeflow integration mode.
+//	@Tags			K8SOperation
+//	@ID				createModelRegistrySettings
+//	@Accept			json
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace	query		string									true	"Model registry namespace"
+//	@Param			body		body		ModelRegistrySettingsPayloadEnvelope	true	"Model registry settings and optional credentials"
+//	@Success		201			{object}	ModelRegistrySettingsEnvelope
+//	@Header			201			{string}	Location	"URL of the created model registry settings"
+//	@Failure		400			{object}	ErrorEnvelope
+//	@Failure		403			{object}	ErrorEnvelope
+//	@Failure		500			{object}	ErrorEnvelope
+//	@Router			/api/v1/settings/model_registry [post]
 func (app *App) CreateModelRegistrySettingsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	ctxLogger := helper.GetContextLoggerFromReq(r)
 	ctxLogger.Info("This functionality is not implement yet. This is a STUB API to unblock frontend development")
@@ -138,6 +187,22 @@ func (app *App) CreateModelRegistrySettingsHandler(w http.ResponseWriter, r *htt
 	}
 }
 
+// UpdateModelRegistrySettingsHandler returns stub model registry settings.
+//
+//	@Summary		Update Model Registry Settings
+//	@Description	Stub implementation; the request body is currently ignored. Not available in Kubeflow integration mode.
+//	@Tags			K8SOperation
+//	@ID				updateModelRegistrySettings
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace			query		string	true	"Model registry namespace"
+//	@Param			model_registry_id	path		string	true	"Model registry name"
+//	@Success		200					{object}	ModelRegistrySettingsEnvelope
+//	@Failure		400					{object}	ErrorEnvelope
+//	@Failure		403					{object}	ErrorEnvelope
+//	@Failure		500					{object}	ErrorEnvelope
+//	@Router			/api/v1/settings/model_registry/{model_registry_id} [patch]
 func (app *App) UpdateModelRegistrySettingsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	ctxLogger := helper.GetContextLoggerFromReq(r)
 	ctxLogger.Info("This functionality is not implement yet. This is a STUB API to unblock frontend development")
@@ -160,6 +225,22 @@ func (app *App) UpdateModelRegistrySettingsHandler(w http.ResponseWriter, r *htt
 	}
 }
 
+// DeleteModelRegistrySettingsHandler returns settings for a stub deletion.
+//
+//	@Summary		Delete Model Registry Settings
+//	@Description	Stub implementation; returns settings with HTTP 200 rather than 204. Not available in Kubeflow integration mode.
+//	@Tags			K8SOperation
+//	@ID				deleteModelRegistrySettings
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace			query		string	true	"Model registry namespace"
+//	@Param			model_registry_id	path		string	true	"Model registry name"
+//	@Success		200					{object}	ModelRegistrySettingsEnvelope
+//	@Failure		400					{object}	ErrorEnvelope
+//	@Failure		403					{object}	ErrorEnvelope
+//	@Failure		500					{object}	ErrorEnvelope
+//	@Router			/api/v1/settings/model_registry/{model_registry_id} [delete]
 func (app *App) DeleteModelRegistrySettingsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	ctxLogger := helper.GetContextLoggerFromReq(r)
 	ctxLogger.Info("This functionality is not implement yet. This is a STUB API to unblock frontend development")
