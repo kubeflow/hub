@@ -6,6 +6,9 @@ from pydantic import ValidationError
 
 from job.models import (
     ModelConfig,
+    OCIStorageConfig,
+    RegistryConfig,
+    S3StorageConfig,
     UploadIntent,
     CreateModelIntent,
     CreateVersionIntent,
@@ -167,3 +170,30 @@ class TestMetadataModels:
         rm = RegisteredModelMetadata(id="123")
         assert rm.id == "123"
         assert rm.name is None
+
+
+class TestCredentialRepr:
+    """The job logs config objects at DEBUG level, so credentials must stay out of their repr."""
+
+    def test_s3_storage_config_repr_hides_credentials(self):
+        config = S3StorageConfig(bucket="b", key="k", access_key_id="AKIAEXAMPLE", secret_access_key="s3-secret")
+
+        for text in (str(config), repr(config)):
+            assert "AKIAEXAMPLE" not in text
+            assert "s3-secret" not in text
+        assert config.model_dump()["secret_access_key"] == "s3-secret"
+
+    def test_oci_storage_config_repr_hides_password(self):
+        config = OCIStorageConfig(uri="quay.io/org/img:1", registry="quay.io", username="user", password="oci-secret")
+
+        for text in (str(config), repr(config)):
+            assert "oci-secret" not in text
+        assert config.model_dump()["password"] == "oci-secret"
+
+    def test_registry_config_repr_hides_token(self):
+        config = RegistryConfig(server_address="https://registry", user_token="token-secret", custom_ca="ca-pem")
+
+        for text in (str(config), repr(config)):
+            assert "token-secret" not in text
+            assert "ca-pem" not in text
+        assert config.model_dump()["user_token"] == "token-secret"

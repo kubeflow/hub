@@ -31,8 +31,8 @@ class S3Config(BaseModel):
     bucket: str | None = None
     key: str | None = None # 'path' in bucket
     region: str | None = None
-    access_key_id: str | None = None
-    secret_access_key: str | None = None
+    access_key_id: str | None = Field(default=None, repr=False)
+    secret_access_key: str | None = Field(default=None, repr=False)
     endpoint: str | None = None
 
 
@@ -41,7 +41,7 @@ class OCIConfig(BaseModel):
     uri: str
     registry: str | None = None
     username: str | None = None
-    password: str | None = None
+    password: str | None = Field(default=None, repr=False)
     email: str | None = None
     base_image: str = "public.ecr.aws/docker/library/busybox:latest"
     base_image_source: Literal["explicit", "deployment-config", "bff-default", "job-default"] = "explicit"
@@ -155,9 +155,9 @@ class RegistryConfig(BaseModel):
     port: int = Field(default=443, description="Model registry server port")
     is_secure: bool = Field(default=True, description="Use secure connection")
     author: str | None = Field(default=None, description="Author for model registration")
-    user_token: str | None = Field(default=None, description="User authentication token")
+    user_token: str | None = Field(default=None, description="User authentication token", repr=False)
     user_token_envvar: str | None = Field(default=None, description="Environment variable containing user token")
-    custom_ca: str | None = Field(default=None, description="Custom CA certificate")
+    custom_ca: str | None = Field(default=None, description="Custom CA certificate", repr=False)
     custom_ca_envvar: str | None = Field(default=None, description="Environment variable containing custom CA")
     log_level: int = Field(default=logging.WARNING, description="Logging level for registry client")
 

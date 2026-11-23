@@ -2,6 +2,7 @@ import json
 import os
 import tarfile
 from contextlib import contextmanager
+from dataclasses import asdict
 from pathlib import Path
 from subprocess import CalledProcessError
 
@@ -10,6 +11,8 @@ import pytest
 from model_registry import utils
 from model_registry.exceptions import MissingMetadata
 from model_registry.utils import (
+    OCIParams,
+    S3Params,
     _get_files_from_path,
     s3_uri_from,
     save_to_oci_registry,
@@ -406,3 +409,14 @@ def test_upload_to_s3_uses_forward_slashes_in_keys(tmp_path):
     )
 
     assert sorted(s3.keys) == ["models/v1/config.json", "models/v1/sub/weights.safetensors"]
+
+
+def test_upload_params_repr_hides_credentials():
+    oci = OCIParams(base_image="busybox", oci_ref="quay.io/org/img:1", oci_username="user", oci_password="oci-secret")  # noqa: S106
+    s3 = S3Params(bucket_name="b", s3_prefix="p", access_key_id="AKIAEXAMPLE", secret_access_key="s3-secret")  # noqa: S106
+
+    assert "oci-secret" not in repr(oci)
+    assert "AKIAEXAMPLE" not in repr(s3)
+    assert "s3-secret" not in repr(s3)
+    assert asdict(oci)["oci_password"] == "oci-secret"  # noqa: S105
+    assert asdict(s3)["secret_access_key"] == "s3-secret"  # noqa: S105
