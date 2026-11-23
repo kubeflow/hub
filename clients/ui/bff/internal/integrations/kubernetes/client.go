@@ -20,11 +20,6 @@ const (
 )
 
 const (
-	McpServerAPIGroup = "mcp.x-k8s.io"
-	McpServerResource = "mcpservers"
-)
-
-const (
 	McpCatalogSourceKey                  = "sources.yaml"
 	McpCatalogSourceDefaultConfigMapName = CatalogSourceDefaultConfigMapName
 	McpCatalogSourceUserConfigMapName    = "mcp-catalog-sources"
