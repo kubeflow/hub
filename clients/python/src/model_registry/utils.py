@@ -10,7 +10,7 @@ import shutil
 import tempfile
 from collections.abc import Callable, Generator
 from contextlib import contextmanager, suppress
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from subprocess import CalledProcessError, CompletedProcess
 from typing import TYPE_CHECKING, Generic, Literal, Protocol, TextIO, TypeVar, cast
@@ -279,7 +279,7 @@ class OCIParams:
     custom_oci_backend: BackendDefinition[CompletedProcess[bytes], CompletedProcess[bytes]] | None = None
     oci_auth_env_var: str | None = None
     oci_username: str | None = None
-    oci_password: str | None = None
+    oci_password: str | None = field(default=None, repr=False)
 
 
 @dataclass
@@ -292,8 +292,8 @@ class S3Params:
     bucket_name: str
     s3_prefix: str
     endpoint_url: str | None = None
-    access_key_id: str | None = None
-    secret_access_key: str | None = None
+    access_key_id: str | None = field(default=None, repr=False)
+    secret_access_key: str | None = field(default=None, repr=False)
     region: str | None = None
     multipart_threshold: int = 1024 * 1024
     multipart_chunksize: int = 1024 * 1024
