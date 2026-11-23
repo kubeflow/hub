@@ -677,11 +677,11 @@ describe('MCP Manage Source Page - Manage Source Mode', () => {
 
       cy.wait('@updateMcpSource');
       cy.wait('@clearMcpSourceStatusFail');
-      cy.contains(
-        'Source configuration was saved, but its previous status could not be cleared. Reload to check the current status.',
-      ).should('be.visible');
-      cy.location('pathname').should('eq', '/mcp-catalog-settings/manage-source/mcp_source_2');
-      mcpManageSourcePage.findSubmitButton().should('be.enabled');
+      cy.wait(['@getMcpSourceConfigs', '@getMcpSources']);
+
+      cy.location('pathname').should('eq', '/mcp-catalog-settings');
+      mcpCatalogSettings.findHeading();
+      cy.contains('Source saved, but status reset failed').should('be.visible');
     });
 
     it('should show error when update fails', () => {
@@ -844,6 +844,52 @@ describe('MCP Catalog Source Configs Table', () => {
         .should('include', '/source_config/toggle-source/status');
       cy.wait(['@refreshToggleSourceConfigs', '@getMcpSources']);
       cy.findByTestId('mcp-enable-toggle-toggle-source').should('be.checked');
+    });
+
+    it.only('should warn and refresh the toggle when saving succeeds but clearing status fails', () => {
+      const source = mockMcpCatalogSourceConfig({
+        id: 'toggle-source',
+        name: 'Toggle Source',
+        isDefault: false,
+        enabled: false,
+      });
+
+      cy.intercept('GET', '**/settings/mcp_catalog/source_configs*', {
+        data: mockMcpCatalogSourceConfigList({ catalogs: [source] }),
+      }).as('getToggleSourceConfigs');
+
+      cy.intercept('PATCH', '**/settings/mcp_catalog/source_configs/toggle-source*', {
+        data: { ...source, enabled: true },
+      }).as('toggleMcpSource');
+
+      cy.intercept('DELETE', '**/settings/mcp_catalog/source_config/toggle-source/status*', {
+        statusCode: 500,
+        body: { error: { code: '500', message: 'Could not clear source status' } },
+      }).as('clearMcpSourceStatusFail');
+
+      mcpCatalogSettings.visit();
+
+      cy.wait(['@getToggleSourceConfigs', '@getMcpSources']);
+      cy.findByTestId('mcp-enable-toggle-toggle-source').should('not.be.checked');
+
+      cy.intercept('GET', '**/settings/mcp_catalog/source_configs*', {
+        data: mockMcpCatalogSourceConfigList({
+          catalogs: [{ ...source, enabled: true }],
+        }),
+      }).as('refreshToggleSourceConfigs');
+
+      cy.findByTestId('mcp-enable-toggle-toggle-source').parent('label').click();
+
+      cy.wait('@toggleMcpSource')
+        .its('request.body')
+        .should('deep.equal', { data: { enabled: true } });
+      cy.wait('@clearMcpSourceStatusFail');
+      cy.wait(['@refreshToggleSourceConfigs', '@getMcpSources']);
+
+      cy.findByTestId('mcp-enable-toggle-toggle-source').should('be.checked').and('be.enabled');
+
+      cy.contains('Source updated, but status reset failed').should('be.visible');
+      cy.findByTestId('mcp-toggle-alert').should('not.exist');
     });
   });
 
