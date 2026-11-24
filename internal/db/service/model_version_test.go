@@ -739,3 +739,74 @@ func TestModelVersionRepository_FilterQuery(t *testing.T) {
 		assert.Equal(t, 2, len(result.Items)) // pytorch (100 epochs) and tensorflow (50 epochs)
 	})
 }
+
+func TestModelVersionRepository_FilterQueryNameIsLiteral(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	modelVersionTypeID := getModelVersionTypeID(t, db)
+	registeredModelTypeID := getRegisteredModelTypeID(t, db)
+
+	modelVersionRepo := service.NewModelVersionRepository(db, modelVersionTypeID)
+	registeredModelRepo := service.NewRegisteredModelRepository(db, registeredModelTypeID)
+
+	savedRegisteredModel, err := registeredModelRepo.Save(&models.RegisteredModelImpl{
+		TypeID: new(int32(registeredModelTypeID)),
+		Attributes: &models.RegisteredModelAttributes{
+			Name: new("literal-name-model"),
+		},
+	})
+	require.NoError(t, err)
+
+	for _, name := range []string{"v_1", "vX1", `v\1`} {
+		_, err = modelVersionRepo.Save(&models.ModelVersionImpl{
+			TypeID: new(int32(modelVersionTypeID)),
+			Attributes: &models.ModelVersionAttributes{
+				Name: new(fmt.Sprintf("%d:%s", *savedRegisteredModel.GetID(), name)),
+			},
+			Properties: &[]models.Properties{
+				{
+					Name:     "registered_model_id",
+					IntValue: savedRegisteredModel.GetID(),
+				},
+			},
+		})
+		require.NoError(t, err)
+	}
+
+	// "_" and "%" in an equality filter are part of the name, not LIKE wildcards.
+	tests := []struct {
+		filterQuery string
+		want        []string
+	}{
+		{filterQuery: `name = "v_1"`, want: []string{"v_1"}},
+		{filterQuery: `name = "v%"`, want: nil},
+		{filterQuery: `name = "vX1"`, want: []string{"vX1"}},
+		{filterQuery: `name = "v\\1"`, want: []string{`v\1`}},
+		{filterQuery: `name = "v_1" OR name = "vX1"`, want: []string{"v_1", "vX1"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.filterQuery, func(t *testing.T) {
+			filterQuery := tt.filterQuery
+			pageSize := int32(10)
+			result, err := modelVersionRepo.List(models.ModelVersionListOptions{
+				Pagination: models.Pagination{
+					PageSize:    &pageSize,
+					FilterQuery: &filterQuery,
+				},
+			})
+			require.NoError(t, err)
+
+			var got []string
+			for _, item := range result.Items {
+				got = append(got, *item.GetAttributes().Name)
+			}
+			var want []string
+			for _, name := range tt.want {
+				want = append(want, fmt.Sprintf("%d:%s", *savedRegisteredModel.GetID(), name))
+			}
+			assert.ElementsMatch(t, want, got)
+		})
+	}
+}
