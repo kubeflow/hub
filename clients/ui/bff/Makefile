@@ -108,6 +108,8 @@ $(YQ):
 openapi: swag $(YQ) ## Generate OpenAPI spec from annotations
 	$(SWAG) init --v3.1 --parseDependencyLevel 1 --parseInternal -q -g main.go -d $(SWAG_DIRS) -o openapi --outputTypes json,yaml
 	YQ="$(YQ)" bash ../../../scripts/normalize_bff_openapi.sh
+	mv openapi/swagger.json openapi/openapi.json
+	mv openapi/swagger.yaml openapi/openapi.yaml
 
 
 # go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist
