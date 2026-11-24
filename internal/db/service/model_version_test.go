@@ -618,6 +618,36 @@ func TestModelVersionRepository_FilterQuery(t *testing.T) {
 		assert.Equal(t, 2, len(result.Items)) // pytorch and sklearn are LIVE
 	})
 
+	// "<>" must mean the same as "!=", for standard and custom properties
+	for _, filterQuery := range []string{`state != "LIVE"`, `state <> "LIVE"`, `framework <> "pytorch"`} {
+		t.Run("NotEqualFilter/"+filterQuery, func(t *testing.T) {
+			filterQuery := filterQuery
+			pageSize := int32(10)
+			listOptions := models.ModelVersionListOptions{
+				Pagination: models.Pagination{
+					PageSize:    &pageSize,
+					FilterQuery: &filterQuery,
+				},
+			}
+
+			result, err := modelVersionRepo.List(listOptions)
+			require.NoError(t, err)
+			require.NotNil(t, result)
+			var names []string
+			for _, item := range result.Items {
+				names = append(names, *item.GetAttributes().Name)
+			}
+			if filterQuery == `framework <> "pytorch"` {
+				assert.ElementsMatch(t, []string{
+					fmt.Sprintf("%d:tensorflow-model-version", *savedRegisteredModel.GetID()),
+					fmt.Sprintf("%d:sklearn-model-version", *savedRegisteredModel.GetID()),
+				}, names)
+				return
+			}
+			assert.Equal(t, []string{fmt.Sprintf("%d:tensorflow-model-version", *savedRegisteredModel.GetID())}, names) // only tensorflow is ARCHIVED
+		})
+	}
+
 	// Test complex AND filter
 	t.Run("ComplexANDFilter", func(t *testing.T) {
 		filterQuery := `framework = "pytorch" AND accuracy > 0.9`

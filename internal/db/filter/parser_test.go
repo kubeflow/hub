@@ -57,6 +57,11 @@ func TestParseBasicExpressions(t *testing.T) {
 			expected: "status != inactive",
 		},
 		{
+			name:     "Not equal written as <>",
+			input:    `status <> "inactive"`,
+			expected: "status != inactive",
+		},
+		{
 			name:     "LIKE operator",
 			input:    `name LIKE "%test%"`,
 			expected: "name LIKE %test%",
