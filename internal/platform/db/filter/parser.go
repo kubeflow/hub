@@ -200,9 +200,16 @@ func convertComparison(comp *Comparison) *FilterExpression {
 		propertyName = propRef.Name + "." + comp.Left.Type
 	}
 
+	operator := comp.Operator
+	// "<>" is accepted as a spelling of "!=". The query builder only knows "!=",
+	// so normalize it here instead of letting it fall through to equality.
+	if operator == "<>" {
+		operator = "!="
+	}
+
 	return &FilterExpression{
 		Property: propertyName,
-		Operator: comp.Operator,
+		Operator: operator,
 		Value:    value,
 		IsLeaf:   true,
 	}
