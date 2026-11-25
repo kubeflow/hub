@@ -448,7 +448,7 @@ func (qb *QueryBuilder) buildEntityTablePropertyCondition(db *gorm.DB, propRef *
 		if strValue, ok := value.(string); ok {
 			if operator == "=" {
 				operator = "LIKE"
-				value = "%:" + strValue
+				value = "%:" + escapeLikePattern(strValue)
 			} else if operator == "LIKE" && !strings.Contains(strValue, ":") {
 				if !strings.HasPrefix(strValue, "%") {
 					value = "%:" + strValue
@@ -483,7 +483,7 @@ func (qb *QueryBuilder) buildEntityTablePropertyConditionString(propRef *Propert
 		if strValue, ok := value.(string); ok {
 			if operator == "=" {
 				operator = "LIKE"
-				value = "%:" + strValue
+				value = "%:" + escapeLikePattern(strValue)
 			} else if operator == "LIKE" && !strings.Contains(strValue, ":") {
 				if !strings.HasPrefix(strValue, "%") {
 					value = "%:" + strValue
@@ -770,4 +770,9 @@ func (qb *QueryBuilder) buildJSONOperatorCondition(column string, operator strin
 	default:
 		return qb.buildOperatorCondition(column, operator, value)
 	}
+}
+
+// escapeLikePattern escapes the LIKE metacharacters (\, %, _) in s so that it matches literally.
+func escapeLikePattern(s string) string {
+	return strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(s)
 }
