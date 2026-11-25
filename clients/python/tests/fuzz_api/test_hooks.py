@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 import schemathesis
+from hypothesis import HealthCheck, given, settings
 from schemathesis.hooks import HookContext
 
 from tests.fuzz_api.conftest import map_body, map_case
@@ -120,6 +121,35 @@ def test_map_case_coerces_metric_update_step(registry_schema, monkeypatch, step,
     map_case(HookContext(operation=operation), case)
 
     assert case.body == {"artifactType": "metric", "step": expected}
+
+
+def test_custom_properties_can_be_negated(registry_schema):
+    # Negative generation can produce this shape for customProperties. Without the
+    # before_load_schema hook, generating it raises UnsupportedSchema.
+    spec = {
+        "openapi": "3.0.3",
+        "info": {"title": "customProperties negation", "version": "1"},
+        "components": registry_schema.raw_schema["components"],
+        "paths": {"/custom_properties": {"post": {
+            "requestBody": {"required": True, "content": {"application/json": {"schema": {
+                "type": "object",
+                "required": ["customProperties"],
+                "properties": {"customProperties": {
+                    "type": "object",
+                    "not": {"additionalProperties": {"$ref": "#/components/schemas/MetadataValue"}},
+                }},
+            }}}},
+            "responses": {"200": {"description": "OK"}},
+        }}},
+    }
+    operation = schemathesis.openapi.from_dict(spec, config=schemathesis.Config())["/custom_properties"]["POST"]
+
+    @settings(max_examples=10, deadline=None, database=None, suppress_health_check=list(HealthCheck))
+    @given(operation.as_strategy())
+    def generate(case):
+        assert isinstance(case.body["customProperties"], dict)
+
+    generate()
 
 
 def test_map_body_preserves_catalog_uploads(root: Path):

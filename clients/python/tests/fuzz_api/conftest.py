@@ -68,6 +68,28 @@ _NUMERIC_STRING_FIELDS = {
 
 
 @schemathesis.hook
+def before_load_schema(context: Any, raw_schema: dict[str, Any]) -> None:
+    """Narrow MetadataValue to a single variant so negative generation can negate it.
+
+    Since Schemathesis 4.32, negative generation can wrap customProperties in
+    `not: {additionalProperties: MetadataValue}`. Schemathesis cannot spell out the
+    complement of MetadataValue (a union of tagged objects) below the document root,
+    so it raises UnsupportedSchema and fails the whole operation. Every POST/PATCH
+    body with customProperties is affected.
+
+    With a single variant, customProperties still gets negative cases. Positive cases
+    only use string values; _sanitize_custom_properties already rewrites Struct and
+    Proto values to strings, so this drops Int, Double and Bool from positive cases.
+    This only changes the schema loaded by these tests, not the API spec.
+
+    Remove once https://github.com/schemathesis/schemathesis/issues/6224 is fixed.
+    """
+    schemas = raw_schema.get("components", {}).get("schemas", {})
+    if "MetadataValue" in schemas and "MetadataStringValue" in schemas:
+        schemas["MetadataValue"] = {"$ref": "#/components/schemas/MetadataStringValue"}
+
+
+@schemathesis.hook
 def map_body(context: Any, body: Any) -> Any:
     """Sanitize request bodies for characters that cause database/encoding errors.
 
