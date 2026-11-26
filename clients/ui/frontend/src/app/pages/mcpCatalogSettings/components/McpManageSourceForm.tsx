@@ -7,6 +7,7 @@ import { mcpCatalogSettingsUrl } from '~/app/routes/mcpCatalogSettings/mcpCatalo
 import { isMcpFormValid } from '~/app/pages/mcpCatalogSettings/utils/validation';
 import { useManageMcpSourceData } from '~/app/pages/mcpCatalogSettings/useManageMcpSourceData';
 import { useMcpSourcePreview } from '~/app/pages/mcpCatalogSettings/useMcpSourcePreview';
+import { useNotification } from '~/app/hooks/useNotification';
 import {
   MCP_FORM_LABELS,
   MCP_DESCRIPTION_TEXT,
@@ -43,7 +44,10 @@ const McpManageSourceForm: React.FC<McpManageSourceFormProps> = ({
   const [formData, setData] = useManageMcpSourceData(existingData);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submitError, setSubmitError] = React.useState<Error | undefined>(undefined);
-  const { apiState, refreshMcpCatalogSourceConfigs } = React.useContext(McpCatalogSettingsContext);
+  const { apiState, refreshMcpCatalogSourceConfigs, refreshMcpCatalogSources } =
+    React.useContext(McpCatalogSettingsContext);
+
+  const notification = useNotification();
 
   const preview = useMcpSourcePreview({
     formData,
@@ -65,14 +69,22 @@ const McpManageSourceForm: React.FC<McpManageSourceFormProps> = ({
     try {
       const sourceConfig = transformMcpFormDataToConfig(formData, existingSourceConfig);
       const payload = getMcpPayloadForConfig(sourceConfig, isEditMode);
-
       if (isEditMode) {
         await apiState.api.updateMcpCatalogSourceConfig({}, formData.id, payload);
+        try {
+          await apiState.api.clearMcpCatalogSourceStatus({}, formData.id);
+        } catch {
+          notification.warning(
+            'Source saved, but status reset failed',
+            'Configuration changes were saved, but the previous source status could not be cleared. The displayed status may still reflect the previous configuration.',
+          );
+        }
       } else {
         await apiState.api.createMcpCatalogSourceConfig({}, payload);
       }
 
       refreshMcpCatalogSourceConfigs();
+      refreshMcpCatalogSources();
       navigate(mcpCatalogSettingsUrl());
     } catch (error) {
       setSubmitError(error instanceof Error ? error : new Error(MCP_ERROR_MESSAGES.SAVE_FAILED));

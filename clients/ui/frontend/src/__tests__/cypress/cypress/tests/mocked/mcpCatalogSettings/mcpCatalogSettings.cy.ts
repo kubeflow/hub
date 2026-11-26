@@ -22,9 +22,16 @@ const setupMocks = () => {
     data: [{ metadata: { name: NAMESPACE } }],
   });
   cy.intercept('GET', '/model-registry/api/v1/user', userMock);
-  cy.intercept('GET', '/model-registry/api/v1/settings/mcp_catalog/source_configs', {
-    data: { catalogs: [] },
-  });
+  cy.intercept(
+    { method: 'GET', pathname: '/model-registry/api/v1/settings/mcp_catalog/source_configs' },
+    { data: { catalogs: [] } },
+  ).as('getMcpSourceConfigs');
+  cy.intercept('GET', '**/model_catalog/sources*', {
+    data: { items: [], size: 0, pageSize: 10, nextPageToken: '' },
+  }).as('getMcpSources');
+  cy.intercept('DELETE', '**/settings/mcp_catalog/source_config/*/status*', {
+    data: null,
+  }).as('clearMcpSourceStatus');
 };
 
 const interceptSourceConfig = (id: string, overrides: Partial<McpCatalogSourceConfig> = {}) => {
@@ -370,12 +377,15 @@ describe('MCP Manage Source Page - Add Source Mode', () => {
       }).as('addMcpSourceSuccess');
 
       mcpManageSourcePage.visitAddSource();
+      cy.wait(['@getMcpSourceConfigs', '@getMcpSources']);
       mcpManageSourcePage.fillSourceName('New Source');
       mcpManageSourcePage.fillYamlContent('source: test');
 
       mcpManageSourcePage.findSubmitButton().click();
       cy.wait('@addMcpSourceSuccess');
+      cy.wait(['@getMcpSourceConfigs', '@getMcpSources']);
       mcpCatalogSettings.findHeading();
+      cy.get('@clearMcpSourceStatus.all').should('have.length', 0);
     });
 
     it('should show error alert when submission fails', () => {
@@ -642,9 +652,36 @@ describe('MCP Manage Source Page - Manage Source Mode', () => {
       }).as('updateSuccess');
 
       mcpManageSourcePage.visitManageSource('mcp_source_2');
+      cy.wait(['@getMcpSourceConfigs', '@getMcpSources']);
       mcpManageSourcePage.findSubmitButton().click();
       cy.wait('@updateSuccess');
+      cy.wait('@clearMcpSourceStatus')
+        .its('request.url')
+        .should('include', '/source_config/mcp_source_2/status');
+      cy.wait(['@getMcpSourceConfigs', '@getMcpSources']);
       mcpCatalogSettings.findHeading();
+    });
+
+    it('should show a warning when the source is saved but status clearing fails', () => {
+      interceptSourceConfig('mcp_source_2', { name: 'MCP Source 2' });
+      cy.intercept('PATCH', '/model-registry/api/v1/settings/mcp_catalog/source_configs/*', {
+        data: mockMcpCatalogSourceConfig({ id: 'mcp_source_2', isDefault: false }),
+      }).as('updateMcpSource');
+      cy.intercept('DELETE', '**/settings/mcp_catalog/source_config/mcp_source_2/status*', {
+        statusCode: 500,
+        body: { error: { code: '500', message: 'Could not clear source status' } },
+      }).as('clearMcpSourceStatusFail');
+
+      mcpManageSourcePage.visitManageSource('mcp_source_2');
+      mcpManageSourcePage.findSubmitButton().click();
+
+      cy.wait('@updateMcpSource');
+      cy.wait('@clearMcpSourceStatusFail');
+      cy.wait(['@getMcpSourceConfigs', '@getMcpSources']);
+
+      cy.location('pathname').should('eq', '/mcp-catalog-settings');
+      mcpCatalogSettings.findHeading();
+      cy.contains('Source saved, but status reset failed').should('be.visible');
     });
 
     it('should show error when update fails', () => {
@@ -774,7 +811,124 @@ describe('MCP Catalog Source Configs Table', () => {
     });
   });
 
+  describe('Enable source toggle', () => {
+    it('should clear status and refresh configs and statuses after toggling a source', () => {
+      const source = mockMcpCatalogSourceConfig({
+        id: 'toggle-source',
+        name: 'Toggle Source',
+        isDefault: false,
+        enabled: false,
+      });
+      cy.intercept('GET', '**/settings/mcp_catalog/source_configs*', {
+        data: mockMcpCatalogSourceConfigList({ catalogs: [source] }),
+      }).as('getToggleSourceConfigs');
+      cy.intercept('PATCH', '**/settings/mcp_catalog/source_configs/toggle-source*', {
+        data: { ...source, enabled: true },
+      }).as('toggleMcpSource');
+
+      mcpCatalogSettings.visit();
+      cy.wait(['@getToggleSourceConfigs', '@getMcpSources']);
+      cy.intercept('GET', '**/settings/mcp_catalog/source_configs*', {
+        data: mockMcpCatalogSourceConfigList({ catalogs: [{ ...source, enabled: true }] }),
+      }).as('refreshToggleSourceConfigs');
+
+      cy.findByTestId('mcp-enable-toggle-toggle-source').parent('label').click();
+
+      cy.wait('@toggleMcpSource')
+        .its('request.body')
+        .should('deep.equal', {
+          data: { enabled: true },
+        });
+      cy.wait('@clearMcpSourceStatus')
+        .its('request.url')
+        .should('include', '/source_config/toggle-source/status');
+      cy.wait(['@refreshToggleSourceConfigs', '@getMcpSources']);
+      cy.findByTestId('mcp-enable-toggle-toggle-source').should('be.checked');
+    });
+
+    it.only('should warn and refresh the toggle when saving succeeds but clearing status fails', () => {
+      const source = mockMcpCatalogSourceConfig({
+        id: 'toggle-source',
+        name: 'Toggle Source',
+        isDefault: false,
+        enabled: false,
+      });
+
+      cy.intercept('GET', '**/settings/mcp_catalog/source_configs*', {
+        data: mockMcpCatalogSourceConfigList({ catalogs: [source] }),
+      }).as('getToggleSourceConfigs');
+
+      cy.intercept('PATCH', '**/settings/mcp_catalog/source_configs/toggle-source*', {
+        data: { ...source, enabled: true },
+      }).as('toggleMcpSource');
+
+      cy.intercept('DELETE', '**/settings/mcp_catalog/source_config/toggle-source/status*', {
+        statusCode: 500,
+        body: { error: { code: '500', message: 'Could not clear source status' } },
+      }).as('clearMcpSourceStatusFail');
+
+      mcpCatalogSettings.visit();
+
+      cy.wait(['@getToggleSourceConfigs', '@getMcpSources']);
+      cy.findByTestId('mcp-enable-toggle-toggle-source').should('not.be.checked');
+
+      cy.intercept('GET', '**/settings/mcp_catalog/source_configs*', {
+        data: mockMcpCatalogSourceConfigList({
+          catalogs: [{ ...source, enabled: true }],
+        }),
+      }).as('refreshToggleSourceConfigs');
+
+      cy.findByTestId('mcp-enable-toggle-toggle-source').parent('label').click();
+
+      cy.wait('@toggleMcpSource')
+        .its('request.body')
+        .should('deep.equal', { data: { enabled: true } });
+      cy.wait('@clearMcpSourceStatusFail');
+      cy.wait(['@refreshToggleSourceConfigs', '@getMcpSources']);
+
+      cy.findByTestId('mcp-enable-toggle-toggle-source').should('be.checked').and('be.enabled');
+
+      cy.contains('Source updated, but status reset failed').should('be.visible');
+      cy.findByTestId('mcp-toggle-alert').should('not.exist');
+    });
+  });
+
   describe('Delete functionality', () => {
+    it('should refresh configs and statuses after deletion without clearing status', () => {
+      const mockData = mockMcpCatalogSourceConfigList({
+        catalogs: [
+          mockMcpCatalogSourceConfig({
+            id: 'deletable-source',
+            name: 'Deletable Source',
+            isDefault: false,
+          }),
+        ],
+      });
+      cy.intercept('GET', '**/settings/mcp_catalog/source_configs*', {
+        data: mockData,
+      }).as('getDeletableSourceConfigs');
+      cy.intercept('DELETE', '**/settings/mcp_catalog/source_configs/deletable-source*', {
+        data: null,
+      }).as('deleteMcpSource');
+
+      mcpCatalogSettings.visit();
+      cy.wait(['@getDeletableSourceConfigs', '@getMcpSources']);
+      cy.intercept('GET', '**/settings/mcp_catalog/source_configs*', {
+        data: { catalogs: [] },
+      }).as('refreshDeletedSourceConfigs');
+
+      mcpCatalogSettings.getRow('Deletable Source').findKebab().click();
+      cy.findByRole('menuitem', { name: /delete source/i }).click();
+      cy.findByTestId('delete-modal-input').type('Deletable Source');
+      cy.findByTestId('delete-modal-confirm-button').click();
+
+      cy.wait('@deleteMcpSource');
+      cy.wait(['@refreshDeletedSourceConfigs', '@getMcpSources']);
+      mcpCatalogSettings.shouldBeEmpty();
+      cy.findByTestId('mcp-delete-source-modal').should('not.exist');
+      cy.get('@clearMcpSourceStatus.all').should('have.length', 0);
+    });
+
     it('should open delete modal when clicking Delete source from kebab menu', () => {
       const mockData = mockMcpCatalogSourceConfigList({
         catalogs: [

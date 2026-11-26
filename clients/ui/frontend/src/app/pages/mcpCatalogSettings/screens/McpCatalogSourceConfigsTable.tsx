@@ -10,6 +10,7 @@ import {
   McpServerVisibilityBadgeColor,
   MCP_SOURCE_TYPE_LABELS,
 } from '~/app/pages/mcpCatalogSettings/const';
+import { useNotification } from '~/app/hooks/useNotification';
 import McpCatalogSourceStatus from '~/app/pages/mcpCatalogSettings/components/McpCatalogSourceStatus';
 import { mcpCatalogSourceConfigsColumns } from './McpCatalogSourceConfigsTableColumns';
 
@@ -45,15 +46,30 @@ const McpCatalogSourceConfigsTable: React.FC<McpCatalogSourceConfigsTableProps> 
   onAddSource,
   onDeleteSource,
 }) => {
-  const { apiState, refreshMcpCatalogSourceConfigs, mcpCatalogSourcesLoadError } =
-    React.useContext(McpCatalogSettingsContext);
+  const {
+    apiState,
+    refreshMcpCatalogSourceConfigs,
+    refreshMcpCatalogSources,
+    mcpCatalogSourcesLoadError,
+  } = React.useContext(McpCatalogSettingsContext);
+
+  const notification = useNotification();
 
   const handleToggleUpdate = React.useCallback(
     async (checked: boolean, config: McpCatalogSourceConfig) => {
       await apiState.api.updateMcpCatalogSourceConfig({}, config.id, { enabled: checked });
+      try {
+        await apiState.api.clearMcpCatalogSourceStatus({}, config.id);
+      } catch {
+        notification.warning(
+          'Source updated, but status reset failed',
+          'Enable/disable change was saved, but the previous source status could not be cleared. Current validation status may be inaccurate.',
+        );
+      }
       refreshMcpCatalogSourceConfigs();
+      refreshMcpCatalogSources();
     },
-    [apiState.api, refreshMcpCatalogSourceConfigs],
+    [apiState.api, refreshMcpCatalogSourceConfigs, refreshMcpCatalogSources, notification],
   );
 
   const deleteModalBody = React.useCallback(
