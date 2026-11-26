@@ -177,6 +177,24 @@ var _ = Describe("TestAgentCatalogHandler", func() {
 			Expect(rs.StatusCode).To(Equal(http.StatusNotFound))
 		})
 
+		It("should return 403 when the user cannot list services in the namespace", func() {
+			By("making requests as a user without access to the kubeflow namespace")
+			wrongRequestIdentity := kubernetes.RequestIdentity{
+				UserID: "bella@dora.com",
+			}
+
+			for _, url := range []string{
+				"/api/v1/agent_catalog/agents?namespace=kubeflow",
+				"/api/v1/agent_catalog/agents_filter_options?namespace=kubeflow",
+				"/api/v1/agent_catalog/agents/1?namespace=kubeflow",
+				"/api/v1/agent_catalog/agents/1/artifacts?namespace=kubeflow",
+			} {
+				_, rs, err := setupApiTest[ErrorEnvelope](http.MethodGet, url, nil, kubernetesMockedStaticClientFactory, wrongRequestIdentity, "kubeflow")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(rs.StatusCode).To(Equal(http.StatusForbidden), url)
+			}
+		})
+
 		It("should return 400 when namespace is missing for agent artifacts", func() {
 			By("fetching agent artifacts without namespace")
 			requestIdentity := kubernetes.RequestIdentity{
