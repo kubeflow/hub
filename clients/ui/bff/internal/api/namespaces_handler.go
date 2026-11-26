@@ -14,6 +14,20 @@ import (
 
 type NamespacesEnvelope Envelope[[]models.NamespaceModel, None]
 
+// GetNamespacesHandler lists namespaces available to the current user.
+//
+//	@Summary		Get Available Namespaces
+//	@Description	Returns available namespaces. Not available in Kubeflow integration mode.
+//	@Tags			K8SOperation
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Success		200	{object}	NamespacesEnvelope
+//	@Failure		400	{object}	ErrorEnvelope
+//	@Failure		403	{object}	ErrorEnvelope
+//	@Failure		500	{object}	ErrorEnvelope
+//	@Router			/api/v1/namespaces [get]
+//	@Router			/api/v1/settings/namespaces [get]
 func (app *App) GetNamespacesHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	ctx := r.Context()

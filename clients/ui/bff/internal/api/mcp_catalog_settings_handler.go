@@ -15,7 +15,23 @@ import (
 type McpCatalogSettingsSourceConfigEnvelope Envelope[*models.McpCatalogSourceConfig, None]
 type McpCatalogSettingsSourceConfigListEnvelope Envelope[*models.McpCatalogSourceConfigList, None]
 type McpCatalogSourcePayloadEnvelope Envelope[*models.McpCatalogSourceConfigPayload, None]
+type McpCatalogSourceCreateEnvelope Envelope[*models.McpCatalogSourceCreate, None]
 
+// GetAllMcpCatalogSourceConfigsHandler lists MCP catalog source configurations.
+//
+//	@Summary		List all MCP catalog sources
+//	@Description	Lists default and user-defined MCP catalog source configurations, including labels, enabled state, and server inclusion/exclusion patterns. Not available in Kubeflow integration mode.
+//	@Tags			MCPCatalogService
+//	@ID				getMcpCatalogSources
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace	query		string	true	"Catalog namespace"
+//	@Success		200			{object}	McpCatalogSettingsSourceConfigListEnvelope
+//	@Failure		400			{object}	ErrorEnvelope
+//	@Failure		403			{object}	ErrorEnvelope
+//	@Failure		500			{object}	ErrorEnvelope
+//	@Router			/api/v1/settings/mcp_catalog/source_configs [get]
 func (app *App) GetAllMcpCatalogSourceConfigsHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	ctx := r.Context()
 
@@ -46,6 +62,23 @@ func (app *App) GetAllMcpCatalogSourceConfigsHandler(w http.ResponseWriter, r *h
 	}
 }
 
+// GetMcpCatalogSourceConfigHandler returns an MCP catalog source configuration.
+//
+//	@Summary		Get an MCP Catalog Source
+//	@Description	Returns one MCP source's YAML catalog configuration, labels, and includedServers/excludedServers patterns. Not available in Kubeflow integration mode.
+//	@Tags			MCPCatalogService
+//	@ID				getMcpCatalogSource
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace	query		string	true	"Catalog namespace"
+//	@Param			source_id	path		string	true	"Catalog source ID"
+//	@Success		200			{object}	McpCatalogSettingsSourceConfigEnvelope
+//	@Failure		400			{object}	ErrorEnvelope
+//	@Failure		403			{object}	ErrorEnvelope
+//	@Failure		404			{object}	ErrorEnvelope
+//	@Failure		500			{object}	ErrorEnvelope
+//	@Router			/api/v1/settings/mcp_catalog/source_configs/{source_id} [get]
 func (app *App) GetMcpCatalogSourceConfigHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	ctx := r.Context()
 
@@ -82,6 +115,25 @@ func (app *App) GetMcpCatalogSourceConfigHandler(w http.ResponseWriter, r *http.
 	}
 }
 
+// CreateMcpCatalogSourceConfigHandler creates an MCP catalog source configuration.
+//
+//	@Summary		Create an MCP Catalog source
+//	@Description	Creates an MCP catalog source from YAML content. Labels can be used by sourceLabel when searching servers; includedServers/excludedServers select which servers are ingested. Not available in Kubeflow integration mode.
+//	@Tags			MCPCatalogService
+//	@ID				createMcpCatalogSource
+//	@Accept			json
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace	query		string							true	"Catalog namespace"
+//	@Param			body		body		McpCatalogSourceCreateEnvelope	true	"MCP catalog source configuration"
+//	@Success		201			{object}	McpCatalogSettingsSourceConfigEnvelope
+//	@Header			201			{string}	Location	"URL of the created MCP catalog source"
+//	@Failure		400			{object}	ErrorEnvelope
+//	@Failure		403			{object}	ErrorEnvelope
+//	@Failure		409			{object}	ErrorEnvelope
+//	@Failure		500			{object}	ErrorEnvelope
+//	@Router			/api/v1/settings/mcp_catalog/source_configs [post]
 func (app *App) CreateMcpCatalogSourceConfigHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	ctx := r.Context()
 
@@ -97,7 +149,7 @@ func (app *App) CreateMcpCatalogSourceConfigHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	var envelope McpCatalogSourcePayloadEnvelope
+	var envelope McpCatalogSourceCreateEnvelope
 	if err := json.NewDecoder(r.Body).Decode(&envelope); err != nil {
 		app.badRequestResponse(w, r, fmt.Errorf("error decoding JSON: %w", err))
 		return
@@ -108,7 +160,8 @@ func (app *App) CreateMcpCatalogSourceConfigHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	created, err := app.repositories.McpCatalogSettingsRepository.CreateMcpCatalogSourceConfig(ctx, client, namespace, *envelope.Data)
+	payload := models.McpCatalogSourceConfigPayload(*envelope.Data)
+	created, err := app.repositories.McpCatalogSettingsRepository.CreateMcpCatalogSourceConfig(ctx, client, namespace, payload)
 	if err != nil {
 		if errors.Is(err, repositories.ErrMcpCatalogSourceAlreadyExist) ||
 			errors.Is(err, repositories.ErrMcpCatalogSourceIdRequired) ||
@@ -132,6 +185,26 @@ func (app *App) CreateMcpCatalogSourceConfigHandler(w http.ResponseWriter, r *ht
 	}
 }
 
+// UpdateMcpCatalogSourceConfigHandler updates an MCP catalog source configuration.
+//
+//	@Summary		Update an MCP Catalog Source
+//	@Description	Updates an MCP source's configuration and server inclusion/exclusion patterns. Default-source and provider-type changes are restricted; concurrent updates may return 409. Not available in Kubeflow integration mode.
+//	@Tags			MCPCatalogService
+//	@ID				updateMcpCatalogSource
+//	@Accept			json
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace	query		string							true	"Catalog namespace"
+//	@Param			source_id	path		string							true	"Catalog source ID"
+//	@Param			body		body		McpCatalogSourcePayloadEnvelope	true	"MCP catalog source fields to update"
+//	@Success		200			{object}	McpCatalogSettingsSourceConfigEnvelope
+//	@Failure		400			{object}	ErrorEnvelope
+//	@Failure		403			{object}	ErrorEnvelope
+//	@Failure		404			{object}	ErrorEnvelope
+//	@Failure		409			{object}	ErrorEnvelope
+//	@Failure		500			{object}	ErrorEnvelope
+//	@Router			/api/v1/settings/mcp_catalog/source_configs/{source_id} [patch]
 func (app *App) UpdateMcpCatalogSourceConfigHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	ctx := r.Context()
 
@@ -187,6 +260,24 @@ func (app *App) UpdateMcpCatalogSourceConfigHandler(w http.ResponseWriter, r *ht
 	}
 }
 
+// DeleteMcpCatalogSourceConfigHandler deletes an MCP catalog source configuration.
+//
+//	@Summary		Delete an MCP Catalog source
+//	@Description	Returns the deleted source with HTTP 200. Not available in Kubeflow integration mode.
+//	@Tags			MCPCatalogService
+//	@ID				deleteMcpCatalogSource
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace	query		string	true	"Catalog namespace"
+//	@Param			source_id	path		string	true	"Catalog source ID"
+//	@Success		200			{object}	McpCatalogSettingsSourceConfigEnvelope
+//	@Failure		400			{object}	ErrorEnvelope
+//	@Failure		403			{object}	ErrorEnvelope
+//	@Failure		404			{object}	ErrorEnvelope
+//	@Failure		409			{object}	ErrorEnvelope
+//	@Failure		500			{object}	ErrorEnvelope
+//	@Router			/api/v1/settings/mcp_catalog/source_configs/{source_id} [delete]
 func (app *App) DeleteMcpCatalogSourceConfigHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	ctx := r.Context()
 

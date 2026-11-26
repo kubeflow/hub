@@ -1,10 +1,26 @@
 package validation
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/kubeflow/hub/pkg/openapi"
+	"github.com/kubeflow/hub/ui/bff/internal/models"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestModelVersionCreatePayload(t *testing.T) {
+	raw := []byte(`{"name":"v1","registeredModelId":"42","author":"user","description":"version","customProperties":{"framework":{"metadataType":"MetadataStringValue","string_value":"pytorch"}}}`)
+	var request models.ModelVersionCreate
+	require.NoError(t, json.Unmarshal(raw, &request))
+	var expected openapi.ModelVersion
+	require.NoError(t, json.Unmarshal(raw, &expected))
+	assert.Equal(t, expected, request.ModelVersion())
+	encoded, err := json.Marshal(request.ModelVersion())
+	require.NoError(t, err)
+	assert.JSONEq(t, string(raw), string(encoded))
+}
 
 func TestValidateRegisteredModel(t *testing.T) {
 	specs := []testSpec[openapi.RegisteredModel]{

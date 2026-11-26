@@ -21,6 +21,20 @@ const (
 
 // GetCertificatesHandler handles GET /api/v1/settings/certificates
 // STUB IMPLEMENTATION
+//
+//	@Summary		List Available Certificates
+//	@Description	Stub implementation. Not available in Kubeflow integration mode.
+//	@Tags			K8SOperation
+//	@ID				getCertificates
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace	query		string	true	"Model registry namespace"
+//	@Success		200			{object}	CertificateListEnvelope
+//	@Failure		400			{object}	ErrorEnvelope
+//	@Failure		403			{object}	ErrorEnvelope
+//	@Failure		500			{object}	ErrorEnvelope
+//	@Router			/api/v1/settings/certificates [get]
 func (app *App) GetCertificatesHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// TODO: Implement actual logic: use K8s client to list Secrets and ConfigMaps in relevant namespaces
 	// For now, return dummy data
@@ -45,6 +59,20 @@ func (app *App) GetCertificatesHandler(w http.ResponseWriter, r *http.Request, p
 
 // GetRoleBindingsHandler handles GET /api/v1/settings/role_bindings
 // STUB IMPLEMENTATION
+//
+//	@Summary		List Model Registry Role Bindings
+//	@Description	Stub implementation. Not available in Kubeflow integration mode.
+//	@Tags			K8SOperation
+//	@ID				getRoleBindings
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace	query		string	true	"Model registry namespace"
+//	@Success		200			{object}	RoleBindingListEnvelope
+//	@Failure		400			{object}	ErrorEnvelope
+//	@Failure		403			{object}	ErrorEnvelope
+//	@Failure		500			{object}	ErrorEnvelope
+//	@Router			/api/v1/settings/role_bindings [get]
 func (app *App) GetRoleBindingsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// TODO: Implement actual logic: use K8s client to list RoleBindings (potentially filtered)
 	// For now, return dummy data
@@ -135,6 +163,22 @@ func (app *App) GetRoleBindingsHandler(w http.ResponseWriter, r *http.Request, p
 
 // CreateRoleBindingHandler handles POST /api/v1/settings/role_bindings
 // STUB IMPLEMENTATION
+//
+//	@Summary		Create Model Registry Role Binding
+//	@Description	Stub implementation. Not available in Kubeflow integration mode.
+//	@Tags			K8SOperation
+//	@ID				createRoleBinding
+//	@Accept			json
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace	query		string				true	"Model registry namespace"
+//	@Param			body		body		RoleBindingEnvelope	true	"Role binding to create"
+//	@Success		201			{object}	RoleBindingEnvelope
+//	@Failure		400			{object}	ErrorEnvelope
+//	@Failure		403			{object}	ErrorEnvelope
+//	@Failure		500			{object}	ErrorEnvelope
+//	@Router			/api/v1/settings/role_bindings [post]
 func (app *App) CreateRoleBindingHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// TODO: Implement actual logic: parse payload, use K8s client to create RoleBinding
 	var input RoleBindingEnvelope
@@ -158,6 +202,20 @@ func (app *App) CreateRoleBindingHandler(w http.ResponseWriter, r *http.Request,
 
 // DeleteRoleBindingHandler handles DELETE /api/v1/settings/role_bindings/{roleBindingName}
 // STUB IMPLEMENTATION
+//
+//	@Summary		Delete Model Registry Role Binding
+//	@Description	Stub implementation. Not available in Kubeflow integration mode.
+//	@Tags			K8SOperation
+//	@ID				deleteRoleBinding
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace		query	string	true	"Model registry namespace"
+//	@Param			roleBindingName	path	string	true	"Role binding name"
+//	@Success		204				"Role binding deleted"
+//	@Failure		400				{object}	ErrorEnvelope
+//	@Failure		403				{object}	ErrorEnvelope
+//	@Failure		500				{object}	ErrorEnvelope
+//	@Router			/api/v1/settings/role_bindings/{roleBindingName} [delete]
 func (app *App) DeleteRoleBindingHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	roleBindingName := ps.ByName(RoleBindingNameParam)
 
@@ -169,6 +227,23 @@ func (app *App) DeleteRoleBindingHandler(w http.ResponseWriter, r *http.Request,
 
 // PatchRoleBindingHandler handles PATCH /api/v1/settings/role_bindings/{roleBindingName}
 // STUB IMPLEMENTATION
+//
+//	@Summary		Update Model Registry Role Binding
+//	@Description	Stub implementation. Not available in Kubeflow integration mode.
+//	@Tags			K8SOperation
+//	@ID				patchRoleBinding
+//	@Accept			json
+//	@Produce		json
+//	@Security		KubeflowUserID
+//	@Security		BearerAuth
+//	@Param			namespace		query		string				true	"Model registry namespace"
+//	@Param			roleBindingName	path		string				true	"Role binding name"
+//	@Param			body			body		RoleBindingEnvelope	true	"Role binding fields to update"
+//	@Success		200				{object}	RoleBindingEnvelope
+//	@Failure		400				{object}	ErrorEnvelope
+//	@Failure		403				{object}	ErrorEnvelope
+//	@Failure		500				{object}	ErrorEnvelope
+//	@Router			/api/v1/settings/role_bindings/{roleBindingName} [patch]
 func (app *App) PatchRoleBindingHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	roleBindingName := ps.ByName(RoleBindingNameParam)
 
