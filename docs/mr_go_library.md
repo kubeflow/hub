@@ -179,4 +179,4 @@ if err != nil {
 
 ## API documentation
 
-Check out the [Model Registry Service interface](../pkg/api/api.go) and the [core layer implementation](../pkg/core/) for additional details.
+Check out the [Model Registry Service interface](../pkg/api/api.go) and the [core layer implementation](../internal/core/) for additional details.

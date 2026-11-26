@@ -44,7 +44,7 @@ Existing unit tests run against all supported Python versions via Nox sessions.
 
 #### E2E tests
 
-Existing E2E tests in [.github/workflows/python-tests.yml](.github/workflows/python-tests.yml) validate functionality across Python versions.
+Existing E2E tests in [.github/workflows/python-tests.yml](../../.github/workflows/python-tests.yml) validate functionality across Python versions.
 
 ### Graduation Criteria
 

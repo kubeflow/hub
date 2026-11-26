@@ -49,7 +49,7 @@ All the following instructions should be performed from the model-registry root 
     ```
 
 > [!NOTE]
-> The `./test/scripts/install_modelregistry.sh` will make some change to [base/kustomization.yaml](../manifests/kustomize/base/kustomization.yaml) that you DON'T need to commit!!
+> The `./test/scripts/install_modelregistry.sh` will make some change to [base/kustomization.yaml](../../manifests/kustomize/base/kustomization.yaml) that you DON'T need to commit!!
 
 5. [Optional] Use local CSI container image
 
