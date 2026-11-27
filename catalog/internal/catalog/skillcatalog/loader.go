@@ -432,7 +432,7 @@ func (l *SkillLoader) syncSourceLocked(ctx context.Context, sourceID string, spe
 			for _, w := range res.skills[j].Skill.Warnings {
 				warningMsgs = append(warningMsgs, fmt.Sprintf("%s: %s", res.skills[j].Path, w))
 			}
-			entity := buildSkillEntity(res.skills[j], res.repo, sourceID)
+			entity := buildSkillEntity(res.skills[j], res.repo, sourceID, int32(len(res.skills)))
 			if attrs := entity.GetAttributes(); attrs != nil && attrs.Name != nil {
 				currentNames.Add(*attrs.Name)
 			}
@@ -515,19 +515,19 @@ func skillProperty(s models.Skill, name string) string {
 // refKey is the map key identifying a (repository, ref) pair.
 func refKey(repoURL, ref string) string { return repoURL + "\x00" + ref }
 
-// indexExistingByRef groups already-indexed skills by (repository, ref), returning
-// the commit each ref was last resolved at and the composite names indexed under
-// it. All skills at one ref share a resolvedCommit and configDigest, so the last
-// one wins.
-//
-// The returned lookup reports no known commit when the repository's configuration
-// has changed since the ref was indexed, which forces a re-resolve: an unmoved ref
-// still needs re-indexing when a category, label, or include filter was edited.
-// Rows written before configDigest existed have an empty digest and so refresh
-// once on upgrade.
+// indexExistingByRef groups stored skills by (repository, ref). A ref is cached
+// only when every row agrees on its commit, configuration and expected row count.
+// One saved row is not proof that the whole ref was indexed: another Save or an
+// orphan deletion may have failed, or the process may have stopped mid-sync.
+// Rows written before refSkillCount existed are reindexed once.
 func indexExistingByRef(existing []models.Skill) (knownCommitFunc, map[string][]string) {
-	commitByRef := map[string]string{}
-	digestByRef := map[string]string{}
+	type refState struct {
+		commit string
+		digest string
+		count  int32
+		valid  bool
+	}
+	states := map[string]refState{}
 	namesByRef := map[string][]string{}
 	for _, s := range existing {
 		name, repo, version, commit, digest := skillRefInfo(s)
@@ -536,17 +536,29 @@ func indexExistingByRef(existing []models.Skill) (knownCommitFunc, map[string][]
 		}
 		k := refKey(repo, version)
 		namesByRef[k] = append(namesByRef[k], name)
-		if commit != "" {
-			commitByRef[k] = commit
+		var count int32
+		if props := s.GetProperties(); props != nil {
+			for _, p := range *props {
+				if p.Name == propRefSkillCount && !p.IsCustomProperty && p.IntValue != nil {
+					count = *p.IntValue
+				}
+			}
 		}
-		digestByRef[k] = digest
+		current := refState{commit: commit, digest: digest, count: count,
+			valid: commit != "" && digest != "" && count > 0}
+		if previous, ok := states[k]; ok {
+			current.valid = current.valid && previous.valid &&
+				previous.commit == commit && previous.digest == digest && previous.count == count
+		}
+		states[k] = current
 	}
 	known := func(repo SkillRepository, ref string) string {
 		k := refKey(repo.URL, ref)
-		if digestByRef[k] != configDigest(repo) {
+		state := states[k]
+		if !state.valid || int64(state.count) != int64(len(namesByRef[k])) || state.digest != configDigest(repo) {
 			return ""
 		}
-		return commitByRef[k]
+		return state.commit
 	}
 	return known, namesByRef
 }

@@ -37,7 +37,8 @@ func testDatastoreSpec() *datastore.Spec {
 			AddString("allowedTools").
 			AddString("supportingFiles").
 			AddInt("bodyLineCount").
-			AddString("configDigest"),
+			AddString("configDigest").
+			AddInt("refSkillCount"),
 		)
 }
 

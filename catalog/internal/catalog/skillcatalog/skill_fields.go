@@ -26,6 +26,7 @@ const (
 	propSupportingFiles = "supportingFiles"
 	propBodyLineCount   = "bodyLineCount"
 	propConfigDigest    = "configDigest"
+	propRefSkillCount   = "refSkillCount"
 )
 
 // skillFieldKind is the datastore storage kind of a defined skill property.
@@ -64,6 +65,7 @@ var skillFields = []skillField{
 	{propSupportingFiles, fieldStringSlice},
 	{propBodyLineCount, fieldInt},
 	{propConfigDigest, fieldString},
+	{propRefSkillCount, fieldInt},
 }
 
 // skillField pairs a defined property's datastore name with its storage kind.
