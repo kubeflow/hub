@@ -70,7 +70,57 @@ func (r *SkillRepositoryImpl) Save(entity models.Skill) (models.Skill, error) {
 			}
 		}
 	}
+	// For skills, Save takes the complete desired entity state: the loader
+	// rebuilds every skill entity from the source on each sync, so a defined
+	// property the incoming entity omits (an emptied category, a removed label,
+	// ...) was dropped at the source. GenericRepository.handleProperties prunes
+	// only stale custom properties, so stale defined rows are pruned here, in
+	// the same transaction as the upsert: either the complete new state is
+	// stored or the previously stored entity is left untouched. A nil property
+	// set carries no property intent and skips pruning entirely, mirroring how
+	// a nil custom-property set leaves custom properties untouched; a non-nil
+	// set, including an empty one, is the complete desired defined-property
+	// state. Only skills get this treatment; the other entity repositories call
+	// GenericRepository.Save directly and keep their existing semantics.
+	if id := entity.GetID(); id != nil && entity.GetProperties() != nil {
+		var saved models.Skill
+		err := config.DB.Transaction(func(tx *gorm.DB) error {
+			if err := pruneStaleDefinedSkillProperties(tx, *id, entity); err != nil {
+				return fmt.Errorf("error pruning stale skill properties: %w", err)
+			}
+			txConfig := config
+			txConfig.DB = tx
+			s, err := service.NewGenericRepository(txConfig).Save(entity, nil)
+			if err != nil {
+				return err
+			}
+			saved = s
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+		return saved, nil
+	}
 	return r.GenericRepository.Save(entity, nil)
+}
+
+// pruneStaleDefinedSkillProperties deletes, inside tx, the defined
+// (non-custom) property rows a previously stored version of the skill carried
+// but the incoming entity does not. Only defined rows are touched, so a
+// custom property sharing a name with a dropped defined property survives.
+func pruneStaleDefinedSkillProperties(tx *gorm.DB, entityID int32, entity models.Skill) error {
+	present := []string{}
+	if props := entity.GetProperties(); props != nil {
+		for _, p := range *props {
+			present = append(present, p.Name)
+		}
+	}
+	q := tx.Where("context_id = ? AND is_custom_property = ?", entityID, false)
+	if len(present) > 0 {
+		q = q.Where("name NOT IN ?", present)
+	}
+	return q.Delete(&schema.ContextProperty{}).Error
 }
 
 // mapSkillToSchema maps a Skill entity to a Context schema.
