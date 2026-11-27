@@ -26,7 +26,7 @@ func skillEntityName(sourceID, repository, path, version string) string {
 // custom metadata from the source configuration. Precedence for category/labels
 // is repo entry → skillOverride (per-skill); trustTier and provider come from the
 // repo entry; the SKILL.md frontmatter metadata becomes customProperties.
-func buildSkillEntity(resolved ResolvedSkill, repo SkillRepository, sourceID string) skillmodels.Skill {
+func buildSkillEntity(resolved ResolvedSkill, repo SkillRepository, sourceID string, refSkillCount int32) skillmodels.Skill {
 	parsed := resolved.Skill
 
 	category := repo.Category
@@ -60,6 +60,7 @@ func buildSkillEntity(resolved ResolvedSkill, repo SkillRepository, sourceID str
 	addStringSlice(&props, propSupportingFiles, resolved.SupportingFiles)
 	addInt(&props, propBodyLineCount, int32(parsed.BodyLineCount))
 	addString(&props, propConfigDigest, configDigest(repo))
+	addInt(&props, propRefSkillCount, refSkillCount)
 
 	custom := customPropertiesFromMetadata(parsed.Metadata)
 

@@ -24,7 +24,7 @@ func TestSkillFieldsCoverage(t *testing.T) {
 		Category:  "DevOps",
 		Labels:    []string{"community"},
 	}
-	entity := buildSkillEntity(sampleResolved(), repo, "community-skills")
+	entity := buildSkillEntity(sampleResolved(), repo, "community-skills", 1)
 
 	written := map[string]bool{}
 	require.NotNil(t, entity.GetProperties())

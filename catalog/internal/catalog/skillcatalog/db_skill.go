@@ -63,7 +63,7 @@ func (d *DBSkillCatalog) GetFilterOptions(_ context.Context) (*openapi.FilterOpt
 		// parameter (name, source_id) are not surfaced in filter_options.
 		switch prop.Name {
 		case propSkillName, propSourceID, propRepository, propPath, propSkillVersion,
-			propResolvedCommit, propReadme, propDescription, propSupportingFiles, propBodyLineCount, propConfigDigest:
+			propResolvedCommit, propReadme, propDescription, propSupportingFiles, propBodyLineCount, propConfigDigest, propRefSkillCount:
 			continue
 		}
 
@@ -226,7 +226,7 @@ func mapDBSkillToAPI(dbSkill models.Skill) *openapi.Skill {
 				res.SupportingFiles = decodeStringSlice(p.StringValue)
 			case propBodyLineCount:
 				res.BodyLineCount = p.IntValue
-			case propConfigDigest:
+			case propConfigDigest, propRefSkillCount:
 				// Internal sync bookkeeping; deliberately not exposed on the API.
 			default:
 				// Any property that isn't a pre-configured field is surfaced as a
