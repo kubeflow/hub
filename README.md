@@ -273,3 +273,10 @@ manifests/kustomize/overlays/db/model-registry-db-deployment.yaml file.
 
 spec.template.spec.containers.image: public.ecr.aws/docker/library/mysql:8.3.0
 ```
+
+## Contributors
+
+<a href="https://github.com/kubeflow/hub/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=kubeflow/hub" alt="Contributors" />
+</a>
+
