@@ -50,6 +50,8 @@ func customPropNameSet(entity models.Skill) map[string]bool {
 func TestSkillRepositorySavePrunesStaleDefinedProperties(t *testing.T) {
 	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, testDatastoreSpec())
 	defer cleanup()
+	testutils.CleanupPostgresTestData(t, sharedDB)
+	defer testutils.CleanupPostgresTestData(t, sharedDB)
 
 	typeID := getSkillTypeID(t, sharedDB)
 	repo := NewSkillRepository(sharedDB, typeID)
@@ -112,6 +114,8 @@ func TestSkillRepositorySavePrunesStaleDefinedProperties(t *testing.T) {
 func TestSkillRepositorySavePrunesStaleCustomProperties(t *testing.T) {
 	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, testDatastoreSpec())
 	defer cleanup()
+	testutils.CleanupPostgresTestData(t, sharedDB)
+	defer testutils.CleanupPostgresTestData(t, sharedDB)
 
 	typeID := getSkillTypeID(t, sharedDB)
 	repo := NewSkillRepository(sharedDB, typeID)
@@ -156,6 +160,8 @@ func TestSkillRepositorySavePrunesStaleCustomProperties(t *testing.T) {
 func TestSkillRepositorySaveFailurePreservesStoredEntity(t *testing.T) {
 	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, testDatastoreSpec())
 	defer cleanup()
+	testutils.CleanupPostgresTestData(t, sharedDB)
+	defer testutils.CleanupPostgresTestData(t, sharedDB)
 
 	typeID := getSkillTypeID(t, sharedDB)
 	repo := NewSkillRepository(sharedDB, typeID)
@@ -199,6 +205,8 @@ func TestSkillRepositorySaveFailurePreservesStoredEntity(t *testing.T) {
 func TestSkillRepositorySavePruneLeavesSameNameCustomProperty(t *testing.T) {
 	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, testDatastoreSpec())
 	defer cleanup()
+	testutils.CleanupPostgresTestData(t, sharedDB)
+	defer testutils.CleanupPostgresTestData(t, sharedDB)
 
 	typeID := getSkillTypeID(t, sharedDB)
 	repo := NewSkillRepository(sharedDB, typeID)
@@ -245,6 +253,8 @@ func TestSkillRepositorySavePruneLeavesSameNameCustomProperty(t *testing.T) {
 func TestSkillRepositorySaveEmptyPropertiesPruneAllDefined(t *testing.T) {
 	sharedDB, cleanup := testutils.SetupPostgresWithMigrations(t, testDatastoreSpec())
 	defer cleanup()
+	testutils.CleanupPostgresTestData(t, sharedDB)
+	defer testutils.CleanupPostgresTestData(t, sharedDB)
 
 	typeID := getSkillTypeID(t, sharedDB)
 	repo := NewSkillRepository(sharedDB, typeID)
